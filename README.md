@@ -6,7 +6,7 @@ A (interpreted?) programming language. Still in development. Don't really know w
 
 I scrapped everything and restarted. Umm... I guess that's the learning process? I've never made a language before, so this might take a while.
 
-However, I do have a good base now, so I should have like a bare minumun rough draft completed by this upcoming Sunday. Here's what I'm planning for my language to look like if I can finished it by next week:
+However, I do have a good base now, so I should have like a bare minumun rough draft completed by this upcoming Sunday. Here's what I'm planning for my language to look like if I can finish it by next week:
 
 ```.cpp
 // this is a comment
