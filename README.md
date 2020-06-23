@@ -35,17 +35,17 @@ Here's a list:
 **Features:**
 
 - variables
-  - char
-  - bool
-  - int
+ - char
+ - bool
+ - int
 - expressions
-  - arithmetic
-  - boolean logic
+ - arithmetic
+ - boolean logic
 - variable stuff
-  - reassgin variables
-  - be able to add on a value
+ - reassgin variables
+ - be able to add on a value
 - print
-  - print chars, bools, and ints
-  - print variables
+ - print chars, bools, and ints
+ - print variables
   
-Have to do all that in a week from scratch. Hopefully I can get at leats half done.
+Have to do all that in a week from scratch. Hopefully I can get at least half done.
