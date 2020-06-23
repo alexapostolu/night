@@ -13,21 +13,18 @@ However, I do have a good base now, so I should have like a bare minumun rough d
 // don't even know if I'll have time to implement comments
 // syntax is very similar to C++
 
-char letter = 'c';
-bool lightSwitch = true;
-int answer = 5 * 10 - 3;
+char letter = 'c'
+bool lightSwitch = true
+int answer = 5 * 10 - 3
 
-answer = 20;
-answer = answer + 20; // maybe I'll have time to do this?
+answer = 20
+answer = answer + 20 // maybe I'll have time to do this?
 
-// I probably won't use functions cause it'll be a little harder to code
-print("Hello World!");
-
-// but instead I'll probably use an operator similar to C++ like this:
-print << "Hello World!";
+// something like this?
+stream console "Hello World"
 
 // maybe I'll have enough time to make it so that you can print out variables
-print << answer;
+stream console answer
 ```
 
 Here's a list:
