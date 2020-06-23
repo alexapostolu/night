@@ -2,28 +2,50 @@
 
 A (interpreted?) programming language. Still in development. Don't really know what I'm doing, but it should work out in the end.
 
-Right now, all it supports is one line variable initialization like this:
+**Edit::**
+
+I scrapped everything and restarted. Umm... I guess that's the learning process? I've never made a language before, so this might take a while.
+
+However, I do have a good base now, so I should have like a bare minumun rough draft completed by this upcoming Sunday. Here's what I'm planning for my language to look like if I can finished it by next week:
 
 ```.cpp
-int answer = 10;
-
-or 
+// this is a comment
+// don't even know if I'll have time to implement comments
+// syntax is very similar to C++
 
 char letter = 'c';
-
-or
-
 bool lightSwitch = true;
+int answer = 5 * 10 - 3;
+
+answer = 20;
+answer = answer + 20; // maybe I'll have time to do this?
+
+// I probably won't use functions cause it'll be a little harder to code
+print("Hello World!");
+
+// but instead I'll probably use an operator similar to C++ like this:
+print << "Hello World!";
+
+// maybe I'll have enough time to make it so that you can print out variables
+print << answer;
 ```
 
-The syntax is very similar to C++'s just because I want to focus on actually making a *working* language for now.
+Here's a list:
 
-I'm working on expressions:
+**Features:**
 
-```.cpp
-int answer = 5 * 4 + 3;
-
-// variable storage:
-(type)     (name)     (value)
-int        answer     23
-```
+- variables
+  - char
+  - bool
+  - int
+- expressions
+  - arithmetic
+  - boolean logic
+- variable stuff
+  - reassgin variables
+  - be able to add on a value
+- print
+  - print chars, bools, and ints
+  - print variables
+  
+Have to do all that in a week from scratch. Hopefully I can get at leats half done.
