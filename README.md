@@ -2,7 +2,7 @@
 
 A (interpreted?) programming language. Still in development. Don't really know what I'm doing, but it should work out in the end.
 
-**Edit::**
+**Edit:**
 
 I scrapped everything and restarted. Umm... I guess that's the learning process? I've never made a language before, so this might take a while.
 
