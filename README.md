@@ -23,10 +23,10 @@ answer = 20;
 answer = answer + 20; // maybe I'll have time to do this?
 
 // something like this?
-stream console "Hello World";
+print "Hello World";
 
 // maybe I'll have enough time to make it so that you can print out variables
-stream console answer;
+print answer;
 ```
 
 Here's a list:
@@ -53,6 +53,6 @@ Have to do all that in a week from scratch. Hopefully I can get at least half do
 
 **Another Edit:**
 
-Okay, so the math parser is finished, and that means that the "variables" on my features list is done! Well, not really, just the int variables, but the bool and char is basically the same. The "expressions" is also done! And that includes all of these: `+-*/()`. You can also add variables to each other so that's pretty cool. So basically all I need is the 'print' thingy.
+Okay, so the math parser is finished, and that means that the "variables" on my features list is done! Well, not really, just the int variables, but the bool and char is basically the same. The "expressions" is also done! And that includes all of these: `+-*/()`. You can also add variables to each other so that's pretty cool. So basically all I need is the 'print' thingy. And comments.
 
 So time to scrap everything and restart again :)
