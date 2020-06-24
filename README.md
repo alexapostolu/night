@@ -2,6 +2,8 @@
 
 A (interpreted?) programming language. Still in development. Don't really know what I'm doing, but it should work out in the end.
 
+---
+
 **Edit:**
 
 I scrapped everything and restarted. Umm... I guess that's the learning process? I've never made a language before, so this might take a while.
@@ -46,3 +48,11 @@ Here's a list:
   - print variables
   
 Have to do all that in a week from scratch. Hopefully I can get at least half done.
+
+---
+
+**Another Edit:**
+
+Okay, so the math parser is finished, and that means that the "variables" on my features list is done! Well, not really, just the int variables, but the bool and char is basically the same. The "expressions" is also done! And that includes all of these: `+-*/()`. You can also add variables to each other so that's pretty cool. So basically all I need is the 'print' thingy.
+
+So time to scrap everything and restart again :)
