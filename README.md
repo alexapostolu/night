@@ -2,6 +2,8 @@
 
 A (interpreted?) programming language. Still in development. Don't really know what I'm doing, but it should work out in the end.
 
+The `code.nt` file is where you actually write your code. But I don't like `.nt`, I want another extention. Maybe a three letter one.
+
 ---
 
 **Edit:**
