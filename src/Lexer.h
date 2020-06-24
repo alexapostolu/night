@@ -26,6 +26,11 @@ void check(std::string& token, std::vector<Token>& tokens)
 		tokens.push_back(Token{ TokenTypes::INT_VALUE, token });
 		token = "";
 	}
+	else if (token == "false" || token == "true")
+	{
+		tokens.push_back(Token{ TokenTypes::BOOL_VALUE, token });
+		token = "";
+	}
 	else
 	{
 		tokens.push_back(Token{ TokenTypes::VARIABLE, token });
@@ -92,6 +97,8 @@ void Lexer(std::vector<Token>& tokens, const std::string& line)
 			token = "";
 		}
 	}
+
+	// semicolon not found error
 
 	for (std::size_t a = 0; a < tokens.size(); ++a)
 	{
