@@ -19,7 +19,7 @@ Right now, this language supports:
 
 ```.cpp
 int answer = 5 + 3;
-bool switch = true;
+bool correct = true;
 char letter = 'c';
 
 int integer = true; // error! also I haven't implemented comments yet
