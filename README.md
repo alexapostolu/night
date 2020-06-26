@@ -29,4 +29,4 @@ And umm... that's it :)
 
 I'm working on getting my math parser to link with the rest of my code so `answer` will be evalutated to `8`. I will also have a bool parser that will evaluate boolean expressions like `(true || false) && true`.
 
-Hopefully in a couple days, I'll have my first working language done (albeit not that good or versitile)! It'll have comments, and maybe a 'print' thingy.
+Hopefully in a couple days, I'll have my first working language done (albeit not that good or versitile)! It'll have comments, and maybe a `print` thingy as well.
