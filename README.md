@@ -33,4 +33,6 @@ Hopefully in a couple days, I'll have my first working language done (albeit not
 
 **Edit:**
 
-The math parser works great! But the bool parser works kinda. It was harder than I thought. It works for simple things line `true && true`, but the problem is when you have brackets and use NOT like this: `!(true || !false)`. Umm... but it's good enought for now.
+Okay, so I did code and now the math parser works great! But the bool parser kinda works. It was harder than I thought. It works for simple things line `true && true`, but the problem is when you have brackets and use NOT like this: `!(true || !false)`. Umm... but it's good enought for now.
+
+So next up, the `print` thingy and comments and fixing some minor bugs. Hopefully I can get that done by Sunday.
