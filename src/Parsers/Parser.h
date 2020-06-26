@@ -16,7 +16,6 @@ bool CheckEquation(const std::vector<Token>& tokens, int index, TokenTypes type,
 
 void Parser(std::vector<Token>& tokens)
 {
-	// make a singleton class that holds these values?
 	static std::vector<Variable> variables;
 
 	// variable initialization
@@ -86,7 +85,7 @@ void Parser(std::vector<Token>& tokens)
 
 			// send off to math parser
 			std::vector<Token> temp(tokens.begin() + 3, tokens.end() - 1);
-			std::cout << "Gotcha!\n";
+			std::cout << "Gotcha!\n"; // testing purposes!
 			MathParser(temp);
 		}
 		else
@@ -206,7 +205,7 @@ bool CheckEquation(const std::vector<Token>& tokens, int index, TokenTypes type,
 			((int)tokens[index - 1].type >= start && (int)tokens[index - 1].type <= end &&
 				(tokens[index + 1].type == TokenTypes::SEMICOLON)))
 		{
-			// bro what is this??? like seriously you high or something?
+			
 		}
 		else
 		{
