@@ -30,3 +30,7 @@ And umm... that's it :)
 I'm working on getting my math parser to link with the rest of my code so `answer` will be evalutated to `8`. I will also have a bool parser that will evaluate boolean expressions like `(true || false) && true`.
 
 Hopefully in a couple days, I'll have my first working language done (albeit not that good or versitile)! It'll have comments, and maybe a `print` thingy as well.
+
+**Edit:**
+
+The math parser works great! But the bool parser works kinda. It was harder than I thought. It works for simple things line `true && true`, but the problem is when you have brackets and use NOT like this: `!(true || !false)`. Umm... but it's good enought for now.
