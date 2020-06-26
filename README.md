@@ -1,60 +1,32 @@
 # Night
 
-A (interpreted?) programming language. Still in development. Don't really know what I'm doing, but it should work out in the end.
+A (interpreted?) programming language. Still in development. I've never made one before, so I don't really know what I'm doing, but it should work out in the end.
 
-The `code.nt` file is where you actually write your code. But I don't like `.nt`, I want another extention. Maybe a three letter one. I also want a logo, but have no clue how to make one.
+The `source.night` file is where you write the code. But I don't like the extention `.night`. I'm looking for something shorter, but don't know what yet. I also want a logo but have no clue how to make one.
 
 ---
 
-**Edit:**
+**Special Features (updated as progress continues):**
 
-I scrapped everything and restarted. Umm... I guess that's the learning process? I've never made a language before, so this might take a while.
+- no implicit conversions (similar to Rust)
+- and that's it :)
 
-However, I do have a good base now, so I should have like a bare minumun rough draft completed by this upcoming Sunday. Here's what I'm planning for my language to look like if I can finish it by next week:
+---
+
+**Language features**
+
+Right now, this language supports:
 
 ```.cpp
-// this is a comment
-// don't even know if I'll have time to implement comments
-// syntax is very similar to C++
-
+int answer = 5 + 3;
+bool switch = true;
 char letter = 'c';
-bool lightSwitch = true;
-int answer = 5 * 10 - 3;
 
-answer = 20;
-answer = answer + 20; // maybe I'll have time to do this?
-
-// something like this?
-print "Hello World";
-
-// maybe I'll have enough time to make it so that you can print out variables
-print answer;
+int integer = true; // error! also I haven't implemented comments yet
 ```
 
-Here's a list:
+And umm... that's it :)
 
-**Features:**
+I'm working on getting my math parser to link with the rest of my code so `answer` will be evalutated to `8`. I will also have a bool parser that will evaluate boolean expressions like `(true || false) && true`.
 
-- variables
-  - char
-  - bool
-  - int
-- expressions
-  - arithmetic
-  - boolean logic
-- variable stuff
-  - reassgin variables
-  - be able to add on a value
-- print
-  - print chars, bools, and ints
-  - print variables
-  
-Have to do all that in a week from scratch. Hopefully I can get at least half done.
-
----
-
-**Another Edit:**
-
-Okay, so the math parser is finished, and that means that the "variables" on my features list is done! Well, not really, just the int variables, but the bool and char is basically the same. The "expressions" is also done! And that includes all of these: `+-*/()`. You can also add variables to each other so that's pretty cool. So basically all I need is the 'print' thingy. And comments.
-
-So time to scrap everything and restart again :)
+Hopefully in a couple days, I'll have my first working language done (albeit not that good or versitile)! It'll have comments, and maybe a 'print' thingy.
