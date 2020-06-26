@@ -1,34 +1,43 @@
 #pragma once
 
+#include <iostream>
 #include <regex>
+#include <string>
+#include <vector>
 
 #include "Token.h"
+#include "Parser.h"
 
-void check(std::string& token, std::vector<Token>& tokens)
+void check(std::vector<Token>& tokens, std::string& token)
 {
 	if (token == "bool")
 	{
-		tokens.push_back(Token{ TokenTypes::BOOL, "bool" });
+		tokens.push_back(Token{ TokenTypes::BOOL_TYPE, "bool" });
 		token = "";
 	}
 	else if (token == "char")
 	{
-		tokens.push_back(Token{ TokenTypes::CHAR, "char" });
+		tokens.push_back(Token{ TokenTypes::CHAR_TYPE, "char" });
 		token = "";
 	}
 	else if (token == "int")
 	{
-		tokens.push_back(Token{ TokenTypes::INT, "int" });
-		token = "";
-	}
-	else if (std::regex_match(token, std::regex("[0-9]+")))
-	{
-		tokens.push_back(Token{ TokenTypes::INT_VALUE, token });
+		tokens.push_back(Token{ TokenTypes::INT_TYPE, "int" });
 		token = "";
 	}
 	else if (token == "false" || token == "true")
 	{
 		tokens.push_back(Token{ TokenTypes::BOOL_VALUE, token });
+		token = "";
+	}
+	else if (token.length() == 3 && token[0] == '\'' && token[2] == '\'')
+	{
+		tokens.push_back(Token{ TokenTypes::CHAR_VALUE, std::string(1, token[1]) });
+		token = "";
+	}
+	else if (std::regex_match(token, std::regex("[0-9]+")))
+	{
+		tokens.push_back(Token{ TokenTypes::INT_VALUE, token });
 		token = "";
 	}
 	else
@@ -38,51 +47,63 @@ void check(std::string& token, std::vector<Token>& tokens)
 	}
 }
 
-void Lexer(std::vector<Token>& tokens, const std::string& line)
+void Lexer(const std::string& line)
 {
+	std::vector<Token> tokens;
 	std::string token = "";
+
 	for (std::size_t a = 0; a < line.length(); ++a)
 	{
 		if (line[a] == '=')
 		{
-			check(token, tokens);
+			check(tokens, token);
 			tokens.push_back(Token{ TokenTypes::ASSIGNMENT, "=" });
 		}
 		else if (line[a] == '+')
 		{
-			check(token, tokens);
+			check(tokens, token);
 			tokens.push_back(Token{ TokenTypes::PLUS, "+" });
 		}
 		else if (line[a] == '-')
 		{
-			check(token, tokens);
+			check(tokens, token);
 			tokens.push_back(Token{ TokenTypes::MINUS, "-" });
 		}
 		else if (line[a] == '*')
 		{
-			check(token, tokens);
+			check(tokens, token);
 			tokens.push_back(Token{ TokenTypes::TIMES, "*" });
 		}
 		else if (line[a] == '/')
 		{
-			check(token, tokens);
+			check(tokens, token);
 			tokens.push_back(Token{ TokenTypes::DIVIDE, "/" });
+		}
+		else if (line[a] == '%')
+		{
+			check(tokens, token);
+			tokens.push_back(Token{ TokenTypes::MOD, "%" });
 		}
 		else if (line[a] == '(')
 		{
-			check(token, tokens);
+			check(tokens, token);
 			tokens.push_back(Token{ TokenTypes::OPEN_BRACKET, "(" });
 		}
 		else if (line[a] == ')')
 		{
-			check(token, tokens);
+			check(tokens, token);
 			tokens.push_back(Token{ TokenTypes::CLOSE_BRACKET, ")" });
+		}
+		else if (line[a] == ';')
+		{
+			check(tokens, token);
+			tokens.push_back(Token{ TokenTypes::SEMICOLON, ";" });
 		}
 		else
 		{
 			if ((line[a] == ' ' || line[a] == ';') && token != "")
 			{
-				check(token, tokens);
+				check(tokens, token);
 			}
 			else
 			{
@@ -90,21 +111,13 @@ void Lexer(std::vector<Token>& tokens, const std::string& line)
 					token += line[a];
 			}
 		}
-
-		if (line[a] == ';')
-		{
-			tokens.push_back(Token{ TokenTypes::SEMICOLON, ";" });
-			token = "";
-		}
 	}
-
-	// semicolon not found error
 
 	for (std::size_t a = 0; a < tokens.size(); ++a)
 	{
 		if (tokens[a].token == "" || tokens[a].token == " " || tokens[a].token == "\0")
-		{
 			tokens.erase(tokens.begin() + a);
-		}
 	}
+
+	Parser(tokens);
 }
