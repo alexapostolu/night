@@ -4,6 +4,8 @@ A (interpreted?) programming language. Still in development. I've never made one
 
 The `source.night` file is where you write the code. But I don't like the extention `.night`. I'm looking for something shorter, but don't know what yet. I also want a logo but have no clue how to make one.
 
+Also, this language is very similar to the C family since I'm not that creative, and I'm just starting out. Definitly going to change it down the road.
+
 ---
 
 **Special Features (updated as progress continues):**
