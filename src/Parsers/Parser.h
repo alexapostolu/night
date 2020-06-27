@@ -9,13 +9,14 @@
 #include "BoolParser.h"
 
 void ExtractVariableValue(const std::vector<Variable> variables, std::vector<Token>& tokens);
-void CheckExpression(const std::vector<Token>& tokens, TokenTypes type, int start, int end,
+void CheckExpression(const std::vector<Token>& tokens, TokenTypes valueType, int start, int end,
 	std::string error);
 bool CheckEquation(const std::vector<Token>& tokens, int index, TokenTypes type,
 	int start, int end);
 
 void Parser(std::vector<Token>& tokens)
 {
+	// make a singleton class that holds these values?
 	static std::vector<Variable> variables;
 
 	// variable initialization
@@ -26,10 +27,47 @@ void Parser(std::vector<Token>& tokens)
 
 		if (tokens[0].type == TokenTypes::BOOL_TYPE)
 		{
-			CheckExpression(tokens, TokenTypes::BOOL_VALUE, 10, 12, "boolean");
+			for (std::size_t a = 3; a < tokens.size() - 1; ++a)
+			{
+				if (tokens[a].type == TokenTypes::NOT &&
+					tokens[a + 1].type == TokenTypes::BOOL_VALUE)
+				{
+					tokens[a + 1].token = (tokens[a + 1].token == "true" ? "false" : "true");
+					tokens.erase(tokens.begin() + a);
+				}
+				else if (tokens[a].type == TokenTypes::NOT &&
+					tokens[a + 1].type == TokenTypes::OPEN_BRACKET)
+				{
+					int closeBracketIndex = -1;
+					for (std::size_t b = a + 1; b < tokens.size(); ++b)
+					{
+						if (tokens[b].type == TokenTypes::CLOSE_BRACKET)
+							closeBracketIndex = b;
+					}
+
+					if (closeBracketIndex == -1)
+					{
+						std::cout << "Error - missing closing bracket";
+						exit(0);
+					}
+
+					for (std::size_t b = a + 1; b < tokens.size(); ++b)
+					{
+						if (tokens[b].type == TokenTypes::BOOL_VALUE)
+							tokens[b].token = (tokens[b].token == "true" ? "false" : "true");
+					}
+
+					tokens.erase(tokens.begin() + a);
+				}
+			}
+
+			CheckExpression(tokens, TokenTypes::BOOL_VALUE, 11, 12, "boolean");
 
 			std::vector<Token> temp(tokens.begin() + 3, tokens.end() - 1);
-			BoolParser(tokens);
+			variables.push_back(Variable{ "bool", tokens[1].token, BoolParser(temp) });
+
+			std::cout << variables.back().type << ' ' << variables.back().name << ' ' <<
+				variables.back().value;
 		}
 		else if (tokens[0].type == TokenTypes::CHAR_TYPE)
 		{
@@ -47,7 +85,7 @@ void Parser(std::vector<Token>& tokens)
 				}
 				else
 				{
-					std::cout << "Error - invalid character expression";
+					std::cout << "Error - invalid character assignment";
 					exit(0);
 				}
 			}
@@ -55,38 +93,9 @@ void Parser(std::vector<Token>& tokens)
 		else if (tokens[0].type == TokenTypes::INT_TYPE)
 		{
 			CheckExpression(tokens, TokenTypes::INT_VALUE, 5, 9, "integer");
-			/*
-			int openBrackets = 0;
-			for (std::size_t a = 3; a < tokens.size() - 1; ++a)
-			{
-				if (!CheckEquation(tokens, a, TokenTypes::INT_VALUE, 5, 9))
-				{
-					std::cout << "Error - invalid integer expression";
-					exit(0);
-				}
-
-				if (tokens[a].type == TokenTypes::OPEN_BRACKET)
-					openBrackets += 1;
-				else if (tokens[a].type == TokenTypes::CLOSE_BRACKET)
-					openBrackets -= 1;
-			}
-
-			if (openBrackets > 0)
-			{
-				std::cout << "Error - missing closing bracket";
-				exit(0);
-			}
-			else if (openBrackets < 0)
-			{
-				std::cout << "Error - missing opening bracket";
-				exit(0);
-			}
-			*/
-
-			// send off to math parser
+			
 			std::vector<Token> temp(tokens.begin() + 3, tokens.end() - 1);
-			std::cout << "Gotcha!\n"; // testing purposes!
-			MathParser(temp);
+			variables.push_back(Variable{ "int", tokens[1].token, MathParser(temp) });
 		}
 		else
 		{
@@ -111,11 +120,20 @@ void Parser(std::vector<Token>& tokens)
 
 		if (!definedVariable)
 		{
-			std::cout << "Error, variable not defined";
+			std::cout << "Error - variable not defined";
 			exit(0);
 		}
 
 		ExtractVariableValue(variables, tokens);
+	}
+	else if (tokens.size() >= 3)
+	{
+		ExtractVariableValue(variables, tokens);
+		
+		for (std::size_t a = 1; a < tokens.size() - 1; ++a)
+		{
+			std::cout << tokens[a].token;
+		}
 	}
 	else
 	{
@@ -185,29 +203,25 @@ void CheckExpression(const std::vector<Token>& tokens, TokenTypes type, int star
 	}
 }
 
-bool CheckEquation(const std::vector<Token>& tokens, int index, TokenTypes type, int start, int end)
+bool CheckEquation(const std::vector<Token>& tokens, int index, TokenTypes valueType, int start, int end)
 {
 	// checks all numbers
-	if (tokens[index].type == type)
+	if (tokens[index].type == valueType)
 	{
-		if ((tokens[index - 1].type == TokenTypes::ASSIGNMENT &&
-				tokens[index + 1].type == TokenTypes::SEMICOLON) ||
-			(tokens[index - 1].type == TokenTypes::ASSIGNMENT &&
-				(int)tokens[index + 1].type >= start && (int)tokens[index + 1].type <= end) ||
-			((int)tokens[index - 1].type >= start && (int)tokens[index - 1].type <= end &&
-				(int)tokens[index + 1].type >= start && (int)tokens[index + 1].type <= end) ||
-			(tokens[index - 1].type == TokenTypes::OPEN_BRACKET &&
-				(int)tokens[index + 1].type >= start && (int)tokens[index + 1].type <= end) ||
-			((int)tokens[index - 1].type >= start && (int)tokens[index - 1].type <= end &&
-				tokens[index + 1].type == TokenTypes::CLOSE_BRACKET) ||
-			(tokens[index - 1].type == TokenTypes::OPEN_BRACKET &&
-				tokens[index + 1].type == TokenTypes::CLOSE_BRACKET) ||
-			((int)tokens[index - 1].type >= start && (int)tokens[index - 1].type <= end &&
-				(tokens[index + 1].type == TokenTypes::SEMICOLON)))
-		{
-			
-		}
-		else
+		if ((tokens[index - 1].type != TokenTypes::ASSIGNMENT ||
+				tokens[index + 1].type != TokenTypes::SEMICOLON) &&
+			(tokens[index - 1].type != TokenTypes::ASSIGNMENT ||
+				(int)tokens[index + 1].type < start || (int)tokens[index + 1].type > end) &&
+			((int)tokens[index - 1].type < start || (int)tokens[index - 1].type > end ||
+				(int)tokens[index + 1].type < start || (int)tokens[index + 1].type > end) &&
+			(tokens[index - 1].type != TokenTypes::OPEN_BRACKET ||
+				(int)tokens[index + 1].type < start || (int)tokens[index + 1].type > end) &&
+			((int)tokens[index - 1].type < start || (int)tokens[index - 1].type > end ||
+				tokens[index + 1].type != TokenTypes::CLOSE_BRACKET) &&
+			(tokens[index - 1].type != TokenTypes::OPEN_BRACKET ||
+				tokens[index + 1].type != TokenTypes::CLOSE_BRACKET) &&
+			((int)tokens[index - 1].type < start || (int)tokens[index - 1].type > end ||
+				(tokens[index + 1].type != TokenTypes::SEMICOLON)))
 		{
 			return false;
 		}
@@ -215,18 +229,14 @@ bool CheckEquation(const std::vector<Token>& tokens, int index, TokenTypes type,
 	// checks all operators
 	else if ((int)tokens[index].type >= start && (int)tokens[index].type <= end)
 	{
-		if ((tokens[index - 1].type == type &&
-				tokens[index + 1].type == type) ||
-			(tokens[index - 1].type == type &&
-				tokens[index + 1].type == TokenTypes::OPEN_BRACKET) ||
-			(tokens[index - 1].type == TokenTypes::CLOSE_BRACKET &&
-				tokens[index + 1].type == type) ||
-			(tokens[index - 1].type == TokenTypes::CLOSE_BRACKET &&
-				tokens[index + 1].type == TokenTypes::OPEN_BRACKET))
-		{
-
-		}
-		else
+		if ((tokens[index - 1].type != valueType ||
+				tokens[index + 1].type != valueType) &&
+			(tokens[index - 1].type != valueType ||
+				tokens[index + 1].type != TokenTypes::OPEN_BRACKET) &&
+			(tokens[index - 1].type != TokenTypes::CLOSE_BRACKET ||
+				tokens[index + 1].type != valueType) &&
+			(tokens[index - 1].type != TokenTypes::CLOSE_BRACKET ||
+				tokens[index + 1].type != TokenTypes::OPEN_BRACKET))
 		{
 			return false;
 		}
@@ -234,22 +244,18 @@ bool CheckEquation(const std::vector<Token>& tokens, int index, TokenTypes type,
 	// checks all open brackets
 	else if (tokens[index].type == TokenTypes::OPEN_BRACKET)
 	{
-		if (((int)tokens[index - 1].type >= start && (int)tokens[index - 1].type <= end &&
-				tokens[index + 1].type == type) ||
-			((int)tokens[index - 1].type >= start && (int)tokens[index - 1].type <= end &&
-				tokens[index + 1].type == TokenTypes::OPEN_BRACKET) ||
-			(tokens[index - 1].type == TokenTypes::OPEN_BRACKET &&
-				tokens[index + 1].type == type) ||
-			(tokens[index - 1].type == TokenTypes::OPEN_BRACKET &&
-				tokens[index + 1].type == TokenTypes::OPEN_BRACKET) ||
-			(tokens[index - 1].type == TokenTypes::ASSIGNMENT &&
-				tokens[index + 1].type == TokenTypes::OPEN_BRACKET) ||
-			(tokens[index - 1].type == TokenTypes::ASSIGNMENT &&
-				tokens[index + 1].type >= type))
-		{
-		
-		}
-		else
+		if (((int)tokens[index - 1].type < start || (int)tokens[index - 1].type > end ||
+				tokens[index + 1].type != valueType) &&
+			((int)tokens[index - 1].type < start || (int)tokens[index - 1].type > end ||
+				tokens[index + 1].type != TokenTypes::OPEN_BRACKET) &&
+			(tokens[index - 1].type != TokenTypes::OPEN_BRACKET ||
+				tokens[index + 1].type != valueType) &&
+			(tokens[index - 1].type != TokenTypes::OPEN_BRACKET ||
+				tokens[index + 1].type != TokenTypes::OPEN_BRACKET) &&
+			(tokens[index - 1].type != TokenTypes::ASSIGNMENT ||
+				tokens[index + 1].type != TokenTypes::OPEN_BRACKET) &&
+			(tokens[index - 1].type != TokenTypes::ASSIGNMENT ||
+				tokens[index + 1].type != valueType))
 		{
 			return false;
 		}
@@ -257,22 +263,18 @@ bool CheckEquation(const std::vector<Token>& tokens, int index, TokenTypes type,
 	// checks all close brackets
 	else if (tokens[index].type == TokenTypes::CLOSE_BRACKET)
 	{
-		if ((tokens[index - 1].type == type &&
-				(int)tokens[index + 1].type >= start && (int)tokens[index + 1].type <= end) ||
-			(tokens[index - 1].type == TokenTypes::CLOSE_BRACKET &&
-				(int)tokens[index + 1].type >= start && (int)tokens[index + 1].type <= end) ||
-			(tokens[index - 1].type == type &&
-				tokens[index + 1].type == TokenTypes::CLOSE_BRACKET) ||
-			(tokens[index - 1].type == TokenTypes::CLOSE_BRACKET &&
-				tokens[index + 1].type == TokenTypes::CLOSE_BRACKET) ||
-			(tokens[index - 1].type == type &&
-				tokens[index + 1].type == TokenTypes::SEMICOLON) ||
-			(tokens[index - 1].type == TokenTypes::CLOSE_BRACKET &&
-				tokens[index + 1].type == TokenTypes::SEMICOLON))
-		{
-
-		}
-		else
+		if ((tokens[index - 1].type != valueType ||
+				(int)tokens[index + 1].type < start || (int)tokens[index + 1].type > end) &&
+			(tokens[index - 1].type != TokenTypes::CLOSE_BRACKET ||
+				(int)tokens[index + 1].type < start || (int)tokens[index + 1].type > end) &&
+			(tokens[index - 1].type != valueType ||
+				tokens[index + 1].type != TokenTypes::CLOSE_BRACKET) &&
+			(tokens[index - 1].type != TokenTypes::CLOSE_BRACKET ||
+				tokens[index + 1].type != TokenTypes::CLOSE_BRACKET) &&
+			(tokens[index - 1].type != valueType ||
+				tokens[index + 1].type != TokenTypes::SEMICOLON) &&
+			(tokens[index - 1].type != TokenTypes::CLOSE_BRACKET ||
+				tokens[index + 1].type != TokenTypes::SEMICOLON))
 		{
 			return false;
 		}
