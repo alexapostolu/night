@@ -40,6 +40,11 @@ void check(std::vector<Token>& tokens, std::string& token)
 		tokens.push_back(Token{ TokenTypes::INT_VALUE, token });
 		token = "";
 	}
+	else if (token == "print")
+	{
+		tokens.push_back(Token{ TokenTypes::PRINT, "print" });
+		token = "";
+	}
 	else
 	{
 		tokens.push_back(Token{ TokenTypes::VARIABLE, token });
@@ -83,6 +88,37 @@ void Lexer(const std::string& line)
 		{
 			check(tokens, token);
 			tokens.push_back(Token{ TokenTypes::MOD, "%" });
+		}
+		else if (line[a] == '!')
+		{
+			check(tokens, token);
+			tokens.push_back(Token{ TokenTypes::NOT, "!" });
+		}
+		else if (line[a] == '&')
+		{
+			if (line[a + 1] == '&')
+			{
+				check(tokens, token);
+				tokens.push_back(Token{ TokenTypes::AND, "&&" });
+			}
+			else if (line[a - 1] != '&')
+			{
+				std::cout << "Error - undefined symbol '&'";
+				exit(0);
+			}
+		}
+		else if (line[a] == '|')
+		{
+			if (line[a + 1] == '|')
+			{
+				check(tokens, token);
+				tokens.push_back(Token{ TokenTypes::AND, "||" });
+			}
+			else if (line[a - 1] != '|')
+			{
+				std::cout << "Error - undefined symbol '|'";
+				exit(0);
+			}
 		}
 		else if (line[a] == '(')
 		{
