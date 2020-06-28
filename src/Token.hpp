@@ -29,7 +29,8 @@ enum class TokenTypes
 	CHAR_VALUE,     // 16
 	INT_VALUE,      // 17
 
-	SEMICOLON       // 18
+	SEMICOLON,      // 18
+	PRINT           // 19
 };
 
 struct Token

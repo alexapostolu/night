@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "Token.h"
+#include "Token.hpp"
 
 void EvaluateInt(std::vector<std::string>& expression, std::size_t& index, int set, char operation);
 

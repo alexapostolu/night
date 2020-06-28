@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 
-#include "Lexer.h"
+#include "Lexer.hpp"
 
 int main()
 {

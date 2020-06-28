@@ -2,11 +2,11 @@
 
 #include <vector>
 
-#include "Token.h"
-#include "Variable.h"
+#include "Token.hpp"
+#include "Variable.hpp"
 
-#include "MathParser.h"
-#include "BoolParser.h"
+#include "MathParser.hpp"
+#include "BoolParser.hpp"
 
 void ExtractVariableValue(const std::vector<Variable> variables, std::vector<Token>& tokens);
 void CheckExpression(const std::vector<Token>& tokens, TokenTypes valueType, int start, int end,
