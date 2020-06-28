@@ -28,7 +28,17 @@ void Parser(std::vector<Token>& tokens)
 
 		if (tokens[0].type == TokenTypes::BOOL_TYPE)
 		{
-			for (std::size_t a = 3; a < tokens.size() - 1; ++a)
+			int d;
+			// character types don't support arithmetic
+			if (tokens[3].type == TokenTypes::OPEN_BRACKET && tokens[5].type == TokenTypes::CLOSE_BRACKET) {
+				d = 6;
+				if (tokens[4].type == TokenTypes::BOOL_TYPE) {
+					if (tokens[6].type == TokenTypes::INT_VALUE || tokens[6].type == TokenTypes::CHAR_VALUE) {
+						tokens[6] = Token{ TokenTypes::BOOL_VALUE, std::string(tokens[6].token == "0" ? "false" : "true") };
+					}
+				} else { std::cout << "Error - invalid cast"; exit(0); }
+			} else { d = 3; }
+			for (std::size_t a = d; a < tokens.size() - 1; ++a)
 			{
 				if (tokens[a].type == TokenTypes::NOT &&
 					tokens[a + 1].type == TokenTypes::BOOL_VALUE)
@@ -64,7 +74,7 @@ void Parser(std::vector<Token>& tokens)
 
 			CheckExpression(tokens, TokenTypes::BOOL_VALUE, 11, 12, "boolean");
 
-			std::vector<Token> temp(tokens.begin() + 3, tokens.end() - 1);
+			std::vector<Token> temp(tokens.begin() + d, tokens.end() - 1);
 			variables.push_back(Variable{ "bool", tokens[1].token, BoolParser(temp) });
 
 			std::cout << variables.back().type << ' ' << variables.back().name << ' ' <<
@@ -72,18 +82,26 @@ void Parser(std::vector<Token>& tokens)
 		}
 		else if (tokens[0].type == TokenTypes::CHAR_TYPE)
 		{
+			int d;
 			// character types don't support arithmetic
 			if (tokens[3].type == TokenTypes::OPEN_BRACKET && tokens[5].type == TokenTypes::CLOSE_BRACKET) {
+				d = 6;
 				if (tokens[4].type == TokenTypes::CHAR_TYPE) {
 					if (tokens[6].type == TokenTypes::INT_VALUE) {
-						char c = std::stoi(tokens[6].token);
-						tokens[6] = Token{ TokenTypes::CHAR_VALUE, std::string(1, c) };
+						int _int;
+						try {
+							_int = std::stoi(tokens[6].token);
+						} catch (std::exception& e) {
+							std::cout << "Error - attempted cast on value that is not numeric" << std::endl;
+							exit(0);
+						}
+						tokens[6] = Token{ TokenTypes::CHAR_VALUE, std::string(1, _int) };
 					} else if (tokens[6].type == TokenTypes::BOOL_VALUE) {
 						tokens[6] = Token{ TokenTypes::CHAR_VALUE, (tokens[6].token == "true") ? "1" : "0" };
 					}
-				} else { std::cout << "Error - invalid conversion"; exit(0); }
-			} else { int d = 3; }
-			if (tokens.size() > 5)
+				} else { std::cout << "Error - invalid cast"; exit(0); }
+			} else { d = 3; }
+			if (tokens.size() > d+2)
 			{
 				std::cout << "Error - invalid character expression";
 				exit(0);
@@ -92,7 +110,7 @@ void Parser(std::vector<Token>& tokens)
 			{
 				if (tokens[3].type == TokenTypes::CHAR_VALUE)
 				{
-					variables.push_back(Variable{ "char", tokens[1].token, tokens[3].token });
+					variables.push_back(Variable{ "char", tokens[1].token, tokens[d].token });
 				}
 				else
 				{
@@ -103,9 +121,21 @@ void Parser(std::vector<Token>& tokens)
 		}
 		else if (tokens[0].type == TokenTypes::INT_TYPE)
 		{
+			int d;
+			// character types don't support arithmetic
+			if (tokens[3].type == TokenTypes::OPEN_BRACKET && tokens[5].type == TokenTypes::CLOSE_BRACKET) {
+				d = 6;
+				if (tokens[4].type == TokenTypes::INT_TYPE) {
+					if (tokens[6].type == TokenTypes::CHAR_VALUE) {
+						tokens[6].type = TokenTypes::INT_VALUE;
+					} else if (tokens[6].type == TokenTypes::BOOL_VALUE) {
+						tokens[6] = Token{ TokenTypes::INT_VALUE, (tokens[6].token == "true") ? "1" : "0" };
+					}
+				} else { std::cout << "Error - invalid cast"; exit(0); }
+			} else { d = 3; }
 			CheckExpression(tokens, TokenTypes::INT_VALUE, 5, 9, "integer");
 			
-			std::vector<Token> temp(tokens.begin() + 3, tokens.end() - 1);
+			std::vector<Token> temp(tokens.begin() + d, tokens.end() - 1);
 			variables.push_back(Variable{ "int", tokens[1].token, MathParser(temp) });
 		}
 		else

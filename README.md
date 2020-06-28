@@ -5,13 +5,13 @@ An (interpreted?) programming language. Still in development. I've never made on
 
 The `source.night` file is where you write the code. But I don't like the extention `.night`. I'm looking for something shorter, but don't know what yet. I'm also working on a logo, but I'm really bad at designing. I'm thinking of something similar to `logo2.png`.
 
-Also, this language is very similar to the C family `(cool!)` since I'm not that creative, and I'm just starting out. Definitly going to change it down the road.
+Also, this language is very similar to the C family since I'm not that creative, and I'm just starting out. Definitly going to change it down the road.
 
 ---
 
 **Special Features (updated as progress continues):**
 
-- no implicit conversions (similar to Rust)
+- no conversions whatsoever, only casts
 - and that's it :)
 
 ---
@@ -26,7 +26,7 @@ bool correct = true;
 char letter = 'c';
 
 int integer = true; // error! true is not of type int!
-int integer = (int) true; // This works, because it's been converted.
+int integer = (int) true; // This works, because it's been casted.
 bool boolean = (bool) 9; // 9 is non-zero, so the value of boolean is true.
 ```
 
@@ -38,6 +38,6 @@ Hopefully in a couple days, I'll have my first working language done (albeit not
 
 **Edit:**
 
-Okay, so I did code and now the math parser works great! But the bool parser kinda works. It was harder than I thought. It works for simple things line `true && true`, but the problem is when you have brackets and use NOT like this: `!(true || !false)`. Umm... but it's good enought for now.
+Okay, so I did code and now the math parser works great! But the bool parser kinda works. It was harder than I thought. It works for simple things line `true && true`, but the problem is when you have brackets and use NOT like this: `!(true || !false)`. Umm... but it's good enough for now.
 
 So next up, the `print` thingy and fixing some minor bugs. Hopefully I can get that done by Sunday.

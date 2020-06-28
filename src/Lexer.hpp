@@ -71,11 +71,12 @@ void Lexer(const std::string& line)
 			check(tokens, token);
 			tokens.push_back(Token{ TokenTypes::TIMES, "*" });
 		}
-		else if (line[a] == '/') 
+		else if (line[a] == '/') {
 			if (line[a + 1] == '/') { break; }
 			check(tokens, token);
 			tokens.push_back(Token{ TokenTypes::DIVIDE, "/" });
-		} else if (line[a] == '%') {
+		}
+		else if (line[a] == '%') {
 			check(tokens, token);
 			tokens.push_back(Token{ TokenTypes::MOD, "%" });
 		}
