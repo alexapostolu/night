@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <iostream>
 
 #include "Token.hpp"
 #include "Variable.hpp"
@@ -72,6 +73,16 @@ void Parser(std::vector<Token>& tokens)
 		else if (tokens[0].type == TokenTypes::CHAR_TYPE)
 		{
 			// character types don't support arithmetic
+			if (tokens[3].type == TokenTypes::OPEN_BRACKET && tokens[5].type == TokenTypes::CLOSE_BRACKET) {
+				if (tokens[4].type == TokenTypes::CHAR_TYPE) {
+					if (tokens[6].type == TokenTypes::INT_VALUE) {
+						char c = std::stoi(tokens[6].token);
+						tokens[6] = Token{ TokenTypes::CHAR_VALUE, std::string(1, c) };
+					} else if (tokens[6].type == TokenTypes::BOOL_VALUE) {
+						tokens[6] = Token{ TokenTypes::CHAR_VALUE, (tokens[6].token == "true") ? "1" : "0" };
+					}
+				} else { std::cout << "Error - invalid conversion"; exit(0); }
+			} else { int d = 3; }
 			if (tokens.size() > 5)
 			{
 				std::cout << "Error - invalid character expression";

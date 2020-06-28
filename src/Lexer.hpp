@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "Token.hpp"
-#include "Parser.h"
+#include "Parser.hpp"
 
 void check(std::vector<Token>& tokens, std::string& token)
 {
@@ -75,8 +75,7 @@ void Lexer(const std::string& line)
 			if (line[a + 1] == '/') { break; }
 			check(tokens, token);
 			tokens.push_back(Token{ TokenTypes::DIVIDE, "/" });
-		}
-		else if (line[a] == '%') {
+		} else if (line[a] == '%') {
 			check(tokens, token);
 			tokens.push_back(Token{ TokenTypes::MOD, "%" });
 		}
@@ -121,7 +120,7 @@ void Lexer(const std::string& line)
 			tokens.push_back(Token{ TokenTypes::SEMICOLON, ";" });
 		}
 		else {
-			if ((line[a] == ' ' || line[a] == ';') && token != "")
+			if ((line[a] == ' ' || line[a] == ';') && !(token.empty()))
 			{
 				check(tokens, token);
 			}

@@ -3,7 +3,7 @@
 An (interpreted?) programming language. Still in development. I've never made one before, so I don't really know what I'm doing, but it should work out in the end.
 
 
-The `source.night` file is where you write the code. But I don't like the extention `.night`. I'm looking for something shorter, but don't know what yet. `(How about .n?)` `I'm also working on a logo, but I'm really bad at designing. I'm thinking of something similar to `logo2.png`. `(take a look at example-logo.png)`
+The `source.night` file is where you write the code. But I don't like the extention `.night`. I'm looking for something shorter, but don't know what yet. I'm also working on a logo, but I'm really bad at designing. I'm thinking of something similar to `logo2.png`.
 
 Also, this language is very similar to the C family `(cool!)` since I'm not that creative, and I'm just starting out. Definitly going to change it down the road.
 
@@ -27,6 +27,7 @@ char letter = 'c';
 
 int integer = true; // error! true is not of type int!
 int integer = (int) true; // This works, because it's been converted.
+bool boolean = (bool) 9; // 9 is non-zero, so the value of boolean is true.
 ```
 
 And umm... that's it :)
@@ -39,4 +40,4 @@ Hopefully in a couple days, I'll have my first working language done (albeit not
 
 Okay, so I did code and now the math parser works great! But the bool parser kinda works. It was harder than I thought. It works for simple things line `true && true`, but the problem is when you have brackets and use NOT like this: `!(true || !false)`. Umm... but it's good enought for now.
 
-So next up, the `print` thingy  and fixing some minor bugs. Hopefully I can get that done by Sunday.
+So next up, the `print` thingy and fixing some minor bugs. Hopefully I can get that done by Sunday.

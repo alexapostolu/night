@@ -33,7 +33,6 @@ enum class TokenTypes
 	PRINT,          // 19
 
 	COMPARE,        // 20
-	INCREMENT      // 21
 };
 
 struct Token {
