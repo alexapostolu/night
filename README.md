@@ -25,7 +25,8 @@ int answer = 5 + 3;
 bool correct = true;
 char letter = 'c';
 
-int integer = true; // error! also comments now work!
+int integer = true; // error! true is not of type int!
+int integer = (int) true; // This works, because it's been converted.
 ```
 
 And umm... that's it :)

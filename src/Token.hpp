@@ -4,19 +4,19 @@
 
 enum class TokenTypes
 {
-	BOOL_TYPE,      // 0
-	CHAR_TYPE,      // 1
-	INT_TYPE,       // 2
+	BOOL_TYPE,      //  0
+	CHAR_TYPE,      //  1
+	INT_TYPE,       //  2
 
-	VARIABLE,       // 3
+	VARIABLE,       //  3
 
-	ASSIGNMENT,     // 4
+	ASSIGNMENT,     //  4
 
-	PLUS,           // 5
-	MINUS,          // 6
-	TIMES,          // 7
-	DIVIDE,         // 8
-	MOD,            // 9
+	PLUS,           //  5
+	MINUS,          //  6
+	TIMES,          //  7
+	DIVIDE,         //  8
+	MOD,            //  9
 
 	NOT,            // 10
 	OR,             // 11
@@ -30,11 +30,14 @@ enum class TokenTypes
 	INT_VALUE,      // 17
 
 	SEMICOLON,      // 18
-	PRINT           // 19
+	PRINT,          // 19
+
+	COMPARE,        // 20
+	INCREMENT      // 21
 };
 
-struct Token
-{
+struct Token {
 	TokenTypes type;
 	std::string token;
 };
+

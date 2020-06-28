@@ -51,8 +51,13 @@ void Lexer(const std::string& line)
 
 	for (std::size_t a = 0; a < line.length(); ++a) {
 		if (line[a] == '=') {
-			check(tokens, token);
-			tokens.push_back(Token{ TokenTypes::ASSIGNMENT, "=" });
+			if (line[a + 1] == '=') {
+				check(tokens, token);
+				tokens.push_back(Token{ TokenTypes::COMPARE, "==" });
+			} else {
+				check(tokens, token);
+				tokens.push_back(Token{ TokenTypes::ASSIGNMENT, "=" });
+			}
 		}
 		else if (line[a] == '+') {
 			check(tokens, token);
