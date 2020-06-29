@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 
-#include "Lexer.h"
+#include "ExtractLine.h"
 
 int main()
 {
@@ -11,13 +11,11 @@ int main()
 	{
 		std::string line;
 		while (getline(code, line))
-		{
-			Lexer(line);
-		}
+			ExtractLine(line);
 	}
 	else
 	{
-		std::cout << "Error - cannot open file 'source.night'";
+		std::cout << "Error - file 'source.ngt' not found\n";
 		exit(0);
 	}
 }
