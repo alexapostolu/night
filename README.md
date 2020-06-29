@@ -30,7 +30,7 @@ char letter = 'c';
 
 int integer = true; // error!
 
-print "The answer is
+print "TheAnswerIs"; // an auto newline will be added
 print answer;
 ```
 
