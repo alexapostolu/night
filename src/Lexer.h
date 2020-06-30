@@ -44,11 +44,6 @@ void Check(std::vector<Token>& tokens, std::string& token)
 		tokens.push_back(Token{ TokenType::INT_VALUE, token });
 		token = "";
 	}
-	else if (token.length() > 3 && token[0] == '"' && token[token.length() - 1] == '"')
-	{
-		tokens.push_back(Token{ TokenType::STRING_VALUE, token.substr(1, token.length() - 2) });
-		token = "";
-	}
 	else if (token == "print")
 	{
 		tokens.push_back(Token{ TokenType::PRINT, "print" });
@@ -71,8 +66,30 @@ void Lexer(const std::string& line)
 	std::string token;
 	std::vector<Token> tokens;
 
+	bool isString = false;
 	for (std::size_t a = 0; a < line.length(); ++a)
 	{
+		if (line[a] == '"' && !isString)
+		{
+			Check(tokens, token);
+
+			isString = true;
+			continue;
+		}
+		else if (line[a] != '"' && isString)
+		{
+			token += line[a];
+			continue;
+		}
+		else if (line[a] == '"' && isString)
+		{
+			tokens.push_back(Token{ TokenType::STRING_VALUE, token });
+			token = "";
+
+			isString = false;
+			continue;
+		}
+		
 		if (line[a] == '=')
 		{
 			Check(tokens, token);
