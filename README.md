@@ -23,9 +23,10 @@ print "Hello World!";
 
 // this is a comment
 
-int answer = 5 + 3;
-bool correct = true;
+int answer = (5 + 3) * 2; // supports simple expressions
+bool correct = (true || false) && true; // supports boolean expressions
 char letter = 'c';
+str name = "dynamic " + "squid"; // supports string concatenation
 
 int integer = true; // error!
 
