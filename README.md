@@ -35,3 +35,5 @@ print answer;
 ```
 
 And that's it!
+
+I'm working on getting the strings to support non-letters including spaces.
