@@ -19,8 +19,7 @@ Also, this language is very similar to the C family since I'm not that creative,
 Right now, this language supports:
 
 ```.cpp
-print "HelloWorld"
-print "ThisLanguageOnlySupportsLettersForStrings"
+print "Hello World!";
 
 // this is a comment
 
@@ -30,10 +29,10 @@ char letter = 'c';
 
 int integer = true; // error!
 
-print "TheAnswerIs"; // an auto newline will be added
+print "The answer is: "; // an auto newline will be added
 print answer;
 ```
 
 And that's it!
 
-I'm working on getting the strings to support non-letters including spaces.
+Right now, I'm working on some more support for strings, and fixing some bugs with them.
