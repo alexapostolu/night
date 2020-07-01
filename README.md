@@ -36,4 +36,4 @@ print answer;
 
 And that's it!
 
-Right now, I'm working on some more support for strings, and fixing some bugs with them.
+Right now, I'm working on if statements, but that's gonna take a while...
