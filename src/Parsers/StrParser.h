@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <vector>
 
 #include "Token.h"
@@ -132,6 +133,8 @@ bool CheckStr(std::vector<Token>& expr, std::vector<Variable>& vars)
 			return false;
 		}
 	}
+
+	return true;
 }
 
 void EvaluateStrExpression(std::vector<std::string>& expr, std::size_t& index)
@@ -165,7 +168,7 @@ std::string StrParser(const std::vector<Token>& tokens)
 			{
 				if (expr[b] == "+")
 				{
-					EvaluateIntExpression(expr, b);
+					EvaluateStrExpression(expr, b);
 					closeBrakcetIndex -= 2;
 				}
 			}
@@ -176,10 +179,11 @@ std::string StrParser(const std::vector<Token>& tokens)
 			a = -1;
 		}
 	}
+
 	for (std::size_t a = 0; a < expr.size(); ++a)
 	{
 		if (expr[a] == "+")
-			EvaluateIntExpression(expr, a);
+			EvaluateStrExpression(expr, a);
 	}
 
 	return expr[0];
