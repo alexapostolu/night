@@ -36,4 +36,6 @@ print answer;
 
 And that's it!
 
-Right now, I'm working on if statements, but that's gonna take a while...
+**In progress**
+
+Right now, I'm working on if statements, and I got it so that everything inside the if statement is grouped together, so that's good. But that had me rework the entire line extraction thingy. Now all I have to do is the condition.
