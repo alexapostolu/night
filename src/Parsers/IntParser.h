@@ -1,42 +1,15 @@
 #pragma once
 
-#include <iostream>
 #include <vector>
 #include <string>
 
-#include "Token.h"
 #include "Variable.h"
+#include "Error.h"
+#include "Token.h"
 
-bool CheckInt(std::vector<Token>& expr, const std::vector<Variable>& vars)
+void CheckInt(int start, std::vector<Token>& expr, const std::vector<Variable>& vars, TokenType ss = TokenType::ASSIGNMENT)
 {
-	// turn variables into their values
-	for (std::size_t a = 3; a < expr.size() - 1; ++a)
-	{
-		if (expr[a].type == TokenType::VARIABLE)
-		{
-			bool definedVariable = false;
-			for (std::size_t b = 0; b < vars.size(); ++b)
-			{
-				if (expr[a].token == vars[b].name && vars[b].type == "int")
-				{
-					expr[a].type = TokenType::INT_VALUE;
-					expr[a].token = vars[b].value;
-
-					definedVariable = true;
-					break;
-				}
-			}
-
-			if (!definedVariable)
-			{
-				std::cout << "Error - undefined variable '" << expr[a].token << "'\n";
-				exit(0);
-			}
-		}
-	}
-
 	/* valid integer expressions:
-
 	 = 5 +          5 + 5          = ( 5          5 ) +
 	 = 5 ;          5 + (          = ( (          5 ) )
 	 + 5 )          ) + 5          + ( 5          5 ) ;
@@ -44,11 +17,10 @@ bool CheckInt(std::vector<Token>& expr, const std::vector<Variable>& vars)
 	 + 5 ;                         ( ( 5          ) ) )
 	 ( 5 +                         ( ( (          ) ) ;
 	 ( 5 )
-
 	 */
 
-	unsigned int openBracket = 0;
-	for (std::size_t a = 3; a < expr.size() - 1; ++a)
+	int openBracket = 0;
+	for (std::size_t a = start; a < expr.size() - 1; ++a)
 	{
 		if (expr[a].type == TokenType::OPEN_BRACKET)
 			openBracket += 1;
@@ -58,9 +30,9 @@ bool CheckInt(std::vector<Token>& expr, const std::vector<Variable>& vars)
 		// checks value
 		if (expr[a].type == TokenType::INT_VALUE)
 		{
-			if ((expr[a - 1].type != TokenType::ASSIGNMENT ||
-				expr[a + 1].type < TokenType::PLUS || expr[a + 1].type > TokenType::MOD) &&
-				(expr[a - 1].type != TokenType::ASSIGNMENT ||
+			if ((expr[a - 1].type != ss ||
+					expr[a + 1].type < TokenType::PLUS || expr[a + 1].type > TokenType::MOD) &&
+				(expr[a - 1].type != ss ||
 					expr[a + 1].type != TokenType::SEMICOLON)
 				&&
 				(expr[a - 1].type < TokenType::PLUS || expr[a - 1].type > TokenType::MOD ||
@@ -75,7 +47,7 @@ bool CheckInt(std::vector<Token>& expr, const std::vector<Variable>& vars)
 				(expr[a - 1].type != TokenType::OPEN_BRACKET ||
 					expr[a + 1].type != TokenType::CLOSE_BRACKET))
 			{
-				return false;
+				error("1invalid integer expression");
 			}
 		}
 		// checks operator
@@ -91,20 +63,20 @@ bool CheckInt(std::vector<Token>& expr, const std::vector<Variable>& vars)
 				(expr[a - 1].type != TokenType::CLOSE_BRACKET ||
 					expr[a + 1].type != TokenType::OPEN_BRACKET))
 			{
-				return false;
+				error("2invalid integer expression");
 			}
 		}
 		// checks open bracket
 		else if (expr[a].type == TokenType::OPEN_BRACKET)
 		{
-			if ((expr[a - 1].type != TokenType::ASSIGNMENT ||
+			if ((expr[a - 1].type != ss ||
 					expr[a + 1].type != TokenType::INT_VALUE) &&
-				(expr[a - 1].type != TokenType::ASSIGNMENT ||
+				(expr[a - 1].type != ss ||
 					expr[a + 1].type != TokenType::OPEN_BRACKET)
 				&&
-				(expr[a].type < TokenType::PLUS && expr[a].type > TokenType::MOD ||
+				(expr[a].type < TokenType::PLUS || expr[a].type > TokenType::MOD ||
 					expr[a + 1].type != TokenType::INT_VALUE) &&
-				(expr[a].type < TokenType::PLUS && expr[a].type > TokenType::MOD ||
+				(expr[a].type < TokenType::PLUS || expr[a].type > TokenType::MOD ||
 					expr[a + 1].type != TokenType::OPEN_BRACKET)
 				&&
 				(expr[a - 1].type != TokenType::OPEN_BRACKET ||
@@ -112,7 +84,7 @@ bool CheckInt(std::vector<Token>& expr, const std::vector<Variable>& vars)
 				(expr[a - 1].type != TokenType::OPEN_BRACKET ||
 					expr[a + 1].type != TokenType::OPEN_BRACKET))
 			{
-				return false;
+				error("3invalid integer expression");
 			}
 		}
 		// checks close bracket
@@ -132,27 +104,19 @@ bool CheckInt(std::vector<Token>& expr, const std::vector<Variable>& vars)
 				(expr[a - 1].type != TokenType::CLOSE_BRACKET ||
 					expr[a + 1].type != TokenType::SEMICOLON))
 			{
-				return false;
+				error("4invalid integer expression");
 			}
 		}
 		else
 		{
-			return false;
+			error("5invalid integer expression");
 		}
 	}
 
 	if (openBracket > 0)
-	{
-		std::cout << "Error - missing closing bracket\n";
-		exit(0);
-	}
+		error("closing bracket not found");
 	else if (openBracket < 0)
-	{
-		std::cout << "Error - missing opening bracket\n";
-		exit(0);
-	}
-
-	return true;
+		error("opening bracket not found");
 }
 
 void EvaluateIntExpression(std::vector<std::string>& expr, std::size_t& index)
@@ -165,8 +129,10 @@ void EvaluateIntExpression(std::vector<std::string>& expr, std::size_t& index)
 		expr[index - 1] = std::to_string(stoi(expr[index - 1]) * stoi(expr[index + 1]));
 	else if (expr[index] == "/")
 		expr[index - 1] = std::to_string(stoi(expr[index - 1]) / stoi(expr[index + 1]));
-	else
+	else if (expr[index] == "%")
 		expr[index - 1] = std::to_string(stoi(expr[index - 1]) % stoi(expr[index + 1]));
+	else
+		error("Did you forget to add an operator?");
 
 	expr.erase(expr.begin() + index);
 	expr.erase(expr.begin() + index);
