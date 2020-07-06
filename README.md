@@ -16,26 +16,10 @@ Also, this language is very similar to the C family since I'm not that creative,
 
 **Language features**
 
-Right now, this language supports:
+You can check the `source.night` file for what the language currently supports. It's really basic stuff. Variable initialization, a `print` thingy, and simple expressions.
 
-```.cpp
-print "Hello World!";
-
-// this is a comment
-
-int answer = (5 + 3) * 2; // supports simple expressions
-bool correct = (true || false) && true; // supports boolean expressions
-char letter = 'c';
-str name = "dynamic " + "squid"; // supports string concatenation
-
-int integer = true; // error!
-
-print "The answer is: "; // an auto newline will be added
-print answer;
-```
-
-And that's it!
+Edit: I just added a new feature, if statements!
 
 **In progress**
 
-Right now, I'm working on if statements, and I got it so that everything inside the if statement is grouped together, so that's good. But that had me rework the entire line extraction thingy. Now all I have to do is the condition.
+A complete rework of the language and code.
