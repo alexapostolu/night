@@ -1,1 +1,26 @@
-print "Hello World!"
+print "Hello World!";
+
+// this is a comment
+
+char letter = 'c';
+int number = (2 + 3) * 5; // supports math expressions
+bool check = !(true & false); // supprots boolean expressions
+str name = "Dynamic " + "Squid"; // string concatenation!
+
+letter = 's'; // s for squid
+number = number + 10;
+
+print "The answer " + "is:";
+print number + 2;
+
+if (true) // I don't have a comparison operator yet :(
+{
+    print "That is true!"; // auto newline added
+    
+    if (false) // nested if statements!
+    {
+        print "That is false!";
+    }
+}
+// no else statement yet :(
+
