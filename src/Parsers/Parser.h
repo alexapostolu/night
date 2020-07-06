@@ -130,7 +130,7 @@ void Parser(std::vector<Token>& tokens)
 		}
 		else if (variables[index].type == "char" && tokens[3].type == TokenType::CHAR_VALUE)
 		{
-			variables.push_back(Variable{ "char", tokens[1].token, tokens[3].token });
+			variables[index].value = tokens[2].token;
 		}
 		else if (variables[index].type == "int")
 		{
