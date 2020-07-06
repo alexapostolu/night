@@ -1,49 +1,36 @@
 #pragma once
 
-#include <iostream>
 #include <string>
 
 #include "Lexer.h"
 
-void ExtractLine(std::string& line)
+#include "Error.h"
+
+void ExtractLine(std::string& codeLine)
 {
-	// removes comments
-	std::size_t commentIndex = line.find("//");
-	if (commentIndex != std::string::npos)
-		line.erase(line.begin() + commentIndex, line.end());
+	int openCurly = 0;
 
-	if (line.empty())
-		return;
-
-	// removes whitespace
-	for (std::size_t a = line.length() - 1; line[a] == ' ' && a >= 0; --a)
+	std::string line = "";
+	for (std::size_t a = 0; a < codeLine.length(); ++a)
 	{
-		line.erase(line.begin() + a);
+		line += (codeLine[a] == '\t' ? ' ' : codeLine[a]);
 
-		if (a == 0)
-			break;
-	}
-
-	// checks for semicolons
-
-	if (!line.empty() && line.back() != ';')
-	{
-		std::cout << "Error - missing semicolon\n";
-		exit(0);
-	}
-
-	for (std::size_t a = 0; a < line.length(); ++a)
-	{
-		if (line[a] == ';' && a == line.length() - 1)
+		if (codeLine[a] == '{')
+			openCurly += 1;
+		else if (codeLine[a] == '}')
+			openCurly -= 1;
+		
+		if ((codeLine[a] == ';' && openCurly == 0) || (codeLine[a] == '}' && openCurly == 0))
 		{
 			Lexer(line);
-		}
-		else if (line[a] == ';' && a != line.length() - 1)
-		{
-			Lexer(line.substr(0, a + 1));
-			line.erase(line.begin(), line.begin() + a + 1);
-
-			a = -1;
+			line = "";
 		}
 	}
+
+	if (openCurly > 0)
+		error("symbol '}' not found");
+	else if (openCurly < 0)
+		error("symbol '{' not found");
+	else if (line != "")
+		error("symbol ';' or '}' not found");
 }
