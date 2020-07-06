@@ -4,39 +4,13 @@
 #include <vector>
 #include <string>
 
-#include "Token.h"
 #include "Variable.h"
+#include "Error.h"
+#include "Token.h"
 
-bool CheckBool(std::vector<Token>& expr, const std::vector<Variable>& vars)
+void CheckBool(int start, std::vector<Token>& expr, const std::vector<Variable>& vars, TokenType ss = TokenType::ASSIGNMENT, int end = 1)
 {
-	// turn variables into their values
-	for (std::size_t a = 3; a < expr.size() - 1; ++a)
-	{
-		if (expr[a].type == TokenType::VARIABLE)
-		{
-			bool definedVariable = false;
-			for (std::size_t b = 0; b < vars.size(); ++b)
-			{
-				if (expr[a].token == vars[b].name && vars[b].type == "bool")
-				{
-					expr[a].type = TokenType::BOOL_VALUE;
-					expr[a].token = vars[b].value;
-
-					definedVariable = true;
-					break;
-				}
-			}
-
-			if (!definedVariable)
-			{
-				std::cout << "Error - undefined variable '" << expr[a].token << "'\n";
-				exit(0);
-			}
-		}
-	}
-
 	/* valid boolean expressions:
-
 	 =  true &&          true && true          =  ( true          true ) &&          =  ! true
 	 =  true ;           true && (             =  ( (             true ) )           =  ! (
 	 && true )           )    && true          && ( true          true ) ;           (  ! true
@@ -44,11 +18,10 @@ bool CheckBool(std::vector<Token>& expr, const std::vector<Variable>& vars)
 	 && true ;                                 (  ( true          )    ) )           && ! true
 	 (  true &&                                (  ( (             )    ) ;           && ! (
 	 (  true )
-
 	 */
 
-	unsigned int openBracket = 0;
-	for (std::size_t a = 3; a < expr.size() - 1; ++a)
+	int openBracket = 0;
+	for (std::size_t a = start; a < expr.size() - end; ++a)
 	{
 		if (expr[a].type == TokenType::OPEN_BRACKET)
 			openBracket += 1;
@@ -58,9 +31,9 @@ bool CheckBool(std::vector<Token>& expr, const std::vector<Variable>& vars)
 		// checks value
 		if (expr[a].type == TokenType::BOOL_VALUE)
 		{
-			if ((expr[a - 1].type != TokenType::ASSIGNMENT ||
+			if ((expr[a - 1].type != ss ||
 					expr[a + 1].type < TokenType::OR || expr[a + 1].type > TokenType::AND) &&
-				(expr[a - 1].type != TokenType::ASSIGNMENT ||
+				(expr[a - 1].type != ss ||
 					expr[a + 1].type != TokenType::SEMICOLON)
 				&&
 				(expr[a - 1].type < TokenType::OR || expr[a - 1].type > TokenType::AND ||
@@ -76,7 +49,7 @@ bool CheckBool(std::vector<Token>& expr, const std::vector<Variable>& vars)
 					expr[a + 1].type != TokenType::CLOSE_BRACKET))
 			{
 				if (expr[a - 1].type != TokenType::NOT && expr[a + 1].type != TokenType::NOT)
-					return false;
+					error("1invalid boolean expression");
 			}
 		}
 		// checks OR and AND operator
@@ -93,20 +66,20 @@ bool CheckBool(std::vector<Token>& expr, const std::vector<Variable>& vars)
 					expr[a + 1].type != TokenType::OPEN_BRACKET))
 			{
 				if (expr[a - 1].type != TokenType::NOT && expr[a + 1].type != TokenType::NOT)
-					return false;
+					error("2invalid boolean expression");
 			}
 		}
 		// checks open bracket
 		else if (expr[a].type == TokenType::OPEN_BRACKET)
 		{
-			if ((expr[a - 1].type != TokenType::ASSIGNMENT ||
+			if ((expr[a - 1].type != ss ||
 					expr[a + 1].type != TokenType::BOOL_VALUE) &&
-				(expr[a - 1].type != TokenType::ASSIGNMENT ||
+				(expr[a - 1].type != ss ||
 					expr[a + 1].type != TokenType::OPEN_BRACKET)
 				&&
-				(expr[a].type < TokenType::OR && expr[a].type > TokenType::AND ||
+				(expr[a].type < TokenType::OR || expr[a].type > TokenType::AND ||
 					expr[a + 1].type != TokenType::BOOL_VALUE) &&
-				(expr[a].type < TokenType::OR && expr[a].type > TokenType::AND ||
+				(expr[a].type < TokenType::OR || expr[a].type > TokenType::AND ||
 					expr[a + 1].type != TokenType::OPEN_BRACKET)
 				&&
 				(expr[a - 1].type != TokenType::OPEN_BRACKET ||
@@ -115,7 +88,7 @@ bool CheckBool(std::vector<Token>& expr, const std::vector<Variable>& vars)
 					expr[a + 1].type != TokenType::OPEN_BRACKET))
 			{
 				if (expr[a - 1].type != TokenType::NOT && expr[a + 1].type != TokenType::NOT)
-					return false;
+					error("3invalid boolean expression");
 			}
 		}
 		// checks close bracket
@@ -136,15 +109,15 @@ bool CheckBool(std::vector<Token>& expr, const std::vector<Variable>& vars)
 					expr[a + 1].type != TokenType::SEMICOLON))
 			{
 				if (expr[a - 1].type != TokenType::NOT && expr[a + 1].type != TokenType::NOT)
-					return false;
+					error("4invalid boolean expression");
 			}
 		}
 		// checks NOT operator
 		else if (expr[a].type == TokenType::NOT)
 		{
-			if ((expr[a - 1].type != TokenType::ASSIGNMENT ||
+			if ((expr[a - 1].type != ss ||
 					expr[a + 1].type != TokenType::BOOL_VALUE) &&
-				(expr[a - 1].type != TokenType::ASSIGNMENT ||
+				(expr[a - 1].type != ss ||
 					expr[a + 1].type != TokenType::OPEN_BRACKET)
 				&&
 				(expr[a - 1].type != TokenType::OPEN_BRACKET ||
@@ -157,27 +130,19 @@ bool CheckBool(std::vector<Token>& expr, const std::vector<Variable>& vars)
 				(expr[a - 1].type < TokenType::OR || expr[a - 1].type > TokenType::AND ||
 					expr[a + 1].type != TokenType::OPEN_BRACKET))
 			{
-				return false;
+				error("5invalid boolean expression");
 			}
 		}
 		else
 		{
-			return false;
+			error("6invalid boolean expression");
 		}
 	}
 
 	if (openBracket > 0)
-	{
-		std::cout << "Error - missing closing bracket\n";
-		exit(0);
-	}
+		error("closing bracket not found");
 	else if (openBracket < 0)
-	{
-		std::cout << "Error - missing opening bracket\n";
-		exit(0);
-	}
-
-	return true;
+		error("opening bracket not found");
 }
 
 void EvaluateBoolExpression(std::vector<std::string>& expr, std::size_t& index)
@@ -189,12 +154,16 @@ void EvaluateBoolExpression(std::vector<std::string>& expr, std::size_t& index)
 		else
 			expr[index - 1] = "false";
 	}
-	else
+	else if (expr[index] == "&")
 	{
 		if (expr[index - 1] == "true" && expr[index + 1] == "true")
 			expr[index - 1] = "true";
 		else
 			expr[index - 1] = "false";
+	}
+	else
+	{
+		error("Did you forget to add a boolean operator?");
 	}
 
 	expr.erase(expr.begin() + index);
