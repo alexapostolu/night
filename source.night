@@ -4,7 +4,7 @@ print "Hello World!";
 
 char letter = 'c';
 int number = (2 + 3) * 5; // supports math expressions
-bool check = !(true & false); // supprots boolean expressions
+bool check = !(true & false); // supprots boolean expressions - '|' is OR, '&' is AND, and '!' is NOT
 str name = "Dynamic " + "Squid"; // string concatenation!
 
 letter = 's'; // s for squid
@@ -13,7 +13,7 @@ number = number + 10;
 print "The answer " + "is:";
 print number + 2;
 
-if (true) // I don't have a comparison operator yet :(
+if (true | false) // I don't have a comparison operator yet :(
 {
     print "That is true!"; // auto newline added
     
@@ -23,4 +23,3 @@ if (true) // I don't have a comparison operator yet :(
     }
 }
 // no else statement yet :(
-
