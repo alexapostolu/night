@@ -4,8 +4,10 @@
 #include <string>
 #include <vector>
 
-#include "Token.h"
 #include "Parser.h"
+
+#include "Error.h"
+#include "Token.h"
 
 void Check(std::vector<Token>& tokens, std::string& token)
 {
@@ -29,19 +31,30 @@ void Check(std::vector<Token>& tokens, std::string& token)
 		tokens.push_back(Token{ TokenType::STRING_TYPE, "str" });
 		token = "";
 	}
+
 	else if (token.length() == 3 && token[0] == '\'' && token[2] == '\'')
 	{
 		tokens.push_back(Token{ TokenType::CHAR_VALUE, std::string(1, token[1]) });
 		token = "";
 	}
-	else if (token == "false" || token == "true")
+	else if (token == "true")
 	{
-		tokens.push_back(Token{ TokenType::BOOL_VALUE, token });
+		tokens.push_back(Token{ TokenType::BOOL_VALUE, "true" });
+		token = "";
+	}
+	else if (token == "false")
+	{
+		tokens.push_back(Token{ TokenType::BOOL_VALUE, "false" });
 		token = "";
 	}
 	else if (std::regex_match(token, std::regex("[0-9]+")))
 	{
 		tokens.push_back(Token{ TokenType::INT_VALUE, token });
+		token = "";
+	}
+	else if (token == "if")
+	{
+		tokens.push_back(Token{ TokenType::IF, "if" });
 		token = "";
 	}
 	else if (token == "print")
@@ -56,14 +69,13 @@ void Check(std::vector<Token>& tokens, std::string& token)
 	}
 	else if (token != "")
 	{
-		std::cout << "Error - undefined token '" << token << "'\n";
-		exit(0);
+		error("token '" + token + "' undefined");
 	}
 }
 
 void Lexer(const std::string& line)
 {
-	std::string token;
+	std::string token = "";
 	std::vector<Token> tokens;
 
 	bool isString = false;
@@ -89,7 +101,7 @@ void Lexer(const std::string& line)
 			isString = false;
 			continue;
 		}
-		
+
 		if (line[a] == '=')
 		{
 			Check(tokens, token);
@@ -143,7 +155,18 @@ void Lexer(const std::string& line)
 		else if (line[a] == ')')
 		{
 			Check(tokens, token);
+			
 			tokens.push_back(Token{ TokenType::CLOSE_BRACKET, ")" });
+		}
+		else if (line[a] == '{')
+		{
+			Check(tokens, token);
+			tokens.push_back(Token{ TokenType::OPEN_CURLY, "{" });
+		}
+		else if (line[a] == '}')
+		{
+			Check(tokens, token);
+			tokens.push_back(Token{ TokenType::CLOSE_CURLY, "}" });
 		}
 		else if (line[a] == ';')
 		{
@@ -155,7 +178,7 @@ void Lexer(const std::string& line)
 			if ((line[a] == ' ' || line[a] == ';') && token != "")
 				Check(tokens, token);
 			else if (line[a] != ' ')
-					token += line[a];
+				token += line[a];
 		}
 	}
 
