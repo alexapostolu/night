@@ -22,4 +22,4 @@ Edit: I just added a new feature, if statements!
 
 **In progress**
 
-A complete rework of the language and code.
+A complete rework of the language and code. Also I want to add functions.
