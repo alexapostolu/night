@@ -1,21 +1,26 @@
 #include <fstream>
-#include <iostream>
 #include <string>
 
+#include "CleanLine.h"
 #include "ExtractLine.h"
+
+#include "Error.h"
 
 int main()
 {
-	std::ifstream code("source.night");
-	if (code.is_open())
+	std::ifstream codeFile("source.night");
+	if (codeFile.is_open())
 	{
-		std::string line;
-		while (getline(code, line))
-			ExtractLine(line);
+		std::string fileLine = "", codeLine = "";
+		while (getline(codeFile, fileLine))
+			CleanLine(fileLine, codeLine);
+
+		ExtractLine(codeLine);
+
+		codeFile.close();
 	}
 	else
 	{
-		std::cout << "Error - file 'source.ngt' not found\n";
-		exit(0);
+		error("source file 'source.night' not found");
 	}
 }
