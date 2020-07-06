@@ -31,7 +31,10 @@ enum class TokenType
 	OPEN_BRACKET,
 	CLOSE_BRACKET,
 
-	// casts?
+	OPEN_CURLY,
+	CLOSE_CURLY,
+
+	IF,
 
 	PRINT,
 
