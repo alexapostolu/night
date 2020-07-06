@@ -1,41 +1,14 @@
 #pragma once
 
-#include <iostream>
 #include <vector>
 
-#include "Token.h"
 #include "Variable.h"
+#include "Error.h"
+#include "Token.h"
 
-bool CheckStr(std::vector<Token>& expr, std::vector<Variable>& vars)
+void CheckStr(int check, std::vector<Token>& expr, std::vector<Variable>& vars, TokenType ss = TokenType::ASSIGNMENT)
 {
-	// turn variables into their values
-	for (std::size_t a = 3; a < expr.size() - 1; ++a)
-	{
-		if (expr[a].type == TokenType::VARIABLE)
-		{
-			bool definedVariable = false;
-			for (std::size_t b = 0; b < vars.size(); ++b)
-			{
-				if (expr[a].token == vars[b].name && vars[b].type == "str")
-				{
-					expr[a].type = TokenType::STRING_VALUE;
-					expr[a].token = vars[b].value;
-
-					definedVariable = true;
-					break;
-				}
-			}
-
-			if (!definedVariable)
-			{
-				std::cout << "Error - undefined variable '" << expr[a].token << "'\n";
-				exit(0);
-			}
-		}
-	}
-
 	/* valid string expressions:
-
 	 = str +          str + str            = ( str          str ) +
 	 = str ;          str + (              = ( (            str ) )
 	 + str )          )   + str            + ( str          str ) ;
@@ -43,17 +16,22 @@ bool CheckStr(std::vector<Token>& expr, std::vector<Variable>& vars)
 	 + str ;                               ( ( str          )   ) )
 	 ( str +                               ( ( (            )   ) ;
 	 ( str )
-
 	 */
 
-	for (std::size_t a = 3; a < expr.size() - 1; ++a)
+	int openBracket = 0;
+	for (std::size_t a = check; a < expr.size() - 1; ++a)
 	{
+		if (expr[a].type == TokenType::OPEN_BRACKET)
+			openBracket += 1;
+		else if (expr[a].type == TokenType::CLOSE_BRACKET)
+			openBracket -= 1;
+
 		// checks value
 		if (expr[a].type == TokenType::STRING_VALUE)
 		{
-			if ((expr[a - 1].type != TokenType::ASSIGNMENT ||
+			if ((expr[a - 1].type != ss ||
 					expr[a + 1].type != TokenType::PLUS) &&
-				(expr[a - 1].type != TokenType::ASSIGNMENT ||
+				(expr[a - 1].type != ss ||
 					expr[a + 1].type != TokenType::SEMICOLON)
 				&&
 				(expr[a - 1].type != TokenType::PLUS ||
@@ -68,14 +46,14 @@ bool CheckStr(std::vector<Token>& expr, std::vector<Variable>& vars)
 				(expr[a - 1].type != TokenType::OPEN_BRACKET ||
 					expr[a + 1].type != TokenType::CLOSE_BRACKET))
 			{
-				return false;
+				error("invalid string expression");
 			}
 		}
 		// checks PLUS operator
 		else if (expr[a].type == TokenType::PLUS)
 		{
 			if ((expr[a - 1].type != TokenType::STRING_VALUE ||
-				expr[a + 1].type != TokenType::STRING_VALUE) &&
+					expr[a + 1].type != TokenType::STRING_VALUE) &&
 				(expr[a - 1].type != TokenType::STRING_VALUE ||
 					expr[a + 1].type != TokenType::OPEN_BRACKET)
 				&&
@@ -84,15 +62,15 @@ bool CheckStr(std::vector<Token>& expr, std::vector<Variable>& vars)
 				(expr[a - 1].type != TokenType::CLOSE_BRACKET ||
 					expr[a + 1].type != TokenType::OPEN_BRACKET))
 			{
-				return false;
+				error("invalid string expression");
 			}
 		}
 		// check open bracket
 		else if (expr[a].type == TokenType::OPEN_BRACKET)
 		{
-			if ((expr[a - 1].type != TokenType::ASSIGNMENT ||
-				expr[a + 1].type != TokenType::STRING_VALUE) &&
-				(expr[a - 1].type != TokenType::ASSIGNMENT ||
+			if ((expr[a - 1].type != ss ||
+					expr[a + 1].type != TokenType::STRING_VALUE) &&
+				(expr[a - 1].type != ss ||
 					expr[a + 1].type != TokenType::OPEN_BRACKET)
 				&&
 				(expr[a].type != TokenType::PLUS ||
@@ -105,14 +83,14 @@ bool CheckStr(std::vector<Token>& expr, std::vector<Variable>& vars)
 				(expr[a - 1].type != TokenType::OPEN_BRACKET ||
 					expr[a + 1].type != TokenType::OPEN_BRACKET))
 			{
-				return false;
+				error("invalid string expression");
 			}
 		}
 		// checks close bracket
 		else if (expr[a].type == TokenType::CLOSE_BRACKET)
 		{
 			if ((expr[a - 1].type != TokenType::STRING_VALUE ||
-				expr[a + 1].type != TokenType::PLUS) &&
+					expr[a + 1].type != TokenType::PLUS) &&
 				(expr[a - 1].type != TokenType::STRING_VALUE ||
 					expr[a + 1].type != TokenType::CLOSE_BRACKET) &&
 				(expr[a - 1].type != TokenType::STRING_VALUE ||
@@ -125,16 +103,19 @@ bool CheckStr(std::vector<Token>& expr, std::vector<Variable>& vars)
 				(expr[a - 1].type != TokenType::CLOSE_BRACKET ||
 					expr[a + 1].type != TokenType::SEMICOLON))
 			{
-				return false;
+				error("invalid string expression");
 			}
 		}
 		else
 		{
-			return false;
+			error("invalid string expression");
 		}
 	}
 
-	return true;
+	if (openBracket > 0)
+		error("closing bracket not found");
+	else if (openBracket < 0)
+		error("opening bracket not found");
 }
 
 void EvaluateStrExpression(std::vector<std::string>& expr, std::size_t& index)
