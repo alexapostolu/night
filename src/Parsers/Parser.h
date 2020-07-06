@@ -128,7 +128,7 @@ void Parser(std::vector<Token>& tokens)
 			std::vector<Token> temp(tokens.begin() + 1, tokens.end());
 			variables[index].value = BoolParser(temp);
 		}
-		else if (variables[index].type == "char" && tokens[3].type == TokenType::CHAR_VALUE)
+		else if (variables[index].type == "char" && tokens[2].type == TokenType::CHAR_VALUE)
 		{
 			variables[index].value = tokens[2].token;
 		}
