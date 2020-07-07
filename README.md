@@ -57,8 +57,8 @@ Notice how there must be a space after the `int` keyword.
 5. Evalutate the expression down to a single token
 
 ```cpp
-if (true & true)
-if (true)
+if (true & true) {} // I use recursion to get the if statements to work
+if (true) {}
 
 int a = 2 + 3;
 int a = 5;
