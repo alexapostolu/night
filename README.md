@@ -24,6 +24,8 @@ Edit: I just added a new feature, if statements!
 
 A complete rework of the language and code. Also I want to add functions. And if I do, then in theory, I could use my language, to create my language (well, pre-defined functions at least)...
 
+You can take a look at it in the `newer-version` branch. I'm basically working on using a `try-catch` statement to detect invalid expressions, instead of my old way which was to iterate over the entire expression checking each token individually. I'm also implementing a cleaner parser.
+
 ---
 
 **How it works**
