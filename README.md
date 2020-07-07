@@ -23,3 +23,48 @@ Edit: I just added a new feature, if statements!
 **In progress**
 
 A complete rework of the language and code. Also I want to add functions. And if I do, then in theory, I could use my language, to create my language (well, pre-defined functions at least)...
+
+---
+
+**How it works**
+
+1. Take in a line of input
+
+2. Separate line based of semicolons. Merge the second line with the first if it has to
+
+That basically allows this:
+
+```cpp
+int a = 2 +
+
+3;
+```
+
+To be perfectly valid code.
+
+3. Send it off to the lexer to be tokenized
+
+The lexer will ignore whitespace, expect for keywords:
+
+```cpp
+int a=2+3;
+```
+
+Notice how there must be a space after the `int` keyword.
+
+4. Send it off to the parser
+
+5. Evalutate the expression down to a single token
+
+```cpp
+if (true & true)
+if (true)
+
+int a = 2 + 3;
+int a = 5;
+
+print "Hello " + "World!";
+print "Hello World!";
+```
+
+6. Do stuff idk
