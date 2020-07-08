@@ -8,166 +8,47 @@
 #include "Error.h"
 #include "Token.h"
 
-void CheckBool(int start, std::vector<Token>& expr, const std::vector<Variable>& vars, TokenType ss = TokenType::ASSIGNMENT, int end = 1)
-{
-	/* valid boolean expressions:
-	 =  true &&          true && true          =  ( true          true ) &&          =  ! true
-	 =  true ;           true && (             =  ( (             true ) )           =  ! (
-	 && true )           )    && true          && ( true          true ) ;           (  ! true
-	 && true &&          )    && (             && ( (             )    ) &&          (  ! (
-	 && true ;                                 (  ( true          )    ) )           && ! true
-	 (  true &&                                (  ( (             )    ) ;           && ! (
-	 (  true )
-	 */
-
-	int openBracket = 0;
-	for (std::size_t a = start; a < expr.size() - end; ++a)
-	{
-		if (expr[a].type == TokenType::OPEN_BRACKET)
-			openBracket += 1;
-		else if (expr[a].type == TokenType::CLOSE_BRACKET)
-			openBracket -= 1;
-
-		// checks value
-		if (expr[a].type == TokenType::BOOL_VALUE)
-		{
-			if ((expr[a - 1].type != ss ||
-					expr[a + 1].type < TokenType::OR || expr[a + 1].type > TokenType::AND) &&
-				(expr[a - 1].type != ss ||
-					expr[a + 1].type != TokenType::SEMICOLON)
-				&&
-				(expr[a - 1].type < TokenType::OR || expr[a - 1].type > TokenType::AND ||
-					expr[a + 1].type != TokenType::CLOSE_BRACKET) &&
-				(expr[a - 1].type < TokenType::OR || expr[a - 1].type > TokenType::AND ||
-					expr[a + 1].type < TokenType::OR || expr[a + 1].type > TokenType::AND) &&
-				(expr[a - 1].type < TokenType::OR || expr[a - 1].type > TokenType::AND ||
-					expr[a + 1].type != TokenType::SEMICOLON)
-				&&
-				(expr[a - 1].type != TokenType::OPEN_BRACKET ||
-					expr[a + 1].type < TokenType::OR || expr[a + 1].type > TokenType::AND) &&
-				(expr[a - 1].type != TokenType::OPEN_BRACKET ||
-					expr[a + 1].type != TokenType::CLOSE_BRACKET))
-			{
-				if (expr[a - 1].type != TokenType::NOT && expr[a + 1].type != TokenType::NOT)
-					error("1invalid boolean expression");
-			}
-		}
-		// checks OR and AND operator
-		else if (expr[a].type >= TokenType::OR && expr[a].type <= TokenType::AND)
-		{
-			if ((expr[a - 1].type != TokenType::BOOL_VALUE ||
-					expr[a + 1].type != TokenType::BOOL_VALUE) &&
-				(expr[a - 1].type != TokenType::BOOL_VALUE ||
-					expr[a + 1].type != TokenType::OPEN_BRACKET)
-				&&
-				(expr[a - 1].type != TokenType::CLOSE_BRACKET ||
-					expr[a + 1].type != TokenType::BOOL_VALUE) &&
-				(expr[a - 1].type != TokenType::CLOSE_BRACKET ||
-					expr[a + 1].type != TokenType::OPEN_BRACKET))
-			{
-				if (expr[a - 1].type != TokenType::NOT && expr[a + 1].type != TokenType::NOT)
-					error("2invalid boolean expression");
-			}
-		}
-		// checks open bracket
-		else if (expr[a].type == TokenType::OPEN_BRACKET)
-		{
-			if ((expr[a - 1].type != ss ||
-					expr[a + 1].type != TokenType::BOOL_VALUE) &&
-				(expr[a - 1].type != ss ||
-					expr[a + 1].type != TokenType::OPEN_BRACKET)
-				&&
-				(expr[a].type < TokenType::OR || expr[a].type > TokenType::AND ||
-					expr[a + 1].type != TokenType::BOOL_VALUE) &&
-				(expr[a].type < TokenType::OR || expr[a].type > TokenType::AND ||
-					expr[a + 1].type != TokenType::OPEN_BRACKET)
-				&&
-				(expr[a - 1].type != TokenType::OPEN_BRACKET ||
-					expr[a + 1].type != TokenType::BOOL_VALUE) &&
-				(expr[a - 1].type != TokenType::OPEN_BRACKET ||
-					expr[a + 1].type != TokenType::OPEN_BRACKET))
-			{
-				if (expr[a - 1].type != TokenType::NOT && expr[a + 1].type != TokenType::NOT)
-					error("3invalid boolean expression");
-			}
-		}
-		// checks close bracket
-		else if (expr[a].type == TokenType::CLOSE_BRACKET)
-		{
-			if ((expr[a - 1].type != TokenType::BOOL_VALUE ||
-					expr[a + 1].type < TokenType::OR || expr[a + 1].type > TokenType::AND) &&
-				(expr[a - 1].type != TokenType::BOOL_VALUE ||
-					expr[a + 1].type != TokenType::CLOSE_BRACKET) &&
-				(expr[a - 1].type != TokenType::BOOL_VALUE ||
-					expr[a + 1].type != TokenType::SEMICOLON)
-				&&
-				(expr[a - 1].type != TokenType::CLOSE_BRACKET ||
-					expr[a + 1].type < TokenType::OR || expr[a + 1].type > TokenType::AND) &&
-				(expr[a - 1].type != TokenType::CLOSE_BRACKET ||
-					expr[a + 1].type != TokenType::CLOSE_BRACKET) &&
-				(expr[a - 1].type != TokenType::CLOSE_BRACKET ||
-					expr[a + 1].type != TokenType::SEMICOLON))
-			{
-				if (expr[a - 1].type != TokenType::NOT && expr[a + 1].type != TokenType::NOT)
-					error("4invalid boolean expression");
-			}
-		}
-		// checks NOT operator
-		else if (expr[a].type == TokenType::NOT)
-		{
-			if ((expr[a - 1].type != ss ||
-					expr[a + 1].type != TokenType::BOOL_VALUE) &&
-				(expr[a - 1].type != ss ||
-					expr[a + 1].type != TokenType::OPEN_BRACKET)
-				&&
-				(expr[a - 1].type != TokenType::OPEN_BRACKET ||
-					expr[a + 1].type != TokenType::BOOL_VALUE) &&
-				(expr[a - 1].type != TokenType::OPEN_BRACKET ||
-					expr[a + 1].type != TokenType::OPEN_BRACKET)
-				&&
-				(expr[a - 1].type < TokenType::OR || expr[a - 1].type > TokenType::AND ||
-					expr[a + 1].type != TokenType::BOOL_VALUE) &&
-				(expr[a - 1].type < TokenType::OR || expr[a - 1].type > TokenType::AND ||
-					expr[a + 1].type != TokenType::OPEN_BRACKET))
-			{
-				error("5invalid boolean expression");
-			}
-		}
-		else
-		{
-			error("6invalid boolean expression");
-		}
-	}
-
-	if (openBracket > 0)
-		error("closing bracket not found");
-	else if (openBracket < 0)
-		error("opening bracket not found");
-}
-
 void EvaluateBoolExpression(std::vector<std::string>& expr, std::size_t& index)
 {
-	if (expr[index] == "|")
+	try
 	{
-		if (expr[index - 1] == "true" || expr[index + 1] == "true")
-			expr[index - 1] = "true";
+		if (expr[index] == "|")
+		{
+			if (expr.at(index - 1) == "true" || expr.at(index + 1) == "true")
+				expr.at(index - 1) = "true";
+			else
+				expr.at(index - 1) = "false";
+		}
+		else if (expr[index] == "&")
+		{
+			if (expr.at(index - 1) == "true" && expr.at(index + 1) == "true")
+				expr.at(index - 1) = "true";
+			else
+				expr.at(index - 1) = "false";
+		}
 		else
-			expr[index - 1] = "false";
+		{
+			error("invalid boolean expression");
+		}
 	}
-	else if (expr[index] == "&")
+	catch (const std::out_of_range&)
 	{
-		if (expr[index - 1] == "true" && expr[index + 1] == "true")
-			expr[index - 1] = "true";
-		else
-			expr[index - 1] = "false";
+		error("invalid boolean expression");
 	}
-	else
+	catch (...)
 	{
-		error("Did you forget to add a boolean operator?");
+		error("MEEP");
 	}
 
-	expr.erase(expr.begin() + index);
-	expr.erase(expr.begin() + index);
+	if (expr.size() > index)
+		expr.erase(expr.begin() + index);
+	else
+		error("invalid boolean expression");
+
+	if (expr.size() > index)
+		expr.erase(expr.begin() + index);
+	else
+		error("invalid boolean expression");
 
 	index -= 1;
 }
@@ -247,6 +128,9 @@ std::string BoolParser(const std::vector<Token>& tokens)
 		if (expr[a] == "|")
 			EvaluateBoolExpression(expr, a);
 	}
+
+	if (expr.size() > 1)
+		error("invalid boolean expression");
 
 	return expr[0];
 }
