@@ -68,7 +68,6 @@ void Parser(std::vector<Token>& tokens)
 
 		if (tokens[0].type == TokenType::BOOL_TYPE)
 		{
-			CheckBool(3, tokens, variables);
 			CheckVariable(variables, tokens[1]);
 
 			std::vector<Token> temp(tokens.begin() + 3, tokens.end() - 1);
@@ -81,7 +80,6 @@ void Parser(std::vector<Token>& tokens)
 		}
 		else if (tokens[0].type == TokenType::INT_TYPE)
 		{
-			CheckInt(3, tokens, variables);
 			CheckVariable(variables, tokens[1]);
 
 			std::vector<Token> temp(tokens.begin() + 3, tokens.end() - 1);
@@ -89,7 +87,6 @@ void Parser(std::vector<Token>& tokens)
 		}
 		else if (tokens[0].type == TokenType::STRING_TYPE)
 		{
-			CheckStr(3, tokens, variables);
 			CheckVariable(variables, tokens[1]);
 
 			std::vector<Token> temp(tokens.begin() + 3, tokens.end() - 1);
@@ -123,9 +120,7 @@ void Parser(std::vector<Token>& tokens)
 
 		if (variables[index].type == "bool")
 		{
-			CheckBool(3, tokens, variables);
-
-			std::vector<Token> temp(tokens.begin() + 1, tokens.end());
+			std::vector<Token> temp(tokens.begin() + 2, tokens.end() - 1);
 			variables[index].value = BoolParser(temp);
 		}
 		else if (variables[index].type == "char" && tokens[2].type == TokenType::CHAR_VALUE)
@@ -134,16 +129,12 @@ void Parser(std::vector<Token>& tokens)
 		}
 		else if (variables[index].type == "int")
 		{
-			CheckInt(3, tokens, variables);
-
 			std::vector<Token> temp(tokens.begin() + 2, tokens.end() - 1);
 			variables[index].value = IntParser(temp);
 		}
 		else if (variables[index].type == "str")
 		{
-			CheckStr(3, tokens, variables);
-
-			std::vector<Token> temp(tokens.begin() + 1, tokens.end());
+			std::vector<Token> temp(tokens.begin() + 2, tokens.end() - 1);
 			variables[index].value = StrParser(temp);
 		}
 		else
@@ -157,32 +148,9 @@ void Parser(std::vector<Token>& tokens)
 	{
 		ExtractVariable(tokens, variables, 1, 1);
 
-		/*if (tokens[1].type == TokenType::VARIABLE)
-		{
-			bool definedVariable = false;
-			for (std::size_t b = 0; b < variables.size(); ++b)
-			{
-				if (tokens[1].token == variables[b].name)
-				{
-					std::cout << variables[b].value << '\n';
-
-					definedVariable = true;
-					break;
-				}
-			}
-
-			if (!definedVariable)
-			{
-				std::cout << "Error - undefined variable '" << tokens[1].token << "'\n";
-				exit(0);
-			}
-		}
-		*/
 		if (tokens[1].type == TokenType::BOOL_VALUE)
 		{
-			CheckBool(1, tokens, variables, TokenType::PRINT);
-
-			std::vector<Token> temp(tokens.begin() + 1, tokens.end());
+			std::vector<Token> temp(tokens.begin() + 1, tokens.end() - 1);
 			std::cout << BoolParser(temp) << '\n';
 		}
 		else if (tokens[1].type == TokenType::CHAR_VALUE && tokens.size() == 3)
@@ -191,16 +159,12 @@ void Parser(std::vector<Token>& tokens)
 		}
 		else if (tokens[1].type == TokenType::INT_VALUE)
 		{
-			CheckInt(1, tokens, variables, TokenType::PRINT);
-
-			std::vector<Token> temp(tokens.begin() + 1, tokens.end());
+			std::vector<Token> temp(tokens.begin() + 1, tokens.end() - 1);
 			std::cout << IntParser(temp) << '\n';
 		}
 		else if (tokens[1].type == TokenType::STRING_VALUE)
 		{
-			CheckStr(3, tokens, variables, TokenType::PRINT);
-
-			std::vector<Token> temp(tokens.begin() + 1, tokens.end());
+			std::vector<Token> temp(tokens.begin() + 1, tokens.end() - 1);
 			std::cout << StrParser(temp) << '\n';
 		}
 		else
@@ -217,7 +181,7 @@ void Parser(std::vector<Token>& tokens)
 			if (tokens[a].token == "{")
 			{
 				ExtractVariable(tokens, variables, 2, tokens.size() - (a - 1));
-				CheckBool(2, tokens, variables, TokenType::IF, tokens.size() - (a - 1));
+				//CheckBool(2, tokens, variables, TokenType::IF, tokens.size() - (a - 1));
 
 				std::vector<Token> temp(tokens.begin() + 2, tokens.begin() + a - 1);
 				if (BoolParser(temp) == "true")
