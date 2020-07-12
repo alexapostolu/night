@@ -26,6 +26,8 @@ A complete rework of the language and code. Also I want to add functions. And if
 
 You can take a look at it in the `newer-version` branch. I'm basically working on using a `try-catch` statement to detect invalid expressions, instead of my old way which was to iterate over the entire expression checking each token individually. I'm also implementing a cleaner parser.
 
+Note: Major update on Monday!
+
 ---
 
 **How it works**
