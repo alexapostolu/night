@@ -4,19 +4,21 @@
 
 enum class TokenType
 {
-	BOOL_TYPE,
-	CHAR_TYPE,
+	BIT_TYPE,
+	SYB_TYPE,
 	INT_TYPE,
-	STRING_TYPE,
-
+	DEC_TYPE,
+	STR_TYPE,
+	
 	VARIABLE,
 
 	ASSIGNMENT,
 
-	BOOL_VALUE,
-	CHAR_VALUE,
+	BIT_VALUE,
+	SYB_VALUE,
 	INT_VALUE,
-	STRING_VALUE,
+	DEC_VALUE,
+	STR_VALUE,
 
 	PLUS,
 	MINUS,
@@ -27,6 +29,7 @@ enum class TokenType
 	NOT,
 	OR,
 	AND,
+	EQUALS,
 
 	OPEN_BRACKET,
 	CLOSE_BRACKET,
@@ -35,11 +38,15 @@ enum class TokenType
 	CLOSE_CURLY,
 
 	IF,
+	ELSE,
 
 	PRINT,
 
 	SEMICOLON
 };
+
+std::string strTokens[] = { "BIT_TYPE", "SYB_TYPE",
+"INT_TYPE", "DEC_TYPE", "STR_TYPE", "VARIABLE", "ASSIGNMENT", "BIT_VALUE", "SYB_VALUE", "INT_VALUE", "DEC_VALUE", "STR_VALUE", "PLUS", "MINUS", "TIMES", "DIVIDE", "MOD", "NOT", "OR", "AND", "EQUALS", "OPEN_BRACKET", "CLOSE_BRACKET", "OPEN_CURLY", "CLOSE_CURLY", "IF", "ELSE", "PRINT", "SEMICOLON" };
 
 struct Token
 {

@@ -4,9 +4,9 @@
 
 #include "Lexer.h"
 
-#include "Error.h"
+#include "Output.h"
 
-void ExtractLine(std::string& codeLine)
+int ExtractLine(std::string& codeLine)
 {
 	int openCurly = 0;
 
@@ -19,18 +19,31 @@ void ExtractLine(std::string& codeLine)
 			openCurly += 1;
 		else if (codeLine[a] == '}')
 			openCurly -= 1;
-		
+
 		if ((codeLine[a] == ';' && openCurly == 0) || (codeLine[a] == '}' && openCurly == 0))
 		{
-			Lexer(line);
+			try	{
+				Lexer(line);
+			}
+			catch (std::string& e) {
+				return error(e + "");
+			}
+
 			line = "";
 		}
 	}
 
+	// do we even need this? since the lexer already does everything
+	// this is like a last error check, the last line of defense
+	return line != "" ? error("line [  " + line + "  ] contains invalid syntax") : 0;
+
+	// I don't this is even needed since the lexer does it's own stuff
+	/*
 	if (openCurly > 0)
 		error("symbol '}' not found");
 	else if (openCurly < 0)
 		error("symbol '{' not found");
 	else if (line != "")
 		error("symbol ';' or '}' not found");
+	*/
 }

@@ -9,6 +9,8 @@ void CleanLine(std::string& fileLine, std::string& codeLine)
 	if (commentIndex != std::string::npos)
 		fileLine.erase(fileLine.begin() + commentIndex, fileLine.end());
 
+	// who cares about whitespace?
+	/*
 	if (fileLine.empty())
 		return;
 
@@ -20,6 +22,7 @@ void CleanLine(std::string& fileLine, std::string& codeLine)
 		if (a == 0)
 			break;
 	}
+	*/
 
 	codeLine += fileLine;
 }

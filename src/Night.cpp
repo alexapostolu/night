@@ -4,23 +4,26 @@
 #include "CleanLine.h"
 #include "ExtractLine.h"
 
-#include "Error.h"
+#include "Output.h"
 
 int main()
 {
-	std::ifstream codeFile("source.night");
-	if (codeFile.is_open())
+	std::ifstream code("source.night");
+	if (code.is_open())
 	{
 		std::string fileLine = "", codeLine = "";
-		while (getline(codeFile, fileLine))
+		while (getline(code, fileLine))
 			CleanLine(fileLine, codeLine);
 
 		ExtractLine(codeLine);
 
-		codeFile.close();
+		printOutput(storeOutput(""));
+
+		code.close();
+		return 0;
 	}
 	else
 	{
-		error("source file 'source.night' not found");
+		return error("file 'source.night' not found");
 	}
 }

@@ -6,45 +6,45 @@
 
 #include "Parser.h"
 
-#include "Error.h"
 #include "Token.h"
+
+#include "Output.h"
 
 void Check(std::vector<Token>& tokens, std::string& token)
 {
-	if (token == "bool")
+	if (token == "bit")
 	{
-		tokens.push_back(Token{ TokenType::BOOL_TYPE, "bool" });
+		tokens.push_back(Token{ TokenType::BIT_TYPE, token });
 		token = "";
 	}
-	else if (token == "char")
+	else if (token == "syb")
 	{
-		tokens.push_back(Token{ TokenType::CHAR_TYPE, "char" });
+		tokens.push_back(Token{ TokenType::SYB_TYPE, token });
 		token = "";
 	}
 	else if (token == "int")
 	{
-		tokens.push_back(Token{ TokenType::INT_TYPE, "int" });
+		tokens.push_back(Token{ TokenType::INT_TYPE, token });
+		token = "";
+	}
+	else if (token == "dec")
+	{
+		tokens.push_back(Token{ TokenType::DEC_TYPE, token });
 		token = "";
 	}
 	else if (token == "str")
 	{
-		tokens.push_back(Token{ TokenType::STRING_TYPE, "str" });
+		tokens.push_back(Token{ TokenType::STR_TYPE, token });
 		token = "";
 	}
-
+	else if (token == "true" || token == "false")
+	{
+		tokens.push_back(Token{ TokenType::BIT_VALUE, token });
+		token = "";
+	}
 	else if (token.length() == 3 && token[0] == '\'' && token[2] == '\'')
 	{
-		tokens.push_back(Token{ TokenType::CHAR_VALUE, std::string(1, token[1]) });
-		token = "";
-	}
-	else if (token == "true")
-	{
-		tokens.push_back(Token{ TokenType::BOOL_VALUE, "true" });
-		token = "";
-	}
-	else if (token == "false")
-	{
-		tokens.push_back(Token{ TokenType::BOOL_VALUE, "false" });
+		tokens.push_back(Token{ TokenType::SYB_VALUE, std::string(1, token[1]) });
 		token = "";
 	}
 	else if (std::regex_match(token, std::regex("[0-9]+")))
@@ -54,12 +54,17 @@ void Check(std::vector<Token>& tokens, std::string& token)
 	}
 	else if (token == "if")
 	{
-		tokens.push_back(Token{ TokenType::IF, "if" });
+		tokens.push_back(Token{ TokenType::IF, token });
+		token = "";
+	}
+	else if (token == "else")
+	{
+		tokens.push_back(Token{ TokenType::ELSE, token });
 		token = "";
 	}
 	else if (token == "print")
 	{
-		tokens.push_back(Token{ TokenType::PRINT, "print" });
+		tokens.push_back(Token{ TokenType::PRINT, token });
 		token = "";
 	}
 	else if (std::regex_match(token, std::regex("[a-zA-Z]+")))
@@ -69,11 +74,12 @@ void Check(std::vector<Token>& tokens, std::string& token)
 	}
 	else if (token != "")
 	{
-		error("token '" + token + "' undefined");
+		//error("token '" + token + "' undefined");
+		throw "token '" + token + "' undefined";
 	}
 }
 
-void Lexer(const std::string& line)
+int Lexer(const std::string& line)
 {
 	std::string token = "";
 	std::vector<Token> tokens;
@@ -95,92 +101,108 @@ void Lexer(const std::string& line)
 		}
 		else if (line[a] == '"' && isString)
 		{
-			tokens.push_back(Token{ TokenType::STRING_VALUE, token });
+			tokens.push_back(Token{ TokenType::STR_VALUE, token });
 			token = "";
 
 			isString = false;
 			continue;
 		}
 
-		if (line[a] == '=')
+		switch (line[a])
 		{
-			Check(tokens, token);
-			tokens.push_back(Token{ TokenType::ASSIGNMENT, "=" });
-		}
-		else if (line[a] == '+')
-		{
+		case '=':
+			if (a < line.length() && line[a + 1] == '=')
+			{
+				Check(tokens, token);
+				tokens.push_back(Token{ TokenType::EQUALS, "==" });
+
+				a += 1;
+			}
+			else
+			{
+				Check(tokens, token);
+				tokens.push_back(Token{ TokenType::ASSIGNMENT, "=" });
+			}
+
+			break;
+		case '+':	
 			Check(tokens, token);
 			tokens.push_back(Token{ TokenType::PLUS, "+" });
-		}
-		else if (line[a] == '-')
-		{
+
+			break;
+		case '-':
 			Check(tokens, token);
 			tokens.push_back(Token{ TokenType::MINUS, "-" });
-		}
-		else if (line[a] == '*')
-		{
+			break;
+		case '*':
 			Check(tokens, token);
 			tokens.push_back(Token{ TokenType::TIMES, "*" });
-		}
-		else if (line[a] == '/')
-		{
+			break;
+		case '/':
 			Check(tokens, token);
 			tokens.push_back(Token{ TokenType::DIVIDE, "/" });
-		}
-		else if (line[a] == '%')
-		{
+			break;
+		case '%':
 			Check(tokens, token);
 			tokens.push_back(Token{ TokenType::MOD, "%" });
-		}
-		else if (line[a] == '!')
-		{
+			break;
+		case '!':
 			Check(tokens, token);
 			tokens.push_back(Token{ TokenType::NOT, "!" });
-		}
-		else if (line[a] == '|')
-		{
-			Check(tokens, token);
-			tokens.push_back(Token{ TokenType::OR, "|" });
-		}
-		else if (line[a] == '&')
-		{
-			Check(tokens, token);
-			tokens.push_back(Token{ TokenType::AND, "&" });
-		}
-		else if (line[a] == '(')
-		{
+			break;
+		case '|':
+			if (a < line.length() && line[a + 1] == '|')
+			{
+				Check(tokens, token);
+				tokens.push_back(Token{ TokenType::OR, "||" });
+
+				a += 1;
+			}
+
+			break;
+		case '&':
+			if (a < line.length() && line[a + 1] == '&')
+			{
+				Check(tokens, token);
+				tokens.push_back(Token{ TokenType::AND, "&&" });
+
+				a += 1;
+			}
+
+			break;
+		case '(':
 			Check(tokens, token);
 			tokens.push_back(Token{ TokenType::OPEN_BRACKET, "(" });
-		}
-		else if (line[a] == ')')
-		{
+			break;
+		case ')':
 			Check(tokens, token);
-			
 			tokens.push_back(Token{ TokenType::CLOSE_BRACKET, ")" });
-		}
-		else if (line[a] == '{')
-		{
+			break;
+		case '{':
 			Check(tokens, token);
 			tokens.push_back(Token{ TokenType::OPEN_CURLY, "{" });
-		}
-		else if (line[a] == '}')
-		{
+			break;
+		case '}':
 			Check(tokens, token);
 			tokens.push_back(Token{ TokenType::CLOSE_CURLY, "}" });
-		}
-		else if (line[a] == ';')
-		{
+			break;
+		case ';':
 			Check(tokens, token);
 			tokens.push_back(Token{ TokenType::SEMICOLON, ";" });
-		}
-		else
-		{
-			if ((line[a] == ' ' || line[a] == ';') && token != "")
+			break;
+		default:
+			if (line[a] == ' ' && token != "")
 				Check(tokens, token);
 			else if (line[a] != ' ')
 				token += line[a];
 		}
 	}
 
+	// what's this for???
+	//if (token != "")
+		//return error("[delete this soon] token '" + token + "' undefined");
+
 	Parser(tokens);
+
+	return 0;
 }
