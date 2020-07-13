@@ -13,26 +13,28 @@ Also, this version isn't stable at all. This upcoming weekend however, I'll rele
 - variable declaration, initialization, and assignment
 - expressions
 - print thingy
-- if statements (working on fixing some bugs)
+- if statements
 
 **In progress**
 
 I'm working on refactoring my entire code and fixing a bunch of things. Don't really know what I'm doing. I'm also working on functions, and once I get those done, then in theory, I could use my language, to create my language (well, pre-defined functions at least)...
 
-Major update in the upcomming weekend! You'll see if statements fully finished, comparison operator, and better error messages!
+Oh, also, major update in the upcomming weekend! You'll see if statements fully finished, comparison operator, and better error messages!
 
 ---
 
 **Example**
+
+This is what the stable version will (hopefully) look like this weekend :)
 
 ```
 print "Hello World!";
 
 // this is a comment
 
-bit boolean = true; // supports `! && || ==` all of those
+bit boolean = true; // supports `! && || == !=` all of those
 syb symbol = 'c';
-int integer = 2 + 3; // supports '+-/*%()' all of those
+int integer = 2 + 3; // supports '+ - / * % ( )' all of those
 dec decimal = 3.14;
 str string = "dynamic " + "squid"; // supports string concatenation
 
@@ -40,8 +42,18 @@ if (string == "dynamic squid")
 {
     print "hello " + string;
 }
-else // working on else statements
+else if (string == "octopus") // maybe I'll get this done in the next release
+{
+    print "no";
+}
+else
 {
     print "hi";
+}
+
+// and possible functions??
+func swim()
+{
+    // hopefully :)
 }
 ```
