@@ -21,7 +21,7 @@ I should make a documentation soon...
 
 Currently I'm working on testing my language and making sure all the error messages correspond to the right code error. And that basically means testing every single possible line of code that could possibly be written. *sigh*. I'm also working on polishing up some things with decimals, and all that'll be in this week's release.
 
-After that release, I'll start work on functions, local variables (variables declared inside curly brackets), and more! Stay tuned :)
+After that release, I'll start work on functions, local variables (variables declared inside curly brackets), more versitile string concatenation, and more! Stay tuned :)
 
 ---
 
