@@ -6,12 +6,14 @@
 
 #include "Parser.h"
 
-#include "Token.h"
+#include "Squid.h"
 
-#include "Output.h"
+#include "Token.h"
 
 void Check(std::vector<Token>& tokens, std::string& token)
 {
+	static bool inStatement = false;
+
 	if (token == "bit")
 	{
 		tokens.push_back(Token{ TokenType::BIT_TYPE, token });
@@ -52,15 +54,27 @@ void Check(std::vector<Token>& tokens, std::string& token)
 		tokens.push_back(Token{ TokenType::INT_VALUE, token });
 		token = "";
 	}
+	else if (std::regex_match(token, std::regex("[0-9]+[.]?[0-9]+|[0-9]+[.]?[0-9]+")))
+	{
+		tokens.push_back(Token{ TokenType::DEC_VALUE, token });
+		token = "";
+	}
 	else if (token == "if")
 	{
 		tokens.push_back(Token{ TokenType::IF, token });
 		token = "";
+
+		inStatement = true;
 	}
 	else if (token == "else")
 	{
+		if (!inStatement)
+			throw _invalid_if_statement_;
+
 		tokens.push_back(Token{ TokenType::ELSE, token });
 		token = "";
+
+		inStatement = false;
 	}
 	else if (token == "print")
 	{
@@ -74,8 +88,7 @@ void Check(std::vector<Token>& tokens, std::string& token)
 	}
 	else if (token != "")
 	{
-		//error("token '" + token + "' undefined");
-		throw "token '" + token + "' undefined";
+		throw _undefined_token_.set("token '" + token + "' undefined");
 	}
 }
 
@@ -85,6 +98,7 @@ int Lexer(const std::string& line)
 	std::vector<Token> tokens;
 
 	bool isString = false;
+
 	for (std::size_t a = 0; a < line.length(); ++a)
 	{
 		if (line[a] == '"' && !isString)
@@ -147,8 +161,19 @@ int Lexer(const std::string& line)
 			tokens.push_back(Token{ TokenType::MOD, "%" });
 			break;
 		case '!':
-			Check(tokens, token);
-			tokens.push_back(Token{ TokenType::NOT, "!" });
+			if (a < line.length() && line[a + 1] == '=')
+			{
+				Check(tokens, token);
+				tokens.push_back(Token{ TokenType::NOT_EQUALS, "!=" });
+
+				a += 1;
+			}
+			else
+			{
+				Check(tokens, token);
+				tokens.push_back(Token{ TokenType::NOT, "!" });
+			}
+
 			break;
 		case '|':
 			if (a < line.length() && line[a + 1] == '|')
@@ -157,6 +182,10 @@ int Lexer(const std::string& line)
 				tokens.push_back(Token{ TokenType::OR, "||" });
 
 				a += 1;
+			}
+			else
+			{
+				throw _undefined_token_.set("token '" + std::string(1, line[a]) + "' undefined");
 			}
 
 			break;
@@ -167,6 +196,10 @@ int Lexer(const std::string& line)
 				tokens.push_back(Token{ TokenType::AND, "&&" });
 
 				a += 1;
+			}
+			else
+			{
+				throw _undefined_token_.set("token '" + std::string(1, line[a]) + "' undefined");
 			}
 
 			break;

@@ -6,7 +6,7 @@
 
 #include "Output.h"
 
-int ExtractLine(std::string& codeLine)
+void ExtractLine(std::string& codeLine)
 {
 	int openCurly = 0;
 
@@ -22,20 +22,14 @@ int ExtractLine(std::string& codeLine)
 
 		if ((codeLine[a] == ';' && openCurly == 0) || (codeLine[a] == '}' && openCurly == 0))
 		{
-			try	{
-				Lexer(line);
-			}
-			catch (std::string& e) {
-				return error(e + "");
-			}
-
+			Lexer(line);
 			line = "";
 		}
 	}
 
 	// do we even need this? since the lexer already does everything
-	// this is like a last error check, the last line of defense
-	return line != "" ? error("line [  " + line + "  ] contains invalid syntax") : 0;
+	// this is like a last error check, the last line of defence
+	// return line != "" ? error("line [  " + line + "  ] contains invalid syntax") : 0;
 
 	// I don't this is even needed since the lexer does it's own stuff
 	/*

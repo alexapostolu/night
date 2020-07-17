@@ -7,67 +7,67 @@
 #include "DecParser.h"
 #include "StrParser.h"
 
-#include "Token.h"
-#include "Variable.h"
-
+#include "Squid.h"
 #include "Output.h"
 
-bool CheckVariable(const std::string& variable, const std::vector<Variable>& variables)
+#include "Variable.h"
+#include "Token.h"
+
+bool CheckVariable(const std::string& var, const std::vector<Variable>& vars)
 {
-	for (std::size_t a = 0; a < variables.size(); ++a)
+	for (std::size_t a = 0; a < vars.size(); ++a)
 	{
-		if (variable == variables[a].name)
+		if (var == vars[a].name)
 			return false;
 	}
 
 	return true;
 }
 
-bool ExtractVariables(std::size_t s, std::size_t e, std::vector<Token>& expression,
-	const std::vector<Variable>& variables)
+void ExtractVariables(std::size_t s, std::size_t e, std::vector<Token>& expr,
+	const std::vector<Variable>& vars)
 {
-	bool isDefined = true;
+	bool isDefined;
 	for (std::size_t a = s; a < e; ++a)
 	{
-		if (expression[a].type == TokenType::VARIABLE)
+		if (expr[a].type == TokenType::VARIABLE)
 		{
 			isDefined = false;
-			for (std::size_t b = 0; b < variables.size(); ++b)
+			for (std::size_t b = 0; b < vars.size(); ++b)
 			{
-				if (expression[a].token == variables[b].name)
+				if (expr[a].token == vars[b].name)
 				{
-					expression[a].type = variables[b].type == "bit" ? TokenType::BIT_VALUE :
-						variables[b].type == "syb" ? TokenType::SYB_VALUE :
-						variables[b].type == "int" ? TokenType::INT_VALUE :
-						variables[b].type == "dec" ? TokenType::DEC_VALUE :
-						TokenType::STR_VALUE;
+					expr[a].type = vars[b].type == "bit" ? TokenType::BIT_VALUE :
+						vars[b].type == "syb" ? TokenType::SYB_VALUE :
+						vars[b].type == "int" ? TokenType::INT_VALUE :
+						vars[b].type == "dec" ? TokenType::DEC_VALUE :
+						vars[b].type == "str" ? TokenType::STR_VALUE :
+						throw DYNAMIC_SQUID(0);
 
-					expression[a].token = variables[b].value;
+					expr[a].token = vars[b].value;
 
 					isDefined = true;
 					break;
 				}
 			}
+
+			if (!isDefined)
+				throw _undefined_variable_.set("variable '" + expr[a].token + "' is not defined");
 		}
-
-		if (isDefined)
-			break;
 	}
-
-	return isDefined;
 }
 
-int Parser(std::vector<Token>& tokens)
+void Parser(std::vector<Token>& tokens)
 {
-	static bool ifElseStatement = false;
-
 	static std::vector<Variable> variables;
+	
+	static bool ifElseStatement = false;
 
 	// variable declaration
 	if (tokens.size() == 3 && tokens[0].type != TokenType::PRINT && tokens[1].type == TokenType::VARIABLE &&
 		tokens[2].type == TokenType::SEMICOLON)
 	{
-		switch(tokens[0].type)
+		switch (tokens[0].type)
 		{
 		case TokenType::BIT_TYPE:
 			variables.push_back(Variable{ "bit", tokens[1].token, "false" });
@@ -85,7 +85,7 @@ int Parser(std::vector<Token>& tokens)
 			variables.push_back(Variable{ "str", tokens[1].token, "" });
 			break;
 		default:
-			return error("invalid variable declaration");
+			throw _undefined_data_type_.set("data type '" + tokens[0].token + "' is undefined");
 		}
 	}
 	// variable initialization
@@ -93,9 +93,9 @@ int Parser(std::vector<Token>& tokens)
 		tokens[2].type == TokenType::ASSIGNMENT && tokens.back().type == TokenType::SEMICOLON)
 	{
 		if (!CheckVariable(tokens[1].token, variables))
-			return error("variable '" + tokens[1].token + "' already defined");
-		if (!ExtractVariables(3, tokens.size() - 1, tokens, variables))
-			return error("variable 'MEEP' is not defined");
+			throw _variable_redefinition_.set("variable '" + tokens[1].token + "' already defined");
+
+		ExtractVariables(3, tokens.size() - 1, tokens, variables);
 
 		std::vector<Token> expression(tokens.begin() + 3, tokens.end() - 1);
 
@@ -106,7 +106,7 @@ int Parser(std::vector<Token>& tokens)
 			break;
 		case TokenType::SYB_TYPE:
 			if (tokens.size() > 5)
-				return error("invalid character variable initialization");
+				throw _invalid_syb_expr_;
 
 			variables.push_back(Variable{ "syb", tokens[1].token, tokens[3].token });
 			break;
@@ -120,120 +120,216 @@ int Parser(std::vector<Token>& tokens)
 			variables.push_back(Variable{ "str", tokens[1].token, StrParser(expression) });
 			break;
 		default:
-			return error("invalid variable initialization");
+			throw _undefined_data_type_.set("data type '" + tokens[0].token + "' is undefined");
 		}
 	}
 	// variable assignment
-	else if (tokens.size() >= 4 && tokens[1].type == TokenType::VARIABLE &&
-		tokens[2].type == TokenType::ASSIGNMENT && tokens.back().type == TokenType::SEMICOLON)
+	else if (tokens.size() >= 4 && tokens[0].type == TokenType::VARIABLE &&
+		tokens[1].type == TokenType::ASSIGNMENT && tokens.back().type == TokenType::SEMICOLON)
 	{
 		if (CheckVariable(tokens[0].token, variables))
-			return error("variable not defined");
-		if (!ExtractVariables(2, tokens.size() - 1, tokens, variables))
-			return error("idk");
+			throw _undefined_variable_.set("variable '" + tokens[0].token + "' is undefined");
 
-		int index = -1;
+		ExtractVariables(2, tokens.size() - 1, tokens, variables);
+
+		int variableIndex = -1;
 		for (std::size_t a = 0; a < variables.size(); ++a)
 		{
-			if (variables[a].name == tokens[0].token)
+			if (tokens[0].token == variables[a].name)
 			{
-				index = a;
+				variableIndex = a;
 				break;
 			}
 		}
 
-		// remove this later!!!!
-		if (index == -1)
-			return error("DJFNKDF");
+		if (variableIndex == -1)
+			throw DYNAMIC_SQUID(0);
 
-		if (variables[index].type == "bool")
+		if (variables[variableIndex].type == "bool")
 		{
 			std::vector<Token> temp(tokens.begin() + 2, tokens.end() - 1);
-			variables[index].value = BitParser(temp);
+			variables[variableIndex].value = BitParser(temp);
 		}
-		else if (variables[index].type == "char" && tokens[2].type == TokenType::SYB_VALUE)
+		else if (variables[variableIndex].type == "char")
 		{
-			variables[index].value = tokens[2].token;
+			if (tokens.size() == 4 && tokens[2].type == TokenType::SYB_VALUE)
+				variables[variableIndex].value = tokens[2].token;
+			else
+				throw _invalid_syb_expr_;
 		}
-		else if (variables[index].type == "int")
-		{
-			std::vector<Token> temp(tokens.begin() + 2, tokens.end() - 1);
-			variables[index].value = IntParser(temp);
-		}
-		else if (variables[index].type == "dec")
+		else if (variables[variableIndex].type == "int")
 		{
 			std::vector<Token> temp(tokens.begin() + 2, tokens.end() - 1);
-			variables[index].value = DecParser(temp);
+			variables[variableIndex].value = IntParser(temp);
 		}
-		else if (variables[index].type == "str")
+		else if (variables[variableIndex].type == "dec")
 		{
 			std::vector<Token> temp(tokens.begin() + 2, tokens.end() - 1);
-			variables[index].value = StrParser(temp);
+			variables[variableIndex].value = DecParser(temp);
+		}
+		else if (variables[variableIndex].type == "str")
+		{
+			std::vector<Token> temp(tokens.begin() + 2, tokens.end() - 1);
+			variables[variableIndex].value = StrParser(temp);
 		}
 		else
 		{
-			error("invalid variable assignment");
+			throw DYNAMIC_SQUID(0);
 		}
 	}
 	// print
-	// make sure that in the future, 'print' is a keyword, and it'll only print one thing
-	// make a print function to support multiple print values
 	else if (tokens.size() >= 3 && tokens[0].type == TokenType::PRINT &&
 		tokens.back().type == TokenType::SEMICOLON)
 	{
-		if (!ExtractVariables(1, tokens.size() - 1, tokens, variables))
-			return error("error");
+		ExtractVariables(1, tokens.size() - 1, tokens, variables);
 
-		if (tokens[1].type == TokenType::BIT_VALUE)
+		std::vector<Token> temp(tokens.begin() + 1, tokens.end() - 1);
+
+		switch (tokens[1].type)
 		{
-			std::vector<Token> temp(tokens.begin() + 1, tokens.end() - 1);
+		case TokenType::BIT_VALUE:
 			storeOutput(BitParser(temp));
-		}
-		else if (tokens[1].type == TokenType::SYB_VALUE && tokens.size() == 3)
-		{
-			storeOutput(tokens[1].token);
-		}
-		else if (tokens[1].type == TokenType::INT_VALUE)
-		{
-			std::vector<Token> temp(tokens.begin() + 1, tokens.end() - 1);
+			break;
+		case TokenType::SYB_VALUE:
+			if (tokens.size() == 3)
+				storeOutput(tokens[1].token);
+			else
+				throw _invalid_syb_expr_;
+
+			break;
+		case TokenType::INT_VALUE:
 			storeOutput(IntParser(temp));
-		}
-		else if (tokens[1].type == TokenType::DEC_VALUE)
-		{
-			std::vector<Token> temp(tokens.begin() + 1, tokens.end() - 1);
+			break;
+		case TokenType::DEC_VALUE:
 			storeOutput(DecParser(temp));
-		}
-		else if (tokens[1].type == TokenType::STR_VALUE)
-		{
-			std::vector<Token> temp(tokens.begin() + 1, tokens.end() - 1);
+			break;
+		case TokenType::STR_VALUE:
 			storeOutput(StrParser(temp));
-		}
-		else
-		{
-			return error("invalid print statement");
+			break;
+		default:
+			throw _invalid_print_;
 		}
 	}
 	// if statement
 	else if (tokens.size() >= 6 && tokens[0].type == TokenType::IF &&
 		tokens[1].type == TokenType::OPEN_BRACKET && tokens.back().type == TokenType::CLOSE_CURLY)
 	{
-		// if expression is false
-		ifElseStatement = true;
+		for (std::size_t a = 0; a < tokens.size(); ++a)
+		{
+			if (tokens[a].type == TokenType::OPEN_CURLY)
+			{
+				ExtractVariables(2, tokens.size() - a + 1, tokens, variables);
+
+				std::vector<Token> temp(tokens.begin() + 2, tokens.begin() + a - 1);
+				if (BitParser(temp) == "true")
+				{
+					temp.clear();
+
+					int openCurly = 0;
+					for (std::size_t b = a + 1; b < tokens.size() - 1; ++b)
+					{
+						temp.push_back(tokens[b]);
+
+						if (tokens[b].type == TokenType::OPEN_CURLY)
+							openCurly += 1;
+						else if (tokens[b].type == TokenType::CLOSE_CURLY)
+							openCurly -= 1;
+
+						if ((tokens[b].type == TokenType::SEMICOLON && openCurly == 0) ||
+							(tokens[b].type == TokenType::CLOSE_CURLY && openCurly == 0))
+						{
+							Parser(temp);
+							temp.clear();
+						}
+					}
+				}
+				else
+				{
+					ifElseStatement = true;
+				}
+
+				break;
+			}
+		}
 	}
+	// else if statement
+	else if (tokens.size() >= 7 && tokens[0].type == TokenType::ELSE && tokens[1].type == TokenType::IF && 
+		tokens[2].type == TokenType::OPEN_BRACKET && tokens.back().type == TokenType::CLOSE_CURLY)
+	{
+		if (ifElseStatement)
+		{
+			for (std::size_t a = 0; a < tokens.size(); ++a)
+			{
+				if (tokens[a].type == TokenType::OPEN_CURLY)
+				{
+					ExtractVariables(3, tokens.size() - a + 1, tokens, variables);
+
+					std::vector<Token> temp(tokens.begin() + 3, tokens.begin() + a - 1);
+					if (BitParser(temp) == "true")
+					{
+						temp.clear();
+
+						int openCurly = 0;
+						for (std::size_t b = a + 1; b < tokens.size() - 1; ++b)
+						{
+							temp.push_back(tokens[b]);
+
+							if (tokens[b].type == TokenType::OPEN_CURLY)
+								openCurly += 1;
+							else if (tokens[b].type == TokenType::CLOSE_CURLY)
+								openCurly -= 1;
+
+							if ((tokens[b].type == TokenType::SEMICOLON && openCurly == 0) ||
+								(tokens[b].type == TokenType::CLOSE_CURLY && openCurly == 0))
+							{
+								Parser(temp);
+								temp.clear();
+							}
+						}
+
+						ifElseStatement = false;
+					}
+					else
+					{
+						ifElseStatement = true;
+					}
+
+					break;
+				}
+			}
+		}
+	}
+	// else statement
 	else if (tokens.size() >= 3 && tokens[0].type == TokenType::ELSE &&
 		tokens[1].type == TokenType::OPEN_CURLY && tokens.back().type == TokenType::CLOSE_CURLY)
 	{
 		if (ifElseStatement)
 		{
-			// do stuff
+			std::vector<Token> temp;
+
+			int openCurly = 0;
+			for (std::size_t b = 2; b < tokens.size() - 1; ++b)
+			{
+				temp.push_back(tokens[b]);
+
+				if (tokens[b].type == TokenType::OPEN_CURLY)
+					openCurly += 1;
+				else if (tokens[b].type == TokenType::CLOSE_CURLY)
+					openCurly -= 1;
+
+				if ((tokens[b].type == TokenType::SEMICOLON && openCurly == 0) ||
+					(tokens[b].type == TokenType::CLOSE_CURLY && openCurly == 0))
+				{
+					Parser(temp);
+					temp.clear();
+				}
+			}
 
 			ifElseStatement = false;
 		}
 	}
 	else
 	{
-		return error("wat a joek u ar");
+		throw _invalid_grammar_;
 	}
-
-	return 0;
 }

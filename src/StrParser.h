@@ -1,36 +1,39 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
-#include "Output.h"
+#include "Squid.h"
  
 #include "Variable.h"
 #include "Token.h"
 
 void EvaluateStrExpression(std::vector<Token>& expr, std::size_t& index)
 {
-	try
-	{
-		if (expr.at(index - 1).type == TokenType::STR_VALUE && expr.at(index + 1).type ==
-			TokenType::STR_VALUE)
+	try {
+		if (expr.at(index - 1).type != TokenType::STR_VALUE ||
+			expr.at(index + 1).type != TokenType::STR_VALUE)
+			throw "";
+
+		if (expr[index].type == TokenType::PLUS)
 			expr.at(index - 1).token = expr.at(index - 1).token + expr.at(index + 1).token;
 		else
-			error("invalid string expression");
+			throw 0;
 	}
-	catch (...)
+	catch (int excNum) {
+		throw DYNAMIC_SQUID(excNum);
+	}
+	catch (...) {
+		throw _invalid_str_expr_;
+	}
+
+	for (int a = 0; a < 2; ++a)
 	{
-		error("invalid string expression");
+		if (index < expr.size())
+			expr.erase(expr.begin() + index);
+		else
+			throw _invalid_str_expr_;
 	}
-
-	if (index < expr.size())
-		expr.erase(expr.begin() + index);
-	else
-		error("invalid integer expression");
-
-	if (index < expr.size())
-		expr.erase(expr.begin() + index);
-	else
-		error("invalid integer expression");
 
 	index -= 1;
 }
@@ -40,17 +43,17 @@ std::string StrParser(std::vector<Token>& expr)
 	unsigned int openBracketIndex = 0, closeBrakcetIndex;
 	for (std::size_t a = 0; a < expr.size(); ++a)
 	{
-		if (expr[a].token == "(")
+		if (expr[a].type == TokenType::OPEN_BRACKET)
 		{
 			openBracketIndex = a;
 		}
-		else if (expr[a].token == ")")
+		else if (expr[a].type == TokenType::CLOSE_BRACKET)
 		{
 			closeBrakcetIndex = a;
 
 			for (std::size_t b = openBracketIndex + 1; b < closeBrakcetIndex; ++b)
 			{
-				if (expr[b].token == "+")
+				if (expr[b].type == TokenType::PLUS)
 				{
 					EvaluateStrExpression(expr, b);
 					closeBrakcetIndex -= 2;
@@ -66,12 +69,12 @@ std::string StrParser(std::vector<Token>& expr)
 
 	for (std::size_t a = 0; a < expr.size(); ++a)
 	{
-		if (expr[a].token == "+")
+		if (expr[a].type == TokenType::PLUS)
 			EvaluateStrExpression(expr, a);
 	}
 
-	if (expr.size() > 1)
-		error("invalid string expression");
+	if (expr.size() != 1 || expr[0].type != TokenType::STR_VALUE)
+		throw _invalid_str_expr_;
 
 	return expr[0].token;
 }

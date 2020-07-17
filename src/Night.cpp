@@ -1,9 +1,11 @@
 #include <fstream>
+#include <iostream>
 #include <string>
 
 #include "CleanLine.h"
 #include "ExtractLine.h"
 
+#include "Squid.h"
 #include "Output.h"
 
 int main()
@@ -15,15 +17,30 @@ int main()
 		while (getline(code, fileLine))
 			CleanLine(fileLine, codeLine);
 
-		ExtractLine(codeLine);
+		try {
+			ExtractLine(codeLine);
+		}
+		catch (const squid& s) {
+			std::cout << s.what() << '\n';
+			return 1;
+		}
+		catch (int excNum) {
+			SquidError(excNum);
+			return 1;
+		}
+		catch (...) {
+			SquidError(0);
+			return 1;
+		}
 
-		printOutput(storeOutput(""));
+		printOutput(storeOutput());
 
 		code.close();
 		return 0;
 	}
 	else
 	{
-		return error("file 'source.night' not found");
+		SquidError(1);
+		return 1;
 	}
 }

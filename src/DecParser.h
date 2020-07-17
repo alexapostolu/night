@@ -1,69 +1,96 @@
 #pragma once
 
-#include <vector>
 #include <string>
+#include <vector>
 
-#include "Output.h"
+#include "Squid.h"
 
 #include "Variable.h"
 #include "Token.h"
 
-void EvaluateDecExpression(std::vector<std::string>& expr, std::size_t& index)
+void EvaluateDecExpression(std::vector<Token>& expr, std::size_t& index)
 {
-	try
-	{
-		if (expr[index] == "+")
-			expr.at(index - 1) = std::to_string(stof(expr.at(index - 1)) + stof(expr.at(index + 1)));
-		else if (expr[index] == "-")
-			expr.at(index - 1) = std::to_string(stof(expr.at(index - 1)) - stof(expr.at(index + 1)));
-		else if (expr[index] == "*")
-			expr.at(index - 1) = std::to_string(stof(expr.at(index - 1)) * stof(expr.at(index + 1)));
-		else if (expr[index] == "/")
-			expr.at(index - 1) = std::to_string(stof(expr.at(index - 1)) / stof(expr.at(index + 1)));
+	try {
+		if (expr.at(index - 1).type != TokenType::DEC_VALUE ||
+			expr.at(index + 1).type != TokenType::DEC_VALUE)
+			throw "";
+
+		if (expr[index].type == TokenType::PLUS)
+		{
+			expr.at(index - 1).token = std::to_string(stof(expr.at(index - 1).token) +
+				stof(expr.at(index + 1).token));
+		}
+		else if (expr[index].type == TokenType::MINUS)
+		{
+			expr.at(index - 1).token = std::to_string(stof(expr.at(index - 1).token) -
+				stof(expr.at(index + 1).token));
+		}
+		else if (expr[index].type == TokenType::TIMES)
+		{
+			expr.at(index - 1).token = std::to_string(stof(expr.at(index - 1).token) *
+				stof(expr.at(index + 1).token));
+		}
+		else if (expr[index].type == TokenType::DIVIDE)
+		{
+			expr.at(index - 1).token = std::to_string(stof(expr.at(index - 1).token) /
+				stof(expr.at(index + 1).token));
+		}
+		else
+		{
+			throw 0;
+		}
 	}
-	catch (...)
-	{
-		error("invalid decimal expression");
+	catch (int excNum) {
+		throw DYNAMIC_SQUID(excNum);
+	}
+	catch (...) {
+		throw _invalid_dec_expr_;
 	}
 
-	if (index < expr.size())
-		expr.erase(expr.begin() + index);
-	else
-		error("invalid decimal expression");
-
-	if (index < expr.size())
-		expr.erase(expr.begin() + index);
-	else
-		error("invalid decimal expression");
+	for (int a = 0; a < 2; ++a)
+	{
+		if (index < expr.size())
+			expr.erase(expr.begin() + index);
+		else
+			throw _invalid_dec_expr_;
+	}
 
 	index -= 1;
 }
 
-std::string DecParser(const std::vector<Token>& tokens)
+std::string DecParser(std::vector<Token>& expr)
 {
-	std::vector<std::string> expr(tokens.size());
-	for (std::size_t a = 0; a < tokens.size(); ++a)
-		expr[a] = tokens[a].token;
+	for (std::size_t a = 0; a < expr.size(); ++a)
+	{
+		if (expr[a].type == TokenType::INT_VALUE)
+		{
+			expr[a].type = TokenType::DEC_VALUE;
+		}
+		else if (a < expr.size() - 1 && expr[a].type == TokenType::MINUS &&
+			(expr[a + 1].type == TokenType::INT_VALUE || expr[a + 1].type == TokenType::DEC_VALUE))
+		{
+			expr[a + 1].type = TokenType::DEC_VALUE;
+			expr[a + 1].token = std::to_string(stof(expr[a + 1].token) * -1);
+
+			expr.erase(expr.begin() + a);
+			a -= 1;
+		}
+	}
 
 	unsigned int openBracketIndex = 0, closeBrakcetIndex;
 	for (std::size_t a = 0; a < expr.size(); ++a)
 	{
-		if (expr[a] == "(")
+		if (expr[a].type == TokenType::OPEN_BRACKET)
 		{
 			openBracketIndex = a;
 		}
-		else if (expr[a] == ")")
+		else if (expr[a].type == TokenType::CLOSE_BRACKET)
 		{
 			closeBrakcetIndex = a;
 
 			for (std::size_t b = openBracketIndex + 1; b < closeBrakcetIndex; ++b)
 			{
-				if (expr[b] == "*")
-				{
-					EvaluateDecExpression(expr, b);
-					closeBrakcetIndex -= 2;
-				}
-				else if (expr[b] == "/")
+				if (expr[b].type == TokenType::TIMES || expr[b].type == TokenType::DIVIDE)
 				{
 					EvaluateDecExpression(expr, b);
 					closeBrakcetIndex -= 2;
@@ -72,12 +99,7 @@ std::string DecParser(const std::vector<Token>& tokens)
 
 			for (std::size_t b = openBracketIndex + 1; b < closeBrakcetIndex; ++b)
 			{
-				if (expr[b] == "+")
-				{
-					EvaluateDecExpression(expr, b);
-					closeBrakcetIndex -= 2;
-				}
-				else if (expr[b] == "-")
+				if (expr[b].type == TokenType::PLUS || expr[b].type == TokenType::MINUS)
 				{
 					EvaluateDecExpression(expr, b);
 					closeBrakcetIndex -= 2;
@@ -91,24 +113,31 @@ std::string DecParser(const std::vector<Token>& tokens)
 		}
 	}
 
+	for (std::size_t a = 0; a < expr.size() - 1; ++a)
+	{
+		if (expr[a].type == TokenType::MINUS && expr[a + 1].type == TokenType::DEC_VALUE)
+		{
+			expr[a + 1].token = std::to_string(stof(expr[a + 1].token) * -1);
+
+			expr.erase(expr.begin() + a);
+			a -= 1;
+		}
+	}
+
 	for (std::size_t a = 0; a < expr.size(); ++a)
 	{
-		if (expr[a] == "*")
-			EvaluateDecExpression(expr, a);
-		else if (expr[a] == "/")
+		if (expr[a].type == TokenType::TIMES || expr[a].type == TokenType::DIVIDE)
 			EvaluateDecExpression(expr, a);
 	}
 
 	for (std::size_t a = 0; a < expr.size(); ++a)
 	{
-		if (expr[a] == "+")
-			EvaluateDecExpression(expr, a);
-		else if (expr[a] == "-")
+		if (expr[a].type == TokenType::PLUS || expr[a].type == TokenType::MINUS)
 			EvaluateDecExpression(expr, a);
 	}
 
-	if (expr.size() > 1)
-		error("invalid decimal expression");
+	if (expr.size() != 1 || expr[0].type != TokenType::DEC_VALUE)
+		throw _invalid_dec_expr_;
 
-	return expr[0];
+	return expr[0].token;
 }

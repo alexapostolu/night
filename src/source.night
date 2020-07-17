@@ -1,3 +1,1 @@
-int a = (2 + 3) * 2;
-
-print a + 6;
+print "Hello World!\n";

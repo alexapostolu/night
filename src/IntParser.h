@@ -1,123 +1,151 @@
 #pragma once
 
-#include <vector>
 #include <string>
+#include <vector>
 
-#include "Output.h"
+#include "Squid.h"
 
 #include "Variable.h"
 #include "Token.h"
 
-void EvaluateIntExpression(std::vector<std::string>& expr, std::size_t& index)
+void EvaluateIntExpression(std::vector<Token>& expr, std::size_t& index)
 {
-	try
-	{
-		if (expr[index] == "+")
-			expr.at(index - 1) = std::to_string(stoi(expr.at(index - 1)) + stoi(expr.at(index + 1)));
-		else if (expr[index] == "-")
-			expr.at(index - 1) = std::to_string(stoi(expr.at(index - 1)) - stoi(expr.at(index + 1)));
-		else if (expr[index] == "*")
-			expr.at(index - 1) = std::to_string(stoi(expr.at(index - 1)) * stoi(expr.at(index + 1)));
-		else if (expr[index] == "/")
-			expr.at(index - 1) = std::to_string(stoi(expr.at(index - 1)) / stoi(expr.at(index + 1)));
-		else if (expr[index] == "%")
-			expr.at(index - 1) = std::to_string(stoi(expr.at(index - 1)) % stoi(expr.at(index + 1)));
+	try {
+		if (expr.at(index - 1).type != TokenType::INT_VALUE ||
+			expr.at(index + 1).type != TokenType::INT_VALUE)
+			throw "";
+
+		if (expr[index].type == TokenType::PLUS)
+		{
+			expr.at(index - 1).token = std::to_string(stoi(expr.at(index - 1).token) +
+				stoi(expr.at(index + 1).token));
+		}
+		else if (expr[index].type == TokenType::MINUS)
+		{
+			expr.at(index - 1).token = std::to_string(stoi(expr.at(index - 1).token) -
+				stoi(expr.at(index + 1).token));
+		}
+		else if (expr[index].type == TokenType::TIMES)
+		{
+			expr.at(index - 1).token = std::to_string(stoi(expr.at(index - 1).token) *
+				stoi(expr.at(index + 1).token));
+		}
+		else if (expr[index].type == TokenType::DIVIDE)
+		{
+			expr.at(index - 1).token = std::to_string(stoi(expr.at(index - 1).token) /
+				stoi(expr.at(index + 1).token));
+		}
+		else if (expr[index].type == TokenType::MOD)
+		{
+			expr.at(index - 1).token = std::to_string(stoi(expr.at(index - 1).token) %
+				stoi(expr.at(index + 1).token));
+		}
+		else
+		{
+			throw 0;
+		}
 	}
-	catch (...)
-	{
-		error("invalid integer expression");
+	catch (int excNum) {
+		throw DYNAMIC_SQUID(excNum);
+	}
+	catch (...) {
+		throw _invalid_int_expr_;
 	}
 
-	if (index < expr.size())
-		expr.erase(expr.begin() + index);
-	else
-		error("invalid integer expression");
-
-	if (index < expr.size())
-		expr.erase(expr.begin() + index);
-	else
-		error("invalid integer expression");
+	for (int a = 0; a < 2; ++a)
+	{
+		if (index < expr.size())
+			expr.erase(expr.begin() + index);
+		else
+			throw _invalid_int_expr_;
+	}
 
 	index -= 1;
 }
 
-std::string IntParser(const std::vector<Token>& expr)
+std::string IntParser(std::vector<Token>& expr)
 {
-	std::vector<std::string> expression(expr.size());
 	for (std::size_t a = 0; a < expr.size(); ++a)
-		expression[a] = expr[a].token;
+	{
+		if (expr[a].type == TokenType::DEC_VALUE)
+		{
+			expr[a].type = TokenType::INT_VALUE;
+			expr[a].token = std::to_string(stoi(expr[a].token));
+		}
+		else if (a < expr.size() - 1 && expr[a].type == TokenType::MINUS &&
+			(expr[a + 1].type == TokenType::INT_VALUE || expr[a + 1].type == TokenType::DEC_VALUE))
+		{
+			expr[a + 1].type = TokenType::INT_VALUE;
+			expr[a + 1].token = std::to_string(stoi(expr[a + 1].token) * -1);
+
+			expr.erase(expr.begin() + a);
+			a -= 1;
+		}
+	}
 
 	unsigned int openBracketIndex = 0, closeBrakcetIndex;
-	for (std::size_t a = 0; a < expression.size(); ++a)
+	for (std::size_t a = 0; a < expr.size(); ++a)
 	{
-		if (expression[a] == "(")
+		if (expr[a].type == TokenType::OPEN_BRACKET)
 		{
 			openBracketIndex = a;
 		}
-		else if (expression[a] == ")")
+		else if (expr[a].type == TokenType::CLOSE_BRACKET)
 		{
 			closeBrakcetIndex = a;
 
 			for (std::size_t b = openBracketIndex + 1; b < closeBrakcetIndex; ++b)
 			{
-				if (expression[b] == "*")
+				if (expr[b].type == TokenType::TIMES || expr[b].type == TokenType::DIVIDE ||
+					expr[b].type == TokenType::MOD)
 				{
-					EvaluateIntExpression(expression, b);
-					closeBrakcetIndex -= 2;
-				}
-				else if (expression[b] == "/")
-				{
-					EvaluateIntExpression(expression, b);
-					closeBrakcetIndex -= 2;
-				}
-				else if (expression[b] == "%")
-				{
-					EvaluateIntExpression(expression, b);
+					EvaluateIntExpression(expr, b);
 					closeBrakcetIndex -= 2;
 				}
 			}
 
 			for (std::size_t b = openBracketIndex + 1; b < closeBrakcetIndex; ++b)
 			{
-				if (expression[b] == "+")
+				if (expr[b].type == TokenType::PLUS || expr[b].type == TokenType::MINUS)
 				{
-					EvaluateIntExpression(expression, b);
-					closeBrakcetIndex -= 2;
-				}
-				else if (expression[b] == "-")
-				{
-					EvaluateIntExpression(expression, b);
+					EvaluateIntExpression(expr, b);
 					closeBrakcetIndex -= 2;
 				}
 			}
 
-			expression.erase(expression.begin() + openBracketIndex);
-			expression.erase(expression.begin() + closeBrakcetIndex - 1);
+			expr.erase(expr.begin() + openBracketIndex);
+			expr.erase(expr.begin() + closeBrakcetIndex - 1);
 
 			a = -1;
 		}
 	}
 
-	for (std::size_t a = 0; a < expression.size(); ++a)
+	for (std::size_t a = 0; a < expr.size() - 1; ++a)
 	{
-		if (expression[a] == "*")
-			EvaluateIntExpression(expression, a);
-		else if (expression[a] == "/")
-			EvaluateIntExpression(expression, a);
-		else if (expression[a] == "%")
-			EvaluateIntExpression(expression, a);
+		if (expr[a].type == TokenType::MINUS && expr[a + 1].type == TokenType::INT_VALUE)
+		{
+			expr[a + 1].token = std::to_string(stoi(expr[a + 1].token) * -1);
+
+			expr.erase(expr.begin() + a);
+			a -= 1;
+		}
 	}
 
-	for (std::size_t a = 0; a < expression.size(); ++a)
+	for (std::size_t a = 0; a < expr.size(); ++a)
 	{
-		if (expression[a] == "+")
-			EvaluateIntExpression(expression, a);
-		else if (expression[a] == "-")
-			EvaluateIntExpression(expression, a);
+		if (expr[a].type == TokenType::TIMES || expr[a].type == TokenType::DIVIDE ||
+			expr[a].type == TokenType::MOD)
+			EvaluateIntExpression(expr, a);
 	}
 
-	if (expression.size() > 1)
-		error("invalid integer expression");
+	for (std::size_t a = 0; a < expr.size(); ++a)
+	{
+		if (expr[a].type == TokenType::PLUS || expr[a].type == TokenType::MINUS)
+			EvaluateIntExpression(expr, a);
+	}
 
-	return expression[0];
+	if (expr.size() != 1 || expr[0].type != TokenType::INT_VALUE)
+		throw _invalid_int_expr_;
+
+	return expr[0].token;
 }
