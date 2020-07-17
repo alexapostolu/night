@@ -1,2 +1,1 @@
-int a = -(5.345);
-print a;
+print "Hello World!\n";
