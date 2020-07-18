@@ -4,13 +4,9 @@ An (interpreted?) programming language. Still in early development. I've never m
 
 The `source.night` file is where you write the code, but I'm thinking once I'm done this language, I'm going to have a website where you can just write your code. I'll also include instructions on how to build this from source if you'd like to. I'm also working on a logo, but I'm really bad at designing. You can check it out in the `logo2.png` file.
 
-Also, a major update comming this Saturday :)
-
 ---
 
 **Language features**
-
-This is what will be in the next update:
 
 - variable types (bit, syb, int, dec, str)
 - variable declaration, initialization, and assignment
@@ -20,15 +16,13 @@ This is what will be in the next update:
 
 **In progress**
 
-Currently I'm working on testing my language and making sure all the error messages correspond to the right code error. And that basically means testing every single possible line of code that could possibly be written. *sigh*.
-
-After that update, I'll start work on functions, predefined functions, local variables (variables declared inside curly brackets), more versitile string concatenation, cleaner decimals, and more! Stay tuned :)
+Currently I'm working on better decimal and string support, and improving other minor things. Then I'll start work on functions, predefined function, local variables and more! It might take me 2-3 weeks to get all of them done. Stay tuned :)
 
 ---
 
 **Example**
 
-This is what the stable version will look like this weekend:
+Here's and example showcasing everything my language can currently do:
 
 ```
 print "Hello World!";
