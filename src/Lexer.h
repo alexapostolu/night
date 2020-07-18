@@ -12,8 +12,6 @@
 
 void Check(std::vector<Token>& tokens, std::string& token)
 {
-	static bool inStatement = false;
-
 	if (token == "bit")
 	{
 		tokens.push_back(Token{ TokenType::BIT_TYPE, token });
@@ -63,18 +61,11 @@ void Check(std::vector<Token>& tokens, std::string& token)
 	{
 		tokens.push_back(Token{ TokenType::IF, token });
 		token = "";
-
-		inStatement = true;
 	}
 	else if (token == "else")
 	{
-		if (!inStatement)
-			throw _invalid_if_statement_;
-
 		tokens.push_back(Token{ TokenType::ELSE, token });
 		token = "";
-
-		inStatement = false;
 	}
 	else if (token == "print")
 	{
@@ -88,14 +79,16 @@ void Check(std::vector<Token>& tokens, std::string& token)
 	}
 	else if (token != "")
 	{
-		throw _undefined_token_.set("token '" + token + "' undefined");
+		throw _undefined_token_("token '" + token + "' undefined");
 	}
 }
 
-int Lexer(const std::string& line)
+void Lexer(const std::string& line)
 {
 	std::string token = "";
 	std::vector<Token> tokens;
+
+	int openBracket = 0;
 
 	bool isString = false;
 
@@ -185,7 +178,7 @@ int Lexer(const std::string& line)
 			}
 			else
 			{
-				throw _undefined_token_.set("token '" + std::string(1, line[a]) + "' undefined");
+				throw _undefined_token_("token '" + std::string(1, line[a]) + "' undefined");
 			}
 
 			break;
@@ -199,17 +192,19 @@ int Lexer(const std::string& line)
 			}
 			else
 			{
-				throw _undefined_token_.set("token '" + std::string(1, line[a]) + "' undefined");
+				throw _undefined_token_("token '" + std::string(1, line[a]) + "' undefined");
 			}
 
 			break;
 		case '(':
 			Check(tokens, token);
 			tokens.push_back(Token{ TokenType::OPEN_BRACKET, "(" });
+			openBracket += 1;
 			break;
 		case ')':
 			Check(tokens, token);
 			tokens.push_back(Token{ TokenType::CLOSE_BRACKET, ")" });
+			openBracket -= 1;
 			break;
 		case '{':
 			Check(tokens, token);
@@ -231,11 +226,10 @@ int Lexer(const std::string& line)
 		}
 	}
 
-	// what's this for???
-	//if (token != "")
-		//return error("[delete this soon] token '" + token + "' undefined");
+	if (openBracket > 0)
+		throw _missing_open_bracket_;
+	else if (openBracket < 0)
+		throw _missing_close_bracket_;
 
 	Parser(tokens);
-
-	return 0;
 }

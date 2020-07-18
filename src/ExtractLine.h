@@ -27,17 +27,10 @@ void ExtractLine(std::string& codeLine)
 		}
 	}
 
-	// do we even need this? since the lexer already does everything
-	// this is like a last error check, the last line of defence
-	// return line != "" ? error("line [  " + line + "  ] contains invalid syntax") : 0;
-
-	// I don't this is even needed since the lexer does it's own stuff
-	/*
 	if (openCurly > 0)
-		error("symbol '}' not found");
+		throw _missing_close_curly_;
 	else if (openCurly < 0)
-		error("symbol '{' not found");
+		throw _missing_open_curly_;
 	else if (line != "")
-		error("symbol ';' or '}' not found");
-	*/
+		throw _missing_semicolon_;
 }
