@@ -51,5 +51,4 @@ const squid _invalid_str_expr_("string expression is invalid");
 
 const squid _invalid_print_("print statement is invalid");
 const squid _invalid_if_statement_("if statement is invalid");
-
 const squid _invalid_grammar_("language grammar is invalid");
