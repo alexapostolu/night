@@ -2,7 +2,7 @@
 
 An (interpreted?) programming language. Still in early development. I've never made one before, so I don't really know what I'm doing, but it should work out in the end.
 
-The `source.night` file is where you write the code, but I'm thinking once I'm done this language, I'm going to have a website where you can just write your code. I'll also include instructions on how to build this from source if you'd like to. I'm also working on a logo, but I'm really bad at designing. You can check it out in the `logo.png` file.
+The `source.night` file is where you write the code, but I'm thinking once I'm done this language, I'm going to have a website where you can just write your code. I'm also working on a logo, but I'm really bad at designing. You can check it out in the `logo.png` file.
 
 ---
 
@@ -13,10 +13,11 @@ The `source.night` file is where you write the code, but I'm thinking once I'm d
 - expressions (integer, boolean, and string concatenation)
 - print (standard ouput)
 - if statements (if, else if, and else)
+- functions (no parameters yet)
 
 **In progress**
 
-Currently I'm working on better decimal and string support, and improving other minor things. Then I'll start work on functions, predefined function, local variables and more! It might take me 2-3 weeks to get all of them done. Stay tuned :)
+Currently I'm working on function parameters. Then I'll start work on predefined functions, local variables and more! It might take me 2-3 weeks to get all of them done. Stay tuned :)
 
 ---
 
@@ -59,4 +60,11 @@ else
 {
     print "hi";
 }
+
+func helloFunction()
+{
+    print "Hello Function!\n";
+}
+
+helloFunction();
 ```
