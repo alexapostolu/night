@@ -9,7 +9,7 @@ enum class TokenType
 	INT_TYPE,
 	DEC_TYPE,
 	STR_TYPE,
-	
+
 	VARIABLE,
 
 	ASSIGNMENT,
@@ -37,11 +37,14 @@ enum class TokenType
 
 	OPEN_CURLY,
 	CLOSE_CURLY,
-	
+
 	PRINT,
 
 	IF,
 	ELSE,
+
+	FUNC_TYPE,
+	FUNC_NAME,
 
 	SEMICOLON
 };

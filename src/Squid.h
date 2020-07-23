@@ -36,6 +36,7 @@ squid _undefined_token_;
 squid _undefined_data_type_;
 squid _undefined_variable_;
 squid _variable_redefinition_;
+squid _undefined_function_;
 
 const squid _missing_semicolon_("semicolon is missing");
 const squid _missing_open_bracket_("open bracket is missing");
@@ -51,4 +52,6 @@ const squid _invalid_str_expr_("string expression is invalid");
 
 const squid _invalid_print_("print statement is invalid");
 const squid _invalid_if_statement_("if statement is invalid");
+const squid _invalid_function_("function is invalid");
+
 const squid _invalid_grammar_("language grammar is invalid");

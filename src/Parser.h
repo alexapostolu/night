@@ -11,6 +11,7 @@
 #include "Output.h"
 
 #include "Variable.h"
+#include "Function.h"
 #include "Token.h"
 
 bool CheckVariable(const std::string& var, const std::vector<Variable>& vars)
@@ -58,9 +59,12 @@ void ExtractVariables(std::size_t s, std::size_t e, std::vector<Token>& expr,
 	}
 }
 
+void SeparateTokens(std::vector<Token>& tokens, int s, int e);
+
 void Parser(std::vector<Token>& tokens)
 {
 	static std::vector<Variable> variables;
+	static std::vector<Function> functions;
 	
 	static bool inStatement = false;
 	static bool ifElseStatement = false;
@@ -229,25 +233,7 @@ void Parser(std::vector<Token>& tokens)
 				{
 					inStatement = false;
 
-					temp.clear();
-
-					int openCurly = 0;
-					for (std::size_t b = a + 1; b < tokens.size() - 1; ++b)
-					{
-						temp.push_back(tokens[b]);
-
-						if (tokens[b].type == TokenType::OPEN_CURLY)
-							openCurly += 1;
-						else if (tokens[b].type == TokenType::CLOSE_CURLY)
-							openCurly -= 1;
-
-						if (openCurly == 0 && (tokens[b].type == TokenType::SEMICOLON ||
-							tokens[b].type == TokenType::CLOSE_CURLY))
-						{
-							Parser(temp);
-							temp.clear();
-						}
-					}
+					SeparateTokens(tokens, a + 1, 1);
 
 					inStatement = true;
 					ifElseStatement = false;
@@ -280,28 +266,10 @@ void Parser(std::vector<Token>& tokens)
 
 					std::vector<Token> temp(tokens.begin() + 3, tokens.begin() + a - 1);
 					if (BitParser(temp) == "true")
-					{
-						temp.clear();
-						
+					{	
 						inStatement = false;
 
-						int openCurly = 0;
-						for (std::size_t b = a + 1; b < tokens.size() - 1; ++b)
-						{
-							temp.push_back(tokens[b]);
-
-							if (tokens[b].type == TokenType::OPEN_CURLY)
-								openCurly += 1;
-							else if (tokens[b].type == TokenType::CLOSE_CURLY)
-								openCurly -= 1;
-
-							if (openCurly == 0 && (tokens[b].type == TokenType::SEMICOLON ||
-								tokens[b].type == TokenType::CLOSE_CURLY))
-							{
-								Parser(temp);
-								temp.clear();
-							}
-						}
+						SeparateTokens(tokens, a + 1, 1);
 
 						inStatement = true;
 						ifElseStatement = false;
@@ -327,34 +295,77 @@ void Parser(std::vector<Token>& tokens)
 
 		if (ifElseStatement)
 		{
-			std::vector<Token> temp;
-
 			inStatement = false;
 
-			int openCurly = 0;
-			for (std::size_t b = 2; b < tokens.size() - 1; ++b)
-			{
-				temp.push_back(tokens[b]);
-
-				if (tokens[b].type == TokenType::OPEN_CURLY)
-					openCurly += 1;
-				else if (tokens[b].type == TokenType::CLOSE_CURLY)
-					openCurly -= 1;
-
-				if (openCurly == 0 && (tokens[b].type == TokenType::SEMICOLON ||
-					tokens[b].type == TokenType::CLOSE_CURLY))
-				{
-					Parser(temp);
-					temp.clear();
-				}
-			}
+			SeparateTokens(tokens, 2, 1);
 
 			inStatement = false;
 			ifElseStatement = false;
 		}
 	}
+	// function definition
+	else if (tokens.size() >= 6 && tokens[0].type == TokenType::FUNC_TYPE &&
+		tokens[1].type == TokenType::VARIABLE && tokens[2].type == TokenType::OPEN_BRACKET &&
+		tokens.back().type == TokenType::CLOSE_CURLY)
+	{
+		functions.push_back(Function{tokens[1].token});
+		for (std::size_t a = 5; a < tokens.size() - 1; ++a)
+		{
+			if (tokens[a].type == TokenType::FUNC_TYPE)
+				throw _invalid_function_;
+
+			functions.back().functionCode.push_back(tokens[a]);
+		}
+	}
+	// function call
+	else if (tokens.size() >= 4 && tokens[0].type == TokenType::VARIABLE &&
+		tokens[1].type == TokenType::OPEN_BRACKET && tokens.back().type == TokenType::SEMICOLON)
+	{
+		int variableIndex = variables.size();
+
+		bool isDefined = false;
+		for (std::size_t a = 0; a < functions.size(); ++a)
+		{
+			if (tokens[0].token == functions[a].name)
+			{
+				SeparateTokens(functions[a].functionCode, 0, 0);
+
+				variables.erase(variables.begin() + variableIndex, variables.end());
+
+				isDefined = true;
+				break;
+			}
+		}
+
+		if (!isDefined)
+			throw _undefined_function_("function '" + tokens[0].token + "' is undefined");
+	}
+	// error
 	else
 	{
 		throw _invalid_grammar_;
+	}
+}
+
+void SeparateTokens(std::vector<Token>& tokens, int s, int e)
+{
+	std::vector<Token> temp;
+
+	int openCurly = 0;
+	for (std::size_t a = s; a < tokens.size() - e; ++a)
+	{
+		temp.push_back(tokens[a]);
+
+		if (tokens[a].type == TokenType::OPEN_CURLY)
+			openCurly += 1;
+		else if (tokens[a].type == TokenType::CLOSE_CURLY)
+			openCurly -= 1;
+
+		if (openCurly == 0 && (tokens[a].type == TokenType::SEMICOLON ||
+			tokens[a].type == TokenType::CLOSE_CURLY))
+		{
+			Parser(temp);
+			temp.clear();
+		}
 	}
 }

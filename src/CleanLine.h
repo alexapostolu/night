@@ -8,7 +8,7 @@ void CleanLine(std::string& fileLine, std::string& codeLine)
 	std::size_t commentIndex = fileLine.find("//");
 	if (commentIndex != std::string::npos)
 		fileLine.erase(fileLine.begin() + commentIndex, fileLine.end());
-
+	
 	if (fileLine.empty())
 		return;
 
@@ -20,6 +20,6 @@ void CleanLine(std::string& fileLine, std::string& codeLine)
 		if (a == 0)
 			break;
 	}
-
+	
 	codeLine += fileLine;
 }
