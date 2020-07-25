@@ -17,7 +17,7 @@ The `source.night` file is where you write the code, but I'm thinking once I'm d
 
 **In progress**
 
-Currently I'm working on function parameters. Then I'll start work on predefined functions, local variables and more! It might take me 2-3 weeks to get all of them done. Stay tuned :)
+Currently I'm working on function parameters. I have the functions parameters working when you define the function, now all I have to do is the function paramaters on the function call. Then I'll start work on predefined functions, local variables and more! It might take me til the end of this month to get all of them done. Stay tuned :)
 
 ---
 
