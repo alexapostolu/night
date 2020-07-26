@@ -309,7 +309,50 @@ void Parser(std::vector<Token>& tokens)
 		tokens.back().type == TokenType::CLOSE_CURLY)
 	{
 		functions.push_back(Function{tokens[1].token});
-		for (std::size_t a = 5; a < tokens.size() - 1; ++a)
+
+		int index = 5;
+		for (std::size_t a = 3; tokens[a].type != TokenType::CLOSE_BRACKET; a += 2)
+		{
+			if (tokens[a].token == "bit" || tokens[a].token == "syb" || tokens[a].token == "int" ||
+				tokens[a].token == "dec" || tokens[a].token == "str")
+			{
+				if (tokens[a + 1].type == TokenType::VARIABLE)
+				{
+					for (Variable param : functions.back().parameters)
+					{
+						if (tokens[a + 1].token == param.name)
+							throw _invalid_parameter_;
+					}
+
+					functions.back().parameters.push_back(Variable{
+						tokens[a].token, tokens[a + 1].token, "" });
+
+					if (tokens[a + 2].type == TokenType::COMMA)
+					{
+						a += 1;
+					}
+					else if (tokens[a + 2].type == TokenType::CLOSE_BRACKET)
+					{
+						index = a + 4;
+						break;
+					}
+					else
+					{
+						throw _invalid_parameter_;
+					}
+				}
+				else
+				{
+					throw _invalid_parameter_;
+				}
+			}
+			else if (tokens[a].type != TokenType::CLOSE_BRACKET)
+			{
+				throw _invalid_parameter_;;
+			}
+		}
+
+		for (std::size_t a = index; a < tokens.size() - 1; ++a)
 		{
 			if (tokens[a].type == TokenType::FUNC_TYPE)
 				throw _invalid_function_;
@@ -321,7 +364,57 @@ void Parser(std::vector<Token>& tokens)
 	else if (tokens.size() >= 4 && tokens[0].type == TokenType::VARIABLE &&
 		tokens[1].type == TokenType::OPEN_BRACKET && tokens.back().type == TokenType::SEMICOLON)
 	{
+		int functionIndex = -1;
+		for (std::size_t a = 0; a < functions.size(); ++a)
+		{
+			if (tokens[0].token == functions[a].name)
+			{
+				functionIndex = a;
+				break;
+			}
+		}
+
+		if (functionIndex == -1)
+			throw _invalid_parameter_;
+
 		int variableIndex = variables.size();
+
+		int sC = 2;
+		for (std::size_t a = 2; a < tokens.size() - 2; ++a)
+		{
+			if ((functions[functionIndex].parameters[a - sC].type == "bit" && 
+					tokens[a].type == TokenType::BIT_VALUE) ||
+				(functions[functionIndex].parameters[a - sC].type == "syb" &&
+					tokens[a].type == TokenType::SYB_VALUE) ||
+				(functions[functionIndex].parameters[a - sC].type == "int" &&
+					tokens[a].type == TokenType::INT_VALUE) ||
+				(functions[functionIndex].parameters[a - sC].type == "dec" &&
+					tokens[a].type == TokenType::DEC_VALUE) ||
+				(functions[functionIndex].parameters[a - sC].type == "str" &&
+					tokens[a].type == TokenType::STR_VALUE))
+			{
+				functions[functionIndex].parameters[a - sC].value = tokens[a].token;
+				variables.push_back(Variable{ functions[functionIndex].parameters[a - sC].type,
+					functions[functionIndex].parameters[a - sC].name, tokens[a].token });
+
+				if (tokens[a + 1].type == TokenType::CLOSE_BRACKET)
+					break;
+
+				if (tokens[a + 1].type != TokenType::COMMA)
+					throw _invalid_parameter_;
+
+				sC += 1;
+				a += 1;
+			}
+			else if (tokens[a].type == TokenType::CLOSE_BRACKET)
+			{
+				break;
+			}
+			else
+			{
+				throw _invalid_parameter_;
+			}
+		}
 
 		bool isDefined = false;
 		for (std::size_t a = 0; a < functions.size(); ++a)

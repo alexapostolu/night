@@ -137,7 +137,7 @@ void Lexer(const std::string& line)
 			}
 
 			break;
-		case '+':	
+		case '+':
 			Check(tokens, token);
 			tokens.push_back(Token{ TokenType::PLUS, "+" });
 
@@ -218,6 +218,10 @@ void Lexer(const std::string& line)
 		case '}':
 			Check(tokens, token);
 			tokens.push_back(Token{ TokenType::CLOSE_CURLY, "}" });
+			break;
+		case ',':
+			Check(tokens, token);
+			tokens.push_back(Token{ TokenType::COMMA, "," });
 			break;
 		case ';':
 			Check(tokens, token);
