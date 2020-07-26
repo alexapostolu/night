@@ -13,11 +13,11 @@ The `source.night` file is where you write the code, but I'm thinking once I'm d
 - expressions (integer, boolean, and string concatenation)
 - print (standard ouput)
 - if statements (if, else if, and else)
-- functions (no parameters yet)
+- functions
 
 **In progress**
 
-Currently I'm working on function parameters. I have the functions parameters working when you define the function, now all I have to do is the function paramaters on the function call. Then I'll start work on predefined functions, local variables and more! It might take me til the end of this month to get all of them done. Stay tuned :)
+So I just finsihed work on funciton parameters, so now you can call a function with a parameter! I'm still working on the error messages associated with it, and then some bugs with local variables.
 
 ---
 
@@ -61,10 +61,10 @@ else
     print "hi";
 }
 
-func helloFunction()
+func helloFunction(str name)
 {
-    print "Hello Function!\n";
+    print "Hello " + name;
 }
 
-helloFunction();
+helloFunction("squid");
 ```
