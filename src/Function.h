@@ -8,6 +8,6 @@
 struct Function
 {
 	std::string name;
-
+	std::vector<Variable> parameters;
 	std::vector<Token> functionCode;
 };
