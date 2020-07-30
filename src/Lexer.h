@@ -77,6 +77,11 @@ void Check(std::vector<Token>& tokens, std::string& token)
 		tokens.push_back(Token{ TokenType::FUNC_TYPE, token });
 		token = "";
 	}
+	else if (token == "return")
+	{
+		tokens.push_back(Token{ TokenType::RETURN, token });
+		token = "";
+	}
 	else if (std::regex_match(token, std::regex("[a-zA-Z]+")))
 	{
 		tokens.push_back(Token{ TokenType::VARIABLE, token });

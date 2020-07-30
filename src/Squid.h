@@ -55,5 +55,6 @@ const squid _invalid_if_statement_("if statement is invalid");
 
 const squid _invalid_function_("function is invalid");
 const squid _invalid_parameter_("function parameter is invalid");
+const squid _invalid_return_("return expression is invalid");
 
 const squid _invalid_grammar_("language grammar is invalid");

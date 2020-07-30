@@ -25,15 +25,17 @@ bool CheckVariable(const std::string& var, const std::vector<Variable>& vars)
 	return true;
 }
 
+void SeparateTokens(std::vector<Token>& tokens, int s, int e);
+
 void ExtractVariables(std::size_t s, std::size_t e, std::vector<Token>& expr,
-	const std::vector<Variable>& vars)
+	std::vector<Variable>& vars, std::vector<Function>& functions, bool& inFunction,
+	const TokenType& returnType, const std::string& returnValue)
 {
-	bool isDefined;
 	for (std::size_t a = s; a < e; ++a)
 	{
 		if (expr[a].type == TokenType::VARIABLE)
 		{
-			isDefined = false;
+			bool varDefined = false;
 			for (std::size_t b = 0; b < vars.size(); ++b)
 			{
 				if (expr[a].token == vars[b].name)
@@ -45,8 +47,98 @@ void ExtractVariables(std::size_t s, std::size_t e, std::vector<Token>& expr,
 						vars[b].type == "str" ? TokenType::STR_VALUE :
 						throw DYNAMIC_SQUID(0);
 
-
 					expr[a].token = vars[b].value;
+
+					varDefined = true;
+					break;
+				}
+			}
+
+			if (varDefined)
+				continue;
+
+			int functionIndex = -1;
+			for (std::size_t b = 0; b < functions.size(); ++b)
+			{
+				if (expr[a].token == functions[b].name)
+				{
+					functionIndex = b;
+					break;
+				}
+			}
+
+			if (functionIndex == -1)
+				throw _undefined_variable_("variable '" + expr[a].token + "' is not defined");
+
+			int functionEnd = -1;
+			for (int b = a + 1; b < expr.size(); ++b)
+			{
+				if (expr[b].type == TokenType::CLOSE_BRACKET)
+				{
+					functionEnd = b;
+					break;
+				}
+			}
+
+			if (functionEnd == -1)
+				throw DYNAMIC_SQUID(0);
+			if ((functionEnd - a - 1) / 2 != functions[functionIndex].parameters.size())
+				throw _invalid_parameter_;
+			
+			int variableIndex = vars.size();
+
+			int sC = a + 2;
+			for (std::size_t b = a + 2; b < functionEnd; ++b)
+			{
+				try {
+					if ((functions[functionIndex].parameters.at(b - sC).type == "bit" &&
+							expr[b].type == TokenType::BIT_VALUE) ||
+						(functions[functionIndex].parameters[b - sC].type == "syb" &&
+							expr[b].type == TokenType::SYB_VALUE) ||
+						(functions[functionIndex].parameters[b - sC].type == "int" &&
+							expr[b].type == TokenType::INT_VALUE) ||
+						(functions[functionIndex].parameters[b - sC].type == "dec" &&
+							expr[b].type == TokenType::DEC_VALUE) ||
+						(functions[functionIndex].parameters[b - sC].type == "str" &&
+							expr[b].type == TokenType::STR_VALUE))
+					{
+						functions[functionIndex].parameters[b - sC].value = expr[b].token;
+						vars.push_back(Variable{ functions[functionIndex].parameters[b - sC].type,
+							functions[functionIndex].parameters[b - sC].name, expr[b].token });
+
+						if (expr[b + 1].type == TokenType::CLOSE_BRACKET)
+							break;
+
+						if (expr[b + 1].type != TokenType::COMMA)
+							throw _invalid_parameter_;
+
+						sC += 1;
+						b += 1;
+					}
+					else if (expr[b].type == TokenType::CLOSE_BRACKET)
+					{
+						break;
+					}
+					else
+					{
+						throw _invalid_parameter_;
+					}
+				}
+				catch (...) {
+					throw _invalid_parameter_;
+				}
+			}
+
+			bool isDefined = false;
+			for (std::size_t b = 0; b < functions.size(); ++b)
+			{
+				if (expr[a].token == functions[b].name)
+				{
+					inFunction = true;
+					SeparateTokens(functions[b].functionCode, 0, 0);
+					inFunction = false;
+
+					vars.erase(vars.begin() + variableIndex, vars.end());
 
 					isDefined = true;
 					break;
@@ -54,12 +146,16 @@ void ExtractVariables(std::size_t s, std::size_t e, std::vector<Token>& expr,
 			}
 
 			if (!isDefined)
-				throw _undefined_variable_("variable '" + expr[a].token + "' is not defined");
+				throw _undefined_function_("function '" + expr[a].token + "' is undefined");
+
+			expr[a].type = returnType;
+			expr[a].token = returnValue;
+			expr.erase(expr.begin() + a + 1, expr.begin() + functionEnd + 1);
+
+			break;
 		}
 	}
 }
-
-void SeparateTokens(std::vector<Token>& tokens, int s, int e);
 
 void Parser(std::vector<Token>& tokens)
 {
@@ -68,6 +164,10 @@ void Parser(std::vector<Token>& tokens)
 	
 	static bool inStatement = false;
 	static bool ifElseStatement = false;
+
+	static bool inFunction = false;
+	static TokenType returnType;
+	static std::string returnValue;
 
 	// variable declaration
 	if (tokens.size() == 3 && tokens[0].type != TokenType::PRINT && tokens[1].type == TokenType::VARIABLE &&
@@ -101,7 +201,8 @@ void Parser(std::vector<Token>& tokens)
 		if (!CheckVariable(tokens[1].token, variables))
 			throw _variable_redefinition_("variable '" + tokens[1].token + "' already defined");
 
-		ExtractVariables(3, tokens.size() - 1, tokens, variables);
+		ExtractVariables(3, tokens.size() - 1, tokens, variables, functions, inFunction, returnType,
+			returnValue);
 
 		std::vector<Token> expression(tokens.begin() + 3, tokens.end() - 1);
 
@@ -136,7 +237,8 @@ void Parser(std::vector<Token>& tokens)
 		if (CheckVariable(tokens[0].token, variables))
 			throw _undefined_variable_("variable '" + tokens[0].token + "' is undefined");
 
-		ExtractVariables(2, tokens.size() - 1, tokens, variables);
+		ExtractVariables(2, tokens.size() - 1, tokens, variables, functions, inFunction, returnType,
+			returnValue);
 
 		int variableIndex = -1;
 		for (std::size_t a = 0; a < variables.size(); ++a)
@@ -187,7 +289,8 @@ void Parser(std::vector<Token>& tokens)
 	else if (tokens.size() >= 3 && tokens[0].type == TokenType::PRINT &&
 		tokens.back().type == TokenType::SEMICOLON)
 	{
-		ExtractVariables(1, tokens.size() - 1, tokens, variables);
+		ExtractVariables(1, tokens.size() - 1, tokens, variables, functions, inFunction, returnType,
+			returnValue);
 
 		std::vector<Token> temp(tokens.begin() + 1, tokens.end() - 1);
 
@@ -226,7 +329,8 @@ void Parser(std::vector<Token>& tokens)
 		{
 			if (tokens[a].type == TokenType::OPEN_CURLY)
 			{
-				ExtractVariables(2, a - 1, tokens, variables);
+				ExtractVariables(2, a - 1, tokens, variables, functions, inFunction, returnType,
+					returnValue);
 
 				std::vector<Token> temp(tokens.begin() + 2, tokens.begin() + a - 1);
 				if (BitParser(temp) == "true")
@@ -262,7 +366,8 @@ void Parser(std::vector<Token>& tokens)
 			{
 				if (tokens[a].type == TokenType::OPEN_CURLY)
 				{
-					ExtractVariables(3, a - 1, tokens, variables);
+					ExtractVariables(3, a - 1, tokens, variables, functions, inFunction, returnType,
+						returnValue);
 
 					std::vector<Token> temp(tokens.begin() + 3, tokens.begin() + a - 1);
 					if (BitParser(temp) == "true")
@@ -360,78 +465,46 @@ void Parser(std::vector<Token>& tokens)
 			functions.back().functionCode.push_back(tokens[a]);
 		}
 	}
-	// function call
-	else if (tokens.size() >= 4 && tokens[0].type == TokenType::VARIABLE &&
-		tokens[1].type == TokenType::OPEN_BRACKET && tokens.back().type == TokenType::SEMICOLON)
+	//  return
+	else if (tokens.size() >= 3 && tokens[0].type == TokenType::RETURN &&
+		tokens.back().type == TokenType::SEMICOLON)
 	{
-		int functionIndex = -1;
-		for (std::size_t a = 0; a < functions.size(); ++a)
+		if (!inFunction)
+			throw _invalid_function_;
+		
+		ExtractVariables(1, tokens.size(), tokens, variables, functions, inFunction, returnType,
+			returnValue);
+
+		std::vector<Token> temp(tokens.begin() + 1, tokens.end() - 1);
+
+		switch (tokens[1].type)
 		{
-			if (tokens[0].token == functions[a].name)
-			{
-				functionIndex = a;
-				break;
-			}
-		}
-
-		if (functionIndex == -1)
-			throw _invalid_parameter_;
-
-		int variableIndex = variables.size();
-
-		int sC = 2;
-		for (std::size_t a = 2; a < tokens.size() - 2; ++a)
-		{
-			if ((functions[functionIndex].parameters[a - sC].type == "bit" && 
-					tokens[a].type == TokenType::BIT_VALUE) ||
-				(functions[functionIndex].parameters[a - sC].type == "syb" &&
-					tokens[a].type == TokenType::SYB_VALUE) ||
-				(functions[functionIndex].parameters[a - sC].type == "int" &&
-					tokens[a].type == TokenType::INT_VALUE) ||
-				(functions[functionIndex].parameters[a - sC].type == "dec" &&
-					tokens[a].type == TokenType::DEC_VALUE) ||
-				(functions[functionIndex].parameters[a - sC].type == "str" &&
-					tokens[a].type == TokenType::STR_VALUE))
-			{
-				functions[functionIndex].parameters[a - sC].value = tokens[a].token;
-				variables.push_back(Variable{ functions[functionIndex].parameters[a - sC].type,
-					functions[functionIndex].parameters[a - sC].name, tokens[a].token });
-
-				if (tokens[a + 1].type == TokenType::CLOSE_BRACKET)
-					break;
-
-				if (tokens[a + 1].type != TokenType::COMMA)
-					throw _invalid_parameter_;
-
-				sC += 1;
-				a += 1;
-			}
-			else if (tokens[a].type == TokenType::CLOSE_BRACKET)
-			{
-				break;
-			}
+		case TokenType::BIT_VALUE:
+			returnValue = BitParser(temp);
+			break;
+		case TokenType::SYB_VALUE:
+			if (tokens.size() == 3)
+				returnValue = tokens[1].token;
 			else
-			{
-				throw _invalid_parameter_;
-			}
+				throw _invalid_syb_expr_;
+
+			break;
+		case TokenType::INT_VALUE:
+			returnValue = IntParser(temp);
+			break;
+		case TokenType::DEC_VALUE:
+			returnValue = DecParser(temp);
+			break;
+		case TokenType::STR_VALUE:
+			returnValue = StrParser(temp);
+			break;
+		default:
+			throw _invalid_return_;
 		}
 
-		bool isDefined = false;
-		for (std::size_t a = 0; a < functions.size(); ++a)
-		{
-			if (tokens[0].token == functions[a].name)
-			{
-				SeparateTokens(functions[a].functionCode, 0, 0);
+		returnType = tokens[1].type;
 
-				variables.erase(variables.begin() + variableIndex, variables.end());
-
-				isDefined = true;
-				break;
-			}
-		}
-
-		if (!isDefined)
-			throw _undefined_function_("function '" + tokens[0].token + "' is undefined");
+		throw "End Function";
 	}
 	// error
 	else
@@ -457,7 +530,13 @@ void SeparateTokens(std::vector<Token>& tokens, int s, int e)
 		if (openCurly == 0 && (tokens[a].type == TokenType::SEMICOLON ||
 			tokens[a].type == TokenType::CLOSE_CURLY))
 		{
-			Parser(temp);
+			try {
+				Parser(temp);
+			}
+			catch (...) {
+				break;
+			}
+
 			temp.clear();
 		}
 	}

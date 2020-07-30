@@ -45,6 +45,7 @@ enum class TokenType
 
 	FUNC_TYPE,
 	FUNC_NAME,
+	RETURN,
 
 	COMMA,
 	SEMICOLON
