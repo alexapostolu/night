@@ -17,7 +17,7 @@ The `source.night` file is where you write the code, but I'm thinking once I'm d
 
 **In progress**
 
-I just finished up functions! You can check out the lastest commit for more info. Also see the examples for the new things you can do with them!
+I just finished up functions! You can check out the lastest commit for more info. Also see the examples for the new things you can do with them! So right now, I'm working on pre-defined functions! Stay tuned :)
 
 ---
 
