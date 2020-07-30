@@ -17,7 +17,7 @@ The `source.night` file is where you write the code, but I'm thinking once I'm d
 
 **In progress**
 
-So I just finsihed work on funciton parameters, so now you can call a function with a parameter! I'm still working on the error messages associated with it, and then some bugs with local variables.
+I just finished up functions! You can check out the lastest commit for more info. Also see the examples for the new things you can do with them!
 
 ---
 
@@ -39,32 +39,25 @@ str string = "dynamic " + "squid"; // supports string concatenation
 int answer; // a default value will be given:   false - bit,   ' ' - syb,   0 - int,   0.0 - dec,   "" - str
 answer = 10;
 
-if (string == "dynamic squid")
+if ("Squid" == "smart")
 {
-    print "hello " + string;
-    
-    // also supports nested if statements
-    if (true)
-    {
-        if (true)
-        {
-            print "thanks recursion :)";
-        }
-    }
+    print "Squid is smart";
 }
-else if (string == "octopus")
+else if ("Squid" == "octopus")
 {
     print "no";
 }
 else
 {
-    print "hi";
+    print "Squid is a squid";
 }
 
-func helloFunction(str name)
+// no void functions... yet
+func add(int a, int b)
 {
-    print "Hello " + name;
+    print "Adding two numbers:\n";
+    return a + b;
 }
 
-helloFunction("squid");
+print add(2, 3);
 ```
