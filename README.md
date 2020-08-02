@@ -1,63 +1,58 @@
 # Night
 
-An (interpreted?) programming language. Still in early development. I've never made one before, so I don't really know what I'm doing, but it should work out in the end.
+An interpreted programming language. It combines the simplicity of Python, with the type concepts of the C family. It features basic syntax such as variables, if statements, and expressions. It also supports functions, however it is not stable.
 
-The `source.night` file is where you write the code, but I'm thinking once I'm done this language, I'm going to have a website where you can just write your code. I'm also working on a logo, but I'm really bad at designing. You can check it out in the `logo.png` file.
+It's still in early development, and I have a lot to do for `v2`.
 
----
-
-**Language features**
-
-- variable types (bit, syb, int, dec, str)
-- variable declaration, initialization, and assignment
-- expressions (integer, boolean, and string concatenation)
-- print (standard ouput)
-- if statements (if, else if, and else)
-- functions
-
-**In progress**
-
-I just finished up functions! You can check out the lastest commit for more info. Also see the examples for the new things you can do with them! So right now, I'm working on pre-defined functions! Stay tuned :)
-
----
-
-**Example**
-
-Here's and example showcasing everything my language can currently do:
+Here's a sample of my current language:
 
 ```
-print "Hello World!";
+print "Hello World!\n";
 
 // this is a comment
 
-bit boolean = true; // supports `! && || == != ( )` all of those
+bit boolean = true;
 syb character = 'c';
-int integer = 2 + 3; // supports '+ - / * % ( )' all of those
+int integer = 10;
 dec float = 3.14;
-str string = "dynamic " + "squid"; // supports string concatenation
+str string = "squid";
 
-int answer; // a default value will be given:   false - bit,   ' ' - syb,   0 - int,   0.0 - dec,   "" - str
-answer = 10;
+bit smart = true;
+int legs = 10;
 
-if ("Squid" == "smart")
+if (smart && legs == 10)
 {
-    print "Squid is smart";
+    print "Hello squid!";
 }
-else if ("Squid" == "octopus")
+else if (smart && legs == 8)
 {
-    print "no";
+    print "Hello octopus!";
 }
 else
 {
-    print "Squid is a squid";
+    print "Hmm... not sure who you are";
 }
 
-// no void functions... yet
 func add(int a, int b)
 {
-    print "Adding two numbers:\n";
     return a + b;
 }
 
-print add(2, 3);
+print add(1, 2);
 ```
+
+---
+
+Here's what I'm planning do add/fix for `v2`:
+
+- complete refactor of code, makes it easier to mantain and develop
+- new operators: `+= -= /= *= %= < > <= >=`
+- predefined functions and small libraries
+- explicit function return types
+- function definitions
+- function overloading
+- loops and arrays
+- implicit conversions: `"string" + 3` or `bit a = 0`
+- user input
+
+Stay tuned :)
