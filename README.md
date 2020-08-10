@@ -1,72 +1,60 @@
 # Night
 
-A (interpreted?) programming language. Still in development. I've never made one before, so I don't really know what I'm doing, but it should work out in the end.
+An interpreted programming language. It combines the simplicity of Python, with the type concepts of the C family.
 
-The `source.night` file is where you write the code. But I don't like the extention `.night`. I'm looking for something shorter, but don't know what yet. I'm also working on a logo, but I'm really bad at designing. I'm thinking of something similar to `logo2.png`.
+It's still in early development, and I have a lot left to do. I'm also working on a [website](https://night-web.dynamicsquid.repl.co/) which you can definitly check out! Also working on a logo, but I'm really bad a designing things. You can check that out in the `logo.png` file.
 
-Also, this language is very similar to the C family since I'm not that creative, and I'm just starting out. Definitly going to change it down the road.
+Here's a sample of my current language:
 
----
+```
+print("Hello World!\n");
 
-**Special Features (updated as progress continues):**
+// this is a comment
 
-- no implicit conversions (similar to Rust)
+bit boolean = true; // supports '! || && == != < > <= >= ( )' all of those
+syb character = 'c'; // doesn't support any expressions yet
+int integer = 10; // supports '+ - * / % ( )' all of those
+dec float = 3.14; // same with 'int', but without 'mod'
+str string = "squid"; // suports string concatenation
 
----
+int answer = 10 + 5;
+answer = 2 + 3;
 
-**Language features**
+int legs = 10;
+bool smart = true;
 
-You can check the `source.night` file for what the language currently supports. It's really basic stuff. Variable initialization, a `print` thingy, and simple expressions.
+if (legs == 10 && smart)
+{
+    print("Hi squid");
+}
+else if (legs == 8 && smart)
+{
+    print("Hi octopus");
+}
+else if (legs == 2 && !smart)
+{
+    print("Hi human");
+}
+else
+{
+    print("Not sure who you are");
+}
 
-Edit: I just added a new feature, if statements!
+int add(int a, int b)
+{
+    print("Adding to numbers:\n");
+    return a + b;
+}
 
-**In progress**
-
-A complete rework of the language and code. Also I want to add functions. And if I do, then in theory, I could use my language, to create my language (well, pre-defined functions at least)...
-
-You can take a look at it in the `newer-version` branch. I'm basically working on using a `try-catch` statement to detect invalid expressions, instead of my old way which was to iterate over the entire expression checking each token individually. I'm also implementing a cleaner parser.
-
----
-
-**How it works**
-
-1. Take in a line of input
-
-2. Separate line based of semicolons. Merge the second line with the first if it has to
-
-That basically allows this:
-
-```cpp
-int a = 2 +
-
-3;
+int number = add(2, 3) + 4;
+print(number);
 ```
 
-To be perfectly valid code.
+There's still a lot to be done though. Here are the things I'm working on:
 
-3. Send it off to the lexer to be tokenized
-
-The lexer will ignore whitespace, expect for keywords:
-
-```cpp
-int a=2+3;
-```
-
-Notice how there must be a space after the `int` keyword.
-
-4. Send it off to the parser
-
-5. Evalutate the expression down to a single token
-
-```cpp
-if (true & true) {} // I use recursion to get the if statements to work
-if (true) {}
-
-int a = 2 + 3;
-int a = 5;
-
-print "Hello " + "World!";
-print "Hello World!";
-```
-
-6. Do stuff idk
+- new operators: `+=`, `-=`, `/=`, `*=`, `%=`, `<`, `>`, `<=`, `>=`
+- predefined functions and small libraries
+- function definitions and overloading
+- loops and arrays
+- user input
+- more support for expressions
