@@ -1,59 +1,60 @@
 # Night
 
-An interpreted programming language. It combines the simplicity of Python, with the type concepts of the C family. It features basic syntax such as variables, if statements, and expressions. It also supports functions, however it is not stable.
+An interpreted programming language. It combines the simplicity of Python, with the type concepts of the C family.
 
-It's still in early development, and I have a lot to do for version 2. You can actually view the `v2` branch to see what I'm working on for the next version. I'm coding the language in a completly different style, so I restarted the whole thing. But I should be better... in theory...
+It's still in early development, and I have a lot left to do. I'm also working on a [website](https://night-web.dynamicsquid.repl.co/) which you can definitly check out!
 
 Here's a sample of my current language:
 
 ```
-print "Hello World!\n";
+print("Hello World!\n");
 
 // this is a comment
 
-bit boolean = true;
-syb character = 'c';
-int integer = 10;
-dec float = 3.14;
-str string = "squid";
+bit boolean = true; // supports '! || && == != < > <= >= ( )' all of those
+syb character = 'c'; // doesn't support any expressions yet
+int integer = 10; // supports '+ - * / % ( )' all of those
+dec float = 3.14; // same with 'int', but without 'mod'
+str string = "squid"; // suports string concatenation
 
-bit smart = true;
+int answer = 10 + 5;
+answer = 2 + 3;
+
 int legs = 10;
+bool smart = true;
 
-if (smart && legs == 10)
+if (legs == 10 && smart)
 {
-    print "Hello squid!";
+    print("Hi squid");
 }
-else if (smart && legs == 8)
+else if (legs == 8 && smart)
 {
-    print "Hello octopus!";
+    print("Hi octopus");
+}
+else if (legs == 2 && !smart)
+{
+    print("Hi human");
 }
 else
 {
-    print "Hmm... not sure who you are";
+    print("Not sure who you are");
 }
 
-func add(int a, int b)
+int add(int a, int b)
 {
+    print("Adding to numbers:\n");
     return a + b;
 }
 
-print add(1, 2);
+int number = add(2, 3) + 4;
+print(number);
 ```
 
----
+There's still a lot to be done though. Here are the things I'm working on:
 
-Here's what I'm planning do add/fix for version 2:
-
-- complete refactor of code, makes it easier to mantain and develop
-- new operators: `+= -= /= *= %= < > <= >=`
+- new operators: `+=`, `-=`, `/=`, `*=`, `%=`, `<`, `>`, `<=`, `>=`
 - predefined functions and small libraries
-- explicit function return types
-- function definitions
-- function overloading
+- function definitions and overloading
 - loops and arrays
 - user input
-
-The code for version 2 is in the `v2` branch.
-
-Stay tuned :)
+- more support for expressions
