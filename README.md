@@ -1,72 +1,59 @@
 # Night
 
-A (interpreted?) programming language. Still in development. I've never made one before, so I don't really know what I'm doing, but it should work out in the end.
+An interpreted programming language. It combines the simplicity of Python, with the type concepts of the C family. It features basic syntax such as variables, if statements, and expressions. It also supports functions, however it is not stable.
 
-The `source.night` file is where you write the code. But I don't like the extention `.night`. I'm looking for something shorter, but don't know what yet. I'm also working on a logo, but I'm really bad at designing. I'm thinking of something similar to `logo2.png`.
+It's still in early development, and I have a lot to do for version 2. You can actually view the `v2` branch to see what I'm working on for the next version. I'm coding the language in a completly different style, so I restarted the whole thing. But I should be better... in theory...
 
-Also, this language is very similar to the C family since I'm not that creative, and I'm just starting out. Definitly going to change it down the road.
+Here's a sample of my current language:
+
+```
+print "Hello World!\n";
+
+// this is a comment
+
+bit boolean = true;
+syb character = 'c';
+int integer = 10;
+dec float = 3.14;
+str string = "squid";
+
+bit smart = true;
+int legs = 10;
+
+if (smart && legs == 10)
+{
+    print "Hello squid!";
+}
+else if (smart && legs == 8)
+{
+    print "Hello octopus!";
+}
+else
+{
+    print "Hmm... not sure who you are";
+}
+
+func add(int a, int b)
+{
+    return a + b;
+}
+
+print add(1, 2);
+```
 
 ---
 
-**Special Features (updated as progress continues):**
+Here's what I'm planning do add/fix for version 2:
 
-- no implicit conversions (similar to Rust)
+- complete refactor of code, makes it easier to mantain and develop
+- new operators: `+= -= /= *= %= < > <= >=`
+- predefined functions and small libraries
+- explicit function return types
+- function definitions
+- function overloading
+- loops and arrays
+- user input
 
----
+The code for version 2 is in the `v2` branch.
 
-**Language features**
-
-You can check the `source.night` file for what the language currently supports. It's really basic stuff. Variable initialization, a `print` thingy, and simple expressions.
-
-Edit: I just added a new feature, if statements!
-
-**In progress**
-
-A complete rework of the language and code. Also I want to add functions. And if I do, then in theory, I could use my language, to create my language (well, pre-defined functions at least)...
-
-You can take a look at it in the `newer-version` branch. I'm basically working on using a `try-catch` statement to detect invalid expressions, instead of my old way which was to iterate over the entire expression checking each token individually. I'm also implementing a cleaner parser.
-
----
-
-**How it works**
-
-1. Take in a line of input
-
-2. Separate line based of semicolons. Merge the second line with the first if it has to
-
-That basically allows this:
-
-```cpp
-int a = 2 +
-
-3;
-```
-
-To be perfectly valid code.
-
-3. Send it off to the lexer to be tokenized
-
-The lexer will ignore whitespace, expect for keywords:
-
-```cpp
-int a=2+3;
-```
-
-Notice how there must be a space after the `int` keyword.
-
-4. Send it off to the parser
-
-5. Evalutate the expression down to a single token
-
-```cpp
-if (true & true) {} // I use recursion to get the if statements to work
-if (true) {}
-
-int a = 2 + 3;
-int a = 5;
-
-print "Hello " + "World!";
-print "Hello World!";
-```
-
-6. Do stuff idk
+Stay tuned :)
