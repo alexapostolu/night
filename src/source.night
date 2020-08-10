@@ -1,18 +1,1 @@
-func test()
-{
-	print "Hello World!\n";
-
-	if (true)
-	{
-		if (false)
-		{
-			print "Hey\n";
-		}
-		else
-		{
-			print "Hi\n";
-		}
-	}
-}
-
-test();
+print("Hello Night!");

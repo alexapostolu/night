@@ -4,13 +4,12 @@
 #include <string>
 #include <vector>
 
-#include "Parser.h"
+#include "Parser/Parser.h"
 
-#include "Squid.h"
+#include "DataTypes/Error.h"
+#include "DataTypes/Token.h"
 
-#include "Token.h"
-
-void Check(std::vector<Token>& tokens, std::string& token)
+void CheckToken(std::vector<Token>& tokens, std::string& token)
 {
 	if (token == "bit")
 	{
@@ -67,16 +66,6 @@ void Check(std::vector<Token>& tokens, std::string& token)
 		tokens.push_back(Token{ TokenType::ELSE, token });
 		token = "";
 	}
-	else if (token == "print")
-	{
-		tokens.push_back(Token{ TokenType::PRINT, token });
-		token = "";
-	}
-	else if (token == "func")
-	{
-		tokens.push_back(Token{ TokenType::FUNC_TYPE, token });
-		token = "";
-	}
 	else if (token == "return")
 	{
 		tokens.push_back(Token{ TokenType::RETURN, token });
@@ -87,33 +76,28 @@ void Check(std::vector<Token>& tokens, std::string& token)
 		tokens.push_back(Token{ TokenType::VARIABLE, token });
 		token = "";
 	}
-	else if (token != "")
-	{
-		throw _undefined_token_("token '" + token + "' undefined");
-	}
 }
 
-void Lexer(const std::string& line)
+void Lexer(const std::string& line, bool runtime)
 {
 	std::string token = "";
 	std::vector<Token> tokens;
 
-	int openBracket = 0;
-
+	int openBracket = 0, openSquare = 0, openCurly = 0;
 	bool isString = false;
 
 	for (std::size_t a = 0; a < line.length(); ++a)
 	{
 		if (line[a] == '"' && !isString)
 		{
-			Check(tokens, token);
+			CheckToken(tokens, token);
 
 			isString = true;
 			continue;
 		}
 		else if (line[a] != '"' && isString)
 		{
-			token += line[a];
+			token += line[a] == '\t' ? ' ' : line[a];
 			continue;
 		}
 		else if (line[a] == '"' && isString)
@@ -130,50 +114,48 @@ void Lexer(const std::string& line)
 		case '=':
 			if (a < line.length() && line[a + 1] == '=')
 			{
-				Check(tokens, token);
+				CheckToken(tokens, token);
 				tokens.push_back(Token{ TokenType::EQUALS, "==" });
 
 				a += 1;
 			}
 			else
 			{
-				Check(tokens, token);
+				CheckToken(tokens, token);
 				tokens.push_back(Token{ TokenType::ASSIGNMENT, "=" });
 			}
 
 			break;
 		case '+':
-			Check(tokens, token);
+			CheckToken(tokens, token);
 			tokens.push_back(Token{ TokenType::PLUS, "+" });
 
 			break;
 		case '-':
-			Check(tokens, token);
+			CheckToken(tokens, token);
 			tokens.push_back(Token{ TokenType::MINUS, "-" });
 			break;
 		case '*':
-			Check(tokens, token);
+			CheckToken(tokens, token);
 			tokens.push_back(Token{ TokenType::TIMES, "*" });
 			break;
 		case '/':
-			Check(tokens, token);
+			CheckToken(tokens, token);
 			tokens.push_back(Token{ TokenType::DIVIDE, "/" });
 			break;
 		case '%':
-			Check(tokens, token);
+			CheckToken(tokens, token);
 			tokens.push_back(Token{ TokenType::MOD, "%" });
 			break;
 		case '!':
+			CheckToken(tokens, token);
 			if (a < line.length() && line[a + 1] == '=')
 			{
-				Check(tokens, token);
 				tokens.push_back(Token{ TokenType::NOT_EQUALS, "!=" });
-
 				a += 1;
 			}
 			else
 			{
-				Check(tokens, token);
 				tokens.push_back(Token{ TokenType::NOT, "!" });
 			}
 
@@ -181,69 +163,116 @@ void Lexer(const std::string& line)
 		case '|':
 			if (a < line.length() && line[a + 1] == '|')
 			{
-				Check(tokens, token);
+				CheckToken(tokens, token);
 				tokens.push_back(Token{ TokenType::OR, "||" });
 
 				a += 1;
-			}
-			else
-			{
-				throw _undefined_token_("token '" + std::string(1, line[a]) + "' undefined");
 			}
 
 			break;
 		case '&':
 			if (a < line.length() && line[a + 1] == '&')
 			{
-				Check(tokens, token);
+				CheckToken(tokens, token);
 				tokens.push_back(Token{ TokenType::AND, "&&" });
 
 				a += 1;
 			}
+
+			break;
+		case '>':
+			CheckToken(tokens, token);
+
+			if (a < line.length() && line[a + 1] == '=')
+			{
+				tokens.push_back(Token{ TokenType::GREATER_EQUAL });
+				a += 1;
+			}
 			else
 			{
-				throw _undefined_token_("token '" + std::string(1, line[a]) + "' undefined");
+				tokens.push_back(Token{ TokenType::GREATER });
+			}
+
+			break;
+		case '<':
+			CheckToken(tokens, token);
+
+			if (a < line.length() && line[a + 1] == '=')
+			{
+				tokens.push_back(Token{ TokenType::SMALLER_EQUAL });
+				a += 1;
+			}
+			else
+			{
+				tokens.push_back(Token{ TokenType::SMALLER });
 			}
 
 			break;
 		case '(':
-			Check(tokens, token);
+			CheckToken(tokens, token);
 			tokens.push_back(Token{ TokenType::OPEN_BRACKET, "(" });
 			openBracket += 1;
 			break;
 		case ')':
-			Check(tokens, token);
+			CheckToken(tokens, token);
 			tokens.push_back(Token{ TokenType::CLOSE_BRACKET, ")" });
 			openBracket -= 1;
 			break;
+		case '[':
+			CheckToken(tokens, token);
+			tokens.push_back(Token{ TokenType::OPEN_SQUARE });
+			openSquare += 1;
+			break;
+		case ']':
+			CheckToken(tokens, token);
+			tokens.push_back(Token{ TokenType::CLOSE_SQUARE });
+			openSquare -= 1;
+			break;
 		case '{':
-			Check(tokens, token);
+			CheckToken(tokens, token);
 			tokens.push_back(Token{ TokenType::OPEN_CURLY, "{" });
+			openCurly += 1;
 			break;
 		case '}':
-			Check(tokens, token);
+			CheckToken(tokens, token);
 			tokens.push_back(Token{ TokenType::CLOSE_CURLY, "}" });
+			openCurly -= 1;
 			break;
 		case ',':
-			Check(tokens, token);
+			CheckToken(tokens, token);
 			tokens.push_back(Token{ TokenType::COMMA, "," });
 			break;
 		case ';':
-			Check(tokens, token);
+			CheckToken(tokens, token);
 			tokens.push_back(Token{ TokenType::SEMICOLON, ";" });
 			break;
+		case ' ':
+			CheckToken(tokens, token);
+			break;
+		case '\t':
+			CheckToken(tokens, token);
+			break;
 		default:
-			if (line[a] == ' ' && token != "")
-				Check(tokens, token);
-			else if (line[a] != ' ')
-				token += line[a];
+			token += line[a];
 		}
 	}
 
-	if (openBracket > 0)
-		throw _missing_open_bracket_;
-	else if (openBracket < 0)
-		throw _missing_close_bracket_;
+	CheckToken(tokens, token);
 
-	Parser(tokens);
+	if (openBracket > 0)
+		throw "";
+	else if (openBracket < 0)
+		throw "";
+	else if (openSquare > 0)
+		throw "";
+	else if (openSquare < 0)
+		throw "";
+	else if (openCurly > 0)
+		throw "";
+	else if (openCurly < 0)
+		throw "";
+	//else if (token != "")
+		//throw "";
+
+	Parser(tokens, runtime);
 }
