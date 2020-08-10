@@ -1,6 +1,6 @@
 # Night
 
-[logo](logo3.png)
+![logo](logo3.png)
 
 An interpreted programming language. It combines the simplicity of Python, with the type concepts of the C family.
 
