@@ -21,7 +21,7 @@ int answer = 10 + 5;
 answer = 2 + 3;
 
 int legs = 10;
-bool smart = true;
+bit smart = true;
 
 if (legs == 10 && smart)
 {
