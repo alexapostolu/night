@@ -2,7 +2,7 @@
 
 An interpreted programming language. It combines the simplicity of Python, with the type concepts of the C family.
 
-It's still in early development, and I have a lot left to do. I'm also working on a [website](https://night-web.dynamicsquid.repl.co/) which you can definitly check out! Also working on a logo, but I'm really bad a designing things. You can check that out in the `logo.png` file.
+It's still in early development, and I have a lot left to do. I'm also working on a [website](https://night-web.dynamicsquid.repl.co/) which you can definitly check out! Also working on a logo, but I'm really bad a designing things. You can check that out in the `logo.png` and `logo3.png` files.
 
 Here's a sample of my current language:
 
@@ -50,11 +50,19 @@ int number = add(2, 3) + 4;
 print(number);
 ```
 
-There's still a lot to be done though. Here are the things I'm working on:
+There's still a lot to be done though. Here are the things I'm working on (in order):
 
 - new operators: `+=`, `-=`, `/=`, `*=`, `%=`, `<`, `>`, `<=`, `>=`
-- predefined functions and small libraries
-- function definitions and overloading
+- more predefined functions and small libraries
+  - right now, the only predefined function is `print()`
 - loops and arrays
 - user input
+- "include" thingy like in C++
+- function definitions and overloading
 - more support for expressions
+
+---
+
+**Progress Updates**
+
+I recently finished fixing all (hopefully all) the bugs, and now I'm on to testing and cleaning. It should be done by this weekend, and that would actualy be `v2.0`! Then I'll start to work on the list above.
