@@ -2,7 +2,7 @@
 
 An interpreted programming language. It combines the simplicity of Python, with the type concepts of the C family.
 
-It's still in early development, and I have a lot left to do. I'm also working on a [website](https://night-web.dynamicsquid.repl.co/) which you can definitly check out! Also working on a logo, but I'm really bad a designing things. You can check that out in the `logo.png` and `logo3.png` files.
+It's still in early development, and I have a lot left to do. I'm also working on a [website](https://night-web.dynamicsquid.repl.co/) which you can definitly check out! There's even a place to code in there! I'm also working on a logo, can you can check that out in the `logo.png` and `logo3.png` files.
 
 Here's a sample of my current language:
 
@@ -64,5 +64,4 @@ There's still a lot to be done though. Here are the things I'm working on (in or
 ---
 
 **Progress Updates**
-
-I recently finished fixing all (hopefully all) the bugs, and now I'm on to testing and cleaning. It should be done by this weekend, and that would actualy be `v2.0`! Then I'll start to work on the list above.
+I just finished with `v2.0`, so now I'm working on the list above
