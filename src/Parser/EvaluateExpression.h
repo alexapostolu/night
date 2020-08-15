@@ -11,8 +11,6 @@
 #include "DataTypes/Variable.h"
 #include "DataTypes/Function.h"
 
-void Parser(std::vector<Token>& tokens, bool runtime, bool recursion = false);
-
 namespace night {
 
 std::string bit_to_str(bool val)
@@ -31,12 +29,30 @@ void val_to_bit(Token& val)
 	val.token = val.token == "1" ? "true" : "false";
 }
 
+TokenType type_to_val(const Variable& val)
+{
+	if (val.type == TokenType::BIT_TYPE)
+		return TokenType::BIT_VALUE;
+	else if (val.type == TokenType::SYB_TYPE)
+		return TokenType::SYB_VALUE;
+	else if (val.type == TokenType::INT_TYPE)
+		return TokenType::INT_VALUE;
+	else if (val.type == TokenType::DEC_TYPE)
+		return TokenType::DEC_VALUE;
+	else
+		return TokenType::STR_VALUE;
+}
+
 float abs(float val)
 {
 	return val < 0 ? -val : val;
 }
 
 } // namespace night
+
+void Parser(std::vector<Token>& tokens, bool runtime, bool recursion = false);
+void ExtractLine(std::vector<Token>& tokens, Token* returnType = nullptr,
+	std::vector<Variable>* vars = nullptr, std::vector<Function>* funcs = nullptr, int omg = 0);
 
 float EvalNum(float val1, float val2, std::string op)
 {
@@ -100,23 +116,18 @@ void EvaluateNumeric(std::vector<Token>& expr, std::size_t index, std::string op
 
 void CheckIndex(const std::vector<Token>& expr, std::size_t index, bool checkLeft = true)
 {
-	bool rightIndexError = false;
+	std::string rightIndexError = "before";
 	try {
 		if (checkLeft)
 			Token temp = expr.at(index - 1);
 
-		rightIndexError = true;
+		rightIndexError = "after";
 
 		Token temp = expr.at(index + 1);
 	}
 	catch (const std::out_of_range&) {
-		if (rightIndexError) {
-			throw Error(night::_invalid_expression_, expr, index, index,
-				"expected value after operator '" + expr[index].token + "'");
-		}
-		
 		throw Error(night::_invalid_expression_, expr, index, index,
-			"expected value before operator '" + expr[index].token + "'");
+			"expected value " + rightIndexError + " operator '" + expr[index].token + "'");
 	}
 }
 
@@ -138,31 +149,18 @@ void CompareValues(const std::vector<Token>& expr, std::size_t index, const std:
 	}
 }
 
-void EvalExpr(std::vector<Token>& expr, std::size_t& index)
+void EvalExpr(std::vector<Token>& expr, std::size_t& index, std::size_t* bracketIndex = nullptr)
 {
 	CheckIndex(expr, index);
 
 	switch (expr[index].type)
 	{
 	case TokenType::PLUS:
-		if (expr[index - 1].type == TokenType::STR_VALUE && expr[index - 1].type == expr[index + 1].type)
+		if (expr[index - 1].type == TokenType::STR_VALUE && expr[index + 1].type <= TokenType::STR_VALUE)
+			//expr[index - 1].type == expr[index + 1].type)
 		{
-			expr[index - 1].token = expr[index - 1].token + expr[index + 1].token;
+			expr[index - 1].token += expr[index + 1].token;
 			break;
-		}
-		else if (expr[index - 1].type == TokenType::STR_VALUE &&
-			expr[index - 1].type != expr[index + 1].type)
-		{
-			throw Error(night::_invalid_expression_, expr, index + 1, index + 1,
-				"value '" + expr[index + 1].token + "' must be a value of type 'str'; "
-				"string concatenation only works for two values of type 'str'");
-		}
-		else if (expr[index + 1].type == TokenType::STR_VALUE &&
-			expr[index + 1].type != expr[index - 1].type)
-		{
-			throw Error(night::_invalid_expression_, expr, index - 1, index - 1,
-				"value '" + expr[index - 1].token + "' must be a value of type 'str'; "
-				"string concatenation only works for two values of type 'str'");
 		}
 
 		EvaluateNumeric(expr, index, "+");
@@ -246,10 +244,13 @@ void EvalExpr(std::vector<Token>& expr, std::size_t& index)
 	expr.erase(expr.begin() + index);
 
 	index -= 1;
+
+	if (bracketIndex != nullptr)
+		*bracketIndex -= 2;
 }
 
-Token EvaluateExpression(std::vector<Token>& expr, const std::vector<Variable>& vars,
-	const std::vector<Function>& funcs)
+Token EvaluateExpression(std::vector<Token>& expr, std::vector<Variable>& vars,
+	std::vector<Function>& funcs)
 {
 	for (std::size_t a = 0; a < expr.size(); ++a)
 	{
@@ -260,7 +261,7 @@ Token EvaluateExpression(std::vector<Token>& expr, const std::vector<Variable>& 
 			{
 				if (expr[a].token == var.name)
 				{
-					expr[a].type = var.type;
+					expr[a].type = night::type_to_val(var);
 					expr[a].token = var.value;
 
 					isDefined = true;
@@ -270,26 +271,77 @@ Token EvaluateExpression(std::vector<Token>& expr, const std::vector<Variable>& 
 		
 			if (!isDefined)
 			{
-				for (const Function& func : funcs)
+				for (Function& func : funcs)
 				{
 					if (expr[a].token == func.name)
 					{
-						int end = a;
+						try {
+							if (expr.at(a + 1).type != TokenType::OPEN_BRACKET)
+								throw 1;
+						}
+						catch (...) {
+							break;
+						}
+
 						std::vector<Token> temp;
-						for (std::size_t b = a; expr[b].type != TokenType::CLOSE_BRACKET; ++b)
+						int functionVariable = 0, openBracket = 0, end = a + 2;
+						for (std::size_t b = a + 2; expr[b].type != TokenType::CLOSE_BRACKET; ++b)
 						{
-							temp.push_back(expr[b]);
+							if (expr[b].type == TokenType::OPEN_BRACKET)
+								openBracket += 1;
+							else if (expr[b].type == TokenType::CLOSE_BRACKET)
+								openBracket -= 1;
+
+							if (expr[b].type != TokenType::COMMA && expr[b].type != TokenType::CLOSE_BRACKET)
+							{
+								temp.push_back(expr[b]);
+							}
+							else
+							{
+								if (openBracket != 0 && b != expr.size() - 2)
+								{
+									temp.push_back(expr[b]);
+									continue;
+								}
+
+								if (expr[b].type == TokenType::CLOSE_BRACKET && b != expr.size() - 2)
+									temp.push_back(expr[b]);
+
+								try {
+									vars.push_back(Variable{
+										func.parameters.at(functionVariable).type,
+										func.parameters[functionVariable].name,
+										EvaluateExpression(temp, vars, funcs).token
+									});
+
+									functionVariable += 1;
+								}
+								catch (const Error& e) {
+									throw Error(night::_invalid_expression_, expr, 0, 0, "");
+								}
+								catch (...) {
+									end = b;
+									break;
+								}
+
+								temp.clear();
+							}
+
 							end = b;
 						}
 
-						temp.push_back(Token{ TokenType::CLOSE_BRACKET, ")" });
-						temp.push_back(Token{ TokenType::SEMICOLON, ";" });
-						
-						expr.erase(expr.begin() + a, expr.begin() + end + 1);
+						if (!temp.empty())
+						{
+							vars.push_back(Variable{
+								func.parameters.at(functionVariable).type,
+								func.parameters[functionVariable].name,
+								EvaluateExpression(temp, vars, funcs).token
+							});
+						}
 
-						Parser(temp, false, false);
+						ExtractLine(func.code, &expr[a], &vars, &funcs);
 
-						expr[a] = temp[0];
+						expr.erase(expr.begin() + a + 1, expr.begin() + end + (temp.empty() ? 1 : 2));
 
 						isDefined = true;
 						break;
@@ -298,7 +350,7 @@ Token EvaluateExpression(std::vector<Token>& expr, const std::vector<Variable>& 
 
 				if (!isDefined) {
 					throw Error(night::_undefined_token_, expr, a, a,
-						"variable '" + expr[a].token + "' is not defined");
+						"token '" + expr[a].token + "' is not defined");
 				}
 			}
 		}
@@ -335,55 +387,37 @@ Token EvaluateExpression(std::vector<Token>& expr, const std::vector<Variable>& 
 			for (std::size_t b = openBracketIndex + 1; b < a; ++b)
 			{
 				if (expr[b].type >= TokenType::DIVIDE && expr[b].type <= TokenType::MOD)
-				{
-					EvalExpr(expr, b);
-					a -= 2;
-				}
+					EvalExpr(expr, b, &a);
 			}
 
 			for (std::size_t b = openBracketIndex + 1; b < a; ++b)
 			{
 				if (expr[b].type >= TokenType::PLUS && expr[b].type <= TokenType::MINUS)
-				{
-					EvalExpr(expr, b);
-					a -= 2;
-				}
+					EvalExpr(expr, b, &a);
 			}
 
 			for (std::size_t b = openBracketIndex + 1; b < a; ++b)
 			{
 				if (expr[b].type >= TokenType::GREATER && expr[b].type <= TokenType::SMALLER_EQUAL)
-				{
-					EvalExpr(expr, b);
-					a -= 2;
-				}
+					EvalExpr(expr, b, &a);
 			}
 
 			for (std::size_t b = openBracketIndex + 1; b < a; ++b)
 			{
 				if (expr[b].type >= TokenType::EQUALS && expr[b].type <= TokenType::NOT_EQUALS)
-				{
-					EvalExpr(expr, b);
-					a -= 2;
-				}
+					EvalExpr(expr, b, &a);
 			}
 
 			for (std::size_t b = openBracketIndex + 1; b < a; ++b)
 			{
 				if (expr[b].type == TokenType::AND)
-				{
-					EvalExpr(expr, b);
-					a -= 2;
-				}
+					EvalExpr(expr, b, &a);
 			}
 
 			for (std::size_t b = openBracketIndex + 1; b < a; ++b)
 			{
 				if (expr[b].type == TokenType::OR)
-				{
-					EvalExpr(expr, b);
-					a -= 2;
-				}
+					EvalExpr(expr, b, &a);
 			}
 
 			expr.erase(expr.begin() + openBracketIndex);

@@ -9,6 +9,8 @@ enum class TokenType
 	INT_TYPE,
 	DEC_TYPE,
 	STR_TYPE,
+  
+	NULL_TYPE,
 
 	VARIABLE,
 

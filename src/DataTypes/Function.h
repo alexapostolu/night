@@ -8,6 +8,7 @@
 
 struct Function
 {
+	TokenType type;
 	std::string name;
 	std::vector<Variable> parameters;
 	std::vector<Token> code;

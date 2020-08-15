@@ -36,6 +36,11 @@ void CheckToken(std::vector<Token>& tokens, std::string& token)
 		tokens.push_back(Token{ TokenType::STR_TYPE, token });
 		token = "";
 	}
+	else if (token == "null")
+	{
+		tokens.push_back(Token{ TokenType::NULL_TYPE, token });
+		token = "";
+	}
 	else if (token == "true" || token == "false")
 	{
 		tokens.push_back(Token{ TokenType::BIT_VALUE, token });
@@ -71,7 +76,7 @@ void CheckToken(std::vector<Token>& tokens, std::string& token)
 		tokens.push_back(Token{ TokenType::RETURN, token });
 		token = "";
 	}
-	else if (std::regex_match(token, std::regex("[a-zA-Z]+")))
+	else if (std::regex_match(token, std::regex("[a-zA-Z_][a-zA-Z_0-9]*")))
 	{
 		tokens.push_back(Token{ TokenType::VARIABLE, token });
 		token = "";
@@ -271,8 +276,6 @@ void Lexer(const std::string& line, bool runtime)
 		throw "";
 	else if (openCurly < 0)
 		throw "";
-	//else if (token != "")
-		//throw "";
 
 	Parser(tokens, runtime);
 }
