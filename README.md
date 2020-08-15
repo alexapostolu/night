@@ -64,4 +64,5 @@ There's still a lot to be done though. Here are the things I'm working on (in or
 ---
 
 **Progress Updates**
-I just finished with `v2.0`, so now I'm working on the list above
+
+I just finished with `v2.0`, so now I'm working on the list above.
