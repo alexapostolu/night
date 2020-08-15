@@ -162,22 +162,6 @@ void EvalExpr(std::vector<Token>& expr, std::size_t& index, std::size_t* bracket
 			expr[index - 1].token += expr[index + 1].token;
 			break;
 		}
-		/*
-		else if (expr[index - 1].type == TokenType::STR_VALUE &&
-			expr[index - 1].type != expr[index + 1].type)
-		{
-			throw Error(night::_invalid_expression_, expr, index + 1, index + 1,
-				"value '" + expr[index + 1].token + "' must be a value of type 'str'; "
-				"string concatenation only works for two values of type 'str'");
-		}
-		else if (expr[index + 1].type == TokenType::STR_VALUE &&
-			expr[index + 1].type != expr[index - 1].type)
-		{
-			throw Error(night::_invalid_expression_, expr, index - 1, index - 1,
-				"value '" + expr[index - 1].token + "' must be a value of type 'str'; "
-				"string concatenation only works for two values of type 'str'");
-		}
-		*/
 
 		EvaluateNumeric(expr, index, "+");
 		break;

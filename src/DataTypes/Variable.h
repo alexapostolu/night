@@ -4,16 +4,9 @@
 
 #include "Token.h"
 
-enum class VariableType
-{
-	BIT, SYB,
-	INT, DEC,
-	STR
-};
-
 struct Variable
 {
-	TokenType type; // VariableType
+	TokenType type;
 	std::string name;
 	std::string value;
 };

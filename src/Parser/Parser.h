@@ -457,7 +457,6 @@ void Parser(std::vector<Token>& tokens, bool runtime, bool recursion)
 		if (tokens[0].type != TokenType::NULL_TYPE && !findReturn) {
 			throw Error(night::_invalid_grammar_, tokens, 0, 0,
 				"function must return a value");
-		}
 	}
 	// error
 	else

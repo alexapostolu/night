@@ -276,8 +276,6 @@ void Lexer(const std::string& line, bool runtime)
 		throw "";
 	else if (openCurly < 0)
 		throw "";
-	//else if (token != "")
-		//throw "";
 
 	Parser(tokens, runtime);
 }

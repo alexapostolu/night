@@ -1,72 +1,68 @@
 # Night
 
-A (interpreted?) programming language. Still in development. I've never made one before, so I don't really know what I'm doing, but it should work out in the end.
+An interpreted programming language. It combines the simplicity of Python, with the type concepts of the C family.
 
-The `source.night` file is where you write the code. But I don't like the extention `.night`. I'm looking for something shorter, but don't know what yet. I'm also working on a logo, but I'm really bad at designing. I'm thinking of something similar to `logo2.png`.
+It's still in early development, and I have a lot left to do. I'm also working on a [website](https://night-web.dynamicsquid.repl.co/) which you can definitly check out! Also working on a logo, but I'm really bad a designing things. You can check that out in the `logo.png` and `logo3.png` files.
 
-Also, this language is very similar to the C family since I'm not that creative, and I'm just starting out. Definitly going to change it down the road.
+Here's a sample of my current language:
+
+```
+print("Hello World!\n");
+
+// this is a comment
+
+bit boolean = true; // supports '! || && == != < > <= >= ( )' all of those
+syb character = 'c'; // doesn't support any expressions yet
+int integer = 10; // supports '+ - * / % ( )' all of those
+dec float = 3.14; // same with 'int', but without 'mod'
+str string = "squid"; // suports string concatenation
+
+int answer = 10 + 5;
+answer = 2 + 3;
+
+int legs = 10;
+bit smart = true;
+
+if (legs == 10 && smart)
+{
+    print("Hi squid");
+}
+else if (legs == 8 && smart)
+{
+    print("Hi octopus");
+}
+else if (legs == 2 && !smart)
+{
+    print("Hi human");
+}
+else
+{
+    print("Not sure who you are");
+}
+
+int add(int a, int b)
+{
+    print("Adding to numbers:\n");
+    return a + b;
+}
+
+int number = add(2, 3) + 4;
+print(number);
+```
+
+There's still a lot to be done though. Here are the things I'm working on (in order):
+
+- new operators: `+=`, `-=`, `/=`, `*=`, `%=`, `<`, `>`, `<=`, `>=`
+- more predefined functions and small libraries
+  - right now, the only predefined function is `print()`
+- loops and arrays
+- user input
+- "include" thingy like in C++
+- function definitions and overloading
+- more support for expressions
 
 ---
 
-**Special Features (updated as progress continues):**
+**Progress Updates**
 
-- no implicit conversions (similar to Rust)
-
----
-
-**Language features**
-
-You can check the `source.night` file for what the language currently supports. It's really basic stuff. Variable initialization, a `print` thingy, and simple expressions.
-
-Edit: I just added a new feature, if statements!
-
-**In progress**
-
-A complete rework of the language and code. Also I want to add functions. And if I do, then in theory, I could use my language, to create my language (well, pre-defined functions at least)...
-
-You can take a look at it in the `newer-version` branch. I'm basically working on using a `try-catch` statement to detect invalid expressions, instead of my old way which was to iterate over the entire expression checking each token individually. I'm also implementing a cleaner parser.
-
----
-
-**How it works**
-
-1. Take in a line of input
-
-2. Separate line based of semicolons. Merge the second line with the first if it has to
-
-That basically allows this:
-
-```cpp
-int a = 2 +
-
-3;
-```
-
-To be perfectly valid code.
-
-3. Send it off to the lexer to be tokenized
-
-The lexer will ignore whitespace, expect for keywords:
-
-```cpp
-int a=2+3;
-```
-
-Notice how there must be a space after the `int` keyword.
-
-4. Send it off to the parser
-
-5. Evalutate the expression down to a single token
-
-```cpp
-if (true & true) {} // I use recursion to get the if statements to work
-if (true) {}
-
-int a = 2 + 3;
-int a = 5;
-
-print "Hello " + "World!";
-print "Hello World!";
-```
-
-6. Do stuff idk
+I recently finished fixing all (hopefully all) the bugs, and now I'm on to testing and cleaning. It should be done by this weekend, and that would actualy be `v2.0`! Then I'll start to work on the list above.
