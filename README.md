@@ -25,19 +25,19 @@ bit smart = true;
 
 if (legs == 10 && smart)
 {
-    print("Hi squid");
+    print("Hi squid\n");
 }
 else if (legs == 8 && smart)
 {
-    print("Hi octopus");
+    print("Hi octopus\n");
 }
 else if (legs == 2 && !smart)
 {
-    print("Hi human");
+    print("Hi human\n");
 }
 else
 {
-    print("Not sure who you are");
+    print("Not sure who you are\n");
 }
 
 int add(int a, int b)
@@ -47,7 +47,7 @@ int add(int a, int b)
 }
 
 int number = add(2, 3) + 4;
-print(number);
+print(number + "\n");
 ```
 
 There's still a lot to be done though. Here are the things I'm working on (in order):
