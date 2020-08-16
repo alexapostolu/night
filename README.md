@@ -1,5 +1,7 @@
 # Night
 
+**I did not make the majority of this, [DynamicSquid](https://github.com/DynamicSquid) did. This branch is intended to have a less strict type system. This website is for my fork: [![Run on Repl.it](https://repl.it/badge/github/RZED786/Night)](https://repl.it/github/RZED786/Night)**
+
 An interpreted programming language. It combines the simplicity of Python, with the type concepts of the C family.
 
 It's still in early development, and I have a lot left to do. I'm also working on a [website](https://night-web.dynamicsquid.repl.co/) which you can definitly check out! There's even a place to code in there! I'm also working on a logo, can you can check that out in the `logo.png` and `logo3.png` files.
