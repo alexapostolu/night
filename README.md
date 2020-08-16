@@ -1,6 +1,6 @@
 # Night
 
-**I did not make the majority of this, (DynamicSquid)[https://github.com/DynamicSquid] did. This branch is intended to have a less strict type system.**
+**I did not make the majority of this, [DynamicSquid](https://github.com/DynamicSquid) did. This branch is intended to have a less strict type system.**
 
 An interpreted programming language. It combines the simplicity of Python, with the type concepts of the C family.
 
