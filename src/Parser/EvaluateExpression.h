@@ -133,10 +133,6 @@ void CheckIndex(const std::vector<Token>& expr, std::size_t index, bool checkLef
 
 void CompareValues(const std::vector<Token>& expr, std::size_t index, const std::string& op)
 {
-	if (expr[index - 1].type != expr[index + 1].type) {
-		throw Error(night::_invalid_expression_, expr, index - 1, index + 1,
-			"operator '" + op + "' cannot compare two tokens of different types");
-	}
 	if (expr[index - 1].type > TokenType::STR_VALUE) {
 		throw Error(night::_invalid_expression_, expr, index - 1, index - 1,
 			"operator '" + op + "' cannot compare token '" + expr[index - 1].token + "'; "
