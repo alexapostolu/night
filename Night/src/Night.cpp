@@ -7,6 +7,7 @@
 int main()
 {
 	try {
+		system("clear");
 		ExtractCode();
 	}
 	catch (const Error& e) {
