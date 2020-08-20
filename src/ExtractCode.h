@@ -13,7 +13,7 @@
 
 void ExtractCode()
 {
-	std::ifstream code("C:\\Users\\apost\\source\\repos\\Night-Lang\\Night\\Source\\source.night");
+	std::ifstream code("source.night");
 	if (!code.is_open())
 		throw "source file no open";
 
