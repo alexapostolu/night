@@ -15,10 +15,10 @@ bit boolean = true; // supports '! || && == != < > <= >= ( )' all of those
 syb character = 'c'; // doesn't support any expressions yet
 int integer = 10; // supports '+ - * / % ( )' all of those
 dec float = 3.14; // same with 'int', but without 'mod'
-str string = "squid"; // suports string concatenation
+str string = "squid"; // suports string concatenation with 'syb', 'int', 'dec', and 'str'
 
 int answer = 10 + 5;
-answer = 2 + 3;
+answer += 2 + 3;
 
 int legs = 10;
 bit smart = true;
@@ -50,19 +50,20 @@ int number = add(2, 3) + 4;
 print(number + "\n");
 ```
 
-There's still a lot to be done though. Here are the things I'm working on (in order):
+There's still a lot to be done though. Here are the things I'm working on for `v2-beta` (in order):
 
-- new operators: `+=`, `-=`, `/=`, `*=`, `%=`, `<`, `>`, `<=`, `>=`
-- more predefined functions and small libraries
+- `v2.2-beta` loops
+- `v2.3-beta` more predefined functions and small libraries
   - right now, the only predefined function is `print()`
-- loops and arrays
-- user input
-- "include" thingy like in C++
-- function definitions and overloading
-- more support for expressions
+- `v2.4-beta` user input
+- `v2.5-beta` arrays
+- `v2.6-beta` "include" thingy like in C++
+- `v2.7-beta` function definitions and overloading
 
 ---
 
 **Progress Updates**
 
-I just finished with `v2.0`, so now I'm working on the list above.
+I just got done with `v2.1-beta`, which is a release about more support for expressions. Now, I'm working on `v2.2-beta`, which are loops!
+
+I'm also planning to have `v3` be the first non-beta version, and I'm really excited about that.
