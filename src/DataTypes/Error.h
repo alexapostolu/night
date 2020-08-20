@@ -60,6 +60,19 @@ public:
 		return output.str();
 	}
 
+<<<<<<< HEAD
+=======
+	static std::string DevError(const std::string& e)
+	{
+		std::stringstream output;
+		output << "Unknown Error - " << e << "\n\n";
+		output << "Oops! Something went wrong! Please submit an issue on the GitHub page:\n";
+		output << "https://github.com/DynamicSquid/Night";
+
+		return output.str();
+	}
+
+>>>>>>> test1
 	std::string what() const
 	{
 		std::stringstream output;
