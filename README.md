@@ -1,4 +1,4 @@
-#### Welcome to Night!
+## Welcome to Night!
 
 Here's a fully featured ide provided by repl.it where you can code using Night!
 
