@@ -10,11 +10,13 @@
 
 #include "DataTypes/Error.h"
 
-void ExtractCode()
+void ExtractCode(char* filename)
+// Function declaration with char* a.k.a string as it's argument
 {
-	std::ifstream code("source.night");
-	if (!code.is_open())
-		throw "source file no open";
+	std::ifstream code (filename); // Open inputted file
+	if (!code.is_open()) // check if the file has been opened
+		throw "cannot open the selected file";
+	// throws an error if the file hasn't been opened
 
 	std::string fileLine, codeLine = "";
 	while (getline(code, fileLine))

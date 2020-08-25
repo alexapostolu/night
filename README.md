@@ -2,11 +2,11 @@
 
 An interpreted programming language. It combines the simplicity of Python, with the type concepts of the C family.
 
-It's still in early development, and I have a lot left to do. I'm also working on a [website](https://night-web.dynamicsquid.repl.co/) which you can definitly check out! There's even a place to code in there! I'm also working on a logo, can you can check that out in the `logo.png` and `logo3.png` files.
+It's still in early development, and I have a lot left to do. I'm also working on a [website](https://night-web.dynamicsquid.repl.co/) which you can definitly check out! There's even a place to code in there! I'm also working on a logo, you can check that out in the `logo.png` and `logo3.png` files.
 
 Here's a sample of my current language:
 
-```
+```night
 print("Hello World!\n");
 
 // this is a comment
@@ -50,19 +50,55 @@ int number = add(2, 3) + 4;
 print(number + "\n");
 ```
 
+## How to Use
+
+1. Open cmd, bash, or powershell
+2. Type:
+
+```bash
+%PathToNightFolder%/src/Night.exe %filepath%.night
+```
+
+e.g.
+
+```bash
+/mnt/c/tools/Night/src/Night.exe /mnt/c/codeproject/test.night
+```
+
+### Making Usage Easier (Windows Only)
+
+Type 'path' to search bar and this will show up:
+!['Edit the system envirovment variable' Button](/tree/master/instructionimage/1.png)
+
+Click the best match, and this will show up:
+!['System Properties' Window](/tree/master/instructionimage/2.png)
+
+Click 'Envirovement Variables':
+![Button with 'Envirovement Variables' as the Label](/tree/master/instructionimage/3.png)
+
+This will show up:
+!['Envirovement Variables' Window](/tree/master/instructionimage/4.png)
+
+Search and select 'Path' and click 'Edit':
+!['Path' as System Variable and 'Edit...' Button](/tree/master/instructionimage/5.png)
+
+Select and go to the end of 'Variable Value' and type ";%NightFilePath%/src":
+!['Path Variable' Window](/tree/master/instructionimage/6.png)
+!['D:\VS+VSCodeField\VSCode\C-variant\Night\src'](/tree/master/instructionimage/7.png)
+
+## Future Plans
+
 There's still a lot to be done though. Here are the things I'm working on for `v2-beta` (in order):
 
 - `v2.2-beta` loops
 - `v2.3-beta` more predefined functions and small libraries
-  - right now, the only predefined function is `print()`
+  :  right now, the only predefined function is `print()`
 - `v2.4-beta` user input
 - `v2.5-beta` arrays
 - `v2.6-beta` "include" thingy like in C++
 - `v2.7-beta` function definitions and overloading
 
----
-
-**Progress Updates**
+### Progress on Updates
 
 I just got done with `v2.1-beta`, which is a release about more support for expressions. Now, I'm working on `v2.2-beta`, which are loops!
 

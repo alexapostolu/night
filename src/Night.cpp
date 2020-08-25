@@ -4,10 +4,15 @@
 #include "ExtractCode.h"
 #include "DataTypes/Error.h"
 
-int main()
+int main(int argc, char *argv[])
 {
 	try {
-		ExtractCode();
+		if (argc > 0){
+			ExtractCode(argv[1]);
+		} else {
+			char *sdefault = (char *)"source.night";
+			ExtractCode(sdefault);
+		}
 	}
 	catch (const Error& e) {
 		std::cout << e.what() << '\n';
