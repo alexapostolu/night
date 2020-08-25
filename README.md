@@ -68,21 +68,27 @@ e.g.
 ### Making Usage Easier (Windows Only)
 
 Type 'path' to search bar and this will show up:
+
 !['Edit the system envirovment variable' Button](/instructionimage/1.png "Title")
 
 Click the best match, and this will show up:
+
 !['System Properties' Window](/instructionimage/2.png "Title")
 
 Click 'Envirovement Variables':
+
 ![Button with 'Envirovement Variables' as the Label](/instructionimage/3.png "Title")
 
 This will show up:
+
 !['Envirovement Variables' Window](/instructionimage/4.png "Title")
 
 Search and select 'Path' and click 'Edit':
+
 !['Path' as System Variable and 'Edit...' Button](/instructionimage/5.png "Title")
 
 Select and go to the end of 'Variable Value' and type ";%NightFilePath%/src":
+
 !['Path Variable' Window](/instructionimage/6.png "Title")
 !['D:\VS+VSCodeField\VSCode\C-variant\Night\src'](/instructionimage/7.png "Title")
 
