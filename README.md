@@ -68,23 +68,23 @@ e.g.
 ### Making Usage Easier (Windows Only)
 
 Type 'path' to search bar and this will show up:
-!['Edit the system envirovment variable' Button](/tree/master/instructionimage/1.png)
+!['Edit the system envirovment variable' Button](/tree/master/instructionimage/1.png "Title")
 
 Click the best match, and this will show up:
-!['System Properties' Window](/tree/master/instructionimage/2.png)
+!['System Properties' Window](/tree/master/instructionimage/2.png "Title")
 
 Click 'Envirovement Variables':
-![Button with 'Envirovement Variables' as the Label](/tree/master/instructionimage/3.png)
+![Button with 'Envirovement Variables' as the Label](/tree/master/instructionimage/3.png "Title")
 
 This will show up:
-!['Envirovement Variables' Window](/tree/master/instructionimage/4.png)
+!['Envirovement Variables' Window](/tree/master/instructionimage/4.png "Title")
 
 Search and select 'Path' and click 'Edit':
-!['Path' as System Variable and 'Edit...' Button](/tree/master/instructionimage/5.png)
+!['Path' as System Variable and 'Edit...' Button](/tree/master/instructionimage/5.png "Title")
 
 Select and go to the end of 'Variable Value' and type ";%NightFilePath%/src":
-!['Path Variable' Window](/tree/master/instructionimage/6.png)
-!['D:\VS+VSCodeField\VSCode\C-variant\Night\src'](/tree/master/instructionimage/7.png)
+!['Path Variable' Window](/tree/master/instructionimage/6.png "Title")
+!['D:\VS+VSCodeField\VSCode\C-variant\Night\src'](/tree/master/instructionimage/7.png "Title")
 
 ## Future Plans
 
