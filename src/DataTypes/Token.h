@@ -65,6 +65,8 @@ enum class TokenType
 
 	RETURN,
 
+	LOOP,
+
 	COMMA,
 	SEMICOLON
 };

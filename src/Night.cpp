@@ -4,13 +4,12 @@
 #include "ExtractCode.h"
 #include "DataTypes/Error.h"
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
 	try {
-		if (argc > 0){
+		if (argc > 0)
+		{
 			ExtractCode(argv[1]);
-		} else {
-			ExtractCode((char *)"source.night");
 		}
 	}
 	catch (const Error& e) {

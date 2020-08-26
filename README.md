@@ -2,7 +2,7 @@
 
 An interpreted programming language. It combines the simplicity of Python, with the type concepts of the C family.
 
-It's still in early development, and I have a lot left to do. I'm also working on a [website](https://night-web.dynamicsquid.repl.co/) which you can definitly check out! There's even a place to code in there! I'm also working on a logo, you can check that out in the `logo.png` and `logo3.png` files.
+It's still in early development, and I have a lot left to do. I'm also working on a [website](https://night-web.dynamicsquid.repl.co/) which you can definitly check out! Currently, the website is the recommended place to code using Night, however support for a source build will be coming soon.
 
 Here's a sample of my current language:
 
@@ -48,6 +48,11 @@ int add(int a, int b)
 
 int number = add(2, 3) + 4;
 print(number + "\n");
+
+loop (5)
+{
+    print("squid");
+}
 ```
 
 ## How to Use
@@ -108,19 +113,25 @@ Press Oks:
 ![img10](/instructionimage/10.png "'Ok' button")
 ![img9](/instructionimage/9.png "'Ok' button")
 
-## Future Plans
+Note that for the beta versions, the language is buggy and might not work sometimes.
 
-There's still a lot to be done though. Here are the things I'm working on for `v2-beta` (in order):
+---
 
-- `v2.2-beta` loops
-- `v2.3-beta` more predefined functions and small libraries; right now, the only predefined function is `print()`
+## Progress Updates
+
+I just got done with `v2.2-beta`, which is a release about loops. Now, I'm working on `v2.3-beta`, which are arrays!
+
+Here's a list of all the future relases I have planned:
+
+- `v2.3-beta` arrays
 - `v2.4-beta` user input
-- `v2.5-beta` arrays
-- `v2.6-beta` "include" thingy like in C++
-- `v2.7-beta` function definitions and overloading
-
-### Progress on Updates
-
-I just got done with `v2.1-beta`, which is a release about more support for expressions. Now, I'm working on `v2.2-beta`, which are loops!
-
-I'm also planning to have `v3` be the first non-beta version, and I'm really excited about that.
+- `v3.0` baseline for `v3`
+  - everything in `v2`
+  - function def and overload
+    - also support for recursion (maybe)
+  - while and for loops
+    - non-static conditions
+  - cleaner code :)
+- `v3.1` support for source build
+  - with the help of [AntimatterReactor](https://github.com/AntimatterReactor)
+- `v3.2` classes
