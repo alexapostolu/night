@@ -52,18 +52,24 @@ print(number + "\n");
 
 ## How to Use
 
-1. Open cmd, bash, or powershell
-2. Type:
+### Configuring
+
+1. Download and install a c/c++ compiler
+2. Open Shell (cmd, bash, or powershell)
+3. Change directory to Night/src folder (`cd %path to Night/src%`)
+4. Type :
 
 ```bash
-%PathToNightFolder%/src/Night.exe %filepath%.night
+%path to compiler bin% -o Night.exe %path to Night.cpp%
 ```
 
-e.g.
+e.g.:
 
 ```bash
-/mnt/c/tools/Night/src/Night.exe /mnt/c/codeproject/test.night
+D:/MinGW/bin/g++.exe -o Night.exe D:/VS+VSCodeField/VSCode/C-variant/Night/src/Night.cpp
 ```
+
+### Running
 
 ### Making Usage Easier (Windows Only)
 
@@ -87,18 +93,27 @@ Search and select 'Path' and click 'Edit':
 
 ![img5](/instructionimage/5.png "'Path' as System Variable and 'Edit...' Button")
 
-Select and go to the end of 'Variable Value' and type ";%NightFilePath%/src":
+Select and go to the end of 'Variable Value' and type ";%path to Night folder%/src":
 
 ![img6](/instructionimage/6.png "'Path Variable' Window")
 ![img7](/instructionimage/7.png "'D:\VS+VSCodeField\VSCode\C-variant\Night\src'")
+
+And ";%path to compiler bin%":
+
+![img8](/instructionimage/8.png "'D:\MinGW\bin'")
+
+Press Oks:
+
+![img11](/instructionimage/11.png "'Ok' button")
+![img10](/instructionimage/10.png "'Ok' button")
+![img9](/instructionimage/9.png "'Ok' button")
 
 ## Future Plans
 
 There's still a lot to be done though. Here are the things I'm working on for `v2-beta` (in order):
 
 - `v2.2-beta` loops
-- `v2.3-beta` more predefined functions and small libraries
-  :  right now, the only predefined function is `print()`
+- `v2.3-beta` more predefined functions and small libraries; right now, the only predefined function is `print()`
 - `v2.4-beta` user input
 - `v2.5-beta` arrays
 - `v2.6-beta` "include" thingy like in C++

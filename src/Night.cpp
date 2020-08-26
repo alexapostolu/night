@@ -10,8 +10,7 @@ int main(int argc, char *argv[])
 		if (argc > 0){
 			ExtractCode(argv[1]);
 		} else {
-			char *sdefault = (char *)"source.night";
-			ExtractCode(sdefault);
+			ExtractCode((char *)"source.night");
 		}
 	}
 	catch (const Error& e) {
