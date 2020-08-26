@@ -76,6 +76,11 @@ void CheckToken(std::vector<Token>& tokens, std::string& token)
 		tokens.push_back(Token{ TokenType::RETURN, token });
 		token = "";
 	}
+	else if (token == "loop")
+	{
+		tokens.push_back(Token{ TokenType::LOOP, token });
+		token = "";
+	}
 	else if (std::regex_match(token, std::regex("[a-zA-Z_][a-zA-Z_0-9]*")))
 	{
 		tokens.push_back(Token{ TokenType::VARIABLE, token });
@@ -243,12 +248,12 @@ void Lexer(const std::string& line)
 
 			if (a < line.length() && line[a + 1] == '=')
 			{
-				tokens.push_back(Token{ TokenType::GREATER_EQUAL });
+				tokens.push_back(Token{ TokenType::GREATER_EQUAL, "<=" });
 				a += 1;
 			}
 			else
 			{
-				tokens.push_back(Token{ TokenType::GREATER });
+				tokens.push_back(Token{ TokenType::GREATER, ">" });
 			}
 
 			break;
@@ -257,12 +262,12 @@ void Lexer(const std::string& line)
 
 			if (a < line.length() && line[a + 1] == '=')
 			{
-				tokens.push_back(Token{ TokenType::SMALLER_EQUAL });
+				tokens.push_back(Token{ TokenType::SMALLER_EQUAL, "<=" });
 				a += 1;
 			}
 			else
 			{
-				tokens.push_back(Token{ TokenType::SMALLER });
+				tokens.push_back(Token{ TokenType::SMALLER, "<" });
 			}
 
 			break;

@@ -451,6 +451,29 @@ void Parser(std::vector<Token>& tokens, bool runtime, bool recursion)
 				"function must return a value");
 		}
 	}
+	// loop
+	else if (tokens.size() >= 6 && tokens[0].type == TokenType::LOOP &&
+		tokens[1].type == TokenType::OPEN_BRACKET)
+	{
+		//
+
+		std::vector<Token> expression(tokens.begin() + 2, tokens.begin() + CloseBracketIndex(tokens, 1));
+		Token condition = EvaluateExpression(expression, variables, functions);
+		if (condition.type != TokenType::INT_VALUE) {
+			throw Error(night::_invalid_expression_, tokens, 0, 3,
+				"loop value must be of type 'int'");
+		}
+
+		tokens.erase(tokens.begin() + 3, tokens.begin() + CloseBracketIndex(tokens, 1));
+
+		for (int i = 0; i < std::stoi(condition.token); ++i)
+		{
+			std::vector<Token> codeLine(tokens.begin() + CloseBracketIndex(tokens, 1) + 2, tokens.end() - 1);
+			ExtractLine(codeLine);
+		}
+
+		
+	}
 	// error
 	else
 	{
