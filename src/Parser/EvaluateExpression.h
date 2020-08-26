@@ -107,6 +107,9 @@ void EvaluateNumeric(std::vector<Token>& expr, std::size_t index, std::string op
 				"operator '" + expr[index].token + "' can only be used on two values of type 'int' or "
 				"'dec', or two values of type 'str'");
 		}
+
+		//expr.erase(expr.begin() + index);
+		//expr.erase(expr.begin() + index);
 	}
 	catch (const Error&) {
 		throw;

@@ -50,6 +50,8 @@ bool PredefineFunction(const std::vector<Token>& code)
 	return false;
 }
 
+int CloseBracketIndex(const std::vector<Token>& tokens, int startIndex);
+
 void Runtime(const std::vector<std::vector<Token> >& code, const std::vector<Function>& functions)
 {
 	static std::vector<Variable> variables;
@@ -61,17 +63,16 @@ void Runtime(const std::vector<std::vector<Token> >& code, const std::vector<Fun
 		// variable declaration
 		if (code[a].size() == 3 && code[a][0].type <= TokenType::STR_TYPE)
 		{
-			//variables.push_back(Variable{ code[a][0].type, code[a][1].token, DefaultValue(code[a][0]) });
+			variables.push_back(Variable{ code[a][0].type, code[a][1].token, DefaultValue(code[a][0]) });
 		}
 		// variables initialization
 		else if (code[a].size() == 5 && code[a][0].type <= TokenType::STR_TYPE)
 		{
-			//variables.push_back(Variable{ code[a][0].type, code[a][1].token, code[a][3].token });
+			variables.push_back(Variable{ code[a][0].type, code[a][1].token, code[a][3].token });
 		}
 		// variable assignment
 		else if (code[a].size() == 4 && code[a][1].type == TokenType::ASSIGNMENT)
 		{
-			/*
 			for (std::size_t a = 0; a < variables.size(); ++a)
 			{
 				if (code[a][0].token == variables[a].name)
@@ -80,7 +81,6 @@ void Runtime(const std::vector<std::vector<Token> >& code, const std::vector<Fun
 					return;
 				}
 			}
-			*/
 		}
 		// if statement
 		else if (code[a].size() >= 6 && code[a][0].type == TokenType::IF)
@@ -120,6 +120,16 @@ void Runtime(const std::vector<std::vector<Token> >& code, const std::vector<Fun
 				ExtractCodeLines(temp, functions);
 
 				nextStatement = false;
+			}
+		}
+		// loop
+		else if (code[a].size() >= 6 && code[a][0].type == TokenType::LOOP)
+		{
+			for (int i = 0; i < std::stoi(code[a][2].token); ++i)
+			{
+				std::vector<Token> codeLine(code[a].begin() + CloseBracketIndex(code[a], 1) + 2,
+					code[a].end() - 1);
+				ExtractCodeLines(codeLine, functions);
 			}
 		}
 		// function call
