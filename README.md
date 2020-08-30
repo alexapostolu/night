@@ -59,6 +59,9 @@ loop (5)
 {
     print("squid");
 }
+
+int[3] arr = [ 6, 6, 7 ];
+arr[1] = 5;
 ```
 
 Note that for the beta versions, the language is buggy and might not work sometimes.
@@ -67,11 +70,10 @@ Note that for the beta versions, the language is buggy and might not work someti
 
 **Progress Updates**
 
-I just got done with `v2.2-beta`, which is a release about loops. Now, I'm working on `v2.3-beta`, which are arrays!
+I just got done with `v2.3-beta`, which is a release about arrays. Now, I'm working on `v2.4-beta`, which is user input!
 
 Here's a list of all the future relases I have planned:
 
-- `v2.3-beta` arrays
 - `v2.4-beta` user input
 - `v3.0` baseline for `v3`
   - everything in `v2`
