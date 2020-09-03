@@ -11,6 +11,7 @@
 #include "../DataTypes/Token.h"
 #include "../DataTypes/Variable.h"
 #include "../DataTypes/Function.h"
+#include "../DataTypes/Array.h"
 
 template <typename T>
 TokenType type_to_val(const T& value)
@@ -88,6 +89,7 @@ void Parser(std::vector<Token>& tokens, bool runtime, bool recursion)
 {
 	static std::vector<Variable> variables;
 	static std::vector<Function> functions;
+	static std::vector<Array> arrays;
 	static bool predefined = true;
 
 	if (predefined)
@@ -135,7 +137,7 @@ void Parser(std::vector<Token>& tokens, bool runtime, bool recursion)
 		std::vector<Token> expression(tokens.begin() + 3, tokens.end() - 1);
 
 		try {
-			tokens[3] = EvaluateExpression(expression, variables, functions);
+			tokens[3] = EvaluateExpression(expression, variables, functions, arrays);
 		}
 		catch (const Error& e) {
 			int changeSize = tokens.size() - expression.size() - 4;
@@ -192,7 +194,7 @@ void Parser(std::vector<Token>& tokens, bool runtime, bool recursion)
 		std::vector<Token> expression(tokens.begin() + 2, tokens.end() - 1);
 
 		try {
-			tokens[2] = EvaluateExpression(expression, variables, functions);
+			tokens[2] = EvaluateExpression(expression, variables, functions, arrays);
 		}
 		catch (const Error& e) {
 			int changeSize = tokens.size() - expression.size() - 3;
@@ -229,7 +231,7 @@ void Parser(std::vector<Token>& tokens, bool runtime, bool recursion)
 		std::vector<Token> expression(tokens.begin() + 2, tokens.begin() + closeBracketIndex);
 
 		try {
-			tokens[2] = EvaluateExpression(expression, variables, functions);
+			tokens[2] = EvaluateExpression(expression, variables, functions, arrays);
 		}
 		catch(const Error& e) {
 			int changeSize = tokens.size() - expression.size() - 3;
@@ -258,7 +260,7 @@ void Parser(std::vector<Token>& tokens, bool runtime, bool recursion)
 		std::vector<Token> expression(tokens.begin() + 3, tokens.begin() + closeBracketIndex);
 
 		try {
-			tokens[3] = EvaluateExpression(expression, variables, functions);
+			tokens[3] = EvaluateExpression(expression, variables, functions, arrays);
 		}
 		catch (const Error& e) {
 			int changeSize = tokens.size() - expression.size() - 3;
@@ -341,7 +343,7 @@ void Parser(std::vector<Token>& tokens, bool runtime, bool recursion)
 					variables.push_back(Variable{
 						function->parameters.at(functionVariable).type,
 						function->parameters[functionVariable].name,
-						EvaluateExpression(temp, variables, functions).token
+						EvaluateExpression(temp, variables, functions, arrays).token
 					});
 
 					tokens[startCode].token = temp[0].token;
@@ -371,7 +373,7 @@ void Parser(std::vector<Token>& tokens, bool runtime, bool recursion)
 		*/
 
 		Token returnToken = { TokenType::BIT_VALUE, "null" };
-		ExtractLine(function->code, &returnToken, &variables, &functions, 1);
+		ExtractLine(function->code, &returnToken, &variables, &functions, &arrays, 1);
 
 		if (returnToken.type != TokenType::BIT_VALUE && returnToken.token != "null")
 		{
@@ -458,7 +460,7 @@ void Parser(std::vector<Token>& tokens, bool runtime, bool recursion)
 		//
 
 		std::vector<Token> expression(tokens.begin() + 2, tokens.begin() + CloseBracketIndex(tokens, 1));
-		Token condition = EvaluateExpression(expression, variables, functions);
+		Token condition = EvaluateExpression(expression, variables, functions, arrays);
 		if (condition.type != TokenType::INT_VALUE) {
 			throw Error(night::_invalid_expression_, tokens, 0, 3,
 				"loop value must be of type 'int'");
@@ -474,6 +476,37 @@ void Parser(std::vector<Token>& tokens, bool runtime, bool recursion)
 
 		
 	}
+	// array
+	else if (tokens.size() >= 10 && tokens[0].type <= TokenType::STR_TYPE &&
+		tokens[1].type == TokenType::OPEN_SQUARE)
+	{
+		arrays.push_back(Array{ tokens[4].token });
+
+		for (int a = 7; a < tokens.size() - 2; a += 2)
+			arrays.back().elements.push_back(Token{ tokens[a].type, tokens[a].token });
+	}
+	// array element
+	else if (tokens.size() >= 7 && tokens[0].type == TokenType::VARIABLE &&
+		tokens[1].type == TokenType::OPEN_SQUARE)
+	{
+		Array* arr = nullptr;
+		for (std::size_t a = 0; a < arrays.size(); ++a)
+		{
+			if (tokens[0].token == arrays[a].name)
+			{
+				arr = &arrays[a];
+				break;
+			}
+		}
+
+		if (arr == nullptr) {
+			throw Error(night::_undefined_token_, tokens, 0, tokens.size() - 1,
+				"array is not defined");
+		}
+
+		std::vector<Token> temp(tokens.begin() + 5, tokens.end() - 1);
+		arr->elements[std::stoi(tokens[2].token)] = EvaluateExpression(temp, variables, functions, arrays);
+	}
 	// error
 	else
 	{
@@ -486,7 +519,7 @@ void Parser(std::vector<Token>& tokens, bool runtime, bool recursion)
 }
 
 void ExtractLine(std::vector<Token>& tokens, Token* returnType, std::vector<Variable>* vars,
-	std::vector<Function>* funcs, int exitFunction)
+	std::vector<Function>* funcs, std::vector<Array>* arrs, int exitFunction)
 {
 	std::vector<Token> temp;
 
@@ -518,7 +551,7 @@ void ExtractLine(std::vector<Token>& tokens, Token* returnType, std::vector<Vari
 			if (activateReturn && returnType != nullptr)
 			{
 				temp.erase(temp.end() - 1);
-				Token value = EvaluateExpression(temp, *vars, *funcs);
+				Token value = EvaluateExpression(temp, *vars, *funcs, *arrs);
 				*returnType = value;//Token{ value.type, value.token };
 
 				temp.clear();

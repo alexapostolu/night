@@ -10,6 +10,7 @@
 #include "../DataTypes/Token.h"
 #include "../DataTypes/Variable.h"
 #include "../DataTypes/Function.h"
+#include "../DataTypes/Array.h"
 
 namespace night {
 
@@ -55,7 +56,8 @@ float abs(float val)
 
 void Parser(std::vector<Token>& tokens, bool runtime, bool recursion = false);
 void ExtractLine(std::vector<Token>& tokens, Token* returnType = nullptr,
-	std::vector<Variable>* vars = nullptr, std::vector<Function>* funcs = nullptr, int omg = 0);
+	std::vector<Variable>* vars = nullptr, std::vector<Function>* funcs = nullptr,
+	std::vector<Array>* arrs = nullptr, int omg = 0);
 
 float EvalNum(float val1, float val2, std::string op)
 {
@@ -259,7 +261,7 @@ void EvalExpr(std::vector<Token>& expr, std::size_t& index, std::size_t* bracket
 }
 
 Token EvaluateExpression(std::vector<Token>& expr, std::vector<Variable>& vars,
-	std::vector<Function>& funcs)
+	std::vector<Function>& funcs, std::vector<Array>& arrs)
 {
 	for (std::size_t a = 0; a < expr.size(); ++a)
 	{
@@ -322,7 +324,7 @@ Token EvaluateExpression(std::vector<Token>& expr, std::vector<Variable>& vars,
 									vars.push_back(Variable{
 										func.parameters.at(functionVariable).type,
 										func.parameters[functionVariable].name,
-										EvaluateExpression(temp, vars, funcs).token
+										EvaluateExpression(temp, vars, funcs, arrs).token
 									});
 
 									functionVariable += 1;
@@ -346,11 +348,11 @@ Token EvaluateExpression(std::vector<Token>& expr, std::vector<Variable>& vars,
 							vars.push_back(Variable{
 								func.parameters.at(functionVariable).type,
 								func.parameters[functionVariable].name,
-								EvaluateExpression(temp, vars, funcs).token
+								EvaluateExpression(temp, vars, funcs, arrs).token
 							});
 						}
 
-						ExtractLine(func.code, &expr[a], &vars, &funcs);
+						ExtractLine(func.code, &expr[a], &vars, &funcs, &arrs);
 
 						expr.erase(expr.begin() + a + 1, expr.begin() + end + (temp.empty() ? 1 : 2));
 
@@ -360,11 +362,29 @@ Token EvaluateExpression(std::vector<Token>& expr, std::vector<Variable>& vars,
 						break;
 					}
 				}
+			}
 
-				if (!isDefined) {
-					throw Error(night::_undefined_token_, expr, a, a,
-						"token '" + expr[a].token + "' is not defined");
+			if (!isDefined)
+			{
+				for (std::size_t b = 0; a < arrs.size(); ++a)
+				{
+					if (expr[a].token == arrs[b].name)
+					{
+						expr[a] = arrs[b].elements[std::stoi(expr[a + 2].token)];
+
+						expr.erase(expr.begin() + a + 1);
+						expr.erase(expr.begin() + a + 1);
+						expr.erase(expr.begin() + a + 1);
+
+						isDefined = true;
+						break;
+					}
 				}
+			}
+
+			if (!isDefined) {
+				throw Error(night::_undefined_token_, expr, a, a,
+					"token '" + expr[a].token + "' is not defined");
 			}
 		}
 	}
