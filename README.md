@@ -1,6 +1,6 @@
 # Night
 
-An interpreted programming language. It combines the simplicity of Python, with the type concepts of the C family.
+An interpreted programming language that combines the simplicity of Python, with the type concepts of the C family.
 
 It's still in early development, and I have a lot left to do. I'm also working on a [website](https://night-web.dynamicsquid.repl.co/) which you can definitly check out!
 
@@ -62,6 +62,8 @@ loop (5)
 
 int[3] arr = [ 6, 6, 7 ];
 arr[1] = 5;
+
+int userAge = input();
 ```
 
 Note that for the beta versions, the language is buggy and might not work sometimes.
@@ -70,18 +72,15 @@ Note that for the beta versions, the language is buggy and might not work someti
 
 **Progress Updates**
 
-I just got done with `v2.3-beta`, which is a release about arrays. Now, I'm working on `v2.4-beta`, which is user input!
+I just got done with `v2.4-beta`, which is a release about user input. Now, I'm working on `v3.0`, which will be the first non-beta release!
 
 Here's a list of all the future relases I have planned:
 
-- `v2.4-beta` user input
 - `v3.0` baseline for `v3`
-  - everything in `v2`
-  - function def and overload
-    - also support for recursion (maybe)
+  - function definitions and overloading
   - while and for loops
-    - non-static conditions
+  - better error checking
+  - fluid arrays
+  - source build
   - cleaner code :)
-- `v3.1` support for source build
-  - with the help of [AntimatterReactor](https://github.com/AntimatterReactor)
-- `v3.2` classes
+- `v3.1` [sqdlib](https://github.com/DynamicSquid/sqdlib)
