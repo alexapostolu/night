@@ -96,6 +96,7 @@ void Parser(std::vector<Token>& tokens, bool runtime, bool recursion)
 	{
 		functions.push_back(Function{ TokenType::NULL_TYPE, "print",
 			std::vector<Variable>{ Variable{ TokenType::STR_TYPE, "text" } } });
+		functions.push_back(Function{ TokenType::BIT_TYPE, "input" });
 
 		predefined = false;
 	}
@@ -363,14 +364,6 @@ void Parser(std::vector<Token>& tokens, bool runtime, bool recursion)
 				temp.clear();
 			}
 		}
-
-		/*
-		if ((tokens.size() - 4 != 0 || function->parameters.size() != 0) &&
-			(tokens.size() - 4 != function->parameters.size() * 2 - 1)) {
-			throw Error(night::_invalid_expression_, tokens, 0, tokens.size() - 1,
-				"function parameters do not match up");
-		}
-		*/
 
 		Token returnToken = { TokenType::BIT_VALUE, "null" };
 		ExtractLine(function->code, &returnToken, &variables, &functions, &arrays, 1);
