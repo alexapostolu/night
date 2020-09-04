@@ -4,10 +4,10 @@
 #include <string>
 #include <vector>
 
-#include "Parser/Parser.h"
+#include "Parser/Parser.hpp"
 
-#include "DataTypes/Error.h"
-#include "DataTypes/Token.h"
+#include "DataTypes/Error.hpp"
+#include "DataTypes/Token.hpp"
 
 void CheckToken(std::vector<Token>& tokens, std::string& token)
 {

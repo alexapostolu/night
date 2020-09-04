@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "Token.h"
+#include "Token.hpp"
 
 const std::string WHITE = "\033[38;5;253m";
 const std::string BLUE  = "\033[38;5;39m";

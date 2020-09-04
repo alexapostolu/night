@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "Token.h"
+#include "Token.hpp"
 
 enum class VariableType
 {
