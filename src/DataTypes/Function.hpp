@@ -3,8 +3,8 @@
 #include <string>
 #include <vector>
 
-#include "Token.h"
-#include "Variable.h"
+#include "Token.hpp"
+#include "Variable.hpp"
 
 struct Function
 {

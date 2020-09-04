@@ -53,7 +53,7 @@ enum class TokenType
 
 	OPEN_BRACKET,
 	CLOSE_BRACKET,
-	
+
 	OPEN_SQUARE,
 	CLOSE_SQUARE,
 
