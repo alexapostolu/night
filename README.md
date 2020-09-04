@@ -2,7 +2,7 @@
 
 An interpreted programming language that combines the simplicity of Python, with the type concepts of the C family.
 
-It's still in early development, and I have a lot left to do. I'm also working on a [website](https://night-web.dynamicsquid.repl.co/) which you can definitly check out!
+It's still in early development, and I have a lot left to do. I'm also working on a [website](https://night-website.dynamicsquid.repl.co/) which you can definitly check out!
 
 Currently, the website is the recommended place to code using Night, however support for a source build will be coming soon.
 
