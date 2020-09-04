@@ -110,8 +110,6 @@ void EvaluateNumeric(std::vector<Token>& expr, std::size_t index, std::string op
 				"'dec', or two values of type 'str'");
 		}
 
-		//expr.erase(expr.begin() + index);
-		//expr.erase(expr.begin() + index);
 	}
 	catch (const Error&) {
 		throw;
@@ -291,6 +289,24 @@ Token EvaluateExpression(std::vector<Token>& expr, std::vector<Variable>& vars,
 								throw 1;
 						}
 						catch (...) {
+							break;
+						}
+						if (expr[a].token == "input")
+						{
+							getline(std::cin, expr[a].token);
+
+							try {
+								int temp = std::stoi(expr[a].token);
+								expr[a].type = TokenType::INT_VALUE;
+							}
+							catch (...) {
+								expr[a].type = TokenType::STR_VALUE;
+							}
+
+							expr.erase(expr.begin() + a + 1);
+							expr.erase(expr.begin() + a + 1);
+
+							isDefined = true;
 							break;
 						}
 

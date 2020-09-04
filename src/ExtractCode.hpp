@@ -27,6 +27,7 @@ void ExtractCode(char* f_arg) /*ExtractCode Function, takes char*
 		codeLine += fileLine;
 	}
 
+
 	int curlyBracket = 0;
 	for (std::size_t a = 0; a < codeLine.length(); ++a)
 	{

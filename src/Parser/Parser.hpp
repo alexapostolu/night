@@ -96,7 +96,8 @@ void Parser(std::vector<Token>& tokens, bool runtime, bool recursion)
 	{
 		functions.push_back(Function{ TokenType::NULL_TYPE, "print",
 			std::vector<Variable>{ Variable{ TokenType::STR_TYPE, "text" } } });
-
+		functions.push_back(Function{ TokenType::BIT_TYPE, "input" });
+		
 		predefined = false;
 	}
 
