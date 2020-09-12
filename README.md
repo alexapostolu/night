@@ -72,7 +72,7 @@ Note that for the beta versions, the language is buggy and might not work someti
 
 **Progress Updates**
 
-I just got done with `v2.4-beta`, which is a release about user input. Now, I'm working on `v3.0`, which will be the first non-beta release!
+I just got done with `v2.4-beta`, which is a release about user input. Now, I'm working on `v3.0`, which will be the first non-beta release! You can check the `v3` branch too see my progres on it so far.
 
 Here's a list of all the future relases I have planned:
 
