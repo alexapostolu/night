@@ -16,13 +16,15 @@ namespace night {
 
 const night::string _missing_token_   { "missing token"   };
 const night::string _invalid_token_   { "invalid token"   };
-const night::string _undefined_token_ { "undefined token" };
-const night::string _redefined_token_ { "redefined token" };
+
+const night::string _undefined_object_ { "undefined object" };
+const night::string _redefined_object_ { "redefined token" };
 
 const night::string _invalid_expression_ { "invalid expression" };
 const night::string _invalid_variable_   { "invalid variable"   };
 const night::string _invalid_statement_  { "invalid statement"  };
 const night::string _invalid_function_   { "invalid function"   };
+const night::string _invalid_array_      { "invalid array"      };
 const night::string _invalid_grammar_    { "invalid grammar"    };
 
 } // namespace night
@@ -59,7 +61,7 @@ public:
 		{
 			for (int b = 0; b < code[a].value.length(); ++b)
 				output += RESET + (a < start || a > end ? ' ' : '~');
-			output += ((a < start || a > end) || (a == end) ? ' ' : '~');
+			output += a < start || a >= end ? ' ' : '~';
 		}
 
 		output += "\n\n";

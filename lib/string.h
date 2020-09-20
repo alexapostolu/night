@@ -14,7 +14,7 @@ public:
 	string(char c)
 	{
 		len = 1, cap = 22;
-		
+
 		str = str_alc(cap);
 		str[0] = c;
 	}
@@ -40,10 +40,10 @@ public:
 	string(string&& src) noexcept
 	{
 		len = src.len;
-		cap = len + 21;
+		cap = src.cap;
+		str = src.str;
 
-		str = str_alc(cap);
-		str_cpy(str, src.str);
+		src.str = nullptr;
 	}
 
 	~string()
@@ -89,10 +89,10 @@ public:
 		delete[] str;
 
 		len = src.len;
-		cap = len + 21;
+		cap = src.cap;
+		str = src.str;
 
-		str = str_alc(cap);
-		str_cpy(str, src.str);
+		src.str = nullptr;
 
 		return *this;
 	}
@@ -117,7 +117,7 @@ public:
 
 	void operator+=(char c)
 	{
-		if (cap > len)
+		if (cap > len + 1)
 		{
 			str[len] = c;
 			len++;
@@ -283,6 +283,8 @@ private:
 
 } // namespace night
 
+
+// WAT dis
 night::string operator""_s(char c)
 {
 	return night::string(c);

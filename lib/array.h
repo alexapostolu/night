@@ -71,34 +71,6 @@ public:
 		return arr[len - 1];
 	}
 
-	void push_front(const T& val)
-	{
-		if (cap > len)
-		{
-			for (int a = len; a >= 0; --a)
-				arr[a] = arr[a - 1];
-
-			arr[0] = val;
-			len++;
-
-			return;
-		}
-
-		cap += 4;
-
-		T* temp = new T[cap];
-
-		temp[0] = val;
-
-		for (int a = 0; a < len; ++a)
-			temp[a + 1] = arr[a];
-
-		delete[] arr;
-
-		arr = temp;
-		len++;
-	}
-
 	void push_back(const T& val)
 	{
 		if (cap > len)
@@ -123,37 +95,6 @@ public:
 		len++;
 	}
 
-	void insert(int index, const T& val)
-	{
-		if (cap > len)
-		{
-			for (int a = len; a > index; --a)
-				arr[a] = arr[a - 1];
-
-			arr[index] = val;
-			len++;
-
-			return;
-		}
-
-		cap += 4;
-
-		T* temp = new T[cap];
-
-		for (int a = 0; a < index; ++a)
-			temp[a] = arr[a];
-
-		temp[index] = val;
-
-		for (int a = index; a < len; ++a)
-			temp[a + 1] = arr[a];
-
-		delete[] arr;
-
-		arr = temp;
-		len++;
-	}
-
 	void remove(int index)
 	{
 		for (int a = index; a < len - 1; ++a)
@@ -162,16 +103,6 @@ public:
 		len--;
 	}
 
-	/*
-	void remove(int begin, int end)
-	{
-		for (int a = begin; a < len - 1; ++a)
-			arr[a] = arr[a + end - begin + 1];
-
-		len -= end - begin + 1;
-	}
-	*/
-
 	array access(int begin, int end) const
 	{
 		array temp;
@@ -179,6 +110,11 @@ public:
 			temp.push_back(arr[a]);
 
 		return temp;
+	}
+
+	void clear()
+	{
+		len = 0;
 	}
 
 private:

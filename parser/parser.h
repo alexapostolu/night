@@ -6,7 +6,6 @@
 
 #include "../containers/token.h"
 
-void VariableInit(const night::array<Token>& code);
 void Expression(const night::array<Token>& expr);
 
 bool is_element(const night::array<Token>& tokens, int index);
@@ -38,7 +37,7 @@ bool is_element(const night::array<Token>& tokens, int index)
 		}
 	}
 
-	throw "missing closing square bracket";
+	throw Error(night::_invalid_expression_, tokens, tokens.length() - 1, tokens.length() - 1, "missing closing square bracket");
 }
 
 bool is_call(const night::array<Token>& tokens, int index)
@@ -61,7 +60,7 @@ bool is_call(const night::array<Token>& tokens, int index)
 		}
 	}
 
-	throw "missing closing bracket";
+	throw Error(night::_invalid_expression_, tokens, tokens.length() - 1, tokens.length() - 1, "missing closing bracket");
 }
 
 bool is_value(const night::array<Token>& tokens, int index)
@@ -145,61 +144,87 @@ void check_value(const night::array<Token >& tokens, int index)
 }
 
 
-Token eat(const night::array<Token>& code, bool peekToken = false)
-{
-	static int index = -1;
-	
+Token eat(const night::array<Token>& code, int& index)
+{	
 	if (++index == code.length())
 		throw Error(night::_invalid_grammar_, code, index - 1, index - 1, "unexpected end of line");
 
-	return peekToken ? code[index--] : code[index];
+	return code[index];
 }
 
-Token peek(const night::array<Token>& code)
+Token peek(const night::array<Token>& code, int index)
 {
-	return eat(code, true);
+	int set = index;
+	return eat(code, set);
 }
 
 void Parser(const night::array<Token>& code)
 {
 	return;
-	Token token = eat(code);
+
+	int index = -1;
+
+	Token token = eat(code, index);
 	if (token.type >= TokenType::BIT_TYPE && token.type <= TokenType::NULL_TYPE)
 	{
-		if (peek(code).type == TokenType::ASSIGNMENT)
+		token = eat(code, index);
+		if (token.type == TokenType::VARIABLE)
 		{
-			token = eat(code);
-		}
-		else if (peek(code).type == TokenType::OPEN_SQUARE)
-		{
+			token = eat(code, index);
+			if (token.type == TokenType::ASSIGNMENT)
+			{
+				if (code[0].type == TokenType::NULL_TYPE)
+					throw Error(night::_invalid_variable_, code, 0, 0, "variable cannot be of type 'null'; only functions can be of type 'null'");
 
-		}
-		else if (peek(code).type == TokenType::OPEN_BRACKET)
-		{
+				if (code.back().type != TokenType::SEMICOLON)
+					throw Error(night::_invalid_variable_, code, code.length() - 1, code.length() - 1, "expected a semicolon");
 
-		}
-	}
-}
+				try {
+					Expression(code.access(3, code.length() - 2));
+				}
+				catch (const Error& e) {
+					throw Error(e.errorType, code, e.start + 3, e.end + 3, e.errorMsg);
+				}
+			}
+			else if (token.type == TokenType::OPEN_BRACKET)
+			{
+				token = eat(code, index);
+				int a;
+				for (a = 3; token.type != TokenType::CLOSE_BRACKET; a += 3)
+				{
+					if (token.type < TokenType::BIT_TYPE || token.type > TokenType::STR_TYPE)
+						throw Error(night::_invalid_function_, code, a, a, "expected variable type");
 
-void VariableInit(const night::array<Token>& code)
-{
-	Token token = eat(code);
-	if (token.type != TokenType::VARIABLE)
-		throw Error(night::_invalid_grammar_, code, 0, code.length() - 1, "expected a variable, array, or function name");
+					token = eat(code, index);
+					if (token.type != TokenType::VARIABLE)
+						throw Error(night::_invalid_function_, code, a + 1, a + 1, "expected variable name");
 
-	token = eat(code);
-	if (token.type == TokenType::ASSIGNMENT)
-	{
-		if (code.back().type != TokenType::SEMICOLON)
-			throw Error(night::_invalid_grammar_, code, code.length() - 1, code.length() - 1, "expected a semicolon at the end");
-		if (code.length() == 4)
-			throw Error(night::_invalid_grammar_, code, 0, code.length() - 1, "expected an expression");
+					token = eat(code, index);
+					if (token.type != TokenType::CLOSE_BRACKET && token.type != TokenType::COMMA)
+						throw Error(night::_invalid_function_, code, a + 1, a + 2, "expected closing bracket or comma");
 
-		try {
-			Expression(code.access(3, code.length() - 1));
-		}
-		catch (const Error& e) {
-			throw Error(e.errorType, code, e.start + 3, e.end + 3, e.errorMsg);
+					if (token.type == TokenType::COMMA)
+						token = eat(code, index);
+				}
+
+				token = eat(code, index);
+				if (token.type != TokenType::OPEN_CURLY)
+					throw Error(night::_invalid_function_, code, a + 1, a + 1, "expected open curly bracket");
+
+				if (code.back().type != TokenType::CLOSE_CURLY)
+					throw Error(night::_invalid_function_, code, code.length() - 1, code.length() - 1, "expected closing curly bracket");
+
+				Parser(code.access(a + 2, code.length() - 2));
+			}
+			else if (token.type == TokenType::SEMICOLON)
+			{
+				if (code[0].type == TokenType::NULL_TYPE)
+					throw Error(night::_invalid_variable_, code, 0, 0, "variable cannot be of type 'null'; only functions can be of type 'null'");
+			}
+			else
+			{
+				throw Error(night::_invalid_variable_, code, 2, 2, "expected a semicolon");
+			}
 		}
 	}
 }
