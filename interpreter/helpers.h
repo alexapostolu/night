@@ -2,14 +2,14 @@
 
 namespace night {
 
-int pow(int num, int exp)
+int pow(int base, int exp)
 {
-	int set = num;
-	num = 1;
+	int set = base;
+	base = 1;
 	for (int a = 0; a < exp; ++a)
-		num *= set;
+		base *= set;
 
-	return num;
+	return base;
 }
 
 night::string ttos(const TokenType& type)
@@ -43,23 +43,6 @@ TokenType ttov(const TokenType& type)
 	}
 }
 
-Token atoo(const TokenType& type)
-{
-	switch (type)
-	{
-	case TokenType::PLUS_ASSIGN:
-		return Token{ TokenType::PLUS, "+" };
-	case TokenType::MINUS_ASSIGN:
-		return Token{ TokenType::MINUS, "-" };
-	case TokenType::TIMES_ASSIGN:
-		return Token{ TokenType::TIMES, "*" };
-	case TokenType::DIVIDE_ASSIGN:
-		return Token{ TokenType::DIVIDE, "/" };
-	case TokenType::MOD_ASSIGN:
-		return Token{ TokenType::MOD, "%" };
-	}
-}
-
 float stof(const night::string& val)
 {
 	float number = 0;
@@ -67,7 +50,7 @@ float stof(const night::string& val)
 	for (int a = val.length() - 1; a >= 0; --a)
 	{
 		if ((val[a] - '0' < 0 || val[a] - '0' > 9) && val[a] != '.')
-			throw 1;
+			throw 1; // fix
 		if (val[a] == '.' && ++decimalCount > 1)
 			throw 1;
 
@@ -135,3 +118,15 @@ night::string itos(int val)
 }
 
 } // namespace night
+
+template <typename T>
+T* GetObject(night::array<T>& container, const Token& object)
+{
+	for (int a = 0; a < container.length(); ++a)
+	{
+		if (object.value == container[a].name)
+			return &container[a];
+	}
+
+	return nullptr;
+}

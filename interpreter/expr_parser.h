@@ -5,9 +5,17 @@
 #include "../lib/error.h"
 
 #include "../containers/variable.h"
+#include "../containers/function.h"
+#include "../containers/array_var.h"
 #include "../containers/token.h"
 
 #include "./helpers.h"
+
+void Interpreter(night::array<night::array<Token> >& code);
+void SplitCode(const night::array<Token>& code);
+
+Token returnToken{ TokenType::NULL_TYPE };
+int variableScope = -1;
 
 float EvalNum(const night::array<Token>& expr, int index, const night::string& op)
 {
@@ -193,82 +201,110 @@ void EvalBracket(night::array<Token>& expr, const TokenType& type1, const TokenT
 	}
 }
 
-Token ParseExpression(night::array<Token> expr, const night::array<Variable>& vars)
+Token ParseExpression(night::array<Token> expr, night::array<Variable>& vars,
+	night::array<Function>& funcs, night::array<Array>& arrs)
 {
 	for (int a = 0; a < expr.length(); ++a)
 	{
 		if (expr[a].type == TokenType::VARIABLE)
 		{
-			bool isDefined = false;
-
-			for (int b = 0; b < vars.length(); ++b)
+			Variable* variable = GetObject(vars, expr[a]);
+			if (variable != nullptr)
 			{
-				if (expr[a].value == vars[b].name)
-				{
-					expr[a] = Token{ night::ttov(vars[b].type), vars[b].value };
+				expr[a] = Token{ night::ttov(variable->type), variable->value };
+				continue;
+			}
 
-					isDefined = true;
+			Function* function = GetObject(funcs, expr[a]);
+			if (function != nullptr)
+			{
+				if (function->type == TokenType::NULL_TYPE)
+					throw Error(night::_invalid_expression_, expr, a, a, "function of type 'null' cannot be used in an expression");
+
+				variableScope = vars.length();
+
+				int closeBracket = 0;
+				night::array<Token> paramExpr;
+				for (int b = a + 2, paramIndex = 0, openBracket = 0; b < expr.length(); ++b)
+				{
+					if (expr[b].type == TokenType::OPEN_BRACKET)
+						openBracket++;
+					else if (expr[b].type == TokenType::CLOSE_BRACKET)
+						openBracket--;
+
+					if ((expr[b].type == TokenType::COMMA && openBracket == 0) ||
+						(expr[b].type == TokenType::CLOSE_BRACKET && openBracket == -1))
+					{
+						if (paramIndex >= function->params.length())
+							throw Error(night::_invalid_function_, expr, 0, expr.length(), "expecting "_s + night::itos(function->params.length()) + " parameters");
+
+						Token paramExprToken = ParseExpression(paramExpr, vars, funcs, arrs);
+						if (night::ttov(function->params[paramIndex].type) != paramExprToken.type)
+							throw Error(night::_invalid_function_, expr, 0, expr.length(), "parameter expression does not match with parameter type");
+
+						vars.push_back(Variable{
+							function->params[paramIndex].type,
+							function->params[paramIndex].name,
+							paramExprToken.value
+						});
+
+						paramIndex++;
+						paramExpr.clear();
+
+						closeBracket = b;
+						if (expr[b].type == TokenType::CLOSE_BRACKET)
+							break;
+
+						continue;
+					}
+
+					paramExpr.push_back(expr[b]);
+				}
+
+				SplitCode(function->code);
+
+				expr[a] = returnToken;
+				returnToken.type = TokenType::NULL_TYPE;
+
+				for (int b = a + 1; b <= closeBracket; ++b)
+					expr.remove(a + 1);
+
+				int variableLength = vars.length();
+				for (int b = variableScope; b < variableLength; ++b)
+					vars.remove(variableScope);
+
+				continue;
+			}
+
+			Array* array = GetObject(arrs, expr[a]);
+			if (array == nullptr)
+				throw Error(night::_undefined_object_, expr, a, a, "object is not defined");
+
+			for (int b = a + 3, squareCount = 0; expr[b].type != TokenType::CLOSE_SQUARE; ++b)
+			{
+				if (expr[b].type == TokenType::OPEN_SQUARE)
+					squareCount++;
+				else if (expr[b].type == TokenType::CLOSE_SQUARE)
+					squareCount--;
+
+				if (expr[b].type == TokenType::CLOSE_SQUARE && squareCount == -1)
+				{
+					Token arrayIndexToken = ParseExpression(expr.access(a + 2, b - 1),
+						vars, funcs, arrs);
+					int arrayIndex = night::stoi(arrayIndexToken.value);
+
+					if (arrayIndexToken.type != TokenType::INT_VALUE)
+						throw Error(night::_invalid_array_, expr, a + 3, b - 1, "array index can only be a value of type 'int'");
+					if (arrayIndex < 0 || arrayIndex >= array->elems.length())
+						throw Error(night::_invalid_array_, expr, a + 3, b - 1, "array index is out of range; the last element is at index '"_s + night::itos(array->elems.length() - 1) + "'");
+
+					expr[a] = array->elems[arrayIndex];
+					for (int c = a + 1; c <= b; ++c)
+						expr.remove(c);
+
 					break;
 				}
 			}
-
-			/*
-
-			if (!isDefined)
-			{
-				for (int b = 0; b < funcs.length(); ++b)
-				{
-					if (expr[a].value == funcs[b].name)
-					{
-						night::array<night::array<Token> > functionCall;
-						functionCall.push_back(night::array<Token>());
-						
-						int bracketCount = 0;
-						for (int c = a; ; ++c)
-						{
-							if (expr[c].type == TokenType::OPEN_BRACKET)
-								bracketCount++;
-							else if (expr[c].type == TokenType::CLOSE_BRACKET)
-								bracketCount--;
-
-							if (bracketCount == 0 && expr[c].type == TokenType::CLOSE_BRACKET)
-							{
-								functionCall.back() = expr.access(a, c);
-								expr.remove(a + 1, c);
-
-								break;
-							}
-						}
-
-						Interpreter(functionCall);
-
-						isDefined = true;
-						break;
-					}
-				}
-			}
-
-			if (!isDefined)
-			{
-				for (int b = 0; b < arrs.length(); ++b)
-				{
-					if (expr[a].value == arrs[b].name)
-					{
-						expr[a] = arrs[b].elements[night::stoi(expr[a + 2].value)];
-
-						for (int c = 0; c < 3; ++c)
-							expr.remove(a + 1);
-
-						isDefined = true;
-						break;
-					}
-				}
-			}
-
-			*/
-
-			if (!isDefined)
-				throw Error(night::_undefined_token_, expr, a, a, "token is not defined");
 		}
 	}
 

@@ -5,25 +5,28 @@
 
 #include "../containers/token.h"
 
-const night::string WHITE = "\033[38;5;253m";
-const night::string RED   = "\033[38;5;160m";
-const night::string I_RED = "\033[38;5;196m";
-const night::string U_RED = "\033[38;5;160;4m";
-const night::string BLUE  = "\033[38;5;39m";
-const night::string RESET = "\033[0m";
+const night::string WHITE = "\x1b[38;5;253m";
+const night::string RED   = "\x1b[38;5;160m";
+const night::string I_RED = "\x1b[38;5;196m";
+const night::string U_RED = "\x1b[38;5;160;4m";
+const night::string BLUE  = "\x1b[38;5;39m";
+const night::string RESET = "\x1b[0m";
 
 namespace night {
 
 const night::string _missing_token_   { "missing token"   };
 const night::string _invalid_token_   { "invalid token"   };
-const night::string _undefined_token_ { "undefined token" };
-const night::string _redefined_token_ { "redefined token" };
+
+const night::string _undefined_object_ { "undefined object" };
+const night::string _redefined_object_ { "redefined token" };
 
 const night::string _invalid_expression_ { "invalid expression" };
 const night::string _invalid_variable_   { "invalid variable"   };
 const night::string _invalid_statement_  { "invalid statement"  };
 const night::string _invalid_function_   { "invalid function"   };
+const night::string _invalid_array_      { "invalid array"      };
 const night::string _invalid_grammar_    { "invalid grammar"    };
+const night::string _package_not_found_  { "pacakage not found" };
 
 } // namespace night
 
@@ -59,7 +62,7 @@ public:
 		{
 			for (int b = 0; b < code[a].value.length(); ++b)
 				output += RESET + (a < start || a > end ? ' ' : '~');
-			output += ((a < start || a > end) || (a == end) ? ' ' : '~');
+			output += a < start || a >= end ? ' ' : '~';
 		}
 
 		output += "\n\n";

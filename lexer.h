@@ -20,16 +20,20 @@ bool match_character(night::string& token)
 {
 	if (token.length() == 4 && token[1] == '\\' && token[2] == 'n')
 	{
-		token.remove(1);
-		token[1] = '\n';
-
+		token = '\n';
 		return true;
 	}
 
 	if (token.length() != 3)
 		return false;
 
-	return token[0] == '\'' && token[2] == '\'';
+	if (token[0] == '\'' && token[2] == '\'')
+	{
+		token = token[1];
+		return true;
+	}
+
+	return false;
 }
 
 int match_number(const night::string& token)
@@ -94,6 +98,12 @@ void CheckToken(night::array<Token>& tokens, night::string& token)
 		AddKeyword(tokens, token, TokenType::RETURN);
 	else if (token == "loop")
 		AddKeyword(tokens, token, TokenType::LOOP);
+	else if (token == "while")
+		AddKeyword(tokens, token, TokenType::WHILE);
+	else if (token == "for")
+		AddKeyword(tokens, token, TokenType::FOR);
+  else if (token == "use")
+		AddKeyword(tokens, token, TokenType::IMPORT);
 	else if (match_character(token))
 		AddKeyword(tokens, token, TokenType::SYB_VALUE);
 	else if (match_number(token) == 0)
@@ -145,7 +155,7 @@ night::array<Token> Lexer(const night::string& line)
 		{
 		case '=':
 			CheckToken(tokens, token);
-			if (a < line.length() && line[a + 1] == '=')
+			if (a < line.length() - 1 && line[a + 1] == '=')
 			{
 				tokens.push_back(Token{ TokenType::EQUALS, "==" });
 				a += 1;
@@ -158,10 +168,10 @@ night::array<Token> Lexer(const night::string& line)
 			break;
 		case '+':
 			CheckToken(tokens, token);
-			if (a < line.length() && line[a + 1] == '=')
+			if (a < line.length() - 1 && line[a + 1] == '=')
 			{
 				tokens.push_back(Token{ TokenType::PLUS_ASSIGN, "+=" });
-				a += 1;
+				a++;
 			}
 			else
 			{
@@ -171,10 +181,10 @@ night::array<Token> Lexer(const night::string& line)
 			break;
 		case '-':
 			CheckToken(tokens, token);
-			if (a < line.length() && line[a + 1] == '=')
+			if (a < line.length() - 1 && line[a + 1] == '=')
 			{
 				tokens.push_back(Token{ TokenType::MINUS_ASSIGN, "-=" });
-				a += 1;
+				a++;
 			}
 			else
 			{
@@ -258,7 +268,7 @@ night::array<Token> Lexer(const night::string& line)
 			CheckToken(tokens, token);
 			if (a < line.length() && line[a + 1] == '=')
 			{
-				tokens.push_back(Token{ TokenType::GREATER_EQUAL, "<=" });
+				tokens.push_back(Token{ TokenType::GREATER_EQUAL, ">=" });
 				a += 1;
 			}
 			else

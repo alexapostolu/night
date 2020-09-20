@@ -3,10 +3,8 @@
 #include "lib/error.h"
 #include "file_extraction.h"
 
-#include "lib/string.h"
-
 int main(int argc, char* argv[])
-{
+{   
     try {
         if (argc == 1)
             ExtractFile("source.night");

@@ -14,7 +14,7 @@ public:
 	string(char c)
 	{
 		len = 1, cap = 22;
-		
+
 		str = str_alc(cap);
 		str[0] = c;
 	}
@@ -40,10 +40,10 @@ public:
 	string(string&& src) noexcept
 	{
 		len = src.len;
-		cap = len + 21;
+		cap = src.cap;
+		str = src.str;
 
-		str = str_alc(cap);
-		str_cpy(str, src.str);
+		src.str = nullptr;
 	}
 
 	~string()
@@ -89,10 +89,10 @@ public:
 		delete[] str;
 
 		len = src.len;
-		cap = len + 21;
+		cap = src.cap;
+		str = src.str;
 
-		str = str_alc(cap);
-		str_cpy(str, src.str);
+		src.str = nullptr;
 
 		return *this;
 	}
@@ -117,7 +117,7 @@ public:
 
 	void operator+=(char c)
 	{
-		if (cap > len)
+		if (cap > len + 1)
 		{
 			str[len] = c;
 			len++;
@@ -283,12 +283,16 @@ private:
 
 } // namespace night
 
-night::string operator""_s(char c)
-{
-	return night::string(c);
-}
 
-night::string operator""_s(const char* str, unsigned int len)
-{
-	return night::string(str);
-}
+
+#if defined(__linux__)
+	night::string operator""_s(const char* str, unsigned long len)
+	{
+		return night::string(str);
+	}
+#elif defined(_WIN32)
+	night::string operator""_s(const char* str, unsigned int len)
+	{
+		return night::string(str);
+	}
+#endif
