@@ -2,9 +2,7 @@
 
 An interpreted programming language that combines the simplicity of Python, with the type concepts of the C family.
 
-It's still in early development, and I have a lot left to do. I'm also working on a [website](https://night-website.dynamicsquid.repl.co/) which you can definitly check out!
-
-Currently, the website is the recommended place to code using Night, however support for a source build will be coming soon.
+You can read more about Night on its [website](https://night-website.dynamicsquid.repl.co/). You'll also find instructions on how to build this from source there.
 
 ---
 
@@ -72,15 +70,16 @@ Note that for the beta versions, the language is buggy and might not work someti
 
 **Progress Updates**
 
-I just got done with `v2.4-beta`, which is a release about user input. Now, I'm working on `v3.0`, which will be the first non-beta release! You can check the `v3` branch too see my progres on it so far.
-
 Here's a list of all the future relases I have planned:
 
 - `v3.0` baseline for `v3`
-  - function definitions and overloading
   - while and for loops
   - better error checking
   - fluid arrays
   - source build
-  - cleaner code :)
-- `v3.1` [sqdlib](https://github.com/DynamicSquid/sqdlib)
+- `v3.1` arrays with functions
+  - return arrays
+  - array parameters
+- `v3.2` [sqdlib](https://github.com/DynamicSquid/sqdlib)
+  - standard library
+  - package manager
