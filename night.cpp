@@ -7,7 +7,7 @@ int main(int argc, char* argv[])
 {   
     try {
         if (argc == 1)
-            ExtractFile("C:\\Users\\apost\\source\\repos\\Night-Dev\\Night-Lang\\Night\\source.night");
+            ExtractFile("source.night");
         else if (argc == 2)
             ExtractFile(argv[1]);
         else
