@@ -2,6 +2,7 @@
 
 namespace night {
 
+
 int pow(int base, int exp)
 {
 	int set = base;

@@ -283,8 +283,6 @@ private:
 
 } // namespace night
 
-
-
 #if defined(__linux__)
 	night::string operator""_s(const char* str, unsigned long len)
 	{
