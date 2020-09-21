@@ -1,28 +1,31 @@
 #pragma once
 
-#include <string>
+#include <stdio.h>
+#include "lib/string.h"
 
 namespace {
 
-std::string output = "";
+night::string output;
 
 }
 
-void StoreOutput(const std::string& text)
+void StoreOutput(const night::string& text)
 {
 	output += text;
 }
 
 void PrintOutput()
 {
-	std::size_t newline = output.find("\\n");
-	while (newline != std::string::npos)
+	for (int a = 0; a < output.length() - 1; ++a)
 	{
-		output[newline] = '\n';
-		output.erase(output.begin() + newline + 1);
+		if (output[a] == '\\' && output[a + 1] == 'n')
+		{
+			output[a] = '\n';
+			output.remove(a + 1);
 
-		newline = output.find("\\n");
+			a--;
+		}
 	}
 
-	std::cout << output;
+	printf("%s", output.cstr());
 }

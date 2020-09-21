@@ -1,21 +1,22 @@
-#include <exception>
-#include <iostream>
+#include <stdio.h>
 
-#include "ExtractCode.h"
-#include "DataTypes/Error.h"
+#include "lib/error.h"
+#include "file_extraction.h"
 
-int main()
-{
-	try {
-		ExtractCode();
-	}
-	catch (const Error& e) {
-		std::cout << e.what() << '\n';
-	}
-	catch (const std::exception& e) {
-		std::cout << Error::DevError(e) << '\n';
-	}
-	catch (...) {
-		std::cout << Error::DevError("unhandled exception") << '\n';
-	}
+int main(int argc, char* argv[])
+{   
+    try {
+        if (argc == 1)
+            ExtractFile("C:\\Users\\apost\\source\\repos\\Night-Dev\\Night-Lang\\Night\\source.night");
+        else if (argc == 2)
+            ExtractFile(argv[1]);
+        else
+            throw "invalid command line arguments";
+    }
+    catch (const char* e) {
+        printf("[error] - %s\n", e);
+    }
+    catch (const Error& e) {
+        printf("%s\n", e.what().cstr());
+    }
 }

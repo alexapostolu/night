@@ -1,0 +1,50 @@
+#pragma once
+
+#include "../lib/string.h"
+#include "../lib/array.h"
+
+enum class TokenType
+{
+	BIT_VALUE, SYB_VALUE, INT_VALUE, DEC_VALUE, STR_VALUE,
+
+	VARIABLE,
+
+	BIT_TYPE, SYB_TYPE, INT_TYPE, DEC_TYPE, STR_TYPE,
+
+	NULL_TYPE,
+
+	IF, ELSE,
+
+	RETURN,
+	
+	LOOP,
+	WHILE, FOR,
+
+	PLUS, MINUS, TIMES, DIVIDE, MOD,
+
+	GREATER, SMALLER,
+	GREATER_EQUAL, SMALLER_EQUAL,
+
+	EQUALS, NOT_EQUALS,
+
+	NOT, OR, AND,
+
+	OPEN_BRACKET, CLOSE_BRACKET,
+
+	OPEN_SQUARE, CLOSE_SQUARE,
+
+	OPEN_CURLY, CLOSE_CURLY,
+
+	ASSIGNMENT,
+
+	PLUS_ASSIGN, MINUS_ASSIGN, TIMES_ASSIGN, DIVIDE_ASSIGN, MOD_ASSIGN,
+
+	COMMA,
+	SEMICOLON,
+};
+
+struct Token
+{
+	TokenType type;
+	night::string value;
+};
