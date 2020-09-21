@@ -2,84 +2,60 @@
 
 An interpreted programming language that combines the simplicity of Python, with the type concepts of the C family.
 
-You can read more about Night on its [website](https://night-website.dynamicsquid.repl.co/). You'll also find instructions on how to build this from source there.
+It's still in early development, and there's a lot to get done.
+
+You can read more about Night on its [website](https://night-website.dynamicsquid.repl.co/). There you'll find a tutorial, as well as instructions on how to build this from source.
 
 ---
 
 **Night Overview**
 
-Here's a sample of my current language:
+Night is strong statically typed language that mirrors the C family in many ways. As of right now, it just supports basic functionality. It has five basic types, booleans, characters, integers, floats, and strings. Arrays and functions are also supported, however, functions currently cannot have array parameters, or return arrays (but that will soon change). Functions can also be one of the five types, as well as a `null` type.
 
-```
-print("Hello World!\n");
+Here is a little sample of my language:
 
-// this is a comment
-
-bit boolean = true; // supports '! || && == != < > <= >= ( )' all of those
-syb character = 'c'; // doesn't support any expressions yet
-int integer = 10; // supports '+ - * / % ( )' all of those
-dec float = 3.14; // same with 'int', but without 'mod'
-str string = "squid"; // suports string concatenation with 'syb', 'int', 'dec', and 'str'
-
-int answer = 10 + 5;
-answer += 2 + 3;
-
-int legs = 10;
-bit smart = true;
-
-if (legs == 10 && smart)
+```cpp
+// classic ffibonacci sequence using recursion
+int fib(int num)
 {
-    print("Hi squid\n");
-}
-else if (legs == 8 && smart)
-{
-    print("Hi octopus\n");
-}
-else if (legs == 2 && !smart)
-{
-    print("Hi human\n");
-}
-else
-{
-    print("Not sure who you are\n");
+    if (num <= 1)
+    {
+        return num;
+    }
+
+    return fib(num - 1) + fib(num - 2);
 }
 
-int add(int a, int b)
+// array of 3 values, 2 of which has been initialized
+int[3] fib_nums = [ fib(5), fib(6) ];
+fib_nums[2] = fib(7);
+
+// printing out the values of the array
+int a = 0;
+loop for (3)
 {
-    print("Adding to numbers:\n");
-    return a + b;
+    print(fib_nums[a] + " ");
+    a += 1;
 }
-
-int number = add(2, 3) + 4;
-print(number + "\n");
-
-loop (5)
-{
-    print("squid");
-}
-
-int[3] arr = [ 6, 6, 7 ];
-arr[1] = 5;
-
-int userAge = input();
 ```
 
-Note that for the beta versions, the language is buggy and might not work sometimes.
+More information regarding the syntax can be found on the website.
 
 ---
 
 **Progress Updates**
 
-Here's a list of all the future relases I have planned:
+As of right now, version 3 of Night has been released, and that version is actually the first non-beta release of Night. The future releases will further improve the language through various useful features such as array parameters, and better error messages, eventually working towards a standard library.
 
-- `v3.0` baseline for `v3`
-  - while and for loops
-  - better error checking
-  - fluid arrays
-  - source build
+Below is a list of the upcoming features:
+
 - `v3.1` arrays with functions
-  - return arrays
-  - array parameters
-- `v3.2` [sqdlib](https://github.com/DynamicSquid/sqdlib)
-  - standard library
-  - package manager
+  - this release will be the last major step towards the making of the standard library
+  - functions will be able to return arrays
+  - functions will also be able to have array parameters
+- `v3.2` better error messages
+  - like, a lot better
+- `v3.3` [sqdlib](https://github.com/DynamicSquid/sqdlib)
+  - the standard library for Night, it stands for "squid library" :)
+  - a package manager might also be included...
+    - you can check the issues and pull requests for more info on this
