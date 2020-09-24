@@ -26,7 +26,7 @@ int fib(int num)
     return fib(num - 1) + fib(num - 2);
 }
 
-// array of 3 values, 2 of which has been initialized
+// array of 3 values, 2 of which have been initialized
 int[3] fib_nums = [ fib(5), fib(6) ];
 fib_nums[2] = fib(7);
 
