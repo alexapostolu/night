@@ -97,7 +97,7 @@ public:
 		return *this;
 	}
 
-	night::string operator+(char c) const
+	string operator+(char c) const
 	{
 		char* temp = str_alc(len + 22);
 		str_cpy(temp, str);
@@ -106,7 +106,7 @@ public:
 		return temp;
 	}
 
-	night::string operator+(const string& src) const
+	string operator+(const string& src) const
 	{
 		char* temp = str_alc(len + src.len + 21);
 		str_cpy(temp, str);
