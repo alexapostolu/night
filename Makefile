@@ -1,0 +1,2 @@
+make_night: night.cpp output.h lexer.h file_extraction.h parser/parser.h lib/array.h lib/error.h lib/string.h interpreter/expr_parser.h interpreter/helpers.h interpreter/interpreter.h containers/array_var.h containers/function.h containers/token.h containers/variable.h
+	g++ -o night night.cpp output.h lexer.h file_extraction.h parser/parser.h lib/array.h lib/error.h lib/string.h interpreter/expr_parser.h interpreter/helpers.h interpreter/interpreter.h containers/array_var.h containers/function.h containers/token.h containers/variable.h
