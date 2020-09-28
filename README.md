@@ -2,7 +2,7 @@
 
 **Table of Contents**
 
-- (Overview)[README.md#overview]
+- (Overview)[/blob/master/README.md#overview]
 - (Progress)[#progress]
 - (Syntax)[#syntax]
   - (Comparison)[#comparison]
