@@ -12,7 +12,7 @@
 #include "./expr_parser.h"
 #include "./helpers.h"
 
-#include "../output.h"
+#include "../Output.h"
 
 #define CONTAINERS variables, functions, arrays
 
