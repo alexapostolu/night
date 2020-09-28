@@ -2,13 +2,13 @@
 
 **Table of Contents**
 
-- (Overview)[https://github.com/AntimatterReactor/Night/blob/master/README.md#overview]
-- (Progress)[https://github.com/AntimatterReactor/Night/blob/master/README.md#progress]
-- (Syntax)[https://github.com/AntimatterReactor/Night/blob/master/README.md#syntax]
-  - (Comparison)[https://github.com/AntimatterReactor/Night/blob/master/README.md#comparison]
-  - (Difference)[https://github.com/AntimatterReactor/Night/blob/master/README.md#difference]
-- (Further Reading)[https://github.com/AntimatterReactor/Night/blob/master/README.md#further-reading]
-- (Notable Links)[https://github.com/AntimatterReactor/Night/blob/master/README.md#notable-links]
+- [Overview](#overview)
+- [Progress](#progress)
+- [Syntax](#syntax)
+  - [Comparison](#comparison)
+  - [Difference](#difference)
+- [Further Reading](#further-reading)
+- [Notable Links](#notable-links)
 
 ## Overview
 
@@ -138,14 +138,14 @@ with weird syntax; `loop for (5)` instead of `for (size_t i; i < 5; ++i)`.
 
 Wiki:
 
-Website: (https://night-website.dynamicsquid.repl.co/)
+Website: [https://night-website.dynamicsquid.repl.co/]
 
 ## Notable Links
 
-Website: (https://night-website.dynamicsquid.repl.co/)
+Website: [https://night-website.dynamicsquid.repl.co/]
 
-Packet Manager: (dusk)[https://github.com/firefish111/dusk]
+Packet Manager: [dusk](https://github.com/firefish111/dusk)
 
-Standard Library: (sqdlib)[https://github.com/DynamicSquid/sqdlib]
+Standard Library: [sqdlib](https://github.com/DynamicSquid/sqdlib)
 
-Pseudo Compiler: (NightShade)[https://github.com/AntimatterReactor/NightShade]
+Pseudo Compiler: [NightShade](https://github.com/AntimatterReactor/NightShade)
