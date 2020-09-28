@@ -15,7 +15,7 @@ Night is strong statically typed language that mirrors the C family in many ways
 Here is a little sample of my language:
 
 ```cpp
-// classic ffibonacci sequence using recursion
+// classic fibonacci sequence using recursion
 int fib(int num)
 {
     if (num <= 1)
