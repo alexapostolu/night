@@ -2,7 +2,7 @@
 
 **Table of Contents**
 
-- (Overview)[#overview]
+- (Overview)[README.md#overview]
 - (Progress)[#progress]
 - (Syntax)[#syntax]
   - (Comparison)[#comparison]
