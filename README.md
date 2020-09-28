@@ -2,13 +2,13 @@
 
 **Table of Contents**
 
-- (Overview)[./blob/master/README.md#overview]
-- (Progress)[#progress]
-- (Syntax)[#syntax]
-  - (Comparison)[#comparison]
-  - (Difference)[#difference]
-- (Further Reading)[#further-reading]
-- (Notable Links)[#notable-links]
+- (Overview)[https://github.com/AntimatterReactor/Night/blob/master/README.md#overview]
+- (Progress)[https://github.com/AntimatterReactor/Night/blob/master/README.md#progress]
+- (Syntax)[https://github.com/AntimatterReactor/Night/blob/master/README.md#syntax]
+  - (Comparison)[https://github.com/AntimatterReactor/Night/blob/master/README.md#comparison]
+  - (Difference)[https://github.com/AntimatterReactor/Night/blob/master/README.md#difference]
+- (Further Reading)[https://github.com/AntimatterReactor/Night/blob/master/README.md#further-reading]
+- (Notable Links)[https://github.com/AntimatterReactor/Night/blob/master/README.md#notable-links]
 
 ## Overview
 
