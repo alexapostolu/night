@@ -135,7 +135,7 @@ with weird syntax; `loop for (5)` instead of `for (size_t i; i < 5; ++i)`.
 
 ## Further Reading
 
-Wiki: [Night's wiki](../wiki)
+Wiki: [Night's wiki](../../wiki)
 
 Website: https://night-website.dynamicsquid.repl.co/
 
