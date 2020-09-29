@@ -136,13 +136,13 @@ with weird syntax; `loop for (5)` instead of `for (size_t i; i < 5; ++i)`.
 
 ## Further Reading
 
-Wiki: (../wiki)
+Wiki: [Night's wiki](../wiki)
 
-Website: (https://night-website.dynamicsquid.repl.co/)
+Website: https://night-website.dynamicsquid.repl.co/
 
 ## Notable Links
 
-Website: (https://night-website.dynamicsquid.repl.co/)
+Website: https://night-website.dynamicsquid.repl.co/
 
 Packet Manager: [dusk](https://github.com/firefish111/dusk)
 
