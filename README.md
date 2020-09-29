@@ -51,7 +51,7 @@ Still a lot of work to do on the website, but depending on how version 3.1 will 
 
 **source build**
 
-Right now, I haven't tested building Night from source yet, but soon a Windows build should be ready (thanks to [@CodeLongAndProsper90](https://github.com/CodeLongAndProsper90)), and right after that a Linux build will be done. And for MacOS, umm... uh... we're currently in short supply of Apple guys right now...
+Right now, only a Windows source build is supported, however a Linux build will soon be supported as well. And for MacOS, umm... uh... we're currently in short supply of Apple guys right now...
 
 ---
 
