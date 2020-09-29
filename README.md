@@ -1,7 +1,6 @@
 # Night
 
 **Table of Contents**
-
 - [Overview](#overview)
 - [Progress](#progress)
 - [Syntax](#syntax)
