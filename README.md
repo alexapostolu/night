@@ -6,6 +6,22 @@ It's still in very early development, and there's a lot to get done.
 
 ---
 
+### Source Build
+
+Currenlty, only a Windows source build is supported. You'll need to install the GCC collection to get access to the `g++` compiler, and once you have that, clone this repo, create a new file called `*.night` where you'll write your code, and you're ready to go! Just pass in the `*.night` file as a command line argument when you run the code.
+
+```
+g++ -o <exe file> <path to night.cpp file>
+<exe file> *.night
+
+for example:
+
+g++ -o night src/night.cpp
+night source.night
+```
+
+---
+
 ### Timeline
 
 As of right now, version 3 of Night has been released, and that version is actually the first non-beta release of Night. The future releases will further improve the language through various useful features such as array parameters, and better error messages, eventually working towards a standard library.
