@@ -1,16 +1,15 @@
 
-.PHONY: all build night dusk install 
+.PHONY: all build install 
 
-all: build
+all: night
 
-build: night dusk
 
-night:
-		g++ Night.cpp -o night
-
-dusk:
-		go build -ldflags "-s -w" dusk/dusk.go -o dusk
+night: Night.cpp
+		g++ Night.cpp -o night -I.
 
 install:
-		@mv night dusk /usr/bin
+		@mv night $(DESDIR)/usr/bin
 			@echo Done 
+clean:
+	rm night
+
