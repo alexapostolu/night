@@ -7,17 +7,20 @@ It's still in very early development, and there's a lot to get done.
 ---
 
 ### Source Build
-Linux system requirements:
-- build-essential / base-devel
+
+Currently, only a Windows and a UNIX source build are supported.
 
 Windows system requirements:
 - GCC and a working console
 
-Currently, a Windows and a UNIX source build are supported.
+Linux system requirements:
+- build-essential / base-devel
+
 You'll need to install the GNU Compiler Collection (GCC) to get access to the `g++` compiler, and once you have that, clone this repo, create a new file called `*.night` where you'll write your code, and you're ready to go! 
 Just pass in the `*.night` file as a command line argument when you run the code:
 
-### Windows
+**Windows**
+
 ```
 g++ -o <exe file> <path to night.cpp file>
 <exe file> *.night
@@ -28,8 +31,10 @@ g++ -o night src/night.cpp
 night source.night
 ```
 
-### Linux
-If you have Gnu Make, you can simple make it:
+**Linux**
+
+If you have GNU Make, you can simple make it:
+
 ```bash
 make
 ./night source.night
