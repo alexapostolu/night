@@ -10,16 +10,16 @@ It's still in very early development, and there's a lot to get done.
 
 As of right now, version 3 of Night has been released, and that version is actually the first non-beta release of Night. The future releases will further improve the language through various useful features such as array parameters, and better error messages, eventually working towards a standard library.
 
-[x] `1.0` the first version of Night! (the code is so bad plz don't look at it)
-[x] `2.0` a testing release, many new features were tested and implemented in here
-  [x] `2.1` added more support for expressions
-  [x] `2.2` added a simple loop
-  [x] `2.3` added arrays
-  [x] `2.4` added user input
-[x] `3.0` the first non-beta version of Night!
-  [ ] `3.1` functions will be able to return arrays, and accept array parameters
-  [ ] `3.2` better error messages, like, a lot better
-  [ ] `3.3` *sqdlib*, the standard library for Night; also included with a package manager!
+- [x] `1.0` the first version of Night! (the code is so bad plz don't look at it)
+- [x] `2.0` a testing release, many new features were tested and implemented in here
+  - [x] `2.1` added more support for expressions
+  - [x] `2.2` added a simple loop
+  - [x] `2.3` added arrays
+  - [x] `2.4` added user input
+- [x] `3.0` the first non-beta version of Night!
+  - [ ] `3.1` functions will be able to return arrays, and accept array parameters
+  - [ ] `3.2` better error messages, like, a lot better
+  - [ ] `3.3` *sqdlib*, the standard library for Night; also included with a package manager!
 
 ### Current Progress
 
@@ -35,7 +35,7 @@ Still a lot of work to do on the website, but depending on how version 3.1 will 
 
 **source build**
 
-Right now, I haven't tested building Night from source yet, but soon a Windows build should be ready (thanks to @[CodeLongAndProsper90](https://github.com/CodeLongAndProsper90)), and right after that a Linux build will be done. And for MacOS, umm... uh... we're currently in short supply of Apple guys right now...
+Right now, I haven't tested building Night from source yet, but soon a Windows build should be ready (thanks to [@CodeLongAndProsper90](https://github.com/CodeLongAndProsper90)), and right after that a Linux build will be done. And for MacOS, umm... uh... we're currently in short supply of Apple guys right now...
 
 ---
 
