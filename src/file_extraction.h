@@ -8,7 +8,7 @@
 
 #include "containers/token.h"
 
-#include "./lexer.h"
+#include "./Lexer.h"
 #include "parser/parser.h"
 #include "interpreter/interpreter.h"
 
