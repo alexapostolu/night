@@ -39,7 +39,7 @@ Right now, I haven't tested building Night from source yet, but soon a Windows b
 
 ---
 
-## About Night
+### About Night
 
 Night is strong statically typed language that mirrors the C family in many ways. As of right now, it just supports basic functionality. It has five types, booleans, characters, integers, floats, and strings. Arrays and functions are also supported, however, functions currently cannot have array parameters, or return arrays (but that will soon change). Functions can also be one of the five types, as well as a null type. Loops are also included, with a simple for and while loop.
 
