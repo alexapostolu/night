@@ -71,6 +71,18 @@ void AddKeyword(night::array<Token>& tokens, night::string& token, TokenType&& t
 	token = "";
 }
 
+void easter_egg(std::string& token){
+	if(token = "squid")
+		draw_ascii("nightascii.txt");
+	
+}
+
+
+
+
+
+
+
 void CheckToken(night::array<Token>& tokens, night::string& token)
 {
 	if (token.length() == 0)
