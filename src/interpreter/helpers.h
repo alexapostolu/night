@@ -22,8 +22,7 @@ night::string ttos(const TokenType& type)
 		return "int";
 	if (type == TokenType::DEC_VALUE || type == TokenType::DEC_TYPE)
 		return "dec";
-	if (type == TokenType::STR_VALUE || type == TokenType::STR_TYPE)
-		return "str";
+	return "str";
 }
 
 TokenType ttov(const TokenType& type)
@@ -40,6 +39,8 @@ TokenType ttov(const TokenType& type)
 		return TokenType::DEC_VALUE;
 	case TokenType::STR_TYPE:
 		return TokenType::STR_VALUE;
+	default:
+		return type;
 	}
 }
 

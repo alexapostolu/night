@@ -63,7 +63,7 @@ night::string DefaultValue(const TokenType& type)
 		return "0";
 	case TokenType::DEC_TYPE:
 		return "0.0";
-	case TokenType::STR_TYPE:
+	default:
 		return "";
 	}
 }

@@ -30,8 +30,7 @@ float EvalNum(const night::array<Token>& expr, int index, const night::string& o
 		return night::stof(expr[index - 1].value) / night::stof(expr[index + 1].value);
 	if (op == "*")
 		return night::stof(expr[index - 1].value) * night::stof(expr[index + 1].value);
-	if (op == "%")
-		return night::stoi(expr[index - 1].value) % night::stoi(expr[index + 1].value);
+	return night::stoi(expr[index - 1].value) % night::stoi(expr[index + 1].value);
 }
 
 void EvaluateNumeric(night::array<Token>& expr, int index, const night::string& op)
@@ -68,8 +67,7 @@ bool EvalNumComp(const Token& val1, const Token& val2, const night::string& op)
 		return night::stof(val1.value) < night::stof(val2.value);
 	if (op == ">=")
 		return night::stof(val1.value) >= night::stof(val2.value);
-	if (op == "<=")
-		return night::stof(val1.value) <= night::stof(val2.value);
+	return night::stof(val1.value) <= night::stof(val2.value);
 }
 
 void EvaluateNumComparison(night::array<Token>& expr, int index, const night::string& op)
@@ -107,8 +105,7 @@ bool EvalBool(const Token& val1, const Token& val2, const night::string& op)
 {
 	if (op == "||")
 		return val1.value == "true" || val1.value == "true";
-	if (op == "&&")
-		return val1.value == "true" || val1.value == "true";
+	return val1.value == "true" || val1.value == "true";
 }
 
 void EvaluateBoolean(night::array<Token>& expr, int index, const night::string& op)
