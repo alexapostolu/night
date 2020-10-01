@@ -22,12 +22,12 @@ Just pass in the `*.night` file as a command line argument when you run the code
 **Windows**
 
 ```
-g++ -o <exe file> <path to night.cpp file>
+g++ -o <exe file> <path to Night.cpp file>
 <exe file> *.night
 
 for example:
 
-g++ -o night src/night.cpp
+g++ -o night src/Night.cpp
 night source.night
 ```
 
