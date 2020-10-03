@@ -1,19 +1,10 @@
 version: 2.1
 
-orbs:
-  win: circleci/windows@2.2.0
-
 jobs:
-  windows:
+  build:
     executor:
       name: win/default
     steps:
       - run:
         - command: g++ -std=c++17 src/night.cpp
         - shell: bash.exe
-      
-workflows:
-  version: 2.1
-  build:
-    jobs:
-      - windows
