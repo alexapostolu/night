@@ -1,6 +1,6 @@
 version: 2.1
 jobs:
-  linux-build:
+  one:
     steps:
       - checkout
       - run: g++ -std=c++17 -o night src/night.cpp
@@ -12,5 +12,5 @@ workflows:
   version: 2.1
   build:
     jobs:
-      - linux-build
+      - one
       - two
