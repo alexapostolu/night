@@ -1,6 +1,6 @@
 version: 2.1
 jobs:
-  windows-build:
+  windows:
     executor:
       name: win/default
     steps:
@@ -12,4 +12,4 @@ workflows:
   version: 2.1
   build:
     jobs:
-      - windows-build
+      - windows
