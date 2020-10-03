@@ -10,7 +10,7 @@ jobs:
       
 workflows:
   version: 2.1
-  build:
+  one-and-two:
     jobs:
       - one
       - two
