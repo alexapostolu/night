@@ -1,0 +1,11 @@
+version: 2.1
+jobs:
+  build:
+    docker: 
+      - image: cimg/node:14.10.1
+        auth:
+          username: mydockerhub-user
+          password: $DOCKERHUB_PASSWORD
+    steps:
+      - checkout
+      - run: g++ src/night.cpp
