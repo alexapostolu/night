@@ -1,0 +1,13 @@
+language: cpp
+sudo: required
+dist: bionic
+compiler:
+- gcc
+os:
+- linux
+before_install:
+- g++ src/night.cpp
+branches:
+  only:
+  - master
+  - "/^v\\d+\\./"
