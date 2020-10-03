@@ -72,10 +72,6 @@ This version is close to being done (well, if the bugs don't kill me), and shoul
 
 Still a lot of work to do on the website, but depending on how version 3.1 will go, then it should be done in two or three weeks.
 
-**CI**
-
-Still experimenting with setting up a CI for this repo. Thinking of going with either Circle or Travis CI. Have no clue what I'm doing though...
-
 ---
 
 ### About Night
