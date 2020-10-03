@@ -41,18 +41,18 @@ void ExtractFile(const char* fileName)
         bool flip;
         if (tokens[a].type == TokenType::IMPORT || flip)
         {
-        if (!flip)
-            continue;
-        flip = !flip;
-        std::stringstream tik;
-        tik << "./dusk_pkgs/" << tokens[a].value.cstr();
-        codeFile = Read(tik.str().c_str());
-        while (getline(codeFile, fileLine))
-        {
-            night::array<Token> temp = Lexer(fileLine.c_str());
-            for (int a = 0; a < temp.length(); ++a)
-                tokens.push_back(temp[a]);
-        }
+            if (!flip)
+                continue;
+            flip = !flip;
+            std::stringstream tik;
+            tik << "./dusk_pkgs/" << tokens[a].value.cstr();
+            codeFile = Read(tik.str().c_str());
+            while (getline(codeFile, fileLine))
+            {
+                night::array<Token> temp = Lexer(fileLine.c_str());
+                for (int a = 0; a < temp.length(); ++a)
+                    tokens.push_back(temp[a]);
+            }
         }
 
         if (tokens[a].type == TokenType::OPEN_CURLY)
