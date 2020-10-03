@@ -1,20 +1,15 @@
 version: 2.1
 jobs:
-  linux-build:
-    executor:
-      name: linux
-    steps:
-      - checkout
-      - run: g++ -std=c++17 -o night src/night.cpp
-  two:
+  windows-build:
     executor:
       name: win/default
     steps:
-      - run: echo "testing"
+      - run:
+        - command: g++ -std=c++17 src/night.cpp
+        - shell: bash.exe
       
 workflows:
   version: 2.1
-  one-and-two:
+  build:
     jobs:
-      - linux-build
-      - two
+      - windows-build
