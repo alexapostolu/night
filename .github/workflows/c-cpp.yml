@@ -15,5 +15,5 @@ jobs:
     
     steps:
     - uses: actions/checkout@v2
-    - name: make sure you didn't mess up
-      run: g++ src/Night.cpp
+    - name: compiling for windows
+      run: g++ src/night.cpp
