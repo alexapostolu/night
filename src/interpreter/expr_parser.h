@@ -55,7 +55,7 @@ void EvaluateNumeric(night::array<Token>& expr, int index, const night::string& 
 	}
 	else
 	{
-		throw Error(night::_invalid_expression_, expr, index - 1, index + 1, "operator '"_s + op + "' can only be used on values of type 'int' or 'dec', or if one of the values is of type 'str'");
+		throw Error(night::_invalid_expression_, expr, index - 1, index + 1, "operator '" + op + "' can only be used on values of type 'int' or 'dec', or if one of the values is of type 'str'");
 	}
 }
 
@@ -74,7 +74,7 @@ void EvaluateNumComparison(night::array<Token>& expr, int index, const night::st
 {
 	if ((expr[index - 1].type != TokenType::INT_VALUE && expr[index - 1].type != TokenType::DEC_VALUE) ||
 		(expr[index + 1].type != TokenType::INT_VALUE && expr[index + 1].type != TokenType::DEC_VALUE))
-		throw Error(night::_invalid_expression_, expr, index - 1, index + 1, "operator '"_s + op + "' can only be used on values of type 'int' or 'dec'");
+		throw Error(night::_invalid_expression_, expr, index - 1, index + 1, "operator '" + op + "' can only be used on values of type 'int' or 'dec'");
 
 	expr[index - 1].type = TokenType::BIT_VALUE;
 	expr[index - 1].value = EvalNumComp(expr[index - 1], expr[index + 1], op) ? "true" : "false";
@@ -84,13 +84,13 @@ void EvaluateComparison(night::array<Token>& expr, int index, const night::strin
 {
 	if (expr[index - 1].type != expr[index + 1].type) {
 		throw Error(night::_invalid_expression_, expr, index - 1, index + 1,
-			"operator '"_s + op + "' can only compare to values of the same type");
+			"operator '" + op + "' can only compare to values of the same type");
 	}
 	if (expr[index - 1].type < TokenType::BIT_VALUE && expr[index - 1].type > TokenType::STR_VALUE) {
-		throw Error(night::_invalid_expression_, expr, index - 1, index - 1, "operator '"_s + op + "' can only compare values of type 'bit', 'syb', 'int', 'dec', or 'str'");
+		throw Error(night::_invalid_expression_, expr, index - 1, index - 1, "operator '" + op + "' can only compare values of type 'bit', 'syb', 'int', 'dec', or 'str'");
 	}
 	if (expr[index + 1].type < TokenType::BIT_VALUE || expr[index + 1].type > TokenType::STR_VALUE) {
-		throw Error(night::_invalid_expression_, expr, index + 1, index + 1, "operator '"_s + op + "' can only compare values of type 'bit', 'syb', 'int', 'dec', or 'str'");
+		throw Error(night::_invalid_expression_, expr, index + 1, index + 1, "operator '" + op + "' can only compare values of type 'bit', 'syb', 'int', 'dec', or 'str'");
 	}
 
 	expr[index - 1].type = TokenType::BIT_VALUE;
@@ -111,7 +111,7 @@ bool EvalBool(const Token& val1, const Token& val2, const night::string& op)
 void EvaluateBoolean(night::array<Token>& expr, int index, const night::string& op)
 {
 	if (expr[index - 1].type != TokenType::BIT_VALUE || expr[index + 1].type != TokenType::BIT_VALUE)
-		throw Error(night::_invalid_expression_, expr, index - 1, index + 1, "operator '"_s + op + "' can only be used on values of type 'bit'");
+		throw Error(night::_invalid_expression_, expr, index - 1, index + 1, "operator '" + op + "' can only be used on values of type 'bit'");
 
 	expr[index - 1].value = EvalBool(expr[index - 1], expr[index + 1], op) ? "true" : "false";
 }
@@ -233,7 +233,7 @@ Token ParseExpression(night::array<Token> expr, night::array<Variable>& vars,
 						(expr[b].type == TokenType::CLOSE_BRACKET && openBracket == -1))
 					{
 						if (paramIndex >= function->params.length())
-							throw Error(night::_invalid_function_, expr, 0, expr.length(), "expecting "_s + night::itos(function->params.length()) + " parameters");
+							throw Error(night::_invalid_function_, expr, 0, expr.length(), "expecting " + night::itos(function->params.length()) + " parameters");
 
 						Token paramExprToken = ParseExpression(paramExpr, vars, funcs, arrs);
 						if (night::ttov(function->params[paramIndex].type) != paramExprToken.type)
@@ -295,7 +295,7 @@ Token ParseExpression(night::array<Token> expr, night::array<Variable>& vars,
 					if (arrayIndexToken.type != TokenType::INT_VALUE)
 						throw Error(night::_invalid_array_, expr, a + 3, b - 1, "array index can only be a value of type 'int'");
 					if (arrayIndex < 0 || arrayIndex >= array->elems.length())
-						throw Error(night::_invalid_array_, expr, a + 3, b - 1, "array index is out of range; the last element is at index '"_s + night::itos(array->elems.length() - 1) + "'");
+						throw Error(night::_invalid_array_, expr, a + 3, b - 1, "array index is out of range; the last element is at index '" + night::itos(array->elems.length() - 1) + "'");
 
 					expr[a] = array->elems[arrayIndex];
 					for (int c = a + 1; c <= b; ++c)

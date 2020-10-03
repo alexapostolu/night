@@ -39,9 +39,9 @@ public:
 		for (int a = 0; a < code.length(); ++a)
 		{
 			if (code[a].type == TokenType::SYB_VALUE)
-				code[a].value = "'"_s + code[a].value + "'";
+				code[a].value = "'" + code[a].value + "'";
 			else if (code[a].type == TokenType::STR_VALUE)
-				code[a].value = "\""_s + code[a].value + "\"";
+				code[a].value = "\"" + code[a].value + "\"";
 		}
 	}
 
@@ -49,8 +49,8 @@ public:
 	{
 		night::string output;
 
-		output += I_RED + "Error - "_s + RESET;
-		output += U_RED + errorType + "\n\n"_s + RESET;
+		output += I_RED + "Error - " + RESET;
+		output += U_RED + errorType + "\n\n" + RESET;
 
 		for (int a = 0; a < code.length(); ++a)
 			output += (a >= start && a <= end ? RED : WHITE) + code[a].value + ' ';

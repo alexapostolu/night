@@ -328,7 +328,7 @@ night::array<Token> Lexer(const night::string& line)
 
 	CheckToken(tokens, token);
 	if (token != "")
-		throw Error(night::_invalid_token_, tokens, tokens.length() - 1, tokens.length() - 1, "token "_s + token + "' is not a valid token"_s);
+		throw Error(night::_invalid_token_, tokens, tokens.length() - 1, tokens.length() - 1, "token " + token + "' is not a valid token");
 
 	return tokens;
 }

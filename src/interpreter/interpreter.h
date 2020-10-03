@@ -116,7 +116,7 @@ void Interpreter(night::array<night::array<Token> >& code)
 			else if (code[a][0].type == TokenType::DEC_TYPE && evalExpr.type == TokenType::INT_VALUE)
 				evalExpr.value = night::stof(evalExpr.value);
 			else if (night::ttov(code[a][0].type) != evalExpr.type)
-				throw Error(night::_invalid_variable_, code[a], 3, code.length(), "variable of type '"_s + night::ttos(code[a][0].type) + "' cannot be assigned with an expression of type '" + night::ttos(evalExpr.type) + "'");
+				throw Error(night::_invalid_variable_, code[a], 3, code.length(), "variable of type '" + night::ttos(code[a][0].type) + "' cannot be assigned with an expression of type '" + night::ttos(evalExpr.type) + "'");
 
 			variables.push_back(Variable{
 				code[a][0].type,
@@ -135,7 +135,7 @@ void Interpreter(night::array<night::array<Token> >& code)
 				else if (variable->type == TokenType::DEC_TYPE && evalExpr.type == TokenType::INT_VALUE)
 					evalExpr.value = night::stof(evalExpr.value);
 				else if (night::ttov(variable->type) != evalExpr.type)
-					throw Error(night::_invalid_variable_, code[a], 2, code[a].length() - 1, "variable of type '"_s + night::ttos(variable->type) + "' cannot be assigned with expression of type '" + night::ttos(evalExpr.type) + "'");
+					throw Error(night::_invalid_variable_, code[a], 2, code[a].length() - 1, "variable of type '" + night::ttos(variable->type) + "' cannot be assigned with expression of type '" + night::ttos(evalExpr.type) + "'");
 
 				if (code[a][1].type != TokenType::ASSIGNMENT)
 				{
@@ -183,7 +183,7 @@ void Interpreter(night::array<night::array<Token> >& code)
 				if (assignArray == nullptr)
 					throw Error(night::_invalid_array_, code[a], 2, 2, "array can only be assigned to other arrays");
 				if (array->type != assignArray->type)
-					throw Error(night::_invalid_array_, code[a], 2, 2, "array must be of type '"_s + night::ttos(array->type) + "'");
+					throw Error(night::_invalid_array_, code[a], 2, 2, "array must be of type '" + night::ttos(array->type) + "'");
 
 				*array = *assignArray;
 				continue;
@@ -210,7 +210,7 @@ void Interpreter(night::array<night::array<Token> >& code)
 
 					Token evaluateElement = ParseExpression(elementExpression, CONTAINERS);
 					if (evaluateElement.type != night::ttov(array->type))
-						throw Error(night::_invalid_array_, code[a], b, b, "array of type '"_s + night::ttos(array->type) + "' cannot be assigned to array of type '" + night::ttos(evaluateElement.type) + "'");
+						throw Error(night::_invalid_array_, code[a], b, b, "array of type '" + night::ttos(array->type) + "' cannot be assigned to array of type '" + night::ttos(evaluateElement.type) + "'");
 
 					array->elems.push_back(evaluateElement);
 					elementExpression.clear();
@@ -329,7 +329,7 @@ void Interpreter(night::array<night::array<Token> >& code)
 					(openBracket == -1 && code[a][b].type == TokenType::CLOSE_BRACKET))
 				{
 					if (paramIndex >= function->params.length())
-						throw Error(night::_invalid_function_, code[a], 0, code[a].length(), "expecting "_s + night::itos(function->params.length()) + " parameters");
+						throw Error(night::_invalid_function_, code[a], 0, code[a].length(), "expecting " + night::itos(function->params.length()) + " parameters");
 
 					Token paramExprVal = ParseExpression(paramExpr, CONTAINERS);
 					if (night::ttov(function->params[paramIndex].type) != paramExprVal.type)
@@ -351,7 +351,7 @@ void Interpreter(night::array<night::array<Token> >& code)
 			}
 
 			if (paramIndex != function->params.length())
-				throw Error(night::_invalid_function_, code[a], 0, code[a].length(), "expecting "_s + night::itos(function->params.length()) + " parameters");
+				throw Error(night::_invalid_function_, code[a], 0, code[a].length(), "expecting " + night::itos(function->params.length()) + " parameters");
 
 			SplitCode(function->code);
 
@@ -425,7 +425,7 @@ void Interpreter(night::array<night::array<Token> >& code)
 				if (GetObject(arrays, code[a][2]) == nullptr)
 					throw Error(night::_invalid_array_, code[a], closeSquare + 3, code[a].length() - 1, "arrays can only be assigned to other arrays");
 				if (code[a][0].type != assignArray->type)
-					throw Error(night::_invalid_array_, code[a], closeSquare + 3, closeSquare + 3, "array of type '"_s + night::ttos(code[a][0].type) + "' cannot be initialized with an array of type '" + night::ttos(assignArray->type) + "'");
+					throw Error(night::_invalid_array_, code[a], closeSquare + 3, closeSquare + 3, "array of type '" + night::ttos(code[a][0].type) + "' cannot be initialized with an array of type '" + night::ttos(assignArray->type) + "'");
 
 				arrays.push_back(*assignArray);
 				continue;
@@ -448,7 +448,7 @@ void Interpreter(night::array<night::array<Token> >& code)
 					code[a][b + 2].type == TokenType::SEMICOLON)
 				{
 					if (elementIndex == arrayLength)
-						throw Error(night::_invalid_array_, code[a], closeSquare, code[a].length() - 1, "too many elements in array; expected "_s + night::itos(arrayLength) + " elements");
+						throw Error(night::_invalid_array_, code[a], closeSquare, code[a].length() - 1, "too many elements in array; expected " + night::itos(arrayLength) + " elements");
 
 					if (code[a][b + 2].type == TokenType::SEMICOLON)
 						elementExpression.push_back(code[a][b]);
@@ -498,12 +498,12 @@ void Interpreter(night::array<night::array<Token> >& code)
 			if (arrayIndexToken.type != TokenType::INT_VALUE)
 				throw Error(night::_invalid_array_, code[a], 2, closeSquare, "array index can only be a value of type 'int'");
 			if (arrayIndex < 0 || arrayIndex >= array->elems.length())
-				throw Error(night::_invalid_array_, code[a], 2, closeSquare, "array index is out of range; the last element is at index '"_s + night::itos(array->elems.length() - 1) + "'");
+				throw Error(night::_invalid_array_, code[a], 2, closeSquare, "array index is out of range; the last element is at index '" + night::itos(array->elems.length() - 1) + "'");
 
 			Token assignValue = ParseExpression(code[a].access(closeSquare + 2, code[a].length() - 2),
 				CONTAINERS);
 			if (assignValue.type != night::ttov(array->type))
-				throw Error(night::_invalid_array_, code[a], closeSquare + 2, code[a].length() - 2, "array can only be assigned to an expression of type '"_s + night::ttos(array->type) + "'");
+				throw Error(night::_invalid_array_, code[a], closeSquare + 2, code[a].length() - 2, "array can only be assigned to an expression of type '" + night::ttos(array->type) + "'");
 
 			array->elems[arrayIndex].value = assignValue.value;
 		}
@@ -540,7 +540,7 @@ void Interpreter(night::array<night::array<Token> >& code)
 								if (arrayIndexToken.type != TokenType::INT_VALUE)
 									throw Error(night::_invalid_array_, code[a], b + 3, c - 1, "array index can only be a value of type 'int'");
 								if (arrayIndex < 0 || arrayIndex >= array->elems.length())
-									throw Error(night::_invalid_array_, code[a], b + 3, c - 1, "array index is out of range; the last element is at index '"_s + night::itos(array->elems.length() - 1) + "'");
+									throw Error(night::_invalid_array_, code[a], b + 3, c - 1, "array index is out of range; the last element is at index '" + night::itos(array->elems.length() - 1) + "'");
 
 								code[a][b] = array->elems[arrayIndex];
 								for (int d = b + 1; d <= c; ++d)

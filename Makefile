@@ -7,6 +7,7 @@ night: src/Night.cpp
 
 install:
 	@mv night $(DESDIR)/usr/bin
-		@echo Done 
+		@echo Done
+		
 clean:
 	rm night

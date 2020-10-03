@@ -283,14 +283,10 @@ private:
 
 } // namespace night
 
-#if defined(_WIN32)
-	night::string operator""_s(const char* str, unsigned int len)
-	{
-		return night::string(str);
-	}
-#elif defined(__linux__)
-	night::string operator""_s(const char* str, unsigned long len)
-	{
-		return night::string(str);
-	}
-#endif
+night::string operator+(const char* str1, const night::string& str2)
+{
+	night::string temp(str1);
+	temp += str2;
+
+	return temp;
+}
