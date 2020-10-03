@@ -4,10 +4,10 @@ orbs:
   win: circleci/windows@2.2.0
 
 jobs:
-  build:
+  windows-build:
     executor:
       name: win/default
       shell: bash.exe
     steps:
       - checkout
-      - run: echo testing windows docker
+      - run: g++ -std=c++17 src/night.cpp
