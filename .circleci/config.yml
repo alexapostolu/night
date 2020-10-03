@@ -22,3 +22,10 @@ jobs:
     steps:
       - checkout
       - run: g++ src/night.cpp
+
+workflows:
+  version: 2.1
+  build:
+    jobs:
+      - build-for-linux
+      - build-for-windows
