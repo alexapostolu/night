@@ -6,7 +6,8 @@ orbs:
 jobs:
   build:
     executor:
-      - win/default
+      - name: win/default
+      - shell: bash.exe
     steps:
       - checkout
       - run: echo testing windows docker
