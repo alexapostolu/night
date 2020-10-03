@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - checkout
-      - run: g++ src/night.cpp
+      - run: cl src/night.cpp
 
 workflows:
   version: 2.1
