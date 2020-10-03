@@ -5,12 +5,16 @@ jobs:
     docker:
       - image: "debian:stretch"
     steps:
+      - checkout
+      - run:
+          name: installing sudo
+          command: apt-get update && apt-get install -y sudo && rm -rf /var/lib/apt/lists/*
       - run:
           name: installing g++
-          command: 'apt-get update && apt-get install -y gcc g++'
+          command: apt-get update && apt-get install -y gcc g++
       - run:
           name: compiling code
-          command: 'g++ -std=c++17 -o night src/night.cpp'
+          command: g++ -std=c++17 -o night src/night.cpp
       - run:
           name: running code
           command: ./night
