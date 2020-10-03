@@ -5,6 +5,7 @@
 
 #include "lib/array.h"
 #include "lib/error.h"
+#include "lib/file.h"
 
 #include "containers/token.h"
 
@@ -14,7 +15,7 @@
 
 void ExtractFile(const char* fileName)
 {
-    std::ifstream codeFile(fileName);
+    std::ifstream codeFile = Read(fileName);
     if (!codeFile.is_open())
         throw "source file could not be opened";
 
@@ -36,6 +37,23 @@ void ExtractFile(const char* fileName)
     for (int a = 0; a < tokens.length(); ++a)
     {
         code.back().push_back(tokens[a]);
+
+        bool flip;
+        if (tokens[a].type == TokenType::IMPORT || flip)
+        {
+        if (!flip)
+            continue;
+        flip = !flip;
+        std::stringstream tik;
+        tik << "./dusk_pkgs/" << tokens[a].value.cstr();
+        codeFile = Read(tik.str().c_str());
+        while (getline(codeFile, fileLine))
+        {
+            night::array<Token> temp = Lexer(fileLine.c_str());
+            for (int a = 0; a < temp.length(); ++a)
+                tokens.push_back(temp[a]);
+        }
+        }
 
         if (tokens[a].type == TokenType::OPEN_CURLY)
             openCurly++;

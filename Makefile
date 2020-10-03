@@ -6,5 +6,5 @@ build_night: src/night.cpp
 	g++ -o night src/night.cpp
 
 install:
-	@mv night $(DESDIR)/usr/bin
-		@echo Done
+	@mv -i night /usr/bin || mv -i night $HOME/usr/bin
+	@echo Done

@@ -227,6 +227,11 @@ void Parser(const night::array<Token>& code)
 			}
 		}
 	}
+	else if (token.type == TokenType::IMPORT)
+		Parser(code.access(a + 2, code.length() - 2));
+	else {
+		// cricket noises
+	}
 }
 
 void Expression(const night::array<Token>& expr)
