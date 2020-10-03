@@ -1,13 +1,10 @@
-.PHONY: all build install 
+.PHONY: all install
 
-all: night
+all: build_night
 
-night: src/Night.cpp
-	g++ -o night -I. src/Night.cpp -o night
+build_night: src/night.cpp
+    g++ -o night src/night.cpp
 
 install:
-	@mv night $(DESDIR)/usr/bin
-		@echo Done
-		
-clean:
-	rm night
+    @mv night $(DESDIR)/usr/bin
+        @echo Done
