@@ -228,7 +228,8 @@ void Parser(const night::array<Token>& code)
 		}
 	}
 	else if (token.type == TokenType::IMPORT)
-		Parser(code.access(a + 2, code.length() - 2));
+		for (int i = 0; i < 2; i++)
+			eat(code, index);
 	else {
 		// cricket noises
 	}
