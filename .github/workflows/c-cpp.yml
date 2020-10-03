@@ -16,5 +16,4 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: make sure you didn't mess up
-      run: |
-        g++ ../../src/Night.cpp
+      run: g++ src/Night.cpp
