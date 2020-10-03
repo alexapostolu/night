@@ -45,20 +45,24 @@ make
 
 As of right now, version 3 of Night has been released, and that version is actually the first non-beta release of Night. The future releases will further improve the language through various useful features such as array parameters, and better error messages, eventually working towards a standard library.
 
-- [x] `1.0` the first version of Night! (the code is so bad plz don't look at it)
-- [x] `2.0` a testing release, many new features were tested and implemented in here
-  - [x] `2.1` added more support for expressions
-  - [x] `2.2` added a simple loop
-  - [x] `2.3` added arrays
-  - [x] `2.4` added user input
-- [x] `3.0` the first non-beta version of Night!
-  - [ ] `3.1` functions will be able to return arrays, and accept array parameters
-  - [ ] `3.2` better error messages, like, a lot better
-  - [ ] `3.3` *sqdlib*, the standard library for Night; also included with a package manager!
+- [x] `v1-beta` the first version of Night! (the code is so bad plz don't look at it)
+  - [x] `v1.0-beta` the base release
+- [x] `v2-beta` a testing release, many new features were tested and implemented in here
+  - [x] `v2.0-beta` the base release
+  - [x] `v2.1-beta` added more support for expressions
+  - [x] `v2.2-beta` added a simple loop
+  - [x] `v2.3-beta` added arrays
+  - [x] `v2.4-beta` added user input
+- [x] `v3` the first non-beta version of Night!
+  - [x] `v3.0` the base release
+    - [x] `v3.0.1` bug fix for source builds
+  - [ ] `v3.1` functions will be able to return arrays, and accept array parameters
+  - [ ] `v3.2` better error messages, like, a lot better
+  - [ ] `v3.3` *sqdlib*, the standard library for Night; also included with a package manager!
 
 ### Current Progress
 
-A list of upcoming features I'm working on that'll soon all be integerated.
+A list of upcoming features I'm working on.
 
 **version 3.1**
 
@@ -67,6 +71,10 @@ This version is close to being done (well, if the bugs don't kill me), and shoul
 **website**
 
 Still a lot of work to do on the website, but depending on how version 3.1 will go, then it should be done in two or three weeks.
+
+**CI**
+
+Still experimenting with setting up a CI for this repo. Thinking of going with either Circle or Travis CI. Have no clue what I'm doing though...
 
 ---
 
