@@ -1,6 +1,8 @@
 version: 2.1
 jobs:
   build:
+    executor:
+      name: windows
     steps:
-      - checkout # check out the code in the project directory
-      - run: g++ -std=c++17 src/night.cpp # run the `echo` command
+      - checkout
+      - run: echo testing windows docker
