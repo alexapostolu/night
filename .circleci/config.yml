@@ -5,9 +5,6 @@ orbs:
 
 jobs:
   build:
-    executor:
-      name: win/default
     steps:
-      - run:
-         command: g++ -std=c++17 src/night.cpp
-         shell: bash.exe
+      - checkout
+      - run: g++ -std=c++17 src/night.cpp
