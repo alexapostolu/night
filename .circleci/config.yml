@@ -1,5 +1,11 @@
 version: 2.1
 jobs:
-  build_and_test:
+  build:
+    docker: 
+      - image: cimg/node:14.10.1 # the primary container, where your job's commands are run
+        auth:
+          username: mydockerhub-user
+          password: $DOCKERHUB_PASSWORD  # context / project UI env-var reference
     steps:
-      - run: g++ src/night.cpp
+      - checkout # check out the code in the project directory
+      - run: echo "hello world" # run the `echo` command
