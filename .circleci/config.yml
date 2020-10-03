@@ -9,5 +9,5 @@ jobs:
       name: win/default
     steps:
       - run:
-        command: g++ -std=c++17 src/night.cpp
-        shell: bash.exe
+         command: g++ -std=c++17 src/night.cpp
+         shell: bash.exe
