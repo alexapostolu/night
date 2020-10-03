@@ -2,5 +2,4 @@ version: 2.1
 jobs:
   build_and_test:
     steps:
-      - checkout
       - run: g++ src/night.cpp
