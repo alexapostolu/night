@@ -1,10 +1,19 @@
 version: 2.1
 
+orbs:
+  win: circleci/windows@2.2.0
+
 jobs:
   build:
     executor:
       name: win/default
     steps:
+      - run:            
+         command: $(echo hello | Out-Host; $?) -and $(echo world | Out-Host; $?)
+         shell: powershell.exe
       - run:
-        - command: g++ -std=c++17 src/night.cpp
-        - shell: bash.exe
+         command: echo hello && echo world
+         shell: bash.exe
+      - run:
+         command: echo hello & echo world
+         shell: cmd.exe
