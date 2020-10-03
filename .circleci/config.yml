@@ -4,11 +4,12 @@ jobs:
   build:
     executor:
       name: win/default
+      shell: bash.exe
     steps:
       - checkout
       - run:
-        name: installing GCC
-        command: 'apt-get update && apt-get install -y gcc g++'
+          name: installing GCC
+          command: 'apt-get update && apt-get install -y gcc g++'
       - run:
-        name: compiling
-        command: 'g++ -std=c++17 src/night.cpp'
+          name: compiling
+          command: 'g++ -std=c++17 src/night.cpp'
