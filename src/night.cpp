@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <windows.h>
 
 #include "lib/error.h"
 #include "file_extraction.h"
