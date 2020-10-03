@@ -4,16 +4,10 @@ orbs:
   win: circleci/windows@2.2.0
 
 jobs:
-  windows-build:
+  build:
     executor:
       name: win/default
       shell: bash.exe
     steps:
       - checkout
       - run: g++ -std=c++17 src/night.cpp
-
-workflow:
-  version: 2.1
-  build:
-    jobs:
-      - windows-build
