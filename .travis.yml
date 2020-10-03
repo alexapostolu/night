@@ -3,7 +3,7 @@ compiler:
 - gcc
 os:
 - linux
-before_install:
+script:
 - g++ src/night.cpp
 branches:
   only:
