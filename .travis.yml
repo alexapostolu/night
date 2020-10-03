@@ -4,7 +4,7 @@ compiler:
 os:
 - linux
 script:
-- g++ src/night.cpp
+- g++ -std=c++11 src/night.cpp
 branches:
   only:
   - master
