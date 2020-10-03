@@ -1,9 +1,6 @@
 version: 2.1
-orbs:
-  welcome: circleci/welcome-orb@0.4.1
-workflows:
-  testing:
-    jobs:
-      windows-build:
-        steps:
-          - run: g++ src/night.cpp
+jobs:
+  build_and_test:
+    steps:
+      - checkout
+      - run: g++ src/night.cpp
