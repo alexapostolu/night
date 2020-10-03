@@ -11,3 +11,9 @@ jobs:
     steps:
       - checkout
       - run: g++ -std=c++17 src/night.cpp
+
+workflow:
+  version: 2.1
+  build:
+    jobs:
+      - windows-build
