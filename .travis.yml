@@ -1,6 +1,4 @@
 language: cpp
-sudo: required
-dist: bionic
 compiler:
 - gcc
 os:
@@ -10,4 +8,3 @@ before_install:
 branches:
   only:
   - master
-  - "/^v\\d+\\./"
