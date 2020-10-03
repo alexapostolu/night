@@ -1,8 +1,12 @@
 version: 2.1
+
+orbs:
+  win: circleci/windows@2.2.0
+
 jobs:
   build:
     executor:
-      name: windows
+      - win/default
     steps:
       - checkout
       - run: echo testing windows docker
