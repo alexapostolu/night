@@ -1,10 +1,15 @@
 language: cpp
-compiler:
-- gcc
+
 os:
-- linux
+  - linux
+
+compiler:
+  - gcc
+  
 script:
-- g++ -std=c++11 src/night.cpp
+  - g++ -std=c++11 -o night src/night.cpp
+  - ./night
+  
 branches:
   only:
   - master
