@@ -8,10 +8,8 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v2
     - name: build
-      run: g++ ../../src/night.cpp
+      run: g++ ../../src/Night.cpp
