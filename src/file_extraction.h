@@ -44,13 +44,9 @@ void ExtractFile(const char* fileName)
             if (!flip)
                 continue;
             flip = !flip;
-            if (tokens[a-1].value == "use")
-            {
                 std::stringstream tik;
-                tik << "./dusk_pkgs/" << tokens[a].value.cstr();
+                tik << ((tokens[a-1].value.cstr() == "use") ? "./dusk_pkgs/" : "./") << tokens[a].value.cstr() << ".night";
                 codeFile = Read(tik.str().c_str());
-            } else if (tokens[a-1].value == "extern")
-                codeFile = Read(tokens[a].value.cstr());
             while (getline(codeFile, fileLine))
             {
                 night::array<Token> temp = Lexer(fileLine.c_str());
