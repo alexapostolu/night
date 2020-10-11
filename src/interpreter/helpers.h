@@ -14,15 +14,16 @@ int pow(int base, int exp)
 
 night::string ttos(const TokenType& type)
 {
-	if (type == TokenType::BIT_VALUE || type == TokenType::BIT_TYPE)
+	if (type == TokenType::BIT_VALUE || type == TokenType::BIT_TYPE || type == TokenType::BIT_ARR)
 		return "bit";
-	if (type == TokenType::SYB_VALUE || type == TokenType::SYB_TYPE)
+	if (type == TokenType::SYB_VALUE || type == TokenType::SYB_TYPE || type == TokenType::SYB_ARR)
 		return "syb";
-	if (type == TokenType::INT_VALUE || type == TokenType::INT_TYPE)
+	if (type == TokenType::INT_VALUE || type == TokenType::INT_TYPE || type == TokenType::INT_ARR)
 		return "int";
-	if (type == TokenType::DEC_VALUE || type == TokenType::DEC_TYPE)
+	if (type == TokenType::DEC_VALUE || type == TokenType::DEC_TYPE || type == TokenType::DEC_ARR)
 		return "dec";
-	return "str";
+	if (type == TokenType::STR_VALUE || type == TokenType::STR_TYPE || type == TokenType::STR_ARR)
+		return "str";
 }
 
 TokenType ttov(const TokenType& type)
@@ -39,8 +40,16 @@ TokenType ttov(const TokenType& type)
 		return TokenType::DEC_VALUE;
 	case TokenType::STR_TYPE:
 		return TokenType::STR_VALUE;
-	default:
-		return type;
+	case TokenType::BIT_ARR:
+		return TokenType::BIT_VALUE;
+	case TokenType::SYB_ARR:
+		return TokenType::SYB_VALUE;
+	case TokenType::INT_ARR:
+		return TokenType::INT_VALUE;
+	case TokenType::DEC_ARR:
+		return TokenType::DEC_VALUE;
+	case TokenType::STR_ARR:
+		return TokenType::STR_VALUE;
 	}
 }
 

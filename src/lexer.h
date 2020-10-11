@@ -11,11 +11,6 @@ bool is_letter(char c)
 	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
 }
 
-bool is_digit(char c)
-{
-	return c - '0' >= 0 && c - '0' <= 9;
-}
-
 bool match_character(night::string& token)
 {
 	if (token.length() == 4 && token[1] == '\\' && token[2] == 'n')
@@ -41,7 +36,7 @@ int match_number(const night::string& token)
 	int decimalCount = 0;
 	for (int a = 0; a < token.length(); ++a)
 	{
-		if (!is_digit(token[a]) && token[a] != '.')
+		if ((token[a] - '0' < 0 || token[a] - '0' > 9) && token[a] != '.')
 			return -1;
 
 		if (token[a] == '.' && ++decimalCount > 1)
@@ -58,7 +53,7 @@ bool match_variable(const night::string& token)
 
 	for (int a = 1; a < token.length(); ++a)
 	{
-		if (token[a] != '_' && !is_letter(token[a]) && !is_digit(token[a]))
+		if (token[a] != '_' && !is_letter(token[a]) && (token[a] - '0' < 0 || token[a] - '0' > 9))
 			return false;
 	}
 
@@ -67,7 +62,7 @@ bool match_variable(const night::string& token)
 
 void AddKeyword(night::array<Token>& tokens, night::string& token, TokenType&& type)
 {
-	tokens.push_back(Token{ type, token });
+	tokens.add_back(Token{ type, token });
 	token = "";
 }
 
@@ -115,7 +110,7 @@ void CheckToken(night::array<Token>& tokens, night::string& token)
 void AddSymbol(night::array<Token>& tokens, night::string& token, char symbol, TokenType&& type)
 {
 	CheckToken(tokens, token);
-	tokens.push_back(Token{ type, symbol });
+	tokens.add_back(Token{ type, symbol });
 }
 
 night::array<Token> Lexer(const night::string& line)
@@ -155,12 +150,12 @@ night::array<Token> Lexer(const night::string& line)
 			CheckToken(tokens, token);
 			if (a < line.length() - 1 && line[a + 1] == '=')
 			{
-				tokens.push_back(Token{ TokenType::EQUALS, "==" });
-				a += 1;
+				tokens.add_back(Token{ TokenType::EQUALS, "==" });
+				a++;
 			}
 			else
 			{
-				tokens.push_back(Token{ TokenType::ASSIGNMENT, "=" });
+				tokens.add_back(Token{ TokenType::ASSIGNMENT, "=" });
 			}
 
 			break;
@@ -168,12 +163,12 @@ night::array<Token> Lexer(const night::string& line)
 			CheckToken(tokens, token);
 			if (a < line.length() - 1 && line[a + 1] == '=')
 			{
-				tokens.push_back(Token{ TokenType::PLUS_ASSIGN, "+=" });
+				tokens.add_back(Token{ TokenType::PLUS_ASSIGN, "+=" });
 				a++;
 			}
 			else
 			{
-				tokens.push_back(Token{ TokenType::PLUS, "+" });
+				tokens.add_back(Token{ TokenType::PLUS, "+" });
 			}
 
 			break;
@@ -181,12 +176,12 @@ night::array<Token> Lexer(const night::string& line)
 			CheckToken(tokens, token);
 			if (a < line.length() - 1 && line[a + 1] == '=')
 			{
-				tokens.push_back(Token{ TokenType::MINUS_ASSIGN, "-=" });
+				tokens.add_back(Token{ TokenType::MINUS_ASSIGN, "-=" });
 				a++;
 			}
 			else
 			{
-				tokens.push_back(Token{ TokenType::MINUS, "-" });
+				tokens.add_back(Token{ TokenType::MINUS, "-" });
 			}
 
 			break;
@@ -194,12 +189,12 @@ night::array<Token> Lexer(const night::string& line)
 			CheckToken(tokens, token);
 			if (a < line.length() - 1 && line[a + 1] == '=')
 			{
-				tokens.push_back(Token{ TokenType::TIMES_ASSIGN, "*=" });
-				a += 1;
+				tokens.add_back(Token{ TokenType::TIMES_ASSIGN, "*=" });
+				a++;
 			}
 			else
 			{
-				tokens.push_back(Token{ TokenType::TIMES, "*" });
+				tokens.add_back(Token{ TokenType::TIMES, "*" });
 			}
 
 			break;
@@ -207,12 +202,12 @@ night::array<Token> Lexer(const night::string& line)
 			CheckToken(tokens, token);
 			if (a < line.length() - 1 && line[a + 1] == '=')
 			{
-				tokens.push_back(Token{ TokenType::DIVIDE_ASSIGN, "/=" });
-				a += 1;
+				tokens.add_back(Token{ TokenType::DIVIDE_ASSIGN, "/=" });
+				a++;
 			}
 			else
 			{
-				tokens.push_back(Token{ TokenType::DIVIDE, "/" });
+				tokens.add_back(Token{ TokenType::DIVIDE, "/" });
 			}
 
 			break;
@@ -220,12 +215,12 @@ night::array<Token> Lexer(const night::string& line)
 			CheckToken(tokens, token);
 			if (a < line.length() - 1 && line[a + 1] == '=')
 			{
-				tokens.push_back(Token{ TokenType::MOD_ASSIGN, "%=" });
-				a += 1;
+				tokens.add_back(Token{ TokenType::MOD_ASSIGN, "%=" });
+				a++;
 			}
 			else
 			{
-				tokens.push_back(Token{ TokenType::MOD, "%" });
+				tokens.add_back(Token{ TokenType::MOD, "%" });
 			}
 
 			break;
@@ -233,12 +228,12 @@ night::array<Token> Lexer(const night::string& line)
 			CheckToken(tokens, token);
 			if (a < line.length() - 1 && line[a + 1] == '=')
 			{
-				tokens.push_back(Token{ TokenType::NOT_EQUALS, "!=" });
-				a += 1;
+				tokens.add_back(Token{ TokenType::NOT_EQUALS, "!=" });
+				a++;
 			}
 			else
 			{
-				tokens.push_back(Token{ TokenType::NOT, "!" });
+				tokens.add_back(Token{ TokenType::NOT, "!" });
 			}
 
 			break;
@@ -246,9 +241,9 @@ night::array<Token> Lexer(const night::string& line)
 			if (a < line.length() - 1 && line[a + 1] == '|')
 			{
 				CheckToken(tokens, token);
-				tokens.push_back(Token{ TokenType::OR, "||" });
+				tokens.add_back(Token{ TokenType::OR, "||" });
 
-				a += 1;
+				a++;
 			}
 
 			break;
@@ -256,9 +251,9 @@ night::array<Token> Lexer(const night::string& line)
 			if (a < line.length() - 1 && line[a + 1] == '&')
 			{
 				CheckToken(tokens, token);
-				tokens.push_back(Token{ TokenType::AND, "&&" });
+				tokens.add_back(Token{ TokenType::AND, "&&" });
 
-				a += 1;
+				a++;
 			}
 
 			break;
@@ -266,12 +261,12 @@ night::array<Token> Lexer(const night::string& line)
 			CheckToken(tokens, token);
 			if (a < line.length() && line[a + 1] == '=')
 			{
-				tokens.push_back(Token{ TokenType::GREATER_EQUAL, "<=" });
-				a += 1;
+				tokens.add_back(Token{ TokenType::GREATER_EQUAL, "<=" });
+				a++;
 			}
 			else
 			{
-				tokens.push_back(Token{ TokenType::GREATER, ">" });
+				tokens.add_back(Token{ TokenType::GREATER, ">" });
 			}
 
 			break;
@@ -279,12 +274,12 @@ night::array<Token> Lexer(const night::string& line)
 			CheckToken(tokens, token);
 			if (a < line.length() && line[a + 1] == '=')
 			{
-				tokens.push_back(Token{ TokenType::SMALLER_EQUAL, "<=" });
-				a += 1;
+				tokens.add_back(Token{ TokenType::SMALLER_EQUAL, "<=" });
+				a++;
 			}
 			else
 			{
-				tokens.push_back(Token{ TokenType::SMALLER, "<" });
+				tokens.add_back(Token{ TokenType::SMALLER, "<" });
 			}
 
 			break;
@@ -328,7 +323,7 @@ night::array<Token> Lexer(const night::string& line)
 
 	CheckToken(tokens, token);
 	if (token != "")
-		throw Error(night::_invalid_token_, tokens, tokens.length() - 1, tokens.length() - 1, "token " + token + "' is not a valid token");
+		throw Error(night::_invalid_token_, tokens, tokens.length() - 1, tokens.length() - 1, "token "_s + token + "' is not a valid token"_s);
 
 	return tokens;
 }

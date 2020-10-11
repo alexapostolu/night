@@ -6,43 +6,35 @@ class string
 {
 public:
 	string()
+		: len(0), cap(21)
 	{
-		len = 0, cap = 21;
 		str = str_alc(cap);
 	}
 
 	string(char c)
+		: len(1), cap(22)
 	{
-		len = 1, cap = 22;
-
 		str = str_alc(cap);
 		str[0] = c;
 	}
 
 	string(const char* src)
+		: len(str_len(src)), cap(len + 21)
 	{
-		len = str_len(src);
-		cap = len + 21;
-
 		str = str_alc(cap);
 		str_cpy(str, src);
 	}
 
 	string(const string& src)
+		: len(src.len), cap(len + 21)
 	{
-		len = src.len;
-		cap = len + 21;
-
 		str = str_alc(cap);
 		str_cpy(str, src.str);
 	}
 
 	string(string&& src) noexcept
+		: len(src.len), cap(src.cap), str(src.str)
 	{
-		len = src.len;
-		cap = src.cap;
-		str = src.str;
-
 		src.str = nullptr;
 	}
 
@@ -224,18 +216,10 @@ public:
 
 	void remove(int index)
 	{
-		char* temp = str_alc(cap);
+		for (int a = index; a < len - 1; ++a)
+			str[a] = str[a + 1];
 
-		for (int a = 0; a < index; ++a)
-			temp[a] = str[a];
-
-		for (int a = index + 1; a < len; ++a)
-			temp[a - 1] = str[a];
-
-		delete[] str;
-
-		str = temp;
-		len--;
+		str[--len] = '\0';
 	}
 
 private:
@@ -283,10 +267,14 @@ private:
 
 } // namespace night
 
-night::string operator+(const char* str1, const night::string& str2)
-{
-	night::string temp(str1);
-	temp += str2;
-
-	return temp;
-}
+#if defined(_WIN32)
+	night::string operator""_s(const char* str, unsigned int len)
+	{
+		return night::string(str);
+	}
+#elif defined(__linux__)
+	night::string operator""_s(const char* str, unsigned long len)
+	{
+		return night::string(str);
+	}
+#endif

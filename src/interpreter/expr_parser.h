@@ -11,16 +11,18 @@
 
 #include "./helpers.h"
 
-void Interpreter(night::array<night::array<Token> >& code);
-void SplitCode(const night::array<Token>& code);
-
 Token returnToken{ TokenType::NULL_TYPE };
 int variableScope = -1, arrayScope = -1;
+
+Array returnArray;
+
+void Interpreter(night::array<night::array<Token> >& code);
+void SplitCode(const night::array<Token>& code);
 
 float EvalNum(const night::array<Token>& expr, int index, const night::string& op)
 {
 	if (op == "/" && night::stof(expr[index - 1].value) == 0)
-		throw Error(night::_invalid_expression_, expr, index - 1, index + 1, "division by zero isn't allowed smh");
+		throw Error(night::_invalid_expression_, expr, index - 1, index + 1, "division by zero is not allowed");
 
 	if (op == "+")
 		return night::stof(expr[index - 1].value) + night::stof(expr[index + 1].value);
@@ -30,7 +32,10 @@ float EvalNum(const night::array<Token>& expr, int index, const night::string& o
 		return night::stof(expr[index - 1].value) / night::stof(expr[index + 1].value);
 	if (op == "*")
 		return night::stof(expr[index - 1].value) * night::stof(expr[index + 1].value);
-	return night::stoi(expr[index - 1].value) % night::stoi(expr[index + 1].value);
+	if (op == "%")
+		return night::stoi(expr[index - 1].value) % night::stoi(expr[index + 1].value);
+
+	throw "Uh oh! Something unexpected has happened. Please submit an issue on the GitHub page.";
 }
 
 void EvaluateNumeric(night::array<Token>& expr, int index, const night::string& op)
@@ -50,12 +55,11 @@ void EvaluateNumeric(night::array<Token>& expr, int index, const night::string& 
 		if (op == "%" && expr[index - 1].type == TokenType::DEC_VALUE || expr[index + 1].type == TokenType::DEC_VALUE)
 			throw Error(night::_invalid_expression_, expr, index - 1, index + 1, "operator '%' can only work on values of type 'int'");
 
-		expr[index - 1].type = TokenType::DEC_VALUE;
-		expr[index - 1].value = night::ftos(EvalNum(expr, index, op));
+		expr[index - 1] = Token{ TokenType::DEC_VALUE, night::ftos(EvalNum(expr, index, op)) };
 	}
 	else
 	{
-		throw Error(night::_invalid_expression_, expr, index - 1, index + 1, "operator '" + op + "' can only be used on values of type 'int' or 'dec', or if one of the values is of type 'str'");
+		throw Error(night::_invalid_expression_, expr, index - 1, index + 1, "operator '"_s + op + "' can only be used on values of type 'int' or 'dec', or if one of the values is of type 'str'");
 	}
 }
 
@@ -67,14 +71,15 @@ bool EvalNumComp(const Token& val1, const Token& val2, const night::string& op)
 		return night::stof(val1.value) < night::stof(val2.value);
 	if (op == ">=")
 		return night::stof(val1.value) >= night::stof(val2.value);
-	return night::stof(val1.value) <= night::stof(val2.value);
+	if (op == "<=")
+		return night::stof(val1.value) <= night::stof(val2.value);
 }
 
 void EvaluateNumComparison(night::array<Token>& expr, int index, const night::string& op)
 {
 	if ((expr[index - 1].type != TokenType::INT_VALUE && expr[index - 1].type != TokenType::DEC_VALUE) ||
 		(expr[index + 1].type != TokenType::INT_VALUE && expr[index + 1].type != TokenType::DEC_VALUE))
-		throw Error(night::_invalid_expression_, expr, index - 1, index + 1, "operator '" + op + "' can only be used on values of type 'int' or 'dec'");
+		throw Error(night::_invalid_expression_, expr, index - 1, index + 1, "operator '"_s + op + "' can only be used on values of type 'int' or 'dec'");
 
 	expr[index - 1].type = TokenType::BIT_VALUE;
 	expr[index - 1].value = EvalNumComp(expr[index - 1], expr[index + 1], op) ? "true" : "false";
@@ -84,13 +89,13 @@ void EvaluateComparison(night::array<Token>& expr, int index, const night::strin
 {
 	if (expr[index - 1].type != expr[index + 1].type) {
 		throw Error(night::_invalid_expression_, expr, index - 1, index + 1,
-			"operator '" + op + "' can only compare to values of the same type");
+			"operator '"_s + op + "' can only compare to values of the same type");
 	}
 	if (expr[index - 1].type < TokenType::BIT_VALUE && expr[index - 1].type > TokenType::STR_VALUE) {
-		throw Error(night::_invalid_expression_, expr, index - 1, index - 1, "operator '" + op + "' can only compare values of type 'bit', 'syb', 'int', 'dec', or 'str'");
+		throw Error(night::_invalid_expression_, expr, index - 1, index - 1, "operator '"_s + op + "' can only compare values of type 'bit', 'syb', 'int', 'dec', or 'str'");
 	}
 	if (expr[index + 1].type < TokenType::BIT_VALUE || expr[index + 1].type > TokenType::STR_VALUE) {
-		throw Error(night::_invalid_expression_, expr, index + 1, index + 1, "operator '" + op + "' can only compare values of type 'bit', 'syb', 'int', 'dec', or 'str'");
+		throw Error(night::_invalid_expression_, expr, index + 1, index + 1, "operator '"_s + op + "' can only compare values of type 'bit', 'syb', 'int', 'dec', or 'str'");
 	}
 
 	expr[index - 1].type = TokenType::BIT_VALUE;
@@ -105,13 +110,14 @@ bool EvalBool(const Token& val1, const Token& val2, const night::string& op)
 {
 	if (op == "||")
 		return val1.value == "true" || val1.value == "true";
-	return val1.value == "true" || val1.value == "true";
+	if (op == "&&")
+		return val1.value == "true" || val1.value == "true";
 }
 
 void EvaluateBoolean(night::array<Token>& expr, int index, const night::string& op)
 {
 	if (expr[index - 1].type != TokenType::BIT_VALUE || expr[index + 1].type != TokenType::BIT_VALUE)
-		throw Error(night::_invalid_expression_, expr, index - 1, index + 1, "operator '" + op + "' can only be used on values of type 'bit'");
+		throw Error(night::_invalid_expression_, expr, index - 1, index + 1, "operator '"_s + op + "' can only be used on values of type 'bit'");
 
 	expr[index - 1].value = EvalBool(expr[index - 1], expr[index + 1], op) ? "true" : "false";
 }
@@ -201,6 +207,9 @@ void EvalBracket(night::array<Token>& expr, const TokenType& type1, const TokenT
 Token ParseExpression(night::array<Token> expr, night::array<Variable>& vars,
 	night::array<Function>& funcs, night::array<Array>& arrs)
 {
+	if (expr.length() == 1 && expr[0].type == TokenType::VARIABLE && GetObject(arrs, expr[0]) != nullptr)
+		return expr[0];
+
 	for (int a = 0; a < expr.length(); ++a)
 	{
 		if (expr[a].type == TokenType::VARIABLE)
@@ -219,27 +228,49 @@ Token ParseExpression(night::array<Token> expr, night::array<Variable>& vars,
 					throw Error(night::_invalid_expression_, expr, a, a, "function of type 'null' cannot be used in an expression");
 
 				variableScope = vars.length();
+				arrayScope = arrs.length();
 
 				int closeBracket = 0;
 				night::array<Token> paramExpr;
 				for (int b = a + 2, paramIndex = 0, openBracket = 0; b < expr.length(); ++b)
 				{
+					if (b == a + 2 && expr[b].type == TokenType::CLOSE_BRACKET)
+						break;
+
 					if (expr[b].type == TokenType::OPEN_BRACKET)
 						openBracket++;
 					else if (expr[b].type == TokenType::CLOSE_BRACKET)
 						openBracket--;
 
-					if ((expr[b].type == TokenType::COMMA && openBracket == 0) ||
-						(expr[b].type == TokenType::CLOSE_BRACKET && openBracket == -1))
+					if ((expr[b].type == TokenType::COMMA && openBracket == 0) || (expr[b].type == TokenType::CLOSE_BRACKET && openBracket == -1))
 					{
-						if (paramIndex >= function->params.length())
-							throw Error(night::_invalid_function_, expr, 0, expr.length(), "expecting " + night::itos(function->params.length()) + " parameters");
+						if (paramIndex >= function->params.length() && paramIndex != 0)
+							throw Error(night::_invalid_function_, expr, 0, expr.length(), "expecting "_s + night::itos(function->params.length()) + " parameters");
+
+						Array* arrParam = GetObject(arrs, paramExpr[0]);
+						if (arrParam != nullptr)
+						{
+							arrs.add_back(Array{
+								function->params[paramIndex].type,
+								function->params[paramIndex].name,
+								arrParam->elems
+							});
+
+							paramIndex++;
+							paramExpr.clear();
+
+							closeBracket = b;
+							if (expr[b].type == TokenType::CLOSE_BRACKET)
+								break;
+
+							continue;
+						}
 
 						Token paramExprToken = ParseExpression(paramExpr, vars, funcs, arrs);
 						if (night::ttov(function->params[paramIndex].type) != paramExprToken.type)
 							throw Error(night::_invalid_function_, expr, 0, expr.length(), "parameter expression does not match with parameter type");
 
-						vars.push_back(Variable{
+						vars.add_back(Variable{
 							function->params[paramIndex].type,
 							function->params[paramIndex].name,
 							paramExprToken.value
@@ -255,10 +286,8 @@ Token ParseExpression(night::array<Token> expr, night::array<Variable>& vars,
 						continue;
 					}
 
-					paramExpr.push_back(expr[b]);
+					paramExpr.add_back(expr[b]);
 				}
-
-				arrayScope = arrs.length();
 
 				SplitCode(function->code);
 
@@ -271,6 +300,10 @@ Token ParseExpression(night::array<Token> expr, night::array<Variable>& vars,
 				int variableLength = vars.length();
 				for (int b = variableScope; b < variableLength; ++b)
 					vars.remove(variableScope);
+
+				int arrayLength = arrs.length();
+				for (int b = arrayScope; b < arrayLength; ++b)
+					arrs.remove(arrayScope);
 
 				continue;
 			}
@@ -295,7 +328,7 @@ Token ParseExpression(night::array<Token> expr, night::array<Variable>& vars,
 					if (arrayIndexToken.type != TokenType::INT_VALUE)
 						throw Error(night::_invalid_array_, expr, a + 3, b - 1, "array index can only be a value of type 'int'");
 					if (arrayIndex < 0 || arrayIndex >= array->elems.length())
-						throw Error(night::_invalid_array_, expr, a + 3, b - 1, "array index is out of range; the last element is at index '" + night::itos(array->elems.length() - 1) + "'");
+						throw Error(night::_invalid_array_, expr, a + 3, b - 1, "array index is out of range; the last element is at index '"_s + night::itos(array->elems.length() - 1) + "'");
 
 					expr[a] = array->elems[arrayIndex];
 					for (int c = a + 1; c <= b; ++c)
