@@ -1,14 +1,14 @@
 # Night
 
-An interpreted programming language that combines the simplicity of Python, with the type concepts of the C family. The main goal of Night was to design a intuitive easy to learn language.
+An interpreted programming language that combines the simplicity of Python, with the type concepts of the C family. The main goal of Night is to design an intuitive and easy to learn language.
 
-It's still in very early development, and there's a lot to get done.
+It's still in early development, and there's a lot to get done.
 
 ---
 
 ### Source Build
 
-Currently, only a Windows and a UNIX source build are supported.
+Currently, only a Windows and a Linux source build are supported.
 
 Windows system requirements:
 - GCC and a working console
@@ -16,8 +16,8 @@ Windows system requirements:
 Linux system requirements:
 - build-essential / base-devel
 
-You'll need to install the GNU Compiler Collection (GCC) to get access to the `g++` compiler, and once you have that, clone this repo, create a new file called `*.night` where you'll write your code, and you're ready to go! 
-Just pass in the `*.night` file as a command line argument when you run the code:
+You'll need to install the *GNU Compiler Collection* (GCC) to get access to the *g++* compiler, and once you have that, clone this repo, create a new file called `*.night` where you'll write your code, and you're ready to go! 
+Just pass in the `*.night` file as a command line argument when you run the code.
 
 **Windows**
 
@@ -33,12 +33,15 @@ night source.night
 
 **Linux**
 
-If you have GNU Make, you can simple make it:
+You can foolow the steps above, or if you have GNU Make, you can simply use that and it'll create a `night` executable.
 
-```bash
+```
 make
 ./night source.night
 ```
+
+If there's an error with the source build, or you're having trouble, feel free to leave an issue!
+
 ---
 
 ### Timeline
@@ -57,26 +60,13 @@ As of right now, version 3 of Night has been released, and that version is actua
   - [x] `v3.0` the base release
     - [x] `v3.0.1` bug fix for source builds
   - [ ] `v3.1` functions will be able to return arrays, and accept array parameters
-  - [ ] `v3.2` better error messages, like, a lot better
-  - [ ] `v3.3` *sqdlib*, the standard library for Night; also included with a package manager!
-
-### Current Progress
-
-A list of upcoming features I'm working on.
-
-**version 3.1**
-
-This version is close to being done (well, if the bugs don't kill me), and should come out ~~this~~ next weekend.
-
-**website**
-
-Still a lot of work to do on the website, but depending on how version 3.1 will go, then it should be done in two or three weeks.
+  - [ ] `v3.2` *sqdlib*, the standard library for Night; also included is the *dusk* package manager!
 
 ---
 
 ### About Night
 
-Night is strong statically typed language that mirrors the C family in many ways. As of right now, it just supports basic functionality. It has five types, booleans, characters, integers, floats, and strings. Arrays and functions are also supported, however, functions currently cannot have array parameters, or return arrays (but that will soon change). Functions can also be one of the five types, as well as a null type. Loops are also included, with a simple for and while loop.
+Night is strong statically typed language that mirrors the C family in many ways. As of right now, it just supports basic functionality. It has five types, booleans, characters, integers, floats, and strings. Arrays and functions are also supported. Functions can also be one of the five types, as well as a null type. Loops are also included, with a simple for and while loop.
 
 Here is a little sample of my language:
 
