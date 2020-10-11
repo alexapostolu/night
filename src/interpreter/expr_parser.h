@@ -321,14 +321,16 @@ Token ParseExpression(night::array<Token> expr, night::array<Variable>& vars,
 
 				if (expr[b].type == TokenType::CLOSE_SQUARE && squareCount == -1)
 				{
-					Token arrayIndexToken = ParseExpression(expr.access(a + 2, b - 1),
-						vars, funcs, arrs);
+					Token arrayIndexToken = ParseExpression(expr.access(a + 2, b - 1), vars, funcs, arrs);
 					int arrayIndex = night::stoi(arrayIndexToken.value);
 
 					if (arrayIndexToken.type != TokenType::INT_VALUE)
 						throw Error(night::_invalid_array_, expr, a + 3, b - 1, "array index can only be a value of type 'int'");
-					if (arrayIndex < 0 || arrayIndex >= array->elems.length())
+					if (arrayIndex < 0 || arrayIndex >= array->elems.length()) {
+						printf("%s %d\n", array->name.cstr(), array->elems.length());
 						throw Error(night::_invalid_array_, expr, a + 3, b - 1, "array index is out of range; the last element is at index '"_s + night::itos(array->elems.length() - 1) + "'");
+					}
+					
 
 					expr[a] = array->elems[arrayIndex];
 					for (int c = a + 1; c <= b; ++c)

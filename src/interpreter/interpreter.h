@@ -193,23 +193,15 @@ void Interpreter(night::array<night::array<Token> >& code)
 				array->elems = assignArray->elems;
 				continue;
 			}
-
-			// arrays cannot be assigned to functions,
-			// only initialized;
-			// this will make it so that arrays can be,
-			// assigned to function;
-			// and then after this I think I'm done!
+			
 			Function* assignFunction = GetObject(functions, code[a][2]);
 			if (assignFunction != nullptr)
 			{
 				ParseExpression(code[a].access(2, code[a].length() - 2), CONTAINERS);
-				arrays.add_back(Array{ returnArray.type, code[a][2].value, returnArray.elems });
+				array->elems = returnArray.elems;
 
 				continue;
 			}
-			//
-			//
-			//
 
 			array->elems.clear();
 
