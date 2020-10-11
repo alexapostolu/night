@@ -59,7 +59,7 @@ As of right now, version 3 of Night has been released, and that version is actua
 - [x] `v3` the first non-beta version of Night!
   - [x] `v3.0` the base release
     - [x] `v3.0.1` bug fix for source builds
-  - [ ] `v3.1` functions will be able to return arrays, and accept array parameters
+  - [x] `v3.1` functions will be able to return arrays, and accept array parameters
   - [ ] `v3.2` *sqdlib*, the standard library for Night; also included is the *dusk* package manager!
 
 ---
