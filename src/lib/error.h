@@ -32,16 +32,15 @@ const night::string _invalid_grammar_    { "invalid grammar"    };
 class Error
 {
 public:
-	Error(const night::string& _errorType, const night::array<Token>& _code, int _start, int _end,
-		const night::string& _errorMsg)
+	Error(const night::string& _errorType, const night::array<Token>& _code, int _start, int _end, const night::string& _errorMsg)
 		: errorType(_errorType), code(_code), start(_start), end(_end), errorMsg(_errorMsg)
 	{
 		for (int a = 0; a < code.length(); ++a)
 		{
 			if (code[a].type == TokenType::SYB_VALUE)
-				code[a].value = "'" + code[a].value + "'";
+				code[a].value = "'"_s + code[a].value + "'";
 			else if (code[a].type == TokenType::STR_VALUE)
-				code[a].value = "\"" + code[a].value + "\"";
+				code[a].value = "\""_s + code[a].value + "\"";
 		}
 	}
 
@@ -49,8 +48,8 @@ public:
 	{
 		night::string output;
 
-		output += I_RED + "Error - " + RESET;
-		output += U_RED + errorType + "\n\n" + RESET;
+		output += I_RED + "Error - "_s + RESET;
+		output += U_RED + errorType + "\n\n"_s + RESET;
 
 		for (int a = 0; a < code.length(); ++a)
 			output += (a >= start && a <= end ? RED : WHITE) + code[a].value + ' ';

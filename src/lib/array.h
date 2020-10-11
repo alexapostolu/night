@@ -7,19 +7,22 @@ class array
 {
 public:
 	array()
+		: len(0), cap(3)
 	{
-		len = 0, cap = 3;
-		arr = new T[3];
+		arr = new T[cap];
 	}
 
 	array(const array& src)
+		: len(src.len), cap(src.len + 3)
 	{
-		len = src.len;
-		cap = len + 3;
-
 		arr = new T[cap];
-		for (int a = 0; a < src.len; ++a)
-			arr[a] = src.arr[a];
+		arr_cpy(arr, src.arr, 0, len);
+	}
+
+	array(array&& src) noexcept
+		: len(src.len), cap(src.len + 3), arr(src.arr)
+	{
+		src.arr = nullptr;
 	}
 
 	~array()
@@ -33,14 +36,37 @@ public:
 		if (this == &src)
 			return *this;
 		
+		if (cap >= src.len)
+		{
+			arr_cpy(arr, src.arr, 0, src.len);
+			len = src.len;
+
+			return *this;
+		}
+
 		delete[] arr;
 		
 		len = src.len;
 		cap = len + 3;
 
 		arr = new T[cap];
-		for (int a = 0; a < len; ++a)
-			arr[a] = src.arr[a];
+		arr_cpy(arr, src.arr, 0, len);
+
+		return *this;
+	}
+
+	array& operator=(array&& src) noexcept
+	{
+		if (this != &src)
+			return *this;
+
+		delete[] arr;
+
+		len = src.len;
+		cap = src.cap;
+		arr = src.arr;
+
+		src.arr = nullptr;
 
 		return *this;
 	}
@@ -71,22 +97,18 @@ public:
 		return arr[len - 1];
 	}
 
-	void push_back(const T& val)
+	void add_back(const T& val)
 	{
 		if (cap > len)
 		{
-			arr[len] = val;
-			len++;
-
+			arr[len++] = val;
 			return;
 		}
 
-		cap += 4;
+		cap += 3;
 
 		T* temp = new T[cap];
-		for (int a = 0; a < len; ++a)
-			temp[a] = arr[a];
-
+		arr_cpy(temp, arr, 0, len);
 		temp[len] = val;
 
 		delete[] arr;
@@ -103,11 +125,19 @@ public:
 		len--;
 	}
 
-	array access(int begin, int end) const
+	void remove(int start, int end)
+	{
+		for (int a = 0; a < len - end; ++a)
+			arr[start + a] = arr[end + a + 1];
+
+		len -= end - start + 1;
+	}
+
+	array access(int start, int end) const
 	{
 		array temp;
-		for (int a = begin; a <= end; ++a)
-			temp.push_back(arr[a]);
+		for (int a = start; a <= end; ++a)
+			temp.add_back(arr[a]);
 
 		return temp;
 	}
@@ -115,6 +145,13 @@ public:
 	void clear()
 	{
 		len = 0;
+	}
+
+private:
+	void arr_cpy(T* dest, T* src, int start, int end) const
+	{
+		for (int a = start; a < end; ++a)
+			dest[a] = src[a];
 	}
 
 private:

@@ -158,8 +158,39 @@ Token peek(const night::array<Token>& code, int index)
 	return eat(code, set);
 }
 
-void Parser(const night::array<Token>& code)
+TokenType ttoa(const TokenType& type)
 {
+	if (type == TokenType::BIT_TYPE)
+		return TokenType::BIT_ARR;
+	if (type == TokenType::SYB_TYPE)
+		return TokenType::SYB_ARR;
+	if (type == TokenType::INT_TYPE)
+		return TokenType::INT_ARR;
+	if (type == TokenType::DEC_TYPE)
+		return TokenType::DEC_ARR;
+	return TokenType::STR_ARR;
+}
+
+void Parser(night::array<Token>& code)
+{
+	if ((code.length() >= 5
+		&& code[2].type == TokenType::CLOSE_SQUARE
+		&& code[4].type == TokenType::OPEN_BRACKET
+		&& code.back().type == TokenType::CLOSE_CURLY)
+		||
+		(code.length() >= 5 && code[1].type == TokenType::VARIABLE && code[2].type == TokenType::OPEN_BRACKET))
+	{
+		for (int a = 0; code[a].type != TokenType::CLOSE_BRACKET; ++a)
+		{
+			if (code[a].type == TokenType::OPEN_SQUARE)
+			{
+				code[a - 1] = Token{ ttoa(code[a - 1].type), code[a - 1].value + "[]" };
+				code.remove(a);
+				code.remove(a);
+			}
+		}
+	}
+
 	return;
 
 	int index = -1;
@@ -214,7 +245,8 @@ void Parser(const night::array<Token>& code)
 				if (code.back().type != TokenType::CLOSE_CURLY)
 					throw Error(night::_invalid_function_, code, code.length() - 1, code.length() - 1, "expected closing curly bracket");
 
-				Parser(code.access(a + 2, code.length() - 2));
+				night::array<Token> temp = code.access(a + 2, code.length() - 2);
+				Parser(temp);
 			}
 			else if (token.type == TokenType::SEMICOLON)
 			{
