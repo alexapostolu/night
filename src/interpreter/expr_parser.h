@@ -71,8 +71,7 @@ bool EvalNumComp(const Token& val1, const Token& val2, const night::string& op)
 		return night::stof(val1.value) < night::stof(val2.value);
 	if (op == ">=")
 		return night::stof(val1.value) >= night::stof(val2.value);
-	if (op == "<=")
-		return night::stof(val1.value) <= night::stof(val2.value);
+	return night::stof(val1.value) <= night::stof(val2.value);
 }
 
 void EvaluateNumComparison(night::array<Token>& expr, int index, const night::string& op)
@@ -110,8 +109,7 @@ bool EvalBool(const Token& val1, const Token& val2, const night::string& op)
 {
 	if (op == "||")
 		return val1.value == "true" || val1.value == "true";
-	if (op == "&&")
-		return val1.value == "true" || val1.value == "true";
+	return val1.value == "true" || val1.value == "true";
 }
 
 void EvaluateBoolean(night::array<Token>& expr, int index, const night::string& op)
@@ -326,11 +324,8 @@ Token ParseExpression(night::array<Token> expr, night::array<Variable>& vars,
 
 					if (arrayIndexToken.type != TokenType::INT_VALUE)
 						throw Error(night::_invalid_array_, expr, a + 3, b - 1, "array index can only be a value of type 'int'");
-					if (arrayIndex < 0 || arrayIndex >= array->elems.length()) {
-						printf("%s %d\n", array->name.cstr(), array->elems.length());
+					if (arrayIndex < 0 || arrayIndex >= array->elems.length())
 						throw Error(night::_invalid_array_, expr, a + 3, b - 1, "array index is out of range; the last element is at index '"_s + night::itos(array->elems.length() - 1) + "'");
-					}
-					
 
 					expr[a] = array->elems[arrayIndex];
 					for (int c = a + 1; c <= b; ++c)

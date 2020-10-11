@@ -168,8 +168,7 @@ TokenType ttoa(const TokenType& type)
 		return TokenType::INT_ARR;
 	if (type == TokenType::DEC_TYPE)
 		return TokenType::DEC_ARR;
-	if (type == TokenType::STR_TYPE)
-		return TokenType::STR_ARR;
+	return TokenType::STR_ARR;
 }
 
 void Parser(night::array<Token>& code)

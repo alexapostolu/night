@@ -66,6 +66,8 @@ night::string DefaultValue(const TokenType& type)
 	case TokenType::STR_TYPE:
 		return "";
 	}
+
+	return "";
 }
 
 void Interpreter(night::array<night::array<Token> >& code)
