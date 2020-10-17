@@ -1,6 +1,6 @@
 # Night
 
-An interpreted programming language that combines the simplicity of Python, with the type concepts of the C family. The main goal of Night is to design an intuitive and easy to learn language.
+An interpreted programming language that focuses on simplicity and useability. The main goal of Night is to design an intuitive and easy to learn language.
 
 It's still in early development, and there's a lot to get done.
 
@@ -61,6 +61,9 @@ As of right now, version 3 of Night has been released, and that version is actua
     - [x] `v3.0.1` bug fix for source builds
   - [x] `v3.1` functions will be able to return arrays, and accept array parameters
   - [ ] `v3.2` *sqdlib*, the standard library for Night; also included is the *dusk* package manager!
+- [ ] `v4` a complete rewrite of Night, focusing on additional stability
+  - [ ] `v4.0` the base release
+  - [ ] `v4.1` classes, but *only* with variables and methods
 
 ---
 
