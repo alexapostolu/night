@@ -33,7 +33,7 @@ night source.night
 
 **Linux**
 
-You can foolow the steps above, or if you have GNU Make, you can simply use that and it'll create a `night` executable.
+You can follow the steps above, or if you have GNU Make, you can simply use that and it'll create a `night` executable.
 
 ```
 make
