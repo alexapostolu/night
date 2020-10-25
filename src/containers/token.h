@@ -42,6 +42,8 @@ enum class TokenType
 
 	COMMA,
 	SEMICOLON,
+
+	IMPORT
 };
 
 struct Token
