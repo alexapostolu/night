@@ -1,13 +1,13 @@
 #include <stdio.h>
 
 #include "lib/error.h"
-#include "file_extraction.h"
+#include "./file_extraction.h"
 
 int main(int argc, char* argv[])
 {
     try {
         if (argc > 2)
-            throw "invalud command line arguments";
+            throw "invalid command line arguments";
 
         ExtractFile(argc == 1 ? "source.night" : argv[1]);
     }
