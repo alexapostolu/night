@@ -6,41 +6,52 @@ It's still in early development, and there's a lot to get done.
 
 ---
 
-### Source Build
+### Getting Started with Night
 
-Currently, only a Windows and a Linux source build are supported.
+Quick and easy installating and setup can be found on the [Night website](https://night-website.dynamicsquid.repl.co/html/source.html). There you'll also find instructions on how to use *dusk*, the package manager.
 
-Windows system requirements:
-- GCC and a working console
+However, you can also build Night from source if you'd like.
 
-Linux system requirements:
-- build-essential / base-devel
+### Building from Source
 
-You'll need to install the *GNU Compiler Collection* (GCC) to get access to the *g++* compiler, and once you have that, clone this repo, create a new file called `*.night` where you'll write your code, and you're ready to go! 
-Just pass in the `*.night` file as a command line argument when you run the code.
+1. Install *g++* or *clang++*
 
-**Windows**
+2. Clone this repository
 
 ```
-g++ -o <exe file> <path to night.cpp file>
-<exe file> *.night
+git clone https://github.com/DynamicSquid/night.git
+cd night
+```
 
-for example:
+3. Compile Night
 
+With *g++*:
+
+```
 g++ -o night src/night.cpp
-night source.night
 ```
 
-**Linux**
+Or with *clang++*:
 
-You can follow the steps above, or if you have GNU Make, you can simply use that and it'll create a `night` executable.
+```
+clang++ -o night src/night.cpp
+```
+
+Or if you have GNU Make:
 
 ```
 make
+```
+
+4. Run Night
+
+First create a new file called `*.night` where you'll write your code. Then pass it though as a command line argument:
+
+```
 ./night source.night
 ```
 
-If there's an error with the source build, or you're having trouble, feel free to leave an issue!
+And you're done! To install *dusk* from source, visit the *[dusk repo](https://github.com/firefish111/dusk)*.
 
 ---
 
@@ -63,7 +74,7 @@ As of right now, version 3 of Night has been released, and that version is actua
   - [ ] `v3.2` *sqdlib*, the standard library for Night; also included is the *dusk* package manager!
 - [ ] `v4` a complete rewrite of Night, focusing on additional stability
   - [ ] `v4.0` the base release
-  - [ ] `v4.1` classes, but *only* with variables and methods
+  - [ ] `v4.1` classes, but only with variables and methods
 
 ---
 
@@ -71,7 +82,7 @@ As of right now, version 3 of Night has been released, and that version is actua
 
 Night is strong statically typed language that mirrors the C family in many ways. As of right now, it just supports basic functionality. It has five types, booleans, characters, integers, floats, and strings. Arrays and functions are also supported. Functions can also be one of the five types, as well as a null type. Loops are also included, with a simple for and while loop.
 
-Here is a little sample of my language:
+Here is a little sample Night:
 
 ```cpp
 // classic fibonacci sequence using recursion
@@ -98,24 +109,4 @@ loop for (3)
 }
 ```
 
-More information regarding the syntax can be found on the website.
-
----
-
-### Other
-
-Here's a couple other projects related to Night, all under development and will be integrated into or used with Night sometime in the future. Definitely worth checking these out!
-
-**sqdlib**
-
-*[sqdlib](https://github.com/DynamicSquid/sqdlib)* (squid library) is the standard library for Night. It's coming shortly after `v3.1` and will feature some handy functions. More information about that can be found on the repo.
-
-**dusk**
-
-*[dusk](https://github.com/firefish111/dusk)* is the package manager for Night. It's primarily for *sqdlib*, but user built libraries could also be added later. Huge thanks to [@firefish111](https://github.com/firefish111) for making it!
-
-**night shade**
-
-*[night shade](https://github.com/AntimatterReactor/NightShade)* is a neat little compiler for Night. Made by [@AntimatterReactor](https://github.com/AntimatterReactor), it compiles Night down to C++ rather well, however it's not fully implemented yet.
-
-If you have an interesting idea for Night, or would like to contribute to one of these projects, don't hesitate to leave a pull request!
+More information regarding the syntax can be found on the [Night website](https://night-website.dynamicsquid.repl.co/html/reference.html).
