@@ -208,7 +208,7 @@ void Interpreter(night::array<night::array<Token> >& code)
 			array->elems.clear();
 
 			night::array<Token> elementExpression;
-			for (int b = 3, elementIndex = 0, bracketCount = 0; b < code[a].length() - 2; ++b)
+			for (int b = 3, bracketCount = 0; b < code[a].length() - 2; ++b)
 			{
 				if (code[a][b].type == TokenType::OPEN_BRACKET)
 				{

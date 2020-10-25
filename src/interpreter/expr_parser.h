@@ -52,7 +52,7 @@ void EvaluateNumeric(night::array<Token>& expr, int index, const night::string& 
 	else if ((expr[index - 1].type == TokenType::INT_VALUE || expr[index - 1].type == TokenType::DEC_VALUE) 
 		&& (expr[index + 1].type == TokenType::INT_VALUE || expr[index + 1].type == TokenType::DEC_VALUE))
 	{
-		if (op == "%" && expr[index - 1].type == TokenType::DEC_VALUE || expr[index + 1].type == TokenType::DEC_VALUE)
+		if (op == "%" && (expr[index - 1].type == TokenType::DEC_VALUE || expr[index + 1].type == TokenType::DEC_VALUE))
 			throw Error(night::_invalid_expression_, expr, index - 1, index + 1, "operator '%' can only work on values of type 'int'");
 
 		expr[index - 1] = Token{ TokenType::DEC_VALUE, night::ftos(EvalNum(expr, index, op)) };
