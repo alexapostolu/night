@@ -6,12 +6,10 @@
 int main(int argc, char* argv[])
 {
     try {
-        if (argc == 1)
-            ExtractFile("C:\\Users\\apost\\source\\repos\\Night-Dev\\Night-Lang\\Night\\source.night");
-        else if (argc == 2)
-            ExtractFile(argv[1]);
-        else
-            throw "invalid command line arguments";
+        if (argc > 2)
+            throw "invalud command line arguments";
+
+        ExtractFile(argc == 1 ? "source.night" : argv[1]);
     }
     catch (const char* e) {
         fprintf(stderr, "[error] - %s\n", e);
