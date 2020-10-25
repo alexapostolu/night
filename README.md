@@ -8,7 +8,7 @@ It's still in early development, and there's a lot to get done. The goal here is
 
 ### Getting Started with Night
 
-Quick and easy installating and setup can be found on the [Night website](https://night-website.dynamicsquid.repl.co/html/source.html). There you'll also find instructions on how to use *dusk*, the package manager.
+Quick and easy installating and setup can be found on the [Night website](https://night-website.dynamicsquid.repl.co/index.html). There you'll also find instructions on how to use *dusk*, the package manager.
 
 You can also build Night from source if you'd like.
 
