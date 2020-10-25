@@ -1,0 +1,19 @@
+int fib(int num)
+{
+    if (num <= 1)
+    {
+        return num;
+    }
+
+    return fib(num - 1) + fib(num - 2);
+}
+
+int[3] fib_nums = [ fib(5), fib(6) ];
+fib_nums[2] = fib(7);
+
+int a = 0;
+loop for (3)
+{
+    print(fib_nums[a] + " ");
+    a += 1;
+}

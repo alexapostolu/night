@@ -33,7 +33,7 @@ public:
 	}
 
 	string(string&& src) noexcept
-		: len(src.len), cap(src.cap), str(src.str)
+		: str(src.str), len(src.len), cap(src.cap)
 	{
 		src.str = nullptr;
 	}

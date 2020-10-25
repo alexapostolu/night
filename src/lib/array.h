@@ -20,7 +20,7 @@ public:
 	}
 
 	array(array&& src) noexcept
-		: len(src.len), cap(src.len + 3), arr(src.arr)
+		: arr(src.arr), len(src.len), cap(src.len + 3)
 	{
 		src.arr = nullptr;
 	}
