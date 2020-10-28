@@ -66,7 +66,7 @@ First create a new file called `main.night` where you'll write your code. Then p
 
 And you're done!
 
-To install *dusk* from source, visit the [*dusk* repo](https://github.com/firefish111/dusk).
+To install *dusk* from source, visit the [*dusk* repo](https://github.com/firefish111/dusk) or, follow the instructions inside the `dusk/` directory.
 
 ---
 
