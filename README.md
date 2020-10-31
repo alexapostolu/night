@@ -1,10 +1,6 @@
 # Night
 
-<<<<<<< HEAD
 An interpreted programming language that focuses on simplicity and usability. The main goal of Night is to design an intuitive and easy to learn language.
-=======
-An interpreted programming language that focuses on simplicity and useability. The main goal of Night is to design an intuitive and easy to learn language.
->>>>>>> 7e24f3fbd44a8500f75d6986a8702d0cb0b59496
 
 It's still in early development, and there's a lot to get done. The goal here is to eventually be able to code Night using Night.
 
@@ -12,7 +8,6 @@ It's still in early development, and there's a lot to get done. The goal here is
 
 ### Getting Started with Night
 
-<<<<<<< HEAD
 Night comes in two parts, the interpreter (this repo) and Dusk (the package manager). You can find easy installation and setup for both on the [Night website](https://night-website.dynamicsquid.repl.co/index.html).
 
 You can also build 
@@ -22,17 +17,6 @@ And if you wish, you can build Night from source as well.
 ### Building from Source
 
 1. Install *g++* or *clang++*
-=======
-Quick and easy installating and setup can be found on the [Night website](https://night-website.dynamicsquid.repl.co/html/source.html). There you'll also find instructions on how to use *dusk*, the package manager.
-
-You can also build Night from source if you'd like.
-
-### Building from Source
-
-1. Install *g++* or *clang++*
-
-2. Clone this repository
->>>>>>> 7e24f3fbd44a8500f75d6986a8702d0cb0b59496
 
 2. Clone this repository
 
@@ -42,7 +26,6 @@ If you would like to clone Night but not Dusk, then do:
 git clone https://github.com/DynamicSquid/night.git
 cd night
 ```
-<<<<<<< HEAD
 
 Or if you want to include Dusk, be sure to fetch it's submodule:
 
@@ -72,43 +55,6 @@ And you're done! TO build Dusk from source, follow the tutorial on the Dusk repo
 ### Running Night
 
 To run Night, first create a 
-=======
-git clone https://github.com/DynamicSquid/night.git
-cd night
-```
-
-3. Compile Night
-
-With *g++*:
-
-```
-g++ -o night src/night.cpp
-```
-
-Or with *clang++*:
-
-```
-clang++ -o night src/night.cpp
-```
-
-Or if you have GNU Make:
-
-```
-make
-```
-
-4. Run Night
-
-First create a new file called `*.night` where you'll write your code. Then pass it though as a command line argument:
-
-```
-./night source.night
-```
-
-And you're done!
-
-To install *dusk* from source, visit the [*dusk* repo](https://github.com/firefish111/dusk).
->>>>>>> 7e24f3fbd44a8500f75d6986a8702d0cb0b59496
 
 ---
 
@@ -172,11 +118,3 @@ A timeline of Night, both past and future versions. Each new release, the code i
   - [ ] `v4.2` utilities
     - [ ] `v4.2.1` file handeling
     - [ ] `v4.2.2` error handeling
-- [ ] `v5` a rewrite of Night - using Night
-<<<<<<< HEAD
-  - [ ] `v5.0` the base release
-=======
-  - [ ] `v5.0` the base release
-
-Note that this timeline will surely change in the future.
->>>>>>> 7e24f3fbd44a8500f75d6986a8702d0cb0b59496
