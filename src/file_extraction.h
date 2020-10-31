@@ -23,6 +23,29 @@ void ExtractFile(const char* fileName)
     while (getline(codeFile, fileLine))
     {
         night::array<Token> temp = Lexer(fileLine.c_str());
+        if (temp.length() == 2 && temp[0].type == TokenType::IMPORT
+            && temp[1].type == TokenType::STR_VALUE)
+        {
+            std::string filePath = temp[1].value.cstr();
+            filePath += ".night";
+
+            if (temp[0].value == "import")
+                filePath = "pkgs/" + filePath;
+
+            std::ifstream importFile(filePath);
+            if (!importFile.is_open())
+                throw "file could not be opened";
+
+            temp.clear();
+
+            while (getline(importFile, fileLine))
+            {
+                night::array<Token> importTokens = Lexer(fileLine.c_str());
+                for (int a = 0; a < importTokens.length(); ++a)
+                    temp.add_back(importTokens[a]);
+            }
+        }
+
         for (int a = 0; a < temp.length(); ++a)
             tokens.add_back(temp[a]);
     }

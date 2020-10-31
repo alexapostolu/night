@@ -97,6 +97,8 @@ void CheckToken(night::array<Token>& tokens, night::string& token)
 		AddKeyword(tokens, token, TokenType::WHILE);
 	else if (token == "for")
 		AddKeyword(tokens, token, TokenType::FOR);
+	else if (token == "import" || token == "include")
+		AddKeyword(tokens, token, TokenType::IMPORT);
 	else if (match_character(token))
 		AddKeyword(tokens, token, TokenType::SYB_VALUE);
 	else if (match_number(token) == 0)
