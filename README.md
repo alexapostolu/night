@@ -8,9 +8,7 @@ It's still in early development, and there's a lot to get done. The goal here is
 
 ### Getting Started with Night
 
-Night comes in two parts, the interpreter (this repo) and Dusk (the package manager). You can find easy installation and setup for both on the [Night website](https://night-website.dynamicsquid.repl.co/index.html).
-
-You can also build 
+Night comes in two parts, the interpreter (this repo) and [Dusk](https://github.com/firefish111/dusk) (the package manager). You can find easy installation and setup, as well as a tutorial, for both on the [Night website](https://night-website.dynamicsquid.repl.co/index.html).
 
 And if you wish, you can build Night from source as well.
 
@@ -50,11 +48,17 @@ Or if you have GNU Make:
 make
 ```
 
-And you're done! TO build Dusk from source, follow the tutorial on the Dusk repo
+And that's it! To build Dusk from source separately, follow the tutorial on the [Dusk repo](https://github.com/firefish111/dusk).
 
 ### Running Night
 
-To run Night, first create a 
+To run Night, first navigate to the directory in which you cloned this repo. Then create a `*.night` file where you'll write your actual code. Then just pass it in as a command line argument:
+
+```
+night *.night
+```
+
+And you're done!
 
 ---
 
