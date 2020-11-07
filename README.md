@@ -18,17 +18,17 @@ And if you wish, you can build Night from source as well.
 
 2. Clone this repository
 
-If you would like to clone Night but not Dusk, then do:
-
-```
-git clone https://github.com/DynamicSquid/night.git
-cd night
-```
-
-Or if you want to include Dusk, be sure to fetch it's submodule:
+If you would like to clone Night and Dusk (recommend), be sure to fetch it's submodule:
 
 ```
 git clone --recurse-submodules https://github.com/DynamicSquid/night.git
+cd night
+```
+
+Or if you want to clone Night but not Dusk, then do:
+
+```
+git clone https://github.com/DynamicSquid/night.git
 cd night
 ```
 
@@ -48,7 +48,7 @@ Or if you have GNU Make:
 make
 ```
 
-And that's it! To build Dusk from source separately, follow the tutorial on the [Dusk repo](https://github.com/firefish111/dusk).
+And that's it! To build Dusk from source, follow the tutorial on the [Dusk repo](https://github.com/firefish111/dusk).
 
 ### Running Night
 
@@ -64,7 +64,7 @@ And you're done!
 
 ### About Night
 
-Night is a dynamically typed language with light syntax. 
+Night is an imperative dynamically typed language with light syntax. 
 
 Here is a little sample Night:
 
@@ -79,15 +79,12 @@ def fib(num)
 }
 
 # array of 3 values, 2 of which have been initialized
-set fib_nums = [ fib(5), fib(6) ]
+set fib_nums = 3[ fib(5), fib(6) ]
 fib_nums[2] = fib(7)
 
 # printing out the values of the array
-for (set a = 0; a < 3; a += 1)
-{
-    print(fib_nums[a] + " ")
-    a += 1
-}
+for (num : fib_nums)
+    print(num + " ")
 ```
 
 More information regarding the syntax can be found on the [Night website](https://night-website.dynamicsquid.repl.co/html/reference.html).
