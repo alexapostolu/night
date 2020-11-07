@@ -7,7 +7,7 @@ jobs:
     steps:
       - run:
           name: Compiling Code
-          command: g++ -Wall -Werror -o night src/night.cpp
+          command: 'g++ -std=c++17 -Wall -Werror -o night src/night.cpp'
       - run:
           name: Testing Code
-          command: ./night tests/test.night
+          command: './night tests/test.night'
