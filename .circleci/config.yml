@@ -13,6 +13,9 @@ jobs:
           name: Installing GCC
           command: 'apt-get update && apt-get install -y gcc g++'
       - run:
+          name: GCC version
+          command: g++ --version
+      - run:
           name: Compiling Code
           command: 'g++ -std=c++17 -Wall -Werror -Wno-switch -o night src/night.cpp'
       - run:
