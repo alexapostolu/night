@@ -11,7 +11,7 @@ jobs:
           command: 'apt-get update && apt-get install -y sudo && rm -rf /var/lib/apt/lists/*'
       - run:
           name: Installing GCC
-          command: 'sudo apt-get install gcc-10.2 g++-10.2'
+          command: 'sudo apt-get install gcc-snapshot && sudo apt-get install gcc-10 g++-10'
       - run:
           name: Compiling Code
           command: 'g++ -std=c++17 -Wall -Werror -o night src/night.cpp'
