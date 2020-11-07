@@ -2,8 +2,6 @@
 
 An interpreted programming language that focuses on simplicity and usability. The main goal of Night is to design an intuitive and easy to learn language.
 
-It's still in early development, and there's a lot to get done.
-
 ---
 
 ### Getting Started with Night
