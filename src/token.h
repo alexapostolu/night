@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <variant>
 
 enum class TokenType
 {
@@ -13,7 +14,8 @@ enum class TokenType
 
 	ASSIGNMENT,
 
-	COMMA,
+	COLON, COMMA,
+	RANGE,
 
 	BOOL_VAL, NUM_VAL, STRING_VAL,
 
@@ -59,7 +61,7 @@ struct Value
 {
 	ValueType type;
 	std::string value;
-	std::vector<std::string> values;
+	std::vector<Value> values;
 };
 
 struct Expression;
@@ -71,7 +73,7 @@ struct Scope;
 struct Scope
 {
 	std::vector<Variable> variables;
-	std::vector<Statement*> statements;
+	std::vector<Statement> statements;
 };
 
 struct Expression
@@ -113,17 +115,8 @@ struct FunctionDef
 	Scope body;
 };
 
-enum class ConditionalType
-{
-	IF,
-	ELSE_IF,
-	ELSE
-};
-
 struct Conditional
 {
-	//ConditionalType type;
-
 	Expression* condition;
 	Scope body;
 
@@ -145,6 +138,13 @@ struct ForLoop
 	Scope body;
 };
 
+struct Element
+{
+	std::string array;
+	Expression* index;
+	Expression* assign;
+};
+
 enum class StatementType
 {
 	VARIABLE,
@@ -153,17 +153,29 @@ enum class StatementType
 	FUNCTION_DEF,
 	FUNCTION_CALL,
 	WHILE_LOOP,
-	FOR_LOOP
+	FOR_LOOP,
+	ELEMENT
 };
 
+#include "error.h"
 struct Statement
 {
     StatementType type;
 
-	union as {
-		as() {};
-		~as() {};
+	std::variant<
+		Variable,
+		Assignment,
+		Conditional,
+		FunctionCall,
+		FunctionDef,
+		WhileLoop,
+		ForLoop,
+		Element
+	> stmt;
 
+	/*
+
+	union {
 		Variable variable;
 		Assignment assignment;
 		Conditional conditional;
@@ -171,10 +183,108 @@ struct Statement
 		FunctionDef functionDef;
 		WhileLoop whileLoop;
 		ForLoop forLoop;
-	} as;
+	};
+
+	Statement(const StatementType& _type)
+		: type(_type) {}
+
+	Statement(const Statement& _statement)
+		: type (_statement.type)
+	{
+		switch (_statement.type)
+		{
+		case StatementType::VARIABLE:
+			variable = _statement.variable;
+			break;
+		case StatementType::ASSIGNMENT:
+			as.assignment = _statement.assignment;
+			break;
+		case StatementType::CONDITIONAL:
+			as.conditional = _statement.as.conditional;
+			break;
+		case StatementType::FUNCTION_DEF:
+			as.functionDef = _statement.as.functionDef;
+			break;
+		case StatementType::FUNCTION_CALL:
+			as.functionCall = _statement.as.functionCall;
+			break;
+		case StatementType::WHILE_LOOP:
+			as.whileLoop = _statement.as.whileLoop;
+			break;
+		case StatementType::FOR_LOOP:
+			forLoop = _statement.forLoop;
+			break;
+		default:
+			assert(true, "you forgot a type");
+		}
+	}
+
+	Statement& operator=(const Statement& _statement)
+	{
+		type = _statement.type;
+		switch (_statement.type)
+		{
+		case StatementType::VARIABLE:
+			variable = _statement.variable;
+			break;
+		case StatementType::ASSIGNMENT:
+			assignment = _statement.assignment;
+			break;
+		case StatementType::CONDITIONAL:
+			conditional = _statement.conditional;
+			break;
+		case StatementType::FUNCTION_DEF:
+			functionDef = _statement.functionDef;
+			break;
+		case StatementType::FUNCTION_CALL:
+			functionCall = _statement.functionCall;
+			break;
+		case StatementType::WHILE_LOOP:
+			whileLoop = _statement.whileLoop;
+			break;
+		case StatementType::FOR_LOOP:
+			forLoop = _statement.forLoop;
+			break;
+		default:
+			assert(true, "you forgot a type");
+		}
+
+		return *this;
+	}
+
+	~Statement()
+	{
+		switch (type)
+		{
+		case StatementType::VARIABLE:
+			variable.~Variable();
+			break;
+		case StatementType::ASSIGNMENT:
+			assignment.~Assignment();
+			break;
+		case StatementType::CONDITIONAL:
+			conditional.~Conditional();
+			break;
+		case StatementType::FUNCTION_CALL:
+			functionCall.~FunctionCall();
+			break;
+		case StatementType::FUNCTION_DEF:
+			functionDef.~FunctionDef();
+			break;
+		case StatementType::WHILE_LOOP:
+			whileLoop.~WhileLoop();
+			break;
+		case StatementType::FOR_LOOP:
+			forLoop.~ForLoop();
+			break;
+		default:
+			assert(true, "you forgot a type");
+		}
+	}
+
+	*/
 };
 
-#include "error.h"
 // variable type to string
 std::string VarTypeToStr(const VariableType& type)
 {

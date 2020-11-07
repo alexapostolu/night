@@ -8,8 +8,8 @@
 #include <vector>
 #include <unordered_map>
 
-void FindKeyword(std::unordered_map<std::string, TokenType>& keywords, std::vector<Token>& tokens, std::string& token,
-	const std::string& file, int line)
+void FindKeyword(const std::string& file, int line, const std::unordered_map<std::string, TokenType>& keywords,
+	std::vector<Token>& tokens, std::string& token)
 {
 	auto findKeyword = keywords.find(token);
 	if (findKeyword != keywords.end())
@@ -20,15 +20,16 @@ void FindKeyword(std::unordered_map<std::string, TokenType>& keywords, std::vect
 		tokens.push_back(Token{ file, line, TokenType::NUM_VAL, token });
 	else if (std::regex_match(token, std::regex("[a-zA-Z_][a-zA-Z_0-9]*")))
 		tokens.push_back(Token{ file, line, TokenType::VARIABLE, token });
-	else
-		return;
+	else if (token.length() != 0)
+		throw Error(file, line, "unidentified token '" + token + "'");
 
 	token = "";
 }
 
 std::vector<Token> Lexer(const std::string& file, int line, const std::string& fileLine)
 {
-	std::unordered_map<std::string, TokenType> symbols{
+	const std::unordered_map<std::string, TokenType> symbols{
+		{ "..", TokenType::RANGE },
 		{ "||", TokenType::OPERATOR },
 		{ "&&", TokenType::OPERATOR },
 		{ "(", TokenType::OPEN_BRACKET },
@@ -37,10 +38,11 @@ std::vector<Token> Lexer(const std::string& file, int line, const std::string& f
 		{ "]", TokenType::CLOSE_SQUARE },
 		{ "{", TokenType::OPEN_CURLY },
 		{ "}", TokenType::CLOSE_CURLY },
+		{ ":", TokenType::COLON },
 		{ ",", TokenType::COMMA }
 	};
 
-	std::unordered_map<char, std::pair<TokenType, TokenType> > doubleSymbols{
+	const std::unordered_map<char, std::pair<TokenType, TokenType> > doubleSymbols{
 		{ '>', { TokenType::OPERATOR, TokenType::OPERATOR } },
 		{ '<', { TokenType::OPERATOR, TokenType::OPERATOR } },
 		{ '!', { TokenType::OPERATOR, TokenType::OPERATOR } },
@@ -52,7 +54,7 @@ std::vector<Token> Lexer(const std::string& file, int line, const std::string& f
 		{ '=', { TokenType::ASSIGNMENT, TokenType::ASSIGNMENT } }
 	};
 
-	std::unordered_map<std::string, TokenType> keywords{
+	const std::unordered_map<std::string, TokenType> keywords{
 		{ "true", TokenType::BOOL_VAL },
 		{ "false", TokenType::BOOL_VAL },
 		{ "set", TokenType::SET },
@@ -68,10 +70,23 @@ std::vector<Token> Lexer(const std::string& file, int line, const std::string& f
 	std::string token = "";
 	for (std::size_t a = 0; a < fileLine.length(); ++a)
 	{
-		auto findSymbol = symbols.find(std::string(1, fileLine[a]));
+		if (a < fileLine.length() - 1 && fileLine[a] == '<' && fileLine[a + 1] == '-')
+		{
+			FindKeyword(file, line, keywords, tokens, token);
+			tokens.push_back(Token{ file, line, TokenType::RANGE, "<-" });
+
+			a++;
+			continue;
+		}
+
+		auto findSymbol = std::find_if(symbols.begin(), symbols.end(), [&](const std::string& symbol) {
+			if (fileLine[a] == symbol[0] && symbol.length() == 2 && (a == fileLine.length() - 1 || fileLine[a + 1] != symbol[1]))
+				throw Error(file, line, "unexpected symbol '" + std::string(1, fileLine[a]) + "'");
+			return symbol[0] == fileLine[a];
+		});
 		if (findSymbol != symbols.end())
 		{
-			FindKeyword(keywords, tokens, token, file, line);
+			FindKeyword(file, line, keywords, tokens, token);
 
 			tokens.push_back(Token{ file, line, findSymbol->second, token });
 
@@ -82,7 +97,7 @@ std::vector<Token> Lexer(const std::string& file, int line, const std::string& f
 			[&](const std::pair<char, std::pair<TokenType, TokenType> >& symbol) { return symbol.first == fileLine[a]; });
 		if (findDoubleSymbol != doubleSymbols.end())
 		{
-			FindKeyword(keywords, tokens, token, file, line);
+			FindKeyword(file, line, keywords, tokens, token);
 
 			if (a < fileLine.length() - 1 && fileLine[a + 1] == '=')
 			{
@@ -101,6 +116,17 @@ std::vector<Token> Lexer(const std::string& file, int line, const std::string& f
 				});
 			}
 
+			a++;
+			continue;
+		}
+
+		if (a < fileLine.length() - 1 && fileLine[a] == '.' && fileLine[a + 1] == '.')
+		{
+			FindKeyword(file, line, keywords, tokens, token);
+
+			tokens.push_back(Token{ file, line, TokenType::RANGE, ".." });
+
+			a++;
 			continue;
 		}
 

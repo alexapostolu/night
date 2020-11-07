@@ -1,10 +1,7 @@
-//#define _CRTDBG_MAP_ALLOC
-//#include <stdlib.h>
-//#include <crtdbg.h>
-
 #include "lexer.h"
 #include "parser.h"
 #include "interpreter.h"
+#include "utils.h"
 #include "error.h"
 #include "token.h"
 
@@ -12,6 +9,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <variant>
 
 void OpenFile(const std::string& file)
 {
@@ -56,7 +54,7 @@ void OpenFile(const std::string& file)
 
     sourceFile.close();
 
-    std::vector<Statement*> statements;
+    std::vector<Statement> statements;
     std::vector<std::vector<Token> > code = SplitCode(tokens);
     for (const std::vector<Token>& tokens : code)
         Parser(statements, tokens);
@@ -75,8 +73,6 @@ int main(int argc, char* argv[])
     catch (const Error& e) {
         std::cerr << e.what() << '\n';
     }
-
-    //_CrtDumpMemoryLeaks();
 }
 
 /*

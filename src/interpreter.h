@@ -42,13 +42,13 @@ struct NightVariable
     Value value;
 };
 
-void Interpreter(std::vector<Statement*>& statements)
+void Interpreter(std::vector<Statement>& statements)
 {
     static std::vector<NightVariable> variables;
 
     for (std::size_t a = 0; a < statements.size(); ++a)
     {
-        switch (statements[a]->type)
+        switch (statements[a].type)
         {
         case StatementType::VARIABLE:
             break;

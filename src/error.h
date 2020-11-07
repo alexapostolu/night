@@ -5,8 +5,9 @@
 
 #ifdef _DEBUG
 	#define assert(con, msg) if (con) { std::cerr << __FILE__ << '\n' << __LINE__ << '\n' << msg << '\n'; exit(1); }
+	
 #else
-	#define assert(con, msg) std::cerr << "Oops! Something unexpected has happened! " \
+	#define assert(msg) std::cerr << "Oops! Something unexpected has happened! " \
 		"Please submit an issue on the GitHub page.\n"; exit(1)
 #endif
 
