@@ -48,7 +48,6 @@ void OpenFile(const std::string& file)
             fileTokens.insert(fileTokens.begin(), importTokens.begin(), importTokens.end());
         }
 
-        fileTokens.push_back(Token{ file, line, TokenType::EOL });
         tokens.insert(tokens.end(), fileTokens.begin(), fileTokens.end());
     }
 

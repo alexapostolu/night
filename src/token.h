@@ -15,7 +15,7 @@ enum class TokenType
 	ASSIGNMENT,
 
 	COLON, COMMA,
-	RANGE,
+	RANGE, ARROW,
 
 	BOOL_VAL, NUM_VAL, STRING_VAL,
 
@@ -131,9 +131,8 @@ struct WhileLoop
 
 struct ForLoop
 {
-	Variable variable;
-	Expression* condition;
-	Assignment increment;
+	std::string index;
+	Expression* range;
 
 	Scope body;
 };

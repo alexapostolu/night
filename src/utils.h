@@ -7,12 +7,19 @@
 // splits an array of tokens into different statements
 std::vector<std::vector<Token> > SplitCode(const std::vector<Token>& tokens)
 {
-    std::vector<std::vector<Token> > code(1);
+    for (const Token& token : tokens)
+        std::clog << token.value << ' ';
+    std::clog << '\n';
+
+    std::vector<std::vector<Token> > code;
     for (std::size_t a = 0, openCurlyCount = 0; a < tokens.size(); ++a)
     {
+        if (a == 0)
+            code.push_back(std::vector<Token>());
+
         if (tokens[a].type == TokenType::EOL && openCurlyCount == 0)
         {
-            if (code.back()[0].type != TokenType::IF)
+            if (a < tokens.size() - 1)
                 code.push_back(std::vector<Token>());
 
             continue;
@@ -25,9 +32,6 @@ std::vector<std::vector<Token> > SplitCode(const std::vector<Token>& tokens)
 
         code.back().push_back(tokens[a]);
     }
-
-    if (code.size() == 1 || code[0].empty())
-        code.clear();
 
     return code;
 }

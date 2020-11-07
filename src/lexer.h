@@ -4,6 +4,7 @@
 
 #include <regex>
 #include <iterator>
+#include <algorithm>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -11,16 +12,17 @@
 void FindKeyword(const std::string& file, int line, const std::unordered_map<std::string, TokenType>& keywords,
 	std::vector<Token>& tokens, std::string& token)
 {
+	if (token.length() == 0)
+		return;
+
 	auto findKeyword = keywords.find(token);
 	if (findKeyword != keywords.end())
 		tokens.push_back(Token{ file, line, findKeyword->second, token });
-	else if (std::regex_match(token, std::regex("[0-9]+")))
-		tokens.push_back(Token{ file, line, TokenType::NUM_VAL, token });
 	else if (std::regex_match(token, std::regex("((\\+|-)?([0-9]+)(\\.[0-9]+)?)|((\\+|-)?\\.?[0-9]+)")))
 		tokens.push_back(Token{ file, line, TokenType::NUM_VAL, token });
 	else if (std::regex_match(token, std::regex("[a-zA-Z_][a-zA-Z_0-9]*")))
 		tokens.push_back(Token{ file, line, TokenType::VARIABLE, token });
-	else if (token.length() != 0)
+	else
 		throw Error(file, line, "unidentified token '" + token + "'");
 
 	token = "";
@@ -29,7 +31,6 @@ void FindKeyword(const std::string& file, int line, const std::unordered_map<std
 std::vector<Token> Lexer(const std::string& file, int line, const std::string& fileLine)
 {
 	const std::unordered_map<std::string, TokenType> symbols{
-		{ "..", TokenType::RANGE },
 		{ "||", TokenType::OPERATOR },
 		{ "&&", TokenType::OPERATOR },
 		{ "(", TokenType::OPEN_BRACKET },
@@ -70,25 +71,36 @@ std::vector<Token> Lexer(const std::string& file, int line, const std::string& f
 	std::string token = "";
 	for (std::size_t a = 0; a < fileLine.length(); ++a)
 	{
+		if (fileLine[a] == '#')
+			break;
+
 		if (a < fileLine.length() - 1 && fileLine[a] == '<' && fileLine[a + 1] == '-')
 		{
 			FindKeyword(file, line, keywords, tokens, token);
-			tokens.push_back(Token{ file, line, TokenType::RANGE, "<-" });
+			tokens.push_back(Token{ file, line, TokenType::ARROW, "<-" });
+
+			a++;
+			continue;
+		}
+		if (a < fileLine.length() - 1 && fileLine[a] == '.' && fileLine[a + 1] == '.')
+		{
+			FindKeyword(file, line, keywords, tokens, token);
+			tokens.push_back(Token{ file, line, TokenType::RANGE, ".." });
 
 			a++;
 			continue;
 		}
 
-		auto findSymbol = std::find_if(symbols.begin(), symbols.end(), [&](const std::string& symbol) {
-			if (fileLine[a] == symbol[0] && symbol.length() == 2 && (a == fileLine.length() - 1 || fileLine[a + 1] != symbol[1]))
+		auto findSymbol = std::find_if(symbols.begin(), symbols.end(), [&](const std::pair<std::string, TokenType>& symbol) {
+			if (fileLine[a] == symbol.first[0] && symbol.first.length() == 2 && (a == fileLine.length() - 1 || fileLine[a + 1] != symbol.first[1]))
 				throw Error(file, line, "unexpected symbol '" + std::string(1, fileLine[a]) + "'");
-			return symbol[0] == fileLine[a];
+			return symbol.first[0] == fileLine[a];
 		});
 		if (findSymbol != symbols.end())
 		{
 			FindKeyword(file, line, keywords, tokens, token);
 
-			tokens.push_back(Token{ file, line, findSymbol->second, token });
+			tokens.push_back(Token{ file, line, findSymbol->second, findSymbol->first });
 
 			continue;
 		}
@@ -130,9 +142,22 @@ std::vector<Token> Lexer(const std::string& file, int line, const std::string& f
 			continue;
 		}
 
-		token += fileLine[a];
+		if (fileLine[a] == ' ' || fileLine[a] == '\t')
+			FindKeyword(file, line, keywords, tokens, token);
+		else
+			token += fileLine[a];
 	}
 
-	tokens.push_back(Token{ "", 0, TokenType::EOL });
+	FindKeyword(file, line, keywords, tokens, token);
+	
+	if (tokens.empty())
+		return tokens;
+
+	if (tokens[0].type != TokenType::IF && tokens[0].type != TokenType::ELSE &&
+		(tokens[0].type != TokenType::ELSE || tokens[1].type != TokenType::IF) &&
+		tokens[0].type != TokenType::WHILE && tokens[0].type != TokenType::FOR &&
+		tokens.back().type != TokenType::OPEN_CURLY)
+		tokens.push_back(Token{ file, line, TokenType::EOL, "EOF" });
+
 	return tokens;
 }
