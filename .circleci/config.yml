@@ -3,21 +3,11 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: "debian:stretch"
+      - image: gcc:8.2
     steps:
-      - checkout
-      - run:
-          name: Installing SUDO
-          command: 'apt-get update && apt-get install -y sudo && rm -rf /var/lib/apt/lists/*'
-      - run:
-          name: Installing GCC
-          command: 'apt-get update && apt-get install -y gcc g++'
-      - run:
-          name: GCC version
-          command: g++ --version
       - run:
           name: Compiling Code
-          command: 'g++ -std=c++17 -Wall -Werror -Wno-switch -o night src/night.cpp'
+          command: g++ -Wall -Werror -o night src/night.cpp
       - run:
           name: Testing Code
-          command: './night tests/test.night'
+          command: ./night tests/test.night
