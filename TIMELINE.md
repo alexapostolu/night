@@ -47,6 +47,8 @@ The first actual good version of Night!
 
 This version turned Night into a dynamically typed language, with the `set` keyword used to create a variable, and the `def` keyword for functions. Also removed semicolons.
 
+And we're also back to using C++'s STL instead my own.
+
 ## Version 3
 
 ### v3.2
