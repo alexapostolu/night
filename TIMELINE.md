@@ -93,8 +93,6 @@ Also made the code more modular and just better in general, especially when it c
 
 ## Version 1 Beta
 
-Let's do what I always wanted to do since I started programming - making a language!
-
 ### v1.0-beta
 
 The first version of Night! (the code is so bad plz don't look at it)
