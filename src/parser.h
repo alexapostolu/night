@@ -377,9 +377,7 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 
         CheckFunctionDefinition(scope, file, line, "else if statements cannot contain functions");
 
-        std::get<Conditional>(statements.back().stmt).chains.push_back(
-            Conditional{ ParseValues(file, line, condition), scope }
-        );
+        std::get<Conditional>(statements.back().stmt).chains.push_back(Conditional{ ParseValues(file, line, condition), scope });
     }
     else if (tokens.size() >= 1 && tokens[0].type == TokenType::ELSE)
     {
@@ -398,7 +396,7 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
             Parser(scope.statements, tokens);
 
         CheckFunctionDefinition(scope, file, line, "else statements cannot contain functions");
-
+        
         std::get<Conditional>(statements.back().stmt).chains.push_back(Conditional{ nullptr, scope });
     }
     else if (tokens.size() >= 1 && tokens[0].type == TokenType::DEF)

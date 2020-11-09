@@ -35,3 +35,26 @@ std::vector<std::vector<Token> > SplitCode(const std::vector<Token>& tokens)
 
     return code;
 }
+
+
+// variable type to string
+std::string VarTypeToStr(const VariableType& type)
+{
+    switch (type)
+    {
+    case VariableType::BOOL:
+        return "boolean";
+    case VariableType::BOOL_ARR:
+        return "boolean array";
+    case VariableType::NUM:
+        return "number";
+    case VariableType::NUM_ARR:
+        return "number array";
+    case VariableType::STRING:
+        return "string";
+    case VariableType::STRING_ARR:
+        return "string array";
+    default:
+        assert(true, "variable type is missing");
+    }
+}

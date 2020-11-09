@@ -69,10 +69,32 @@ std::vector<Token> Lexer(const std::string& file, int line, const std::string& f
 
 	std::vector<Token> tokens;
 	std::string token = "";
+	char inString = ' ';
 	for (std::size_t a = 0; a < fileLine.length(); ++a)
 	{
 		if (fileLine[a] == '#')
 			break;
+
+		if (fileLine[a] == '\'' || fileLine[a] == '"')
+		{
+			FindKeyword(file, line, keywords, tokens, token);
+
+			inString = fileLine[a];
+			continue;
+		}
+		else if (fileLine[a] != inString && inString != ' ')
+		{
+			token += fileLine[a];
+			continue;
+		}
+		else if (fileLine[a] == inString && inString != ' ')
+		{
+			tokens.push_back(Token{ file, line, TokenType::STRING_VAL, token });
+			token = "";
+
+			inString = ' ';
+			continue;
+		}
 
 		if (a < fileLine.length() - 1 && fileLine[a] == '<' && fileLine[a + 1] == '-')
 		{

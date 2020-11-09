@@ -12,10 +12,10 @@ enum class TokenType
 	OPEN_SQUARE, CLOSE_SQUARE,
 	OPEN_CURLY, CLOSE_CURLY,
 
-	ASSIGNMENT,
-
-	COLON, COMMA,
 	RANGE, ARROW,
+	COLON, COMMA,
+
+	ASSIGNMENT,
 
 	BOOL_VAL, NUM_VAL, STRING_VAL,
 
@@ -62,6 +62,11 @@ struct Value
 	ValueType type;
 	std::string value;
 	std::vector<Value> values;
+
+	bool operator!=(const Value& other)
+	{
+		return type == other.type && value == other.value && values == other.values;
+	}
 };
 
 struct Expression;
@@ -72,7 +77,7 @@ struct Scope;
 
 struct Scope
 {
-	std::vector<Variable> variables;
+	//std::vector<Variable> variables;
 	std::vector<Statement> statements;
 };
 
@@ -139,7 +144,7 @@ struct ForLoop
 
 struct Element
 {
-	std::string array;
+	std::string name;
 	Expression* index;
 	Expression* assign;
 };
@@ -171,137 +176,4 @@ struct Statement
 		ForLoop,
 		Element
 	> stmt;
-
-	/*
-
-	union {
-		Variable variable;
-		Assignment assignment;
-		Conditional conditional;
-		FunctionCall functionCall;
-		FunctionDef functionDef;
-		WhileLoop whileLoop;
-		ForLoop forLoop;
-	};
-
-	Statement(const StatementType& _type)
-		: type(_type) {}
-
-	Statement(const Statement& _statement)
-		: type (_statement.type)
-	{
-		switch (_statement.type)
-		{
-		case StatementType::VARIABLE:
-			variable = _statement.variable;
-			break;
-		case StatementType::ASSIGNMENT:
-			as.assignment = _statement.assignment;
-			break;
-		case StatementType::CONDITIONAL:
-			as.conditional = _statement.as.conditional;
-			break;
-		case StatementType::FUNCTION_DEF:
-			as.functionDef = _statement.as.functionDef;
-			break;
-		case StatementType::FUNCTION_CALL:
-			as.functionCall = _statement.as.functionCall;
-			break;
-		case StatementType::WHILE_LOOP:
-			as.whileLoop = _statement.as.whileLoop;
-			break;
-		case StatementType::FOR_LOOP:
-			forLoop = _statement.forLoop;
-			break;
-		default:
-			assert(true, "you forgot a type");
-		}
-	}
-
-	Statement& operator=(const Statement& _statement)
-	{
-		type = _statement.type;
-		switch (_statement.type)
-		{
-		case StatementType::VARIABLE:
-			variable = _statement.variable;
-			break;
-		case StatementType::ASSIGNMENT:
-			assignment = _statement.assignment;
-			break;
-		case StatementType::CONDITIONAL:
-			conditional = _statement.conditional;
-			break;
-		case StatementType::FUNCTION_DEF:
-			functionDef = _statement.functionDef;
-			break;
-		case StatementType::FUNCTION_CALL:
-			functionCall = _statement.functionCall;
-			break;
-		case StatementType::WHILE_LOOP:
-			whileLoop = _statement.whileLoop;
-			break;
-		case StatementType::FOR_LOOP:
-			forLoop = _statement.forLoop;
-			break;
-		default:
-			assert(true, "you forgot a type");
-		}
-
-		return *this;
-	}
-
-	~Statement()
-	{
-		switch (type)
-		{
-		case StatementType::VARIABLE:
-			variable.~Variable();
-			break;
-		case StatementType::ASSIGNMENT:
-			assignment.~Assignment();
-			break;
-		case StatementType::CONDITIONAL:
-			conditional.~Conditional();
-			break;
-		case StatementType::FUNCTION_CALL:
-			functionCall.~FunctionCall();
-			break;
-		case StatementType::FUNCTION_DEF:
-			functionDef.~FunctionDef();
-			break;
-		case StatementType::WHILE_LOOP:
-			whileLoop.~WhileLoop();
-			break;
-		case StatementType::FOR_LOOP:
-			forLoop.~ForLoop();
-			break;
-		default:
-			assert(true, "you forgot a type");
-		}
-	}
-
-	*/
 };
-
-// variable type to string
-std::string VarTypeToStr(const VariableType& type)
-{
-	switch (type)
-	{
-	case VariableType::BOOL:
-		return "boolean";
-	case VariableType::BOOL_ARR:
-		return "boolean array";
-	case VariableType::NUM:
-		return "number";
-	case VariableType::NUM_ARR:
-		return "number array";
-	case VariableType::STRING:
-		return "string";
-	case VariableType::STRING_ARR:
-		return "string array";
-	default:
-		assert(true, "you forgot a type");
-	}
-}
