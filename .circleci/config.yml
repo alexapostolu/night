@@ -2,9 +2,10 @@ version: 2.1
 
 jobs:
   build:
-    docker:
-      - image: gcc:8.2
     steps:
+      - run:
+          name: Installing g++
+          command: 'choco install mingw'
       - run:
           name: Compiling Code
           command: 'g++ -std=c++17 -Wall -Werror -o night src/night.cpp'
