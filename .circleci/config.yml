@@ -13,6 +13,9 @@ jobs:
           name: Installing g++
           command: 'choco install mingw'
       - run:
+          name: Testing Directory
+          command: dir
+      - run:
           name: Compiling Code
           command: 'g++ -std=c++17 -Wall -Werror -o night src/night.cpp'
       - run:
