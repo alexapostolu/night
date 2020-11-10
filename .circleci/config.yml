@@ -3,13 +3,6 @@ version: 2.1
 orbs:
   win: circleci/windows@2.2.0
 
-workflows:
-  version: 2.1
-  build_and_test:
-    jobs:
-      - build
-      - test
-
 jobs:
   build:
     executor:
@@ -43,3 +36,10 @@ jobs:
       - run:
           name: Testing Code
           command: './night tests/test.night'
+
+workflows:
+  version: 2.1
+  build_and_test:
+    jobs:
+      - build
+      - test
