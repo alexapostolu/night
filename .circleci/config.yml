@@ -9,6 +9,7 @@ jobs:
       name: win/default
       shell: powershell.exe
     steps:
+      - checkout
       - run:
           name: Installing g++
           command: 'choco install mingw'
