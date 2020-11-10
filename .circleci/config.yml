@@ -3,8 +3,15 @@ version: 2.1
 orbs:
   win: circleci/windows@2.2.0
 
-jobs:
+workflows:
+  version: 2.1
   build:
+    jobs:
+      - win_build
+      - linux_build
+
+jobs:
+  win_build:
     executor:
       name: win/default
       shell: powershell.exe
@@ -19,7 +26,8 @@ jobs:
       - run:
           name: Testing Code
           command: './night tests/test.night'
-  test:
+
+  linux_build:
     docker:
       - image: "debian:stretch"
     steps:
@@ -36,10 +44,3 @@ jobs:
       - run:
           name: Testing Code
           command: './night tests/test.night'
-
-workflows:
-  version: 2.1
-  build_and_test:
-    jobs:
-      - build
-      - test
