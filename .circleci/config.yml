@@ -3,6 +3,13 @@ version: 2.1
 orbs:
   win: circleci/windows@2.2.0
 
+workflows:
+  version: 2.1
+  build:
+    job:
+      - build
+      - test
+
 jobs:
   build:
     executor:
@@ -19,3 +26,20 @@ jobs:
       - run:
           name: Testing Code
           command: './night tests/test.night'
+  test:
+    docker:
+      -image: "debian:stretch"
+    steps:
+      - checkout
+      - run:
+          name: Installing SUDO
+          command: 'apt-get update && apt-get install -y sudo && rm -rf /var/lib/apt/lists/*'
+      - run:
+          name: Installing GCC
+          command: 'apt-get update && apt-get install -y gcc g++'
+      - run:
+          name: Compiling Code
+          command: 'g++ -std=c++17 -Wall -Werror -o night src/night.cpp'
+      - run:
+          name: Testing Code
+          command: './night tests/test.night
