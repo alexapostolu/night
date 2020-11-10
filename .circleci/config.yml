@@ -42,4 +42,4 @@ jobs:
           command: 'g++ -std=c++17 -Wall -Werror -o night src/night.cpp'
       - run:
           name: Testing Code
-          command: './night tests/test.night
+          command: './night tests/test.night'
