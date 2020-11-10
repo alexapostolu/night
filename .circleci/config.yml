@@ -21,7 +21,7 @@ jobs:
           command: './night tests/test.night'
   test:
     docker:
-      -image: "debian:stretch"
+      - image: "debian:stretch"
     steps:
       - checkout
       - run:
