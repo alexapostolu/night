@@ -1,7 +1,33 @@
 version: 2.1
 
-jobs:
+orbs:
+  win: circleci/windows@2.2.0
+
+workflows:
+  version: 2.1
   build:
+    jobs:
+      - win_build
+      - linux_build
+
+jobs:
+  win_build:
+    executor:
+      name: win/default
+      shell: powershell.exe
+    steps:
+      - checkout
+      - run:
+          name: Installing g++
+          command: 'choco install mingw'
+      - run:
+          name: Compiling Code
+          command: 'g++ -std=c++17 -Wall -Werror -o night src/night.cpp'
+      - run:
+          name: Testing Code
+          command: './night tests/test.night'
+
+  linux_build:
     docker:
       - image: "debian:stretch"
     steps:
