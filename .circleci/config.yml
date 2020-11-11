@@ -1,5 +1,3 @@
-version: 2.1
-
 orbs:
   win: circleci/windows@2.2.0
 
@@ -14,7 +12,6 @@ jobs:
   win_build:
     executor:
       name: win/default
-      shell: powershell.exe
     steps:
       - checkout
       - run:
