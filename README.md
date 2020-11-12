@@ -1,6 +1,8 @@
 # Night
 
-An interpreted programming language that focuses on simplicity and usability. The main goal of Night is to design an intuitive and easy to learn language.
+An interpreted dynamically typed language that focuses on simplicity and safety. The main goal of Night is to design an intuitive and easy to use language.
+
+What makes Night different from other dynamically typed languages is its compile time checks. Whereas a language like Python does not provide type checking and many other declaration checks, Night fills this gap, eliminating hidden runtime bugs and providing safer code.
 
 ---
 
@@ -62,9 +64,9 @@ And you're done!
 
 ### About Night
 
-Night is an imperative dynamically typed language with light syntax. 
+Night is an imperative dynamically typed language with light syntax.
 
-Here is a little sample Night:
+Here is a little sample of Night:
 
 ```py
 # classic fibonacci sequence using recursion
@@ -76,13 +78,28 @@ def fib(num)
     return fib(num - 1) + fib(num - 2)
 }
 
-# array of 3 values, 2 of which have been initialized
-set fib_nums = 3[ fib(5), fib(6) ]
-fib_nums[2] = fib(7)
+# array of two values, and adding a third
+set fib_nums = [ fib(5), fib(6) ]
+fib_nums = fib_nums <- fib(7)
 
 # printing out the values of the array
 for (num : fib_nums)
     print(num + " ")
+```
+
+Night avoids most runtime errors by checking types and declarations early on in the compile stage, something many other dynamically typed languages don't do.
+
+```py
+def add(x, y)
+{
+    return x + y
+}
+
+if (false)
+{
+    add(2, 3, 7) # error! too many parameters in function call
+    a = 5 # error! variable 'a' has not been defined yet
+}
 ```
 
 More information regarding the syntax can be found on the [Night website](https://night-website.dynamicsquid.repl.co/html/reference.html).
