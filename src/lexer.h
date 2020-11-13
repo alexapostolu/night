@@ -1,6 +1,7 @@
 #pragma once
 
 #include "token.h"
+#include "error.h"
 
 #include <regex>
 #include <iterator>
@@ -75,7 +76,7 @@ std::vector<Token> Lexer(const std::string& file, int line, const std::string& f
 		if (fileLine[a] == '#')
 			break;
 
-		if (fileLine[a] == '\'' || fileLine[a] == '"')
+		if ((fileLine[a] == '\'' || fileLine[a] == '"') && inString == ' ')
 		{
 			FindKeyword(file, line, keywords, tokens, token);
 

@@ -1,12 +1,17 @@
 #pragma once
 
 #include <iostream>
+#include <cassert>
 #include <string>
 
+// MSVC specific macro; it shouldn't be defined in release builds
 #ifdef _DEBUG
-	#define assert(con, msg) if (con) { std::cerr << __FILE__ << '\n' << __LINE__ << '\n' << msg << '\n'; exit(1); }
+	// similar to the assert macro but also returns a value to suppress compiler warnings
+	#define assert_rtn(con, rtn) assert(con); return rtn
 #else
-	#define assert(msg) std::cerr << "Oops! Something unexpected has happened! " \
+	#define assert(con) std::cerr << "Oops! Something unexpected has happened! " \
+		"Please submit an issue on the GitHub page.\n"; exit(1)
+	#define assert_rtn(con, rtn) std::cerr << "Oops! Something unexpected has happened! " \
 		"Please submit an issue on the GitHub page.\n"; exit(1)
 #endif
 

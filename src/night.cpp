@@ -56,8 +56,7 @@ void EntryPoint(const std::string& file)
     for (const std::vector<Token>& tokens : code)
         Parser(statements, tokens);
 
-    std::vector<NightVariable> variables;
-    Interpreter(statements, variables);
+    Interpreter(statements);
 }
 
 int main(int argc, char* argv[])

@@ -50,7 +50,7 @@ enum class ValueType
 	NUM, NUM_ARR,
 	STRING, STRING_ARR,
 
-	VARIABLE, ARRAY, ELEMENT, CALL,
+	VARIABLE, CALL,
 
 	OPERATOR,
 
@@ -60,30 +60,23 @@ enum class ValueType
 struct Value
 {
 	ValueType type;
-	std::string value;
-	std::vector<Value> values;
+	std::string data;
 
-	bool operator!=(const Value& other)
-	{
-		return type == other.type && value == other.value && values == other.values;
-	}
+	std::vector<std::vector<Value> > extras;
 };
 
 struct Expression;
 struct Variable;
 struct Conditional;
 struct Statement;
-struct Scope;
-
-struct Scope
-{
-	//std::vector<Variable> variables;
-	std::vector<Statement> statements;
-};
 
 struct Expression
 {
-	Value value;
+	ValueType type;
+
+	std::string data;
+	std::vector<Expression> extras;
+
 	Expression* left;
 	Expression* right;
 };
@@ -107,31 +100,36 @@ struct Assignment
 	Expression* value;
 };
 
-struct FunctionCall
+struct Conditional
 {
-	std::string name;
-	std::vector<Expression*> parameters;
+	Expression* condition;
+	std::vector<Statement> body;
+
+	std::vector<Conditional> chains;
 };
 
 struct FunctionDef
 {
 	std::string name;
 	std::vector<std::string> parameters;
-	Scope body;
+	std::vector<Statement> body;
 };
 
-struct Conditional
+struct FunctionCall
 {
-	Expression* condition;
-	Scope body;
+	std::string name;
+	std::vector<Expression*> parameters;
+};
 
-	std::vector<Conditional> chains;
+struct Return
+{
+	Expression* expression;
 };
 
 struct WhileLoop
 {
 	Expression* condition;
-	Scope body;
+	std::vector<Statement> body;
 };
 
 struct ForLoop
@@ -139,7 +137,7 @@ struct ForLoop
 	std::string index;
 	Expression* range;
 
-	Scope body;
+	std::vector<Statement> body;
 };
 
 struct Element
@@ -156,12 +154,12 @@ enum class StatementType
 	CONDITIONAL,
 	FUNCTION_DEF,
 	FUNCTION_CALL,
+	RETURN,
 	WHILE_LOOP,
 	FOR_LOOP,
 	ELEMENT
 };
 
-#include "error.h"
 struct Statement
 {
     StatementType type;
@@ -170,8 +168,9 @@ struct Statement
 		Variable,
 		Assignment,
 		Conditional,
-		FunctionCall,
 		FunctionDef,
+		FunctionCall,
+		Return,
 		WhileLoop,
 		ForLoop,
 		Element
