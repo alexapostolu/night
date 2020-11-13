@@ -4,7 +4,7 @@ A timeline of past and future versions. Each new version (`v1`, `v2`, etc.) the 
 
 A complete rewrite focused on making the langauge dynamically typed, and adding useful syntax like array slicing, in addition to adding core features like classes and file handling.
 
-- `v4.0` will mainly be focus on making the language stable and scalable
+- `v4.0` will mainly focus on making the language safe and scalable
 - `v4.1` will be focuses around encapsulation
 - `v4.2` will be adding utilities like file and error handling
 - `v4.3` networking??
@@ -29,19 +29,23 @@ Added enumerations, but not like Java's weird enums, they're more like C's enums
 
 Added classes. However they can only contain variables and methods, no inheritance, visibility, etc.
 
+### v4.0.2
+
+There are now compile time checks for expressions in functions! Another big step in improving safety.
+
 ### v4.0.1
 
-Variables and functions, when declared or used, are now checked at compiled time instead of runtime for redefinitions and no definitions.
-
-This should catch a lot of hidden runtime bugs and make the code way more stable. (take that Python!)
+There are now compile time checks for expressions (not in any functions) as well.
 
 ### v4.0.0
 
 The first actual good version of Night!
 
-This version turned Night into a dynamically typed language, with the `set` keyword used to create a variable, and the `def` keyword for functions. Also added array and string slices and insertions. Also removed semicolons and made curly braces in conditionals and loops optional if there's only one statement.
+This version turns Night into a dynamically typed language, with the `set` keyword used to create a variable, and the `def` keyword for functions. Also removed semicolons and made curly braces in conditionals and loops optional if there's only one statement.
 
-And we're also back to using C++'s STL instead my own.
+There's also compile time checks to see if variables and functions exist, and if functions have the right number of parameters. This should catch a lot of hidden runtime bugs and make the code way more stable. (take that Python!)
+
+And we're also back to using C++'s STL instead my own. And the entire parser and interpreter system is reworked. We now have an actual parser that constructs an AST and all that stuff.
 
 ## Version 3
 
