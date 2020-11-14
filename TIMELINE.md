@@ -29,13 +29,9 @@ Added enumerations, but not like Java's weird enums, they're more like C's enums
 
 Added classes. However they can only contain variables and methods, no inheritance, visibility, etc.
 
-### v4.0.2
-
-There are now compile time checks for expressions in functions! Another big step in improving safety.
-
 ### v4.0.1
 
-There are now compile time checks for expressions (not in any functions) as well.
+There are now compile time checks for expressions in functions! Another big step in improving safety.
 
 ### v4.0.0
 
@@ -43,7 +39,7 @@ The first actual good version of Night!
 
 This version turns Night into a dynamically typed language, with the `set` keyword used to create a variable, and the `def` keyword for functions. Also removed semicolons and made curly braces in conditionals and loops optional if there's only one statement.
 
-There's also compile time checks to see if variables and functions exist, and if functions have the right number of parameters. This should catch a lot of hidden runtime bugs and make the code way more stable. (take that Python!)
+There's also compile time checks to see if variables and functions exist, if functions have the right number of parameters, and expressions. This should catch a lot of hidden runtime bugs and make the code way more stable. (take that Python!)
 
 And we're also back to using C++'s STL instead my own. And the entire parser and interpreter system is reworked. We now have an actual parser that constructs an AST and all that stuff.
 
