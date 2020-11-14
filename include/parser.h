@@ -8,6 +8,42 @@
 #include <vector>
 #include <string>
 
+std::vector<Value> TokensToValues(const std::vector<Token>& tokens, VariableType* exprType = nullptr);
+
+// separates tokens based on commas
+std::vector<std::vector<Value> > SeparateTokens(const std::vector<Token>& tokens, std::size_t& index)
+{
+	std::vector<std::vector<Value> > values;
+	for (int start = index, openBracketCount = 0, openSquareCount = 0; index < tokens.size(); ++index)
+	{
+		if (tokens[index].type == TokenType::OPEN_BRACKET)
+			openBracketCount++;
+		else if (tokens[index].type == TokenType::CLOSE_BRACKET)
+			openBracketCount--;
+		else if (tokens[index].type == TokenType::OPEN_SQUARE)
+			openSquareCount++;
+		else if (tokens[index].type == TokenType::CLOSE_SQUARE)
+			openSquareCount--;
+
+		if (openSquareCount == 0 && ((tokens[index].type == TokenType::COMMA && openBracketCount == 0) ||
+			(tokens[index].type == TokenType::CLOSE_BRACKET && openBracketCount == -1)))
+		{
+			values.push_back(TokensToValues(
+				std::vector<Token>(tokens.begin() + start, tokens.begin() + index)
+			));
+
+			start = index + 1;
+
+			if (tokens[index].type == TokenType::CLOSE_BRACKET)
+				break;
+
+			continue;
+		}
+	}
+
+	return values;
+}
+
 // type checks an array of values
 ValueType CheckValuesType(const std::vector<Value>& values) // int& arrayDepth
 {
@@ -15,13 +51,12 @@ ValueType CheckValuesType(const std::vector<Value>& values) // int& arrayDepth
 
 	// check types when constructing the AST
 	// and for 2d arrays, check in TokenToValues()
-	
 
 	return ValueType::NUM_ARR;
 }
 
 // turns an array of tokens to an array of extras
-std::vector<Value> TokensToValues(const std::vector<Token>& tokens, VariableType* exprType = nullptr)
+std::vector<Value> TokensToValues(const std::vector<Token>& tokens, VariableType* exprType)
 {
 	assert(!tokens.empty() && "tokens shouldn't be empty");
 
@@ -40,32 +75,7 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, VariableType
 				Value functionCall{ ValueType::CALL };
 
 				a += 2;
-				for (int start = a, openBracketCount = 0, openSquareCount = 0; a < tokens.size(); ++a)
-				{
-					if (tokens[a].type == TokenType::OPEN_BRACKET)
-						openBracketCount++;
-					else if (tokens[a].type == TokenType::CLOSE_BRACKET)
-						openBracketCount--;
-					else if (tokens[a].type == TokenType::OPEN_SQUARE)
-						openSquareCount++;
-					else if (tokens[a].type == TokenType::CLOSE_SQUARE)
-						openSquareCount--;
-					
-					if (openSquareCount == 0 && ((tokens[a].type == TokenType::COMMA && openBracketCount == 0) ||
-						(tokens[a].type == TokenType::CLOSE_BRACKET && openBracketCount == -1)))
-					{
-						functionCall.extras.push_back(TokensToValues(
-							std::vector<Token>(tokens.begin() + start, tokens.begin() + a)
-						));
-
-						start = a + 1;
-
-						if (tokens[a].type == TokenType::CLOSE_BRACKET)
-							break;
-
-						continue;
-					}
-				}
+				functionCall.extras = SeparateTokens(tokens, a);
 
 				if (a >= tokens.size())
 					throw Error(tokens[a].file, tokens[a].line, "missing closing bracket for function call");
@@ -76,10 +86,10 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, VariableType
 			{
 				values.push_back(Value{ ValueType::VARIABLE, tokens[a].value });
 
-				std::size_t start = a;
 				a += 2;
-				
-				AdvanceCloseBracketIndex(file, line, tokens, TokenType::OPEN_BRACKET, TokenType::CLOSE_BRACKET, a);
+				std::size_t start = a;
+
+				AdvanceCloseBracketIndex(file, line, tokens, TokenType::OPEN_SQUARE, TokenType::CLOSE_SQUARE, a);
 
 				if (a >= tokens.size())
 					throw Error(file, line, "missing closing square bracket for subscript operator");
@@ -108,21 +118,21 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, VariableType
 
 			for (int start = a, openBracketCount = 0, openSquareCount = 0; a < tokens.size(); ++a)
 			{
-				if (tokens[a].type == TokenType::OPEN_SQUARE)
+				if (tokens[a].type == TokenType::OPEN_BRACKET)
 					openBracketCount++;
-				else if (tokens[a].type == TokenType::CLOSE_SQUARE)
+				else if (tokens[a].type == TokenType::CLOSE_BRACKET)
 					openBracketCount--;
 				else if (tokens[a].type == TokenType::OPEN_SQUARE)
 					openSquareCount++;
 				else if (tokens[a].type == TokenType::CLOSE_SQUARE)
 					openSquareCount--;
 
-				if (openBracketCount == 0 && ((tokens[a].type == TokenType::COMMA && openSquareCount == 0) ||
+				if (openBracketCount == 0 && ((tokens[a].type == TokenType::COMMA && openBracketCount == 0) ||
 					(tokens[a].type == TokenType::CLOSE_SQUARE && openSquareCount == -1)))
 				{
-					array.extras.push_back(
-						TokensToValues(std::vector<Token>(tokens.begin() + start, tokens.begin() + a))
-					);
+					array.extras.push_back(TokensToValues(
+						std::vector<Token>(tokens.begin() + start, tokens.begin() + a)
+					));
 
 					// type check array elements
 					if (array.extras.size() == 1) {
@@ -142,11 +152,11 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, VariableType
 			}
 
 			if (a >= tokens.size())
-				throw Error(tokens[a].file, tokens[a].line, "missing closing bracket for array");
+				throw Error(file, line, "missing closing square for array");
 
 			if (tokens[a].type == TokenType::NUM_VAL)
 			{
-				const std::size_t arraySize = std::stol(tokens[a].value);
+				std::size_t arraySize = std::stol(tokens[a].value);
 				if (array.extras.size() > arraySize)
 					throw Error(file, line, "array of size '" + std::to_string(arraySize) + "' cannot hold '" + std::to_string(array.extras.size()) + "' elements");
 
@@ -177,6 +187,12 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, VariableType
 			case TokenType::OPERATOR:
 				values.push_back(Value{ ValueType::OPERATOR, tokens[a].value });
 				break;
+			case TokenType::OPEN_BRACKET:
+				values.push_back(Value{ ValueType::OPEN_BRACKET, tokens[a].value });
+				break;
+			case TokenType::CLOSE_BRACKET:
+				values.push_back(Value{ ValueType::CLOSE_BRACKET, tokens[a].value });
+				break;
 			default:
 				throw Error(file, line, "unexpected token '" + tokens[a].value + "' in expression");
 			}
@@ -185,7 +201,7 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, VariableType
 
 	// type check values
 
-	ValueType valuesType = CheckValuesType(values);
+	const ValueType valuesType = CheckValuesType(values);
 	if (exprType != nullptr)
 	{
 		switch (valuesType)
@@ -229,7 +245,7 @@ void CheckFunctionDefinition(const std::vector<Statement>& statements, const std
 // returns the operator precedence
 int GetOperatorPrecedence(const ValueType& type, const std::string& value)
 {
-	static std::vector<std::vector<std::string> > operators{
+	static const std::vector<std::vector<std::string> > operators{
 		{ "[]" },
 		{ "!" },
 		{ "*", "/", "%" },
@@ -256,12 +272,34 @@ int GetOperatorPrecedence(const ValueType& type, const std::string& value)
 }
 
 // returns values within a set of brackets
-std::vector<Value> GetBracketExpression(const std::string& file, int line, const std::vector<Value>& expression, std::size_t& index)
+std::vector<Value> GetBracketExpression(const std::string& file, int line, const std::vector<Value>& values, std::size_t& index)
 {
 	std::size_t start = index;
-	AdvanceCloseBracketIndex(file, line, expression, ValueType::OPEN_BRACKET, ValueType::CLOSE_BRACKET, index);
+	AdvanceCloseBracketIndex(file, line, values, ValueType::OPEN_BRACKET, ValueType::CLOSE_BRACKET, index);
 
-	return std::vector<Value>(expression.begin() + start, expression.begin() + index);
+	if (index >= values.size())
+		throw Error(file, line, "missing closing bracket in expression");
+
+	return std::vector<Value>(values.begin() + start, values.begin() + index);
+}
+
+Expression* ParseValues(const std::string& file, int line, const std::vector<Value>& values);
+
+// Expression "constructor"
+Expression* new_expression(const std::string& file, int line, const Value& value, Expression* left, Expression* right)
+{
+	Expression* expression = new Expression{
+		value.type,
+		value.data, 
+		std::vector<Expression>(),
+		left,
+		right
+	};
+
+	for (const std::vector<Value>& values : value.extras)
+		expression->extras.push_back(*ParseValues(file, line, values));
+
+	return expression;
 }
 
 // turns an array of values into an AST
@@ -282,58 +320,90 @@ Expression* ParseValues(const std::string& file, int line, const std::vector<Val
 	}
 	else
 	{
-		root = new Expression{ values[0].type, values[0].data, std::vector<Expression>(), nullptr, nullptr };
+		root = new_expression(file, line, values[0], nullptr, nullptr);
+		a = 0;
 	}
 
 	// parse expression
 
-	Expression* curr = root;
 	for (; a < values.size(); ++a)
 	{
 		if (values[a].type != ValueType::OPERATOR)
 			continue;
 
-		int save_a = a;
+		// travel tree to find a nice spot to settle down
 
-		// evaluating brackets
+		Expression* curr = root;
+		Expression* prev = nullptr;
+		while ((curr->left != nullptr || curr->right != nullptr) &&
+			GetOperatorPrecedence(curr->type, curr->data) > GetOperatorPrecedence(values[a].type, values[a].data))
+		{
+			prev = curr;
+			curr = curr->right;
+		}
 
-		Expression* bracketExpression = nullptr;
+		// create right hand value node
+
+		std::size_t opIndex = a;
+
+		Expression* nextValue = nullptr;
 		if (a < values.size() - 1 && values[a + 1].type == ValueType::OPEN_BRACKET)
 		{
 			a += 2;
 
-			std::vector<Value> bracketValues = GetBracketExpression(file, line, values, a);
-			bracketExpression = ParseValues(file, line, bracketValues);
+			const std::vector<Value> bracketValues = GetBracketExpression(file, line, values, a);
+			nextValue = ParseValues(file, line, bracketValues);
+		}
+		else if (values[a].data != "[]")
+		{
+			nextValue = new_expression(file, line, values[opIndex + 1], nullptr, nullptr);
 		}
 
-		// traveling tree
+		// create operator node
 
-		while ((curr->left != nullptr || curr->right != nullptr) &&
-			GetOperatorPrecedence(curr->type, curr->data) < GetOperatorPrecedence(values[save_a].type, values[save_a].data))
-			curr = curr->right;
-
-		// creating new node
-
-		Expression* node = new Expression{
-			values[save_a].type,
-			values[save_a].data,
-			std::vector<Expression>(),
-			curr,
-			bracketExpression == nullptr
-				? new Expression{ values[a + 1].type, values[a + 1].data, std::vector<Expression>(), nullptr, nullptr }
-				: bracketExpression
-		};
+		Expression* opNode = values[a].data == "[]"
+			? new_expression(file, line, values[opIndex], nullptr, curr)
+			: new_expression(file, line, values[opIndex], curr, nextValue);
 
 		if (curr == root)
 		{
-			curr = node;
-			root = node;
+			root = opNode;
 		}
 		else
 		{
-			curr->right = node;
-			curr = root;
+			assert(prev != nullptr && "prev shouldn't be NULL");
+			prev->right = opNode;
 		}
+
+		// handle unary operator
+
+		if (opIndex < values.size() - 1 && values[opIndex + 1].type == ValueType::OPERATOR && values[opIndex + 1].data == "!")
+		{
+			assert(root != nullptr && "root shouldn't be NULL; that should be a specific case");
+
+			curr = root;
+			while (curr->left != nullptr && curr->right != nullptr)
+				curr = curr->right;
+
+
+			Expression* nextValue = nullptr;
+			if (a < values.size() - 2 && values[opIndex + 2].type == ValueType::OPEN_BRACKET)
+			{
+				a += 3;
+
+				const std::vector<Value> bracketValues = GetBracketExpression(file, line, values, a);
+				nextValue = ParseValues(file, line, bracketValues);
+			}
+			else
+			{
+				nextValue = new_expression(file, line, values[opIndex + 2], nullptr, nullptr);
+			}
+
+			curr->right = nextValue;
+		}
+
+		if (values[a].data != "[]")
+			a++;
 	}
 
 	return root;
@@ -357,7 +427,7 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 			throw Error(file, line, "expected expression after assignment operator");
 
 		VariableType exprType;
-		std::vector<Value> expression = TokensToValues(std::vector<Token>(tokens.begin() + 2, tokens.end()), &exprType);
+		const std::vector<Value> expression = TokensToValues(std::vector<Token>(tokens.begin() + 3, tokens.end()), &exprType);
 
 		Statement statement{ StatementType::VARIABLE };
 		statement.stmt = Variable{
@@ -528,13 +598,13 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 	}
 	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VARIABLE && tokens[1].type == TokenType::OPEN_BRACKET)
 	{
-		if (tokens.size() == 2 || tokens.size() == 3 || tokens[2].type != TokenType::CLOSE_BRACKET)
+		if (tokens.size() == 2 || (tokens.size() == 3 && tokens[2].type != TokenType::CLOSE_BRACKET))
 			throw Error(file, line, "missing closing bracket");
 
 		// function parameters
 
 		Statement statement{ StatementType::FUNCTION_CALL };
-		std::get<FunctionCall>(statement.stmt).name = tokens[0].value;
+		statement.stmt = FunctionCall{ tokens[0].value };
 
 		std::vector<Token> tokenParam;
 		for (std::size_t a = 2, openBracketIndex = 0; a < tokens.size(); ++a)
@@ -544,21 +614,13 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 			else if (tokens[a].type == TokenType::CLOSE_BRACKET)
 				openBracketIndex--;
 
-			if (tokens[a].type == TokenType::CLOSE_BRACKET && openBracketIndex == -1)
+			if ((tokens[a].type == TokenType::COMMA && openBracketIndex == 0) ||
+				(tokens[a].type == TokenType::CLOSE_BRACKET && openBracketIndex == -1))
 			{
-				if (a < tokens.size() - 1)
+				if (tokens[a].type == TokenType::CLOSE_BRACKET && a < tokens.size() - 1)
 					throw Error(file, line, "unexpected tokens after function call; each statement must be on it's own line");
 
-				std::vector<Value> paramExpr = TokensToValues(tokenParam);
-				std::get<FunctionCall>(statement.stmt).parameters.push_back(ParseValues(file, line, paramExpr));
-
-				tokenParam.clear();
-				continue;
-			}
-			
-			if (tokens[a].type == TokenType::COMMA && openBracketIndex == 0)
-			{
-				std::vector<Value> paramExpr = TokensToValues(tokenParam);
+				const std::vector<Value> paramExpr = TokensToValues(tokenParam);
 				std::get<FunctionCall>(statement.stmt).parameters.push_back(ParseValues(file, line, paramExpr));
 
 				tokenParam.clear();

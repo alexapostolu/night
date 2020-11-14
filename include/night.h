@@ -8,7 +8,7 @@
 struct NightVariable
 {
     std::string name;
-    Expression value;
+    Expression data;
 };
 
 struct NightFunction

@@ -104,7 +104,6 @@ struct Conditional
 {
 	Expression* condition;
 	std::vector<Statement> body;
-
 	std::vector<Conditional> chains;
 };
 
@@ -162,7 +161,7 @@ enum class StatementType
 
 struct Statement
 {
-    StatementType type;
+	StatementType type;
 
 	std::variant<
 		Variable,

@@ -1,19 +1,13 @@
-#pragma once
+#include "../include/utils.h"
+#include "../include/token.h"
+#include "../include/error.h"
 
-#include "token.h"
-#include "error.h"
-
-#include <exception>
 #include <string>
 #include <vector>
 
 // splits an array of tokens into different statements
 std::vector<std::vector<Token> > SplitCode(const std::vector<Token>& tokens)
 {
-    for (const Token& token : tokens)
-        std::clog << token.value << ' ';
-    std::clog << '\n';
-
     std::vector<std::vector<Token> > code;
     for (std::size_t a = 0, openCurlyCount = 0; a < tokens.size(); ++a)
     {
@@ -57,8 +51,7 @@ std::string VarTypeToStr(const VariableType& type)
     case VariableType::STRING_ARR:
         return "string array";
     default:
-        assert(false && "variable type is missing");
-        return "";
+        assert_rtn(false && "variable type is missing", "");
     }
 }
 
@@ -106,13 +99,10 @@ void AdvanceCloseBracketIndex(const std::string& file, int line, const std::vect
         }
         else if (units[index].type == closeBracket)
         {
-            if (units[index].type == closeBracket && openBracketCount == 0)
+            if (openBracketCount == 0)
                 return;
 
             openBracketCount--;
         }
     }
-
-    // remove the following line
-    throw Error(file, line, "missing closing bracket");
 }

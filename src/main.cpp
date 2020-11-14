@@ -1,9 +1,9 @@
-#include "lexer.h"
-#include "parser.h"
-#include "interpreter.h"
-#include "utils.h"
-#include "error.h"
-#include "token.h"
+#include "../include/lexer.h"
+#include "../include/parser.h"
+#include "../include/interpreter.h"
+#include "../include/utils.h"
+#include "../include/error.h"
+#include "../include/token.h"
 
 #include <fstream>
 #include <iostream>
@@ -31,8 +31,8 @@ std::vector<Token> OpenFile(const std::string& file)
 
             std::vector<Token> importTokens = OpenFile(
                 fileTokens[0].value == "import"
-                ? "../pkgs/" + fileTokens[1].value + ".night"
-                : fileTokens[1].value + ".night"
+                    ? "../pkgs/" + fileTokens[1].value + ".night"
+                    : fileTokens[1].value + ".night"
             );
 
             fileTokens.erase(fileTokens.begin());

@@ -53,7 +53,7 @@ std::vector<Token> Lexer(const std::string& file, int line, const std::string& f
 		{ '*', { TokenType::OPERATOR, TokenType::ASSIGNMENT } },
 		{ '/', { TokenType::OPERATOR, TokenType::ASSIGNMENT } },
 		{ '%', { TokenType::OPERATOR, TokenType::ASSIGNMENT } },
-		{ '=', { TokenType::ASSIGNMENT, TokenType::ASSIGNMENT } }
+		{ '=', { TokenType::ASSIGNMENT, TokenType::OPERATOR } }
 	};
 
 	const std::unordered_map<std::string, TokenType> keywords{
@@ -73,8 +73,7 @@ std::vector<Token> Lexer(const std::string& file, int line, const std::string& f
 	char inString = ' ';
 	for (std::size_t a = 0; a < fileLine.length(); ++a)
 	{
-		if (fileLine[a] == '#')
-			break;
+		// scan strings
 
 		if ((fileLine[a] == '\'' || fileLine[a] == '"') && inString == ' ')
 		{
@@ -90,12 +89,35 @@ std::vector<Token> Lexer(const std::string& file, int line, const std::string& f
 		}
 		else if (fileLine[a] == inString && inString != ' ')
 		{
+			// check string for escape characters
+			size_t newline = token.find("\\n");
+			while (newline != std::string::npos)
+			{
+				token[newline] = '\n';
+				token.erase(newline + 1);
+				
+				newline = token.find("\\n", newline + 1);
+			}
+
 			tokens.push_back(Token{ file, line, TokenType::STRING_VAL, token });
 			token = "";
 
 			inString = ' ';
 			continue;
 		}
+
+		// ignore comments and whitespace
+
+		if (fileLine[a] == '#')
+			break;
+
+		if (fileLine[a] == ' ' || fileLine[a] == '\t')
+		{
+			FindKeyword(file, line, keywords, tokens, token);
+			continue;
+		}
+
+		// scan special symbols
 
 		if (a < fileLine.length() - 1 && fileLine[a] == '<' && fileLine[a + 1] == '-')
 		{
@@ -114,6 +136,8 @@ std::vector<Token> Lexer(const std::string& file, int line, const std::string& f
 			continue;
 		}
 
+		// scan symbols
+
 		auto findSymbol = std::find_if(symbols.begin(), symbols.end(), [&](const std::pair<std::string, TokenType>& symbol) {
 			if (fileLine[a] == symbol.first[0] && symbol.first.length() == 2 && (a == fileLine.length() - 1 || fileLine[a + 1] != symbol.first[1]))
 				throw Error(file, line, "unexpected symbol '" + std::string(1, fileLine[a]) + "'");
@@ -122,25 +146,39 @@ std::vector<Token> Lexer(const std::string& file, int line, const std::string& f
 		if (findSymbol != symbols.end())
 		{
 			FindKeyword(file, line, keywords, tokens, token);
-
 			tokens.push_back(Token{ file, line, findSymbol->second, findSymbol->first });
+
+			if (findSymbol->first.length() == 2)
+				a++;
 
 			continue;
 		}
+
+		// scan double symbols
 
 		auto findDoubleSymbol = std::find_if(doubleSymbols.begin(), doubleSymbols.end(),
 			[&](const std::pair<char, std::pair<TokenType, TokenType> >& symbol) { return symbol.first == fileLine[a]; });
 		if (findDoubleSymbol != doubleSymbols.end())
 		{
 			FindKeyword(file, line, keywords, tokens, token);
+			
+			/*
+			if (findDoubleSymbol->first == '-' && a < fileLine.length() - 1 && fileLine[a + 1] - '0' >= 0 && fileLine[a + 1] - '0' <= 9)
+			{
+				token += fileLine[a];
+				continue;
+			}
+			*/
 
 			if (a < fileLine.length() - 1 && fileLine[a + 1] == '=')
 			{
 				tokens.push_back(Token{
 					file, line,
 					findDoubleSymbol->second.second,
-					findDoubleSymbol->first + "="
+					std::string(1, findDoubleSymbol->first) + "="
 				});
+
+				a++;
 			}
 			else
 			{
@@ -151,24 +189,10 @@ std::vector<Token> Lexer(const std::string& file, int line, const std::string& f
 				});
 			}
 
-			a++;
 			continue;
 		}
 
-		if (a < fileLine.length() - 1 && fileLine[a] == '.' && fileLine[a + 1] == '.')
-		{
-			FindKeyword(file, line, keywords, tokens, token);
-
-			tokens.push_back(Token{ file, line, TokenType::RANGE, ".." });
-
-			a++;
-			continue;
-		}
-
-		if (fileLine[a] == ' ' || fileLine[a] == '\t')
-			FindKeyword(file, line, keywords, tokens, token);
-		else
-			token += fileLine[a];
+		token += fileLine[a];
 	}
 
 	FindKeyword(file, line, keywords, tokens, token);
