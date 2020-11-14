@@ -37,9 +37,9 @@ cd night
 With *g++* or *clang*:
 
 ```
-g++ -o night src/night.cpp
+g++ -o night src/main.cpp
 
-clang++ -o night src/night.cpp
+clang++ -o night src/main.cpp
 ```
 
 Or if you have GNU Make:
@@ -78,7 +78,7 @@ def fib(num)
     return fib(num - 1) + fib(num - 2)
 }
 
-# array of two values, and adding a third
+# array of two values, and appending a third
 set fib_nums = [ fib(5), fib(6) ]
 fib_nums = fib_nums <- fib(7)
 
