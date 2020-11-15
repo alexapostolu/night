@@ -1,4 +1,4 @@
-A timeline of past and future versions. Each new version (`v1`, `v2`, etc.) the code is scrapped and started anew.
+A timeline of past and future versions. Each new version (`v1`, `v2`, `v3`, etc.) the code is scrapped and started anew.
 
 ## Version 4
 
