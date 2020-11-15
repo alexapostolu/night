@@ -27,7 +27,7 @@ Added enumerations, but not like Java's weird enums, they're more like C's enums
 
 ### v4.1.0
 
-Added classes. However they can only contain variables and methods, no inheritance, visibility, etc.
+Added classes. However they can only contain variables and methods, no inheritance, visibility, etc. So think of them as C structs
 
 ### v4.0.1
 
