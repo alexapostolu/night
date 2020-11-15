@@ -96,12 +96,12 @@ struct Variable
 struct Assignment
 {
 	std::string name;
-	Expression* value;
+	const Expression* value;
 };
 
 struct Conditional
 {
-	Expression* condition;
+	const Expression* condition;
 	std::vector<Statement> body;
 	std::vector<Conditional> chains;
 };
@@ -121,19 +121,19 @@ struct FunctionCall
 
 struct Return
 {
-	Expression* expression;
+	const Expression* expression;
 };
 
 struct WhileLoop
 {
-	Expression* condition;
+	const Expression* condition;
 	std::vector<Statement> body;
 };
 
 struct ForLoop
 {
 	std::string index;
-	Expression* range;
+	const Expression* range;
 
 	std::vector<Statement> body;
 };
@@ -141,8 +141,8 @@ struct ForLoop
 struct Element
 {
 	std::string name;
-	Expression* index;
-	Expression* assign;
+	const Expression* index;
+	const Expression* assign;
 };
 
 enum class StatementType

@@ -260,11 +260,6 @@ void Interpreter(const std::vector<Statement>& statements, Expression* returnVal
 			break;
 		}
 		case StatementType::FUNCTION_DEF: {
-			if (GetContainer(variables, std::get<FunctionDef>(statement.stmt).name) != nullptr)
-				throw Error("function '" + std::get<FunctionDef>(statement.stmt).name + "' cannot have the same name as a variable");
-			if (GetContainer(functions, std::get<FunctionDef>(statement.stmt).name) != nullptr)
-				throw Error("function '" + std::get<FunctionDef>(statement.stmt).name + "' is already defined");
-
 			functions.push_back(NightFunction{
 				std::get<FunctionDef>(statement.stmt).name,
 				std::get<FunctionDef>(statement.stmt).parameters,
@@ -309,7 +304,6 @@ void Interpreter(const std::vector<Statement>& statements, Expression* returnVal
 		}
 		case StatementType::FOR_LOOP: {
 			const Expression range = EvaluateExpression(std::get<ForLoop>(statement.stmt).range, variables, functions);
-			assert(!range.extras.empty() && "range should not be empty");
 
 			variables.push_back(NightVariable{ std::get<ForLoop>(statement.stmt).index, Expression() });
 			NightVariable* index = &variables.back();
@@ -324,19 +318,14 @@ void Interpreter(const std::vector<Statement>& statements, Expression* returnVal
 		}
 		case StatementType::ELEMENT: {
 			NightVariable* variable = GetContainer(variables, std::get<Element>(statement.stmt).name);
-			if (variable == nullptr)
-				throw Error("variable '" + std::get<Element>(statement.stmt).name + "' is not defined");
-
-			if (variable->data.type != ValueType::STRING && variable->data.type != ValueType::BOOL_ARR &&
-				variable->data.type != ValueType::NUM_ARR && variable->data.type != ValueType::STRING_ARR)
-				throw Error("variable '" + std::get<Element>(statement.stmt).name + "' must contain a string or an array");
+			assert(variable != nullptr && "definitions should be checked in the parser");
 
 			const std::size_t index = std::stoi(EvaluateExpression(std::get<Element>(statement.stmt).index, variables, functions).data);
-			if (index >= variable->data.extras.size())
-				throw Error("index '" + std::to_string(index) + "' is out of bounds for array of size '" +
-					std::to_string(variable->data.extras.size()) + "'");
 
-			variable->data.extras[index] = EvaluateExpression(std::get<Element>(statement.stmt).assign, variables, functions);
+			if (std::get<Element>(statement.stmt).assign->extras.empty())
+				variable->data.data[index] = std::get<Element>(statement.stmt).assign->data[0];
+			else
+				variable->data.extras[index] = EvaluateExpression(std::get<Element>(statement.stmt).assign, variables, functions);
 
 			break;
 		}

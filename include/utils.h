@@ -15,7 +15,7 @@ std::string VarTypeToStr(const VariableType& type);
 // used in interpreter.h
 // finds variable or function in array and returns it's address
 template <typename T>
-T* GetContainer(std::vector<T>& container, const std::string& token)
+T* GetContainer(const std::vector<T>& container, const std::string& token)
 {
     for (T& data : container)
     {
