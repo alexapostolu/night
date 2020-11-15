@@ -15,7 +15,16 @@ std::string VarTypeToStr(const VariableType& type);
 // used in interpreter.h
 // finds variable or function in array and returns it's address
 template <typename T>
-T* GetContainer(std::vector<T>& container, const std::string& token);
+T* GetContainer(std::vector<T>& container, const std::string& token)
+{
+    for (T& data : container)
+    {
+        if (token == data.name)
+            return &data;
+    }
+
+    return nullptr;
+}
 
 // used in parser.h
 // returns default value for a given type
@@ -24,4 +33,20 @@ std::string DefaultValue(const ValueType& type);
 // index starts right after opening bracket; advances index to closing bracket
 template <typename Unit, typename UnitType>
 void AdvanceCloseBracketIndex(const std::string& file, int line, const std::vector<Unit>& units,
-    const UnitType& openBracket, const UnitType& closeBracket, std::size_t& index);
+    const UnitType& openBracket, const UnitType& closeBracket, std::size_t& index)
+{
+    for (int openBracketCount = 0; index < units.size(); ++index)
+    {
+        if (units[index].type == openBracket)
+        {
+            openBracketCount++;
+        }
+        else if (units[index].type == closeBracket)
+        {
+            if (openBracketCount == 0)
+                return;
+
+            openBracketCount--;
+        }
+    }
+}
