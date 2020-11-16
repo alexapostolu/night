@@ -50,6 +50,8 @@ std::string VarTypeToStr(const VariableType& type)
         return "string";
     case VariableType::STRING_ARR:
         return "string array";
+    case VariableType::COORD:
+        return "coordinate";
     default:
         assert_rtn(false && "variable type is missing", "");
     }

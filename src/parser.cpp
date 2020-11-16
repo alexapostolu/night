@@ -3,10 +3,12 @@
 #include "../include/token.h"
 #include "../include/error.h"
 
-#include <vector>
 #include <string>
+#include <vector>
+#include <unordered_map>
 
-Expression* new_expression(const std::string& file, int line, const Value& value, Expression* left, Expression* right)
+Expression* new_expression(const std::string& file, int line, const Value& value, Expression* left, Expression* right,
+	std::vector<Variable>& variables, std::vector<FunctionDef>& functions)
 {
 	Expression* expression = new Expression{
 		value.type,
@@ -17,7 +19,7 @@ Expression* new_expression(const std::string& file, int line, const Value& value
 	};
 
 	for (const std::vector<Value>& values : value.extras)
-		expression->extras.push_back(*ParseValues(file, line, values));
+		expression->extras.push_back(*ParseValues(file, line, values, variables, functions));
 
 	return expression;
 }
@@ -66,7 +68,8 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, std::vector<
 						(tokens[a].type == TokenType::CLOSE_BRACKET && openBracketCount == -1)))
 					{
 						functionCall.extras.push_back(TokensToValues(
-							std::vector<Token>(tokens.begin() + start, tokens.begin() + a)
+							std::vector<Token>(tokens.begin() + start, tokens.begin() + a),
+							variables, functions
 						));
 
 						start = a + 1;
@@ -97,7 +100,8 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, std::vector<
 
 				Value subscript{ ValueType::OPERATOR, "[]" };
 				subscript.extras.push_back(TokensToValues(
-					std::vector<Token>(tokens.begin() + start, tokens.begin() + a)
+					std::vector<Token>(tokens.begin() + start, tokens.begin() + a),
+					variables, functions
 				));
 
 				values.push_back(subscript);
@@ -132,7 +136,8 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, std::vector<
 					(tokens[a].type == TokenType::CLOSE_SQUARE && openSquareCount == -1)))
 				{
 					array.extras.push_back(TokensToValues(
-						std::vector<Token>(tokens.begin() + start, tokens.begin() + a)
+						std::vector<Token>(tokens.begin() + start, tokens.begin() + a),
+						variables, functions
 					));
 
 					// type check array elements
@@ -215,7 +220,7 @@ VariableType TypeCheckExpression(const std::string& file, int line, const Expres
 			const Variable* variable = GetContainer(variables, node->data);
 			assert(variable != nullptr && "variable should already be defined; check definitions in 'TokensToValue()'");
 
-			return TypeCheckExpression(variable->value, variables, functions);
+			return TypeCheckExpression(file, line, variable->value, variables, functions);
 		}
 		if (node->type == ValueType::CALL)
 		{
@@ -233,166 +238,148 @@ VariableType TypeCheckExpression(const std::string& file, int line, const Expres
 			for (const Statement& statement : function->body)
 			{
 				if (statement.type == StatementType::RETURN)
-					return TypeCheckExpression(std::get<Return>(statement.stmt).expression, variables, functions);
+					return TypeCheckExpression(file, line, std::get<Return>(statement.stmt).expression, variables, functions);
 			}
 
 			throw Error(file, line, "function '" + node->data + "' doesn't return a value; functions used in expressions must return a value");
 		}
 
-		if (node->type != ValueType::BOOL && node->type != ValueType::BOOL && node->type != ValueType::BOOL &&
-			node->type != ValueType::BOOL && node->type != ValueType::BOOL && node->type != ValueType::BOOL)
+		if (node->type != ValueType::BOOL && node->type != ValueType::BOOL_ARR && node->type != ValueType::NUM &&
+			node->type != ValueType::NUM_ARR && node->type != ValueType::STRING && node->type != ValueType::STRING_ARR)
 			throw Error(file, line, "invalid expression");
 	}
 
 	if (node->data == "+")
 	{
-		const Expression expr1 = EvaluateExpression(node->left, variables, functions);
-		const Expression expr2 = EvaluateExpression(node->right, variables, functions);
+		const VariableType type1 = TypeCheckExpression(file, line, node->left, variables, functions);
+		const VariableType type2 = TypeCheckExpression(file, line, node->right, variables, functions);
 
-		if (expr1.type == ValueType::STRING || expr2.type == ValueType::STRING)
-		{
-			return Expression{
-				ValueType::STRING,
-				expr1.data + expr2.data
-			};
-		}
-		else
-		{
-			return Expression{
-				expr1.type,
-				std::to_string(std::stof(expr1.data) + std::stof(expr2.data))
-			};
-		}
+		if ((type1 != VariableType::STRING && type1 != VariableType::NUM) ||
+			(type2 != VariableType::STRING && type2 != VariableType::NUM))
+			throw Error(file, line, "operator '+' can only be used to add two numbers, or in string concatenation");
+
 	}
 	if (node->data == "-")
 	{
 		if (node->left == nullptr)
 		{
-			Expression expression = EvaluateExpression(node->right, variables, functions);
-			expression.data = std::to_string(-std::stof(expression.data));
-
-			return expression;
+			const VariableType type = TypeCheckExpression(file, line, node->right, variables, functions);
+			if (type != VariableType::NUM)
+				throw Error(file, line, "operator '-' is used on a " + VarTypeToStr(type) + "; operator '-' can only be used on numbers");
 		}
 
-		EVAL_EXPR(std::to_string(std::stof(expr1.data) - std::stof(expr2.data)));
+		CHECK_EXPR(VariableType::NUM);
 	}
 	if (node->data == "*")
 	{
-		EVAL_EXPR(std::to_string(std::stof(expr1.data) * std::stof(expr2.data)));
+		CHECK_EXPR(VariableType::NUM);
 	}
 	if (node->data == "/")
 	{
-		EVAL_EXPR(std::to_string(std::stof(expr1.data) / std::stof(expr2.data)));
+		CHECK_EXPR(VariableType::NUM);
 	}
 	if (node->data == "%")
 	{
-		EVAL_EXPR(std::to_string(std::stoi(expr1.data) % std::stoi(expr2.data)));
+		CHECK_EXPR(VariableType::NUM);
 	}
 	if (node->data == ">")
 	{
-		EVAL_EXPR(std::to_string(std::stof(expr1.data) > std::stof(expr2.data)));
+		CHECK_EXPR(VariableType::NUM);
 	}
 	if (node->data == "<")
 	{
-		EVAL_EXPR(std::to_string(std::stof(expr1.data) < std::stof(expr2.data)));
+		CHECK_EXPR(VariableType::NUM);
 	}
 	if (node->data == ">=")
 	{
-		EVAL_EXPR(std::to_string(std::stof(expr1.data) >= std::stof(expr2.data)));
+		CHECK_EXPR(VariableType::NUM);
 	}
 	if (node->data == "<=")
 	{
-		EVAL_EXPR(std::to_string(std::stof(expr1.data) <= std::stof(expr2.data)));
+		CHECK_EXPR(VariableType::NUM);
 	}
 	if (node->data == "!")
 	{
-		Expression expression = EvaluateExpression(node->right, variables, functions);
-		expression.data = expression.data == "true" ? "false" : "true";
-
-		return expression;
+		const VariableType type = TypeCheckExpression(file, line, node->right, variables, functions);
+		if (type != VariableType::BOOL)
+			throw Error(file, line, "operator '!' is used on a '" + VarTypeToStr(type) + "'; operator '!' can only be used on booleans");
 	}
 	if (node->data == "||")
 	{
-		EVAL_EXPR(expr1.data == "true" || expr2.data == "true" ? "true" : "false");
+		CHECK_EXPR(VariableType::BOOL);
 	}
 	if (node->data == "&&")
 	{
-		EVAL_EXPR(expr1.data == "true" && expr2.data == "true" ? "true" : "false");
+		CHECK_EXPR(VariableType::BOOL);
 	}
 	if (node->data == "==")
 	{
-		EVAL_EXPR(expr1.data == expr2.data ? "true" : "false");
+		if (TypeCheckExpression(file, line, node->left, variables, functions) !=
+			TypeCheckExpression(file, line, node->right, variables, functions))
+			throw Error(file, line, "operator '==' can only be used on two values of the same type");
+		
+		return VariableType::BOOL;
 	}
 	if (node->data == "!=")
 	{
-		EVAL_EXPR(expr1.data != expr2.data ? "true" : "false");
+		if (TypeCheckExpression(file, line, node->left, variables, functions) !=
+			TypeCheckExpression(file, line, node->right, variables, functions))
+			throw Error(file, line, "operator '!=' can only be used on two values of the same type");
+
+		return VariableType::BOOL;
 	}
 	if (node->data == "[]")
 	{
-		const Expression array = EvaluateExpression(node->right, variables, functions);
-		return array.extras[std::stoi(EvaluateExpression(&node->extras[0], variables, functions).data)];
+		const VariableType type = TypeCheckExpression(file, line, node->right, variables, functions);
+		if (type != VariableType::BOOL_ARR && type != VariableType::NUM_ARR &&
+			type != VariableType::STRING_ARR && type != VariableType::STRING)
+			throw Error(file, line, "operator '[]' is used on a '" + VarTypeToStr(type) + "'; operator '[]' can only be used on strings or arrays");
+
+		return type;
 	}
 	if (node->data == "..")
 	{
-		const Expression start = EvaluateExpression(node->right, variables, functions);
-		const Expression end = EvaluateExpression(node->left, variables, functions);
-
-		Expression array{ ValueType::NUM_ARR };
-		for (int a = std::stoi(start.data); a <= std::stoi(end.data); ++a)
-		{
-			array.extras.push_back(Expression{
-				ValueType::NUM,
-				std::to_string(a),
-				std::vector<Expression>(),
-				nullptr,
-				nullptr
-				});
-		}
-
-		return array;
+		CHECK_EXPR(VariableType::NUM);
 	}
 	if (node->data == ":")
 	{
-		const Expression index = EvaluateExpression(node->left, variables, functions);
-		const Expression value = EvaluateExpression(node->right, variables, functions);
+		const VariableType index = TypeCheckExpression(file, line, node->left, variables, functions);
+		TypeCheckExpression(file, line, node->right, variables, functions);
 
-		Expression coord{ ValueType::NUM };
-		coord.data = index.data;
-		coord.extras.push_back(value);
+		if (index != VariableType::NUM)
+			throw Error(file, line, "left hand value of operator ':' is a " + VarTypeToStr(index) + "; left hand value must be a number");
 
-		return coord;
+		return VariableType::COORD;
 	}
 	if (node->data == "<-")
 	{
-		const Expression index = EvaluateExpression(node->right, variables, functions);
-		Expression array = EvaluateExpression(node->left, variables, functions);
+		const VariableType type1 = TypeCheckExpression(file, line, node->left, variables, functions);
+		const VariableType type2 = TypeCheckExpression(file, line, node->left, variables, functions);
 
-		if (index.extras.empty())
-		{
-			array.extras.push_back(index);
-		}
-		else
-		{
-			array.extras.insert(
-				array.extras.begin() + std::stoi(index.data),
-				index.extras[0]
-			);
-		}
+		if (type1 != VariableType::BOOL_ARR && type1 != VariableType::NUM_ARR &&
+			type1 != VariableType::STRING_ARR && type1 != VariableType::STRING)
+			throw Error(file, line, "left hand value of operator '<-' is a " + VarTypeToStr(type1) + "; left hand value must be an array");
 
-		return array;
+		// type check insertion of a value
+
+		return type1;
 	}
 	if (node->data == "->")
 	{
-		const Expression index = EvaluateExpression(node->right, variables, functions);
-		Expression array = EvaluateExpression(node->left, variables, functions);
+		const VariableType type1 = TypeCheckExpression(file, line, node->left, variables, functions);
+		const VariableType type2 = TypeCheckExpression(file, line, node->right, variables, functions);
 
-		assert(!array.extras.empty() && "array shouldn't be empty");
-		array.extras.erase(array.extras.begin() + std::stoi(index.data));
+		if (type1 != VariableType::BOOL_ARR && type1 != VariableType::NUM_ARR &&
+			type1 != VariableType::STRING_ARR && type1 != VariableType::STRING)
+			throw Error(file, line, "left hand value of operator '<-' is a " + VarTypeToStr(type1) + "; left hand value must be an array");
 
-		return array;
+		if (type2 != VariableType::NUM)
+			throw Error(file, line, "right hand value of operator '->' is a " + VarTypeToStr(type2) + "; right hand value must be a number");
+
+		return type1;
 	}
 
-	assert(false && "operator missing");
+	assert_rtn(false && "operator missing", VariableType::BOOL);
 }
 
 int GetOperatorPrecedence(const ValueType& type, const std::string& value)
@@ -406,10 +393,11 @@ int GetOperatorPrecedence(const ValueType& type, const std::string& value)
 		{ ">", "<", ">=", "<=" },
 		{ "==", "!=" },
 		{ "||", "&&" },
-		{ "<-" }
+		{ ":" },
+		{ "<-", "->" }
 	};
 
-	assert(type == ValueType::OPERATOR && "value must be operator to have operator precedence");
+	assert(type == ValueType::OPERATOR && "value must be operator to have operator precedence smh");
 
 	for (std::size_t a = 0; a < operators.size(); ++a)
 	{
@@ -434,7 +422,8 @@ std::vector<Value> GetBracketExpression(const std::string& file, int line, const
 	return std::vector<Value>(values.begin() + start, values.begin() + index);
 }
 
-Expression* GetNextGroup(const std::string& file, int line, const std::vector<Value>& values, std::size_t& index)
+Expression* GetNextGroup(const std::string& file, int line, const std::vector<Value>& values, std::size_t& index,
+	std::vector<Variable>& variables, std::vector<FunctionDef>& functions)
 {
 	const bool isFrontUnary = values[index].type == ValueType::OPERATOR && (values[index].data == "!" || values[index].data == "-");
 	if (isFrontUnary)
@@ -456,19 +445,20 @@ Expression* GetNextGroup(const std::string& file, int line, const std::vector<Va
 			{
 				groupExpression = ParseValues(
 					file, line,
-					std::vector<Value>(values.begin() + start + 1, values.begin() + index - (index == values.size() - 1 ? 0 : 1))
+					std::vector<Value>(values.begin() + start + 1, values.begin() + index - (index == values.size() - 1 ? 0 : 1)),
+					variables, functions
 				);
 			}
 			else
 			{
-				groupExpression = new_expression(file, line, values[start], nullptr, nullptr);
+				groupExpression = new_expression(file, line, values[start], nullptr, nullptr, variables, functions);
 			}
 
 			if (values[index].data == "[]")
-				groupExpression = new_expression(file, line, values[index++], nullptr, groupExpression);
+				groupExpression = new_expression(file, line, values[index++], nullptr, groupExpression, variables, functions);
 
 			return isFrontUnary
-				? new_expression(file, line, values[start - 1], nullptr, groupExpression)
+				? new_expression(file, line, values[start - 1], nullptr, groupExpression, variables, functions)
 				: groupExpression;
 		}
 	}
@@ -483,7 +473,7 @@ Expression* ParseValues(const std::string& file, int line, const std::vector<Val
 
 	std::size_t a = 0;
 
-	Expression* root = GetNextGroup(file, line, values, a);
+	Expression* root = GetNextGroup(file, line, values, a, variables, functions);
 	Expression* protect = root;
 
 	// parse expression
@@ -508,8 +498,8 @@ Expression* ParseValues(const std::string& file, int line, const std::vector<Val
 
 		const std::size_t opIndex = a;
 
-		Expression* nextValue = GetNextGroup(file, line, values, ++a);
-		Expression* opNode = new_expression(file, line, values[opIndex], curr, nextValue);
+		Expression* nextValue = GetNextGroup(file, line, values, ++a, variables, functions);
+		Expression* opNode = new_expression(file, line, values[opIndex], curr, nextValue, variables, functions);
 
 		protect = nextValue;
 
@@ -547,7 +537,7 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 			throw Error("variable '" + tokens[1].value + "' has the same name as a function; variable and function names must be unique");
 
 		const std::vector<Value> values = TokensToValues(std::vector<Token>(tokens.begin() + 3, tokens.end()), variables, functions);
-		const Expression* expression = ParseValues(file, line, values, variables, functions);
+		Expression* expression = ParseValues(file, line, values, variables, functions);
 
 		TypeCheckExpression(file, line, expression, variables, functions);
 		
@@ -567,7 +557,7 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 			throw Error("variable '" + tokens[0].value + "' is not defined");
 
 		const std::vector<Value> values = TokensToValues(std::vector<Token>(tokens.begin() + 2, tokens.end()), variables, functions);
-		const Expression* expression = ParseValues(file, line, values, variables, functions);
+		Expression* expression = ParseValues(file, line, values, variables, functions);
 
 		TypeCheckExpression(file, line, expression, variables, functions);
 
@@ -918,9 +908,9 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		if (indexType != VariableType::NUM)
 			throw Error(file, line, "index evaluates to a '" + VarTypeToStr(indexType) + "'; indices must evaluate to a number");
 
-		if (variable->value->extras.empty() && std::stoi(indexExpr->data) >= variable->value->data.length())
+		if (variable->value->extras.empty() && std::stoul(indexExpr->data) >= variable->value->data.length())
 			throw Error("index '" + indexExpr->data + "' is out of bounds for string of size '" + std::to_string(variable->value->extras.size()) + "'");
-		else if (!variable->value->extras.empty() && std::stoi(indexExpr->data) >= variable->value->data.length())
+		else if (!variable->value->extras.empty() && std::stoul(indexExpr->data) >= variable->value->data.length())
 			throw Error("index '" + indexExpr->data + "' is out of bounds for array of size '" + std::to_string(variable->value->extras.size()) + "'");
 
 		// assign expression

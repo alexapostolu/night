@@ -216,6 +216,7 @@ Expression EvaluateExpression(const Expression* node, std::vector<NightVariable>
 
 void Interpreter(const std::vector<Statement>& statements, Expression* returnValue)
 {
+
 	static std::vector<NightVariable> variables;
 	static std::vector<NightFunction> functions;
 

@@ -84,7 +84,8 @@ enum class VariableType
 {
 	BOOL, BOOL_ARR,
 	NUM, NUM_ARR,
-	STRING, STRING_ARR
+	STRING, STRING_ARR,
+	COORD
 };
 
 struct Variable
