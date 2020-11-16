@@ -1,6 +1,6 @@
 # Night
 
-An interpreted dynamically typed language that focuses on simplicity and safety. The main goal of Night is to design an intuitive and easy to use language.
+Night is an interpreted dynamically typed language that focuses on simplicity and safety. The main goal of Night is to design an intuitive and easy to use language.
 
 What makes Night different from other dynamically typed languages is its compile time checks. Whereas a language like Python does not provide type checking and many other declaration checks, Night fills this gap, eliminating hidden runtime bugs and providing safer code.
 
@@ -84,7 +84,7 @@ fib_nums = fib_nums <- fib(7)
 
 # printing out the values of the array
 for (num : fib_nums)
-    print(num + " ")
+    print(num + ' ')
 ```
 
 Night avoids most runtime errors by checking types and declarations early on in the compile stage, something many other dynamically typed languages don't do.
