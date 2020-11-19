@@ -2,7 +2,7 @@ A timeline of past and future versions.
 
 ### v4.2.1
 
-Added error handling, runtime errors can be caught.
+Added error handling so runtime errors can be caught.
 
 ### v4.2.0
 
