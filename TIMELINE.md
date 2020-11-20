@@ -8,11 +8,11 @@ A complete rewrite focused on making the langauge dynamically typed, and adding 
 - `v4.2` will be adding utilities like file and error handling
 - `v4.3` networking??
 
-### v2.2.1
+### v4.2.1
 
 Added error handling, runtime errors can be caught.
 
-### v2.2.0
+### v4.2.0
 
 Added file handling.
 
@@ -92,6 +92,7 @@ Also made the code more modular and just better in general, especially when it c
 ## Version 1 Beta
 
 ### v1.0-beta
+
 The first version of Night! (the code is so bad plz don't look at it)
 
 It supported 5 basic types, bools, chars, ints, floats, and strings. It also supported variables, expressions, conditionals, and functions, along with a `print` keyword.
