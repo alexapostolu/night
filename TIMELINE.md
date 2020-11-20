@@ -1,10 +1,18 @@
 A timeline of past and future versions.
 
-### v4.2.1
+## Version 4
 
-Added error handling so runtime errors can be caught.
+A complete rewrite focused on making the langauge dynamically typed, and adding useful syntax like array slicing, in addition to adding core features like classes and file handling.
+- `v4.0` will mainly focus on making the language safe and scalable
+- `v4.1` will be focused around encapsulation
+- `v4.2` will be adding utilities like file and error handling
+- `v4.3` networking??
 
-### v4.2.0
+### v2.2.1
+
+Added error handling, runtime errors can be caught.
+
+### v2.2.0
 
 Added file handling.
 
@@ -34,14 +42,7 @@ There's also compile time checks to see if variables and functions exist, if fun
 
 And we're also back to using C++'s STL instead my own. And the entire parser and interpreter system is reworked. We now have an actual parser that constructs an AST and all that stuff.
 
-## Version 4
-
-A complete rewrite focused on making the langauge dynamically typed, and adding useful syntax like array slicing, in addition to adding core features like classes and file handling.
-
-- `v4.0` will mainly focus on making the language safe and scalable
-- `v4.1` will be focuses around encapsulation
-- `v4.2` will be adding utilities like file and error handling
-- `v4.3` networking??
+## Version 3
 
 ### v3.2
 
@@ -58,10 +59,9 @@ Fixed a small bug with source builds for Linux.
 ### v3.0.0
 
 The first non-beta version of Night! (it's still so bad though)
-
 Changed how expressions are evaluated, making it more efficient. Also created my own string and vector class (why? idk don't ask me).
 
-## Version 3
+## Version 2 Beta
 
 This version was intended to be a "testing" release, with many new features testing and implemented here.
 
@@ -89,14 +89,11 @@ Turned the `print` keyword into a function.
 
 Also made the code more modular and just better in general, especially when it came to the interpreter. And I made an actual Error class.
 
-## Version 2 Beta
+## Version 1 Beta
 
 ### v1.0-beta
-
 The first version of Night! (the code is so bad plz don't look at it)
 
 It supported 5 basic types, bools, chars, ints, floats, and strings. It also supported variables, expressions, conditionals, and functions, along with a `print` keyword.
 
 Not bad for the first verison actually, considering that I didn't even know the difference between an interpreted and compiled language :/
-
-## Version 1 Beta
