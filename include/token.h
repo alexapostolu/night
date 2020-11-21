@@ -1,8 +1,9 @@
 #pragma once
 
+#include <memory>
+#include <variant>
 #include <string>
 #include <vector>
-#include <variant>
 
 enum class TokenType
 {
@@ -64,9 +65,6 @@ struct Value
 	std::vector<std::vector<Value> > extras;
 };
 
-struct Expression;
-struct Variable;
-struct Conditional;
 struct Statement;
 
 struct Expression
@@ -74,10 +72,10 @@ struct Expression
 	ValueType type;
 
 	std::string data;
-	std::vector<Expression> extras;
+	std::vector<std::shared_ptr<Expression> > extras;
 
-	Expression* left;
-	Expression* right;
+	std::shared_ptr<Expression> left;
+	std::shared_ptr<Expression> right;
 };
 
 enum class VariableType
@@ -91,18 +89,18 @@ enum class VariableType
 struct Variable
 {
 	std::string name;
-	Expression* value;
+	std::shared_ptr<Expression> value;
 };
 
 struct Assignment
 {
 	std::string name;
-	const Expression* value;
+	std::shared_ptr<Expression> value;
 };
 
 struct Conditional
 {
-	const Expression* condition;
+	std::shared_ptr<Expression> condition;
 	std::vector<Statement> body;
 	std::vector<Conditional> chains;
 };
@@ -117,24 +115,24 @@ struct FunctionDef
 struct FunctionCall
 {
 	std::string name;
-	std::vector<Expression*> parameters;
+	std::vector<std::shared_ptr<Expression> > parameters;
 };
 
 struct Return
 {
-	const Expression* expression;
+	std::shared_ptr<Expression> expression;
 };
 
 struct WhileLoop
 {
-	const Expression* condition;
+	std::shared_ptr<Expression> condition;
 	std::vector<Statement> body;
 };
 
 struct ForLoop
 {
-	std::string index;
-	const Expression* range;
+	std::string iterator;
+	std::shared_ptr<Expression> range;
 
 	std::vector<Statement> body;
 };
@@ -142,8 +140,8 @@ struct ForLoop
 struct Element
 {
 	std::string name;
-	const Expression* index;
-	const Expression* assign;
+	std::shared_ptr<Expression> index;
+	std::shared_ptr<Expression> assign;
 };
 
 enum class StatementType

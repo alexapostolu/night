@@ -3,6 +3,7 @@
 #include "night.h"
 #include "token.h"
 
+#include <memory>
 #include <vector>
 
 // "mAcRoS aRe BaD, dOn'T uSe ThEm, reeeeeeee" - haha macro go brrrrrrrrrrrr
@@ -11,7 +12,14 @@
 						return Expression{ expr1.type, expr };
 
 // evaluates an expression
-Expression EvaluateExpression(const Expression* node, std::vector<NightVariable>& variables, std::vector<NightFunction>& functions);
+Expression EvaluateExpression(
+	const std::shared_ptr<Expression>& node,
+	std::vector<NightVariable>& variables,
+	const std::vector<NightFunction>& functions
+);
 
 // interprets expressions
-void Interpreter(const std::vector<Statement>& statements, Expression* returnValue = nullptr);
+void Interpreter(
+	const std::vector<Statement>& statements,
+	std::unique_ptr<Expression>* returnValue = nullptr
+);

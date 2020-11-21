@@ -4,10 +4,12 @@
 #include "../include/error.h"
 #include "../include/token.h"
 
+#include <iostream>
 #include <string>
 #include <vector>
 
-Expression EvaluateExpression(const Expression* node, std::vector<NightVariable>& variables, std::vector<NightFunction>& functions)
+Expression EvaluateExpression(const std::shared_ptr<Expression>& node, std::vector<NightVariable>& variables,
+	const std::vector<NightFunction>& functions)
 {
 	assert(node != nullptr && "node should not be NULL");
 
@@ -28,7 +30,6 @@ Expression EvaluateExpression(const Expression* node, std::vector<NightVariable>
 				std::string uinput;
 				getline(std::cin, uinput);
 
-				// type check this!!!
 				return Expression{ ValueType::STRING, uinput };
 			}
 
@@ -41,13 +42,13 @@ Expression EvaluateExpression(const Expression* node, std::vector<NightVariable>
 			{
 				variables.push_back(NightVariable{
 					function->parameters[a],
-					EvaluateExpression(&node->extras[a], variables, functions)
+					EvaluateExpression(node->extras[a], variables, functions)
 				});
 			}
 
 			// interpret function body and extract return value
-			Expression* returnValue = nullptr;
-			Interpreter(function->body, returnValue);
+			std::unique_ptr<Expression> returnValue;
+			Interpreter(function->body, &returnValue);
 
 			assert(returnValue != nullptr && "function used in expression doesn't have a return statement");
 
@@ -62,6 +63,8 @@ Expression EvaluateExpression(const Expression* node, std::vector<NightVariable>
 
 		return *node;
 	}
+
+	assert(node->type == ValueType::OPERATOR && "node should be operator");
 
 	if (node->data == "+")
 	{
@@ -149,23 +152,23 @@ Expression EvaluateExpression(const Expression* node, std::vector<NightVariable>
 	if (node->data == "[]")
 	{
 		const Expression array = EvaluateExpression(node->right, variables, functions);
-		return array.extras[std::stoi(EvaluateExpression(&node->extras[0], variables, functions).data)];
+		return *(array.extras[std::stoi(EvaluateExpression(node->extras[0], variables, functions).data)]);
 	}
 	if (node->data == "..")
 	{
-		const Expression start = EvaluateExpression(node->right, variables, functions);
-		const Expression end = EvaluateExpression(node->left, variables, functions);
+		const Expression start = EvaluateExpression(node->left, variables, functions);
+		const Expression end = EvaluateExpression(node->right, variables, functions);
 
 		Expression array{ ValueType::NUM_ARR };
 		for (int a = std::stoi(start.data); a <= std::stoi(end.data); ++a)
 		{
-			array.extras.push_back(Expression{
+			array.extras.push_back(std::make_shared<Expression>(Expression{
 				ValueType::NUM,
 				std::to_string(a),
-				std::vector<Expression>(),
+				std::vector<std::shared_ptr<Expression> >(),
 				nullptr,
 				nullptr
-			});
+			}));
 		}
 
 		return array;
@@ -177,7 +180,7 @@ Expression EvaluateExpression(const Expression* node, std::vector<NightVariable>
 
 		Expression coord{ ValueType::NUM };
 		coord.data = index.data;
-		coord.extras.push_back(value);
+		coord.extras.push_back(std::make_shared<Expression>(value));
 
 		return coord;
 	}
@@ -188,7 +191,7 @@ Expression EvaluateExpression(const Expression* node, std::vector<NightVariable>
 
 		if (index.extras.empty())
 		{
-			array.extras.push_back(index);
+			array.extras.push_back(std::make_shared<Expression>(index));
 		}
 		else
 		{
@@ -214,9 +217,8 @@ Expression EvaluateExpression(const Expression* node, std::vector<NightVariable>
 	assert_rtn(false && "operator missing", Expression());
 }
 
-void Interpreter(const std::vector<Statement>& statements, Expression* returnValue)
+void Interpreter(const std::vector<Statement>& statements, std::unique_ptr<Expression>* returnValue)
 {
-
 	static std::vector<NightVariable> variables;
 	static std::vector<NightFunction> functions;
 
@@ -265,25 +267,21 @@ void Interpreter(const std::vector<Statement>& statements, Expression* returnVal
 				std::get<FunctionDef>(statement.stmt).name,
 				std::get<FunctionDef>(statement.stmt).parameters,
 				std::get<FunctionDef>(statement.stmt).body
-				});
+			});
 
 			break;
 		}
 		case StatementType::FUNCTION_CALL: {
 			if (std::get<FunctionCall>(statement.stmt).name == "print")
 			{
-				for (const Expression* parameter : std::get<FunctionCall>(statement.stmt).parameters)
-				{
-					Expression expression = EvaluateExpression(parameter, variables, functions);
-					NightPrint(expression);
-				}
+				for (const std::shared_ptr<Expression>& parameter : std::get<FunctionCall>(statement.stmt).parameters)
+					NightPrint(EvaluateExpression(parameter, variables, functions));
 
 				break;
 			}
 
 			const NightFunction* function = GetContainer(functions, std::get<FunctionCall>(statement.stmt).name);
-			if (function == nullptr)
-				throw Error("function '" + std::get<FunctionCall>(statement.stmt).name + "' is undefined");
+			assert(function != nullptr && "definitions should be checked in the parser");
 
 			Interpreter(function->body);
 
@@ -291,8 +289,7 @@ void Interpreter(const std::vector<Statement>& statements, Expression* returnVal
 		}
 		case StatementType::RETURN: {
 			assert(returnValue != nullptr && "returnValue should not be NULL");
-
-			*returnValue = EvaluateExpression(std::get<Return>(statement.stmt).expression, variables, functions);
+			*returnValue = std::make_unique<Expression>(EvaluateExpression(std::get<Return>(statement.stmt).expression, variables, functions));
 
 			variables.erase(variables.begin() + variablesSize, variables.end());
 			return;
@@ -306,12 +303,12 @@ void Interpreter(const std::vector<Statement>& statements, Expression* returnVal
 		case StatementType::FOR_LOOP: {
 			const Expression range = EvaluateExpression(std::get<ForLoop>(statement.stmt).range, variables, functions);
 
-			variables.push_back(NightVariable{ std::get<ForLoop>(statement.stmt).index, Expression() });
+			variables.push_back(NightVariable{ std::get<ForLoop>(statement.stmt).iterator, Expression() });
 			NightVariable* index = &variables.back();
 
-			for (Expression rangeValue : range.extras)
+			for (const std::shared_ptr<Expression>& rangeValue : range.extras)
 			{
-				index->data = rangeValue;
+				index->data = *rangeValue;
 				Interpreter(std::get<ForLoop>(statement.stmt).body);
 			}
 
@@ -326,7 +323,7 @@ void Interpreter(const std::vector<Statement>& statements, Expression* returnVal
 			if (std::get<Element>(statement.stmt).assign->extras.empty())
 				variable->data.data[index] = std::get<Element>(statement.stmt).assign->data[0];
 			else
-				variable->data.extras[index] = EvaluateExpression(std::get<Element>(statement.stmt).assign, variables, functions);
+				variable->data.extras[index] = std::make_shared<Expression>(EvaluateExpression(std::get<Element>(statement.stmt).assign, variables, functions));
 
 			break;
 		}

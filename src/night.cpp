@@ -10,10 +10,10 @@ void NightPrint(const Expression& value)
         std::cout << "[ ";
         for (std::size_t a = 0; a < value.extras.size() - 1; ++a)
         {
-            NightPrint(value.extras[a]);
+            NightPrint(*value.extras[a]);
             std::cout << ", ";
         }
-        std::cout << value.extras.back().data << " ]";
+        std::cout << value.extras.back()->data << " ]";
     }
     else
     {

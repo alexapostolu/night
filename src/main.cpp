@@ -9,7 +9,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <variant>
 
 std::vector<Token> OpenFile(const std::string& file)
 {
@@ -19,7 +18,7 @@ std::vector<Token> OpenFile(const std::string& file)
 
     std::vector<Token> tokens;
     std::string fileLine;
-    for (int line = 0; getline(sourceFile, fileLine); ++line)
+    for (int line = 1; getline(sourceFile, fileLine); ++line)
     {
         std::vector<Token> fileTokens = Lexer(file, line, fileLine);
         if (fileTokens.size() >= 1 && fileTokens[0].type == TokenType::IMPORT)
@@ -62,10 +61,10 @@ void EntryPoint(const std::string& file)
 int main(int argc, char* argv[])
 {
     try {
-        if (argc > 2)
-            throw Error("invalid command line arguments");
+        if (argc != 2)
+            throw Error("invalid command line arguments; only pass in the file name as an argument");
         
-        EntryPoint(argc == 1 ? "C:\\dev\\solutions\\Night\\Night v4\\Night\\source.night" : argv[1]);
+        EntryPoint(argv[1]);
     }
     catch (const Error& e) {
         std::cerr << e.what() << '\n';

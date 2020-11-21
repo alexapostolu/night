@@ -3,28 +3,28 @@
 #include "../include/token.h"
 #include "../include/error.h"
 
+#include <memory>
 #include <string>
 #include <vector>
-#include <unordered_map>
 
-Expression* new_expression(const std::string& file, int line, const Value& value, Expression* left, Expression* right,
-	std::vector<Variable>& variables, std::vector<FunctionDef>& functions)
+std::shared_ptr<Expression> new_expression(const std::string& file, const int line, const Value& value, const std::shared_ptr<Expression>& left,
+	const std::shared_ptr<Expression>& right, std::vector<Variable>& variables, std::vector<FunctionDef>& functions)
 {
-	Expression* expression = new Expression{
+	std::shared_ptr<Expression> expression = std::make_shared<Expression>(Expression{
 		value.type,
 		value.data,
-		std::vector<Expression>(),
+		std::vector<std::shared_ptr<Expression> >(),
 		left,
 		right
-	};
+	});
 
 	for (const std::vector<Value>& values : value.extras)
-		expression->extras.push_back(*ParseValues(file, line, values, variables, functions));
+		expression->extras.push_back(ParseValues(file, line, values, variables, functions));
 
 	return expression;
 }
 
-void CheckFunctionDefinition(const std::vector<Statement>& statements, const std::string& file, int line, const std::string& errorMsg)
+void CheckFunctionDefinition(const std::vector<Statement>& statements, const std::string& file, const int line, const std::string& errorMsg)
 {
 	for (const Statement& statement : statements)
 	{
@@ -49,6 +49,9 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, std::vector<
 		{
 			if (a < tokens.size() - 1 && tokens[a + 1].type == TokenType::OPEN_BRACKET)
 			{
+				if (GetContainer(functions, tokens[a].value) == nullptr)
+					throw Error(file, line, "function '" + tokens[a].value + "' is not defined");
+
 				Value functionCall{ ValueType::CALL };
 
 				a += 2;
@@ -108,6 +111,9 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, std::vector<
 			}
 			else
 			{
+				if (GetContainer(variables, tokens[a].value) == nullptr)
+					throw Error(file, line, "variable '" + tokens[a].value + "' is not defined");
+
 				values.push_back(Value{ ValueType::VARIABLE, tokens[a].value });
 			}
 		}
@@ -121,6 +127,7 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, std::vector<
 			else
 				a += 2;
 
+			// parse array elements
 			for (int start = a, openBracketCount = 0, openSquareCount = 0; a < tokens.size(); ++a)
 			{
 				if (tokens[a].type == TokenType::OPEN_BRACKET)
@@ -140,15 +147,27 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, std::vector<
 						variables, functions
 					));
 
-					// type check array elements
-					/*
-					if (array.extras.size() == 1) {
-						array.type = CheckValuesType(array.extras[0]);
+					const VariableType arrayElemType = VarTypeToArrType(TypeCheckExpression(
+						file, line,
+						ParseValues(file, line, array.extras.back(), variables, functions),
+						variables, functions
+					));
+
+					if (arrayElemType == VariableType::NUM_ARR)
+					{
+						for (const Value& value : array.extras.back())
+						{
+							if (value.type == ValueType::OPERATOR && value.data == "..")
+								return TokensToValues(std::vector<Token>(tokens.begin() + 1, tokens.end() - 1), variables, functions);
+						}
 					}
-					else if (array.type != CheckValuesType(array.extras.back())) {
+
+					// array ranges
+
+					if (array.extras.size() == 1)
+						array.type = VarTypeToValueType(arrayElemType);
+					else if (array.type != VarTypeToValueType(arrayElemType))
 						throw Error(file, line, "elements in an array must be of the same type");
-					}
-					*/
 
 					start = a + 1;
 
@@ -162,6 +181,7 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, std::vector<
 			if (a >= tokens.size())
 				throw Error(file, line, "missing closing square for array");
 
+			// fill array with default values if size initialized
 			if (tokens[a].type == TokenType::NUM_VAL)
 			{
 				std::size_t arraySize = std::stol(tokens[a].value);
@@ -192,14 +212,14 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, std::vector<
 			case TokenType::STRING_VAL:
 				values.push_back(Value{ ValueType::STRING, tokens[a].value });
 				break;
-			case TokenType::OPERATOR:
-				values.push_back(Value{ ValueType::OPERATOR, tokens[a].value });
-				break;
 			case TokenType::OPEN_BRACKET:
 				values.push_back(Value{ ValueType::OPEN_BRACKET, tokens[a].value });
 				break;
 			case TokenType::CLOSE_BRACKET:
 				values.push_back(Value{ ValueType::CLOSE_BRACKET, tokens[a].value });
+				break;
+			case TokenType::OPERATOR:
+				values.push_back(Value{ ValueType::OPERATOR, tokens[a].value });
 				break;
 			default:
 				throw Error(file, line, "unexpected token '" + tokens[a].value + "' in expression");
@@ -210,9 +230,10 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, std::vector<
 	return values;
 }
 
-VariableType TypeCheckExpression(const std::string& file, int line, const Expression* node,
+VariableType TypeCheckExpression(const std::string& file, const int line, const std::shared_ptr<Expression>& node,
 	std::vector<Variable>& variables, std::vector<FunctionDef>& functions)
 {
+	// if node->left and node->right is NULL, then node must be a value
 	if (node->left == nullptr && node->right == nullptr)
 	{
 		if (node->type == ValueType::VARIABLE)
@@ -233,7 +254,7 @@ VariableType TypeCheckExpression(const std::string& file, int line, const Expres
 			if (node->extras.size() != function->parameters.size())
 				throw Error(file, line, "function '" + node->data + "' was called with '" + std::to_string(node->extras.size()) + "' parameters, but was defined with '" + std::to_string(function->parameters.size()) + "' parameters");
 
-			// type check function parameters here
+			// type check function parameters in the function body here
 
 			for (const Statement& statement : function->body)
 			{
@@ -244,9 +265,14 @@ VariableType TypeCheckExpression(const std::string& file, int line, const Expres
 			throw Error(file, line, "function '" + node->data + "' doesn't return a value; functions used in expressions must return a value");
 		}
 
+		// if node isn't a variable or a function call,
+		// then node must be a literal value
+
 		if (node->type != ValueType::BOOL && node->type != ValueType::BOOL_ARR && node->type != ValueType::NUM &&
 			node->type != ValueType::NUM_ARR && node->type != ValueType::STRING && node->type != ValueType::STRING_ARR)
-			throw Error(file, line, "invalid expression");
+			throw Error(file, line, "unexpected '" + node->data + "' in expression");
+
+		return ValueTypeToVarType(node->type);
 	}
 
 	if (node->data == "+")
@@ -258,6 +284,10 @@ VariableType TypeCheckExpression(const std::string& file, int line, const Expres
 			(type2 != VariableType::STRING && type2 != VariableType::NUM))
 			throw Error(file, line, "operator '+' can only be used to add two numbers, or in string concatenation");
 
+		if (type1 == VariableType::STRING || type2 == VariableType::STRING)
+			return VariableType::STRING;
+		else
+			return VariableType::NUM;
 	}
 	if (node->data == "-")
 	{
@@ -268,49 +298,51 @@ VariableType TypeCheckExpression(const std::string& file, int line, const Expres
 				throw Error(file, line, "operator '-' is used on a " + VarTypeToStr(type) + "; operator '-' can only be used on numbers");
 		}
 
-		CHECK_EXPR(VariableType::NUM);
+		CHECK_EXPR(VariableType::NUM, VariableType::NUM);
 	}
 	if (node->data == "*")
 	{
-		CHECK_EXPR(VariableType::NUM);
+		CHECK_EXPR(VariableType::NUM, VariableType::NUM);
 	}
 	if (node->data == "/")
 	{
-		CHECK_EXPR(VariableType::NUM);
+		CHECK_EXPR(VariableType::NUM, VariableType::NUM);
 	}
 	if (node->data == "%")
 	{
-		CHECK_EXPR(VariableType::NUM);
+		CHECK_EXPR(VariableType::NUM, VariableType::NUM);
 	}
 	if (node->data == ">")
 	{
-		CHECK_EXPR(VariableType::NUM);
+		CHECK_EXPR(VariableType::NUM, VariableType::BOOL);
 	}
 	if (node->data == "<")
 	{
-		CHECK_EXPR(VariableType::NUM);
+		CHECK_EXPR(VariableType::NUM, VariableType::BOOL);
 	}
 	if (node->data == ">=")
 	{
-		CHECK_EXPR(VariableType::NUM);
+		CHECK_EXPR(VariableType::NUM, VariableType::BOOL);
 	}
 	if (node->data == "<=")
 	{
-		CHECK_EXPR(VariableType::NUM);
+		CHECK_EXPR(VariableType::NUM, VariableType::BOOL);
 	}
 	if (node->data == "!")
 	{
 		const VariableType type = TypeCheckExpression(file, line, node->right, variables, functions);
 		if (type != VariableType::BOOL)
 			throw Error(file, line, "operator '!' is used on a '" + VarTypeToStr(type) + "'; operator '!' can only be used on booleans");
+
+		return VariableType::BOOL;
 	}
 	if (node->data == "||")
 	{
-		CHECK_EXPR(VariableType::BOOL);
+		CHECK_EXPR(VariableType::BOOL, VariableType::BOOL);
 	}
 	if (node->data == "&&")
 	{
-		CHECK_EXPR(VariableType::BOOL);
+		CHECK_EXPR(VariableType::BOOL, VariableType::BOOL);
 	}
 	if (node->data == "==")
 	{
@@ -339,7 +371,7 @@ VariableType TypeCheckExpression(const std::string& file, int line, const Expres
 	}
 	if (node->data == "..")
 	{
-		CHECK_EXPR(VariableType::NUM);
+		CHECK_EXPR(VariableType::NUM, VariableType::NUM_ARR);
 	}
 	if (node->data == ":")
 	{
@@ -379,7 +411,7 @@ VariableType TypeCheckExpression(const std::string& file, int line, const Expres
 		return type1;
 	}
 
-	assert_rtn(false && "operator missing", VariableType::BOOL);
+	assert_rtn(false && "operator missing", VariableType());
 }
 
 int GetOperatorPrecedence(const ValueType& type, const std::string& value)
@@ -411,7 +443,7 @@ int GetOperatorPrecedence(const ValueType& type, const std::string& value)
 	assert_rtn(false && "operator missing", 0);
 }
 
-std::vector<Value> GetBracketExpression(const std::string& file, int line, const std::vector<Value>& values, std::size_t& index)
+std::vector<Value> GetBracketExpression(const std::string& file, const int line, const std::vector<Value>& values, std::size_t& index)
 {
 	std::size_t start = index;
 	AdvanceCloseBracketIndex(file, line, values, ValueType::OPEN_BRACKET, ValueType::CLOSE_BRACKET, index);
@@ -422,7 +454,7 @@ std::vector<Value> GetBracketExpression(const std::string& file, int line, const
 	return std::vector<Value>(values.begin() + start, values.begin() + index);
 }
 
-Expression* GetNextGroup(const std::string& file, int line, const std::vector<Value>& values, std::size_t& index,
+std::shared_ptr<Expression> GetNextGroup(const std::string& file, const int line, const std::vector<Value>& values, std::size_t& index,
 	std::vector<Variable>& variables, std::vector<FunctionDef>& functions)
 {
 	const bool isFrontUnary = values[index].type == ValueType::OPERATOR && (values[index].data == "!" || values[index].data == "-");
@@ -440,7 +472,7 @@ Expression* GetNextGroup(const std::string& file, int line, const std::vector<Va
 		// move this outside of the loop; break the loop if openBrakcetCount == 0 && index == end or operator
 		if ((values[index].type == ValueType::OPERATOR || index == values.size() - 1) && openBracketCount == 0)
 		{
-			Expression* groupExpression = nullptr;
+			std::shared_ptr<Expression> groupExpression;
 			if (values[start].type == ValueType::OPEN_BRACKET)
 			{
 				groupExpression = ParseValues(
@@ -466,15 +498,15 @@ Expression* GetNextGroup(const std::string& file, int line, const std::vector<Va
 	throw Error(file, line, "missing closing bracket in expression");
 }
 
-Expression* ParseValues(const std::string& file, int line, const std::vector<Value>& values,
+std::shared_ptr<Expression> ParseValues(const std::string& file, const int line, const std::vector<Value>& values,
 	std::vector<Variable>& variables, std::vector<FunctionDef>& functions)
 {
 	assert(!values.empty() && "values shouldn't be empty");
 
 	std::size_t a = 0;
 
-	Expression* root = GetNextGroup(file, line, values, a, variables, functions);
-	Expression* protect = root;
+	std::shared_ptr<Expression> root = GetNextGroup(file, line, values, a, variables, functions);
+	std::shared_ptr<Expression> protect = root;
 
 	// parse expression
 
@@ -485,12 +517,12 @@ Expression* ParseValues(const std::string& file, int line, const std::vector<Val
 
 		// travel tree to find a nice spot to settle down
 
-		Expression* curr = root;
+		std::shared_ptr<Expression> curr = root;
 		Expression* prev = nullptr;
 		while ((curr->left != nullptr || curr->right != nullptr) && curr != protect &&
 			GetOperatorPrecedence(curr->type, curr->data) > GetOperatorPrecedence(values[a].type, values[a].data))
 		{
-			prev = curr;
+			prev = curr.get();
 			curr = curr->right;
 		}
 
@@ -498,15 +530,20 @@ Expression* ParseValues(const std::string& file, int line, const std::vector<Val
 
 		const std::size_t opIndex = a;
 
-		Expression* nextValue = GetNextGroup(file, line, values, ++a, variables, functions);
-		Expression* opNode = new_expression(file, line, values[opIndex], curr, nextValue, variables, functions);
+		const std::shared_ptr<Expression> nextValue = GetNextGroup(file, line, values, ++a, variables, functions);
+		const std::shared_ptr<Expression> opNode = new_expression(file, line, values[opIndex], curr, nextValue, variables, functions);
 
 		protect = nextValue;
 
 		if (curr == root)
+		{
 			root = opNode;
+		}
 		else
+		{
+			assert(prev != nullptr && "wait this isn't even physically possible");
 			prev->right = opNode;
+		}
 	}
 
 	return root;
@@ -520,7 +557,7 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 	const std::string file = tokens[0].file;
 	const int line = tokens[0].line;
 
-	assert(!tokens.empty() && "tokens array should not be empty");
+	assert(!tokens.empty() && "tokens should not be empty");
 
 	if (tokens.size() >= 1 && tokens[0].type == TokenType::SET)
 	{
@@ -532,20 +569,18 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 			throw Error(file, line, "expected expression after assignment operator");
 
 		if (GetContainer(variables, tokens[1].value) != nullptr)
-			throw Error("variable '" + tokens[1].value + "' is already defined");
+			throw Error(file, line, "variable '" + tokens[1].value + "' is already defined");
 		if (GetContainer(functions, tokens[1].value) != nullptr)
-			throw Error("variable '" + tokens[1].value + "' has the same name as a function; variable and function names must be unique");
+			throw Error(file, line, "variable '" + tokens[1].value + "' has the same name as a function; variable and function names must be unique");
 
-		const std::vector<Value> values = TokensToValues(std::vector<Token>(tokens.begin() + 3, tokens.end()), variables, functions);
-		Expression* expression = ParseValues(file, line, values, variables, functions);
+		std::shared_ptr<Expression> expression(ExtractExpression(tokens, 3, tokens.size(), variables, functions));
 
-		TypeCheckExpression(file, line, expression, variables, functions);
-		
-		const Variable variable{ tokens[1].value, expression };
-		const Statement statement{ StatementType::VARIABLE, variable };
-		
-		variables.push_back(variable);
-		statements.push_back(statement);
+		variables.push_back(Variable{ tokens[1].value, expression });
+
+		statements.push_back(Statement{
+			StatementType::VARIABLE,
+			Variable{ tokens[1].value, expression }
+		});
 	}
 	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VARIABLE && tokens[1].type == TokenType::ASSIGNMENT)
 	{
@@ -554,19 +589,14 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 
 		Variable* variable = GetContainer(variables, tokens[0].value);
 		if (variable == nullptr)
-			throw Error("variable '" + tokens[0].value + "' is not defined");
+			throw Error(file, line, "variable '" + tokens[0].value + "' is not defined");
 
-		const std::vector<Value> values = TokensToValues(std::vector<Token>(tokens.begin() + 2, tokens.end()), variables, functions);
-		Expression* expression = ParseValues(file, line, values, variables, functions);
+		variable->value = ExtractExpression(tokens, 2, tokens.size(), variables, functions);
 
-		TypeCheckExpression(file, line, expression, variables, functions);
-
-		variable->value = expression;
-
-		const Assignment assignment{ tokens[0].value, expression };
-		const Statement statement{ StatementType::ASSIGNMENT, assignment };
-
-		statements.push_back(statement);
+		statements.push_back(Statement{
+			StatementType::ASSIGNMENT,
+			Assignment{ tokens[0].value, ExtractExpression(tokens, 2, tokens.size(), variables, functions) }
+		});
 	}
 	else if (tokens.size() >= 1 && tokens[0].type == TokenType::IF)
 	{
@@ -577,41 +607,15 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		if (tokens.size() == 3 && tokens[2].type == TokenType::CLOSE_BRACKET)
 			throw Error(file, line, "expected expression in between brackets");
 
-		// if statement condition
-
 		std::size_t closeBracketIndex = 2;
-		AdvanceCloseBracketIndex(file, line, tokens, TokenType::OPEN_BRACKET, TokenType::CLOSE_BRACKET, closeBracketIndex);
 
-		if (closeBracketIndex >= tokens.size())
-			throw Error(file, line, "missing closing bracket for if statement");
+		const std::shared_ptr<Expression> condition = ExtractCondition(tokens, closeBracketIndex, variables, functions, "if condition");
+		const std::vector<Statement> body = ExtractBody(tokens, closeBracketIndex, variables, "if statement");
 
-		const std::vector<Value> conditionValues = TokensToValues(
-			std::vector<Token>(tokens.begin() + 2, tokens.begin() + closeBracketIndex),
-			variables, functions
-		);
-
-		const Expression* conditionExpr = ParseValues(file, line, conditionValues, variables, functions);
-		const VariableType conditionType = TypeCheckExpression(file, line, conditionExpr, variables, functions);
-
-		if (conditionType != VariableType::BOOL)
-			throw Error(file, line, "if statement condition evaluates to a '" + VarTypeToStr(conditionType) + "'; conditions must evaluate to a boolean");
-
-		// if statement body
-
-		std::vector<Statement> scope;
-		const std::vector<std::vector<Token> > code = SplitCode(std::vector<Token>(tokens.begin() + closeBracketIndex + 2, tokens.end() - 1));
-		for (const std::vector<Token>& tokens : code)
-		{
-			Parser(scope, tokens);
-
-			if (scope.back().type == StatementType::FUNCTION_DEF)
-				throw Error(file, line, "function definition found in if statement; statements cannot contain function definitions");
-		}
-
-		const Conditional condition{ conditionExpr, scope };
-		const Statement statement{ StatementType::CONDITIONAL, condition };
-
-		statements.push_back(statement);
+		statements.push_back(Statement{
+			StatementType::CONDITIONAL,
+			Conditional{ condition, body }
+		});
 	}
 	else if (tokens.size() >= 2 && tokens[0].type == TokenType::ELSE && tokens[1].type == TokenType::IF)
 	{
@@ -625,62 +629,26 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 			std::get<Conditional>(statements.back().stmt).condition == nullptr)
 			throw Error(file, line, "expected if or else if statement before else if statement");
 
-		// else if statement condition
-
 		std::size_t closeBracketIndex = 3;
-		AdvanceCloseBracketIndex(file, line, tokens, TokenType::OPEN_BRACKET, TokenType::CLOSE_BRACKET, closeBracketIndex);
 
-		if (closeBracketIndex >= tokens.size())
-			throw Error(file, line, "missing closing bracket for else if statement");
-
-		const std::vector<Value> conditionValues = TokensToValues(
-			std::vector<Token>(tokens.begin() + 3, tokens.begin() + closeBracketIndex),
-			variables, functions
-		);
-
-		const Expression* conditionExpr = ParseValues(file, line, conditionValues, variables, functions);
-		const VariableType conditionType = TypeCheckExpression(file, line, conditionExpr, variables, functions);
-
-		if (conditionType != VariableType::BOOL)
-			throw Error(file, line, "else if statement condition evaluates to a '" + VarTypeToStr(conditionType) + "'; conditions must evaluate to a boolean");
-
-		// else if statement body
-
-		std::vector<Statement> scope;
-		const std::vector<std::vector<Token> > code = SplitCode(std::vector<Token>(tokens.begin() + closeBracketIndex + 2, tokens.end() - 1));
-		for (const std::vector<Token>& tokens : code)
-		{
-			Parser(scope, tokens);
-
-			if (scope.back().type == StatementType::FUNCTION_DEF)
-				throw Error(file, line, "function definition found in else if statement; statements cannot contain function definitions");
-		}
+		std::shared_ptr<Expression> conditionExpr = ExtractCondition(tokens, closeBracketIndex, variables, functions, "else if condition");
+		const std::vector<Statement> body = ExtractBody(tokens, closeBracketIndex, variables, "else if statement");
 
 		std::get<Conditional>(statements.back().stmt).chains.push_back(
-			Conditional{ conditionExpr, scope }
+			Conditional{ conditionExpr, body }
 		);
 	}
 	else if (tokens.size() >= 1 && tokens[0].type == TokenType::ELSE)
 	{
-		if (tokens.size() == 2 || tokens[2].type != TokenType::OPEN_CURLY)
-			throw Error(file, line, "expected open brace after 'else' keyword");
 		if (statements.size() == 0 || statements.back().type != StatementType::CONDITIONAL ||
 			std::get<Conditional>(statements.back().stmt).condition == nullptr)
 			throw Error(file, line, "expected if or else if statement before else statement");
 
-		// else statement body
+		const std::vector<Statement> body = ExtractBody(tokens, 0, variables, "function definition");
 
-		std::vector<Statement> scope;
-		std::vector<std::vector<Token> > code = SplitCode(std::vector<Token>(tokens.begin() + 2, tokens.end() - 1));
-		for (const std::vector<Token>& tokens : code)
-		{
-			Parser(scope, tokens);
-
-			if (scope.back().type == StatementType::FUNCTION_DEF)
-				throw Error(file, line, "function definition found in else statement; statements cannot contain function definitions");
-		}
-
-		std::get<Conditional>(statements.back().stmt).chains.push_back(Conditional{ nullptr, scope });
+		std::get<Conditional>(statements.back().stmt).chains.push_back(
+			Conditional{ nullptr, body }
+		);
 	}
 	else if (tokens.size() >= 1 && tokens[0].type == TokenType::DEF)
 	{
@@ -722,19 +690,19 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 				throw Error(file, line, "expected comma or closing bracket after function parameter");
 		}
 
+		if (tokens[closeBracketIndex + 1].type != TokenType::CLOSE_CURLY)
+			throw Error(file, line, "expected closing curly after function parameters");
+
 		// function body
 
-		std::vector<Statement> body;
+		const std::vector<Statement> body = ExtractBody(tokens, closeBracketIndex, variables, "function definitions");
 
-		Parser(body, std::vector<Token>(tokens.begin() + closeBracketIndex + 2, tokens.end() - 1), true);
-
-		CheckFunctionDefinition(body, file, line, "function '" + tokens[1].value + "' contains a function definition; function definitions must exist outside of any conditional, loop, and function");
+		// constructing statement
 
 		const FunctionDef function{ tokens[1].value, parameters, body };
-		const Statement statement{ StatementType::FUNCTION_DEF, function };
-
 		functions.push_back(function);
-		statements.push_back(statement);
+
+		statements.push_back(Statement{ StatementType::FUNCTION_DEF, function });
 	}
 	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VARIABLE && tokens[1].type == TokenType::OPEN_BRACKET)
 	{
@@ -743,7 +711,7 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 
 		// function parameters
 
-		std::vector<Expression*> parameters;
+		std::vector<std::shared_ptr<Expression> > parameters;
 		for (std::size_t start = 2, a = 2, openBracketIndex = 0; a < tokens.size(); ++a)
 		{
 			if (tokens[a].type == TokenType::OPEN_BRACKET)
@@ -769,10 +737,10 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 			}
 		}
 
-		const FunctionCall functionCall{ tokens[0].value, parameters };
-		const Statement statement{ StatementType::FUNCTION_CALL, functionCall };
-
-		statements.push_back(statement);
+		statements.push_back(Statement{
+			StatementType::FUNCTION_CALL,
+			FunctionCall{ tokens[0].value, parameters }
+		});
 	}
 	else if (tokens.size() >= 1 && tokens[0].type == TokenType::RETURN)
 	{
@@ -781,15 +749,10 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		if (tokens.size() == 1)
 			throw Error(file, line, "expected expression after 'return' keyword");
 
-		const std::vector<Value> values = TokensToValues(
-			std::vector<Token>(tokens.begin() + 1, tokens.end()), 
-			variables, functions
-		);
-
-		const Return returnStmt{ ParseValues(file, line, values, variables, functions) };
-		const Statement statement{ StatementType::RETURN, returnStmt };
-
-		statements.push_back(statement);
+		statements.push_back(Statement{
+			StatementType::RETURN,
+			Return{ ExtractExpression(tokens, 1, tokens.size(), variables, functions) }
+		});
 	}
 	else if (tokens.size() >= 1 && tokens[0].type == TokenType::WHILE)
 	{
@@ -805,35 +768,18 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		// while loop condition
 
 		std::size_t closeBracketIndex = 2;
-		AdvanceCloseBracketIndex(file, line, tokens, TokenType::OPEN_BRACKET, TokenType::CLOSE_BRACKET, closeBracketIndex);
-
-		if (closeBracketIndex >= tokens.size())
-			throw Error(file, line, "missing closing bracket for while loop condition");
-		if (closeBracketIndex == tokens.size() - 1 || tokens[closeBracketIndex].type != TokenType::OPEN_CURLY)
-			throw Error(file, line, "expected open curly bracket for while loop body");
-
-		const std::vector<Value> conditionValues = TokensToValues(
-			std::vector<Token>(tokens.begin() + 2, tokens.begin() + closeBracketIndex),
-			variables, functions
-		);
-
-		const Expression* conditionExpr = ParseValues(file, line, conditionValues, variables, functions);
-		const VariableType conditionType = TypeCheckExpression(file, line, conditionExpr, variables, functions);
-
-		if (conditionType != VariableType::BOOL)
-			throw Error(file, line, "while loop condition evaluated to a '" + VarTypeToStr(conditionType) + "'; conditions must evaluate to a boolean");
+		std::shared_ptr<Expression> condition = ExtractCondition(tokens, closeBracketIndex, variables, functions, "while loop");
 
 		// while loop body
 
-		std::vector<Statement> body;
+		std::vector<Statement> body = ExtractBody(tokens, closeBracketIndex, variables, "while loop");
 
-		Parser(body, std::vector<Token>(tokens.begin() + closeBracketIndex + 1, tokens.end() - 1));
-		CheckFunctionDefinition(body, file, line, "while loops cannot contain functions");
+		// constructing statement
 
-		const WhileLoop whileLoop{ conditionExpr, body };
-		const Statement statement{ StatementType::WHILE_LOOP, whileLoop };
-
-		statements.push_back(statement);
+		statements.push_back(Statement{
+			StatementType::WHILE_LOOP,
+			WhileLoop{ condition, body }
+		});
 	}
 	else if (tokens.size() >= 1 && tokens[0].type == TokenType::FOR)
 	{
@@ -846,9 +792,12 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		if (tokens.size() == 4)
 			throw Error(file, line, "expected array after colon");
 
-		// range
+		// evaluating iterator and range
 
-		std::size_t closeBracketIndex = 0;
+		if (GetContainer(variables, tokens[2].value) != nullptr)
+			throw Error(file, line, "variable '" + tokens[2].value + "' is already defined");
+
+		std::size_t closeBracketIndex = 4; // starts at range
 		AdvanceCloseBracketIndex(file, line, tokens, TokenType::OPEN_BRACKET, TokenType::CLOSE_BRACKET, closeBracketIndex);
 
 		if (closeBracketIndex >= tokens.size())
@@ -859,35 +808,38 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 			variables, functions
 		);
 
-		const Expression* rangeExpr = ParseValues(file, line, rangeValue, variables, functions);
+		const std::shared_ptr<Expression> rangeExpr(ParseValues(file, line, rangeValue, variables, functions));
 		const VariableType rangeType = TypeCheckExpression(file, line, rangeExpr, variables, functions);
 
 		if (rangeType != VariableType::BOOL_ARR && rangeType != VariableType::NUM_ARR &&
 			rangeType != VariableType::STRING_ARR && rangeType != VariableType::STRING)
 			throw Error(file, line, "for loop range evaluated to a '" + VarTypeToStr(rangeType) + "'; ranges must evaluate to an array or a string");
 
-		// scope
+		variables.push_back(Variable{ tokens[2].value, rangeExpr });
 
-		std::vector<Statement> statements;
-		Parser(statements, std::vector<Token>(tokens.begin() + closeBracketIndex + 1, tokens.end() - 1));
+		// extracting scope
 
-		const ForLoop forLoop{ tokens[1].value, rangeExpr, statements };
-		const Statement statement{ StatementType::FOR_LOOP, forLoop };
+		std::vector<Statement> body = ExtractBody(tokens, closeBracketIndex, variables, "for loop");
 
-		statements.push_back(statement);
+		// constructing statement
+
+		statements.push_back(Statement{
+			StatementType::FOR_LOOP,
+			ForLoop{ tokens[2].value, rangeExpr, body }
+		});
 	}
 	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VARIABLE && tokens[1].type == TokenType::OPEN_SQUARE)
 	{
 		if (tokens.size() == 2)
 			throw Error(file, line, "expected index after open square");
 
-		Variable* variable = GetContainer(variables, tokens[0].value);
+		const Variable* variable = GetContainer(variables, tokens[0].value);
 		if (variable == nullptr)
 			throw Error(file, line, "variable '" + tokens[1].value + "' is not defined");
 		if (variable->value->type != ValueType::STRING && variable->value->extras.empty())
 			throw Error(file, line, "variable '" + variable->name + "' doesn't contain a string or an array; to be access with an index, a variable must contain a string or an array");
 
-		// element
+		// extract and evaluate element
 
 		std::size_t assignmentIndex = 2;
 		for (; assignmentIndex < tokens.size() && tokens[assignmentIndex].type != TokenType::ASSIGNMENT; ++assignmentIndex);
@@ -897,48 +849,33 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		if (assignmentIndex == tokens.size())
 			throw Error(file, line, "missing assignment operator");
 
-		const std::vector<Value> indexValues = TokensToValues(
-			std::vector<Token>(tokens.begin() + 2, tokens.begin() + assignmentIndex - 1),
-			variables, functions
-		);
+		const VariableType type = VariableType::NUM;
+		std::shared_ptr<Expression> elemExpr = ExtractExpression(tokens, 2, assignmentIndex - 1, variables, functions, &type);
 
-		const Expression* indexExpr = ParseValues(file, line, indexValues, variables, functions);
-		const VariableType indexType = TypeCheckExpression(file, line, indexExpr, variables, functions);
+		if (elemExpr == nullptr)
+			throw Error(file, line, "index evaluates to a '" + VarTypeToStr(type) + "'; indices must evaluate to a number");
 
-		if (indexType != VariableType::NUM)
-			throw Error(file, line, "index evaluates to a '" + VarTypeToStr(indexType) + "'; indices must evaluate to a number");
+		if (variable->value->extras.empty() && std::stoul(elemExpr->data) >= variable->value->data.length())
+			throw Error("index '" + elemExpr->data + "' is out of bounds for string of size '" + std::to_string(variable->value->extras.size()) + "'");
+		else if (!variable->value->extras.empty() && std::stoul(elemExpr->data) >= variable->value->data.length())
+			throw Error("index '" + elemExpr->data + "' is out of bounds for array of size '" + std::to_string(variable->value->extras.size()) + "'");
 
-		if (variable->value->extras.empty() && std::stoul(indexExpr->data) >= variable->value->data.length())
-			throw Error("index '" + indexExpr->data + "' is out of bounds for string of size '" + std::to_string(variable->value->extras.size()) + "'");
-		else if (!variable->value->extras.empty() && std::stoul(indexExpr->data) >= variable->value->data.length())
-			throw Error("index '" + indexExpr->data + "' is out of bounds for array of size '" + std::to_string(variable->value->extras.size()) + "'");
+		// extract and evaluate expression
 
-		// assign expression
+		std::shared_ptr<Expression> assignExpr = ExtractExpression(tokens, assignmentIndex + 1, tokens.size(), variables, functions);
 
-		const std::vector<Value> assignValues = TokensToValues(
-			std::vector<Token>(tokens.begin() + assignmentIndex + 1, tokens.end()),
-			variables, functions
-		);
-
-		const Expression* assignExpr = ParseValues(file, line, assignValues, variables, functions);
-		const VariableType assignType = TypeCheckExpression(file, line, assignExpr, variables, functions);
-
-		const Element element{ tokens[0].value, indexExpr, assignExpr };
-		const Statement statement{ StatementType::ELEMENT, element };
-		
 		if (variable->value->extras.empty())
 		{
-			if (assignType != VariableType::STRING || assignExpr->type != ValueType::STRING || assignExpr->data.length() >= 1)
-				throw Error(file, line, "an element of a string can only be assigned to a string of length 1");
-
-			variable->value->data[std::stoi(indexExpr->data)] = assignExpr->data[0];
-		}
-		else
-		{
-			variable->value->extras[std::stoi(indexExpr->data)] = *assignExpr;
+			if (assignExpr->type != ValueType::STRING || assignExpr->data.length() >= 1)
+				throw Error(file, line, "a string element can only be assigned to a string of length 1");
 		}
 
-		statements.push_back(statement);
+		// construct statement
+		
+		statements.push_back(Statement{
+			StatementType::ELEMENT,
+			Element{ tokens[0].value, elemExpr, assignExpr }
+		});
 	}
 	else
 	{

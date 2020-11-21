@@ -32,4 +32,7 @@ public:
 
 	#define assert(con) AssertError()
 	#define assert_rtn(con, rtn) AssertError()
+
+	// just in case I forget to remove all the debugging print statements :)
+	#define clog wtf are you doing
 #endif

@@ -63,6 +63,7 @@ std::vector<Token> Lexer(const std::string& file, int line, const std::string& f
 		{ "else", TokenType::ELSE },
 		{ "while", TokenType::WHILE },
 		{ "for", TokenType::FOR },
+		{ "return", TokenType::RETURN },
 		{ "import", TokenType::IMPORT },
 		{ "include", TokenType::IMPORT },
 	};
@@ -168,14 +169,6 @@ std::vector<Token> Lexer(const std::string& file, int line, const std::string& f
 		if (findDoubleSymbol != doubleSymbols.end())
 		{
 			FindKeyword(file, line, keywords, tokens, token);
-
-			/*
-			if (findDoubleSymbol->first == '-' && a < fileLine.length() - 1 && fileLine[a + 1] - '0' >= 0 && fileLine[a + 1] - '0' <= 9)
-			{
-				token += fileLine[a];
-				continue;
-			}
-			*/
 
 			if (a < fileLine.length() - 1 && fileLine[a + 1] == '=')
 			{
