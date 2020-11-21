@@ -28,6 +28,10 @@ Added enumerations, but not like Java's weird enums, they're more like C's enums
 
 Added classes. However they can only contain variables and methods, no inheritance, visibility, etc. So think of them as C structs
 
+### v4.0.2
+
+Lambda functions are now added!
+
 ### v4.0.1
 
 There are now compile time checks for expressions in functions! Another big step in improving safety.
