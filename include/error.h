@@ -30,6 +30,7 @@ public:
 		exit(1);
 	}
 
+	#undef assert
 	#define assert(con) AssertError()
 	#define assert_rtn(con, rtn) AssertError()
 
