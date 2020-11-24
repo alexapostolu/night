@@ -5,6 +5,7 @@
 #include "../include/token.h"
 
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -33,7 +34,7 @@ Expression EvaluateExpression(const std::shared_ptr<Expression>& node, std::vect
 				return Expression{ ValueType::STRING, uinput };
 			}
 
-			const NightFunction* function = GetContainer(functions, node->data);
+		    const NightFunction* function = GetContainer(functions, node->data);
 			assert(function != nullptr && "function is not defined");
 
 			// create variables from parameters
@@ -112,19 +113,19 @@ Expression EvaluateExpression(const std::shared_ptr<Expression>& node, std::vect
 	}
 	if (node->data == ">")
 	{
-		EVAL_EXPR(std::to_string(std::stof(expr1.data) > std::stof(expr2.data)));
+		EVAL_EXPR(std::stof(expr1.data) > std::stof(expr2.data) ? "true" : "false");
 	}
 	if (node->data == "<")
 	{
-		EVAL_EXPR(std::to_string(std::stof(expr1.data) < std::stof(expr2.data)));
+		EVAL_EXPR(std::stof(expr1.data) < std::stof(expr2.data) ? "true" : "false");
 	}
 	if (node->data == ">=")
 	{
-		EVAL_EXPR(std::to_string(std::stof(expr1.data) >= std::stof(expr2.data)));
+		EVAL_EXPR(std::stof(expr1.data) >= std::stof(expr2.data) ? "true" : "false");
 	}
 	if (node->data == "<=")
 	{
-		EVAL_EXPR(std::to_string(std::stof(expr1.data) <= std::stof(expr2.data)));
+		EVAL_EXPR(std::stof(expr1.data) <= std::stof(expr2.data) ? "true" : "false");
 	}
 	if (node->data == "!")
 	{
@@ -152,7 +153,18 @@ Expression EvaluateExpression(const std::shared_ptr<Expression>& node, std::vect
 	if (node->data == "[]")
 	{
 		const Expression array = EvaluateExpression(node->right, variables, functions);
-		return *(array.extras[std::stoi(EvaluateExpression(node->extras[0], variables, functions).data)]);
+		const unsigned long index = std::stoul(EvaluateExpression(node->extras[0], variables, functions).data);
+
+		if (array.extras.empty())
+		{
+			assert(index >= 0 && index < array.data.length() && "string subscript out of range");
+			return Expression{ ValueType::STRING, std::string(1, array.data[index]) };
+		}
+		else
+		{
+			assert(index >= 0 && index < array.extras.size() && "array subscript out of range");
+			return EvaluateExpression((array.extras[index]), variables, functions);
+		}
 	}
 	if (node->data == "..")
 	{
@@ -308,7 +320,7 @@ void Interpreter(const std::vector<Statement>& statements, std::unique_ptr<Expre
 
 			for (const std::shared_ptr<Expression>& rangeValue : range.extras)
 			{
-				index->data = *rangeValue;
+				index->data = EvaluateExpression(rangeValue, variables, functions);
 				Interpreter(std::get<ForLoop>(statement.stmt).body);
 			}
 
@@ -320,8 +332,8 @@ void Interpreter(const std::vector<Statement>& statements, std::unique_ptr<Expre
 
 			const std::size_t index = std::stoi(EvaluateExpression(std::get<Element>(statement.stmt).index, variables, functions).data);
 
-			if (std::get<Element>(statement.stmt).assign->extras.empty())
-				variable->data.data[index] = std::get<Element>(statement.stmt).assign->data[0];
+			if (variable->data.type == ValueType::STRING)
+				variable->data.data[index] = EvaluateExpression(std::get<Element>(statement.stmt).assign, variables, functions).data[0];
 			else
 				variable->data.extras[index] = std::make_shared<Expression>(EvaluateExpression(std::get<Element>(statement.stmt).assign, variables, functions));
 

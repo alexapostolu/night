@@ -20,6 +20,7 @@ T* GetContainer(std::vector<T>& container, const std::string& token)
     return nullptr;
 }
 
+// const overload
 template <typename T>
 const T* GetContainer(const std::vector<T>& container, const std::string& token)
 {
@@ -54,10 +55,14 @@ void AdvanceCloseBracketIndex(const std::string& file, const int line, const std
 }
 
 // splits an array of tokens into different statements
-std::vector<std::vector<Token> > SplitCode(const std::vector<Token>& tokens);
+std::vector<std::vector<Token> > SplitCode(
+    const std::vector<Token>& tokens
+);
 
 // returns default value for a given type
-std::string DefaultValue(const ValueType& type);
+std::string DefaultValue(
+    const ValueType& type
+);
 
 // converts between enum types
 std::string  VarTypeToStr       (const VariableType& type);
@@ -68,19 +73,24 @@ VariableType VarTypeToArrType   (const VariableType& type);
 // extracts expression from tokens; returns a type checked expression
 std::shared_ptr<Expression> ExtractExpression(
     const std::vector<Token>& tokens,
+
     const std::size_t start,
     const std::size_t end,
-    std::vector<Variable>& variables,
-    std::vector<FunctionDef>& functions,
-    const VariableType* expectedType = nullptr
+
+    const std::vector<Variable>&    variables,
+    const std::vector<FunctionDef>& functions,
+
+    VariableType* type = nullptr
 );
 
 // extracts condition from tokens; returns a type checked expression
 std::shared_ptr<Expression> ExtractCondition(
     const std::vector<Token>& tokens,
     std::size_t& closeBracketIndex,
-    std::vector<Variable>& variables,
-    std::vector<FunctionDef>& functions,
+
+    const std::vector<Variable>&    variables,
+    const std::vector<FunctionDef>& functions,
+
     const std::string& stmt
 );
 
@@ -88,6 +98,10 @@ std::shared_ptr<Expression> ExtractCondition(
 std::vector<Statement> ExtractBody(
     const std::vector<Token>& tokens,
     std::size_t closeBracketIndex,
-    std::vector<Variable>& variables,
-    const std::string& errorMsg
+
+    std::vector<Variable>& variables, // can't be const since variables need to be removed after scope finished
+
+    const std::string& stmt,
+
+    bool inFunction = false
 );

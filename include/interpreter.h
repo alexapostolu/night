@@ -14,7 +14,8 @@
 // evaluates an expression
 Expression EvaluateExpression(
 	const std::shared_ptr<Expression>& node,
-	std::vector<NightVariable>& variables,
+
+	std::vector<NightVariable>&       variables, // can't be const due to function parameters
 	const std::vector<NightFunction>& functions
 );
 

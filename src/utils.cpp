@@ -3,6 +3,7 @@
 #include "../include/token.h"
 #include "../include/error.h"
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -136,7 +137,7 @@ VariableType VarTypeToArrType(const VariableType& type)
 }
 
 std::shared_ptr<Expression> ExtractExpression(const std::vector<Token>& tokens, const std::size_t start, const std::size_t end,
-    std::vector<Variable>& variables, std::vector<FunctionDef>& functions, const VariableType* expectedType)
+    const std::vector<Variable>& variables, const std::vector<FunctionDef>& functions, VariableType* type)
 {
     const std::vector<Value> values = TokensToValues(
         std::vector<Token>(tokens.begin() + start, tokens.begin() + end),
@@ -144,13 +145,15 @@ std::shared_ptr<Expression> ExtractExpression(const std::vector<Token>& tokens, 
     );
 
     const std::shared_ptr<Expression> expression = ParseValues(tokens[0].file, tokens[0].line, values, variables, functions);
-    const VariableType type = TypeCheckExpression(tokens[0].file, tokens[0].line, expression, variables, functions);
+    
+    if (type != nullptr)
+        *type = TypeCheckExpression(tokens[0].file, tokens[0].line, expression, variables, functions);
 
-    return expectedType != nullptr && type != *expectedType ? nullptr : expression;
+    return expression;
 }
 
 std::shared_ptr<Expression> ExtractCondition(const std::vector<Token>& tokens, std::size_t& closeBracketIndex,
-    std::vector<Variable>& variables, std::vector<FunctionDef>& functions, const std::string& stmt)
+    const std::vector<Variable>& variables, const std::vector<FunctionDef>& functions, const std::string& stmt)
 {
     const std::size_t start = closeBracketIndex;
 
@@ -158,17 +161,17 @@ std::shared_ptr<Expression> ExtractCondition(const std::vector<Token>& tokens, s
     if (closeBracketIndex >= tokens.size())
         throw Error(tokens[0].file, tokens[0].line, "missing closing bracket for " + stmt);
 
-    const VariableType type = VariableType::BOOL;
+    VariableType type;
     std::shared_ptr<Expression> conditionExpr = ExtractExpression(tokens, start, closeBracketIndex, variables, functions, &type);
 
-    if (conditionExpr == nullptr)
+    if (type != VariableType::BOOL)
         throw Error(tokens[0].file, tokens[0].line, stmt + " condition evaluates to a '" + VarTypeToStr(type) + "'; conditions must evaluate to a boolean");
 
     return conditionExpr;
 }
 
 std::vector<Statement> ExtractBody(const std::vector<Token>& tokens, std::size_t closeBracketIndex,
-    std::vector<Variable>& variables, const std::string& stmt)
+    std::vector<Variable>& variables, const std::string& stmt, bool inFunction)
 {
     const std::vector<std::vector<Token> > splitTokens = tokens[closeBracketIndex + 1].type == TokenType::OPEN_CURLY
         ? SplitCode(std::vector<Token>(tokens.begin() + closeBracketIndex + 2, tokens.end() - 1))
@@ -179,7 +182,7 @@ std::vector<Statement> ExtractBody(const std::vector<Token>& tokens, std::size_t
     std::vector<Statement> body;
     for (const std::vector<Token>& toks : splitTokens)
     {
-        Parser(body, toks);
+        Parser(body, toks, inFunction);
 
         if (body.back().type == StatementType::FUNCTION_DEF)
             throw Error(toks[0].file, toks[0].line, "function definition found in " + stmt + "; " + stmt + "s cannot contain function definitions");

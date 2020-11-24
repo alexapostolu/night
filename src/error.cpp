@@ -18,7 +18,6 @@ Error::Error(const std::string& _file, int _line, const std::string& _message)
 	}
 }
 
-
 std::string Error::what() const
 {
 	return file == "source"

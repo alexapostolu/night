@@ -7,11 +7,27 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <map>
 #include <unordered_map>
 
-void FindKeyword(const std::string& file, int line, const std::unordered_map<std::string, TokenType>& keywords,
-	std::vector<Token>& tokens, std::string& token)
+using namespace std::string_literals;
+
+void FindKeyword(const std::string& file, const int line, std::vector<Token>& tokens, std::string& token)
 {
+	const std::unordered_map<std::string, TokenType> keywords{
+		{ "true", TokenType::BOOL_VAL },
+		{ "false", TokenType::BOOL_VAL },
+		{ "set", TokenType::SET },
+		{ "if", TokenType::IF },
+		{ "else", TokenType::ELSE },
+		{ "while", TokenType::WHILE },
+		{ "for", TokenType::FOR },
+		{ "def", TokenType::DEF },
+		{ "return", TokenType::RETURN },
+		{ "import", TokenType::IMPORT },
+		{ "include", TokenType::IMPORT }
+	};
+
 	if (token.length() == 0)
 		return;
 
@@ -28,44 +44,35 @@ void FindKeyword(const std::string& file, int line, const std::unordered_map<std
 	token = "";
 }
 
-std::vector<Token> Lexer(const std::string& file, int line, const std::string& fileLine)
+std::vector<Token> Lexer(const std::string& file, const int line, const std::string& fileLine)
 {
-	const std::unordered_map<std::string, TokenType> symbols{
-		{ "||", TokenType::OPERATOR },
-		{ "&&", TokenType::OPERATOR },
-		{ ":", TokenType::OPERATOR },
-		{ "(", TokenType::OPEN_BRACKET },
-		{ ")", TokenType::CLOSE_BRACKET },
-		{ "[", TokenType::OPEN_SQUARE },
-		{ "]", TokenType::CLOSE_SQUARE },
-		{ "{", TokenType::OPEN_CURLY },
-		{ "}", TokenType::CLOSE_CURLY },
-		{ ",", TokenType::COMMA }
-	};
+	const std::unordered_map<char, std::vector<std::pair<char, TokenType> > > symbols{
+		{ '+', { { '\0', TokenType::OPERATOR } } },
+		{ '-', { { '>', TokenType::OPERATOR }, { '\0', TokenType::OPERATOR } } },
+		{ '*', { { '\0', TokenType::OPERATOR } } },
+		{ '/', { { '\0', TokenType::OPERATOR } } },
+		{ '%', { { '\0', TokenType::OPERATOR } } },
 
-	const std::unordered_map<char, std::pair<TokenType, TokenType> > doubleSymbols{
-		{ '>', { TokenType::OPERATOR, TokenType::OPERATOR } },
-		{ '<', { TokenType::OPERATOR, TokenType::OPERATOR } },
-		{ '!', { TokenType::OPERATOR, TokenType::OPERATOR } },
-		{ '+', { TokenType::OPERATOR, TokenType::ASSIGNMENT } },
-		{ '-', { TokenType::OPERATOR, TokenType::ASSIGNMENT } },
-		{ '*', { TokenType::OPERATOR, TokenType::ASSIGNMENT } },
-		{ '/', { TokenType::OPERATOR, TokenType::ASSIGNMENT } },
-		{ '%', { TokenType::OPERATOR, TokenType::ASSIGNMENT } },
-		{ '=', { TokenType::ASSIGNMENT, TokenType::OPERATOR } }
-	};
+		{ '>', { { '=', TokenType::OPERATOR }, { '\0', TokenType::OPERATOR } } },
+		{ '<', { { '=', TokenType::OPERATOR }, { '-', TokenType::OPERATOR }, { '\0', TokenType::OPERATOR } } },
 
-	const std::unordered_map<std::string, TokenType> keywords{
-		{ "true", TokenType::BOOL_VAL },
-		{ "false", TokenType::BOOL_VAL },
-		{ "set", TokenType::SET },
-		{ "if", TokenType::IF },
-		{ "else", TokenType::ELSE },
-		{ "while", TokenType::WHILE },
-		{ "for", TokenType::FOR },
-		{ "return", TokenType::RETURN },
-		{ "import", TokenType::IMPORT },
-		{ "include", TokenType::IMPORT },
+		{ '|', { { '|', TokenType::OPERATOR } } },
+		{ '&', { { '&', TokenType::OPERATOR } } },
+		{ '!', { { '=', TokenType::OPERATOR }, { '\0', TokenType::OPERATOR } } },
+
+		{ '.', { { '.', TokenType::OPERATOR } } },
+		{ ':', { { '\0', TokenType::OPERATOR } } },
+
+		{ '=', { { '=', TokenType::OPERATOR }, { '\0', TokenType::ASSIGNMENT } } },
+
+		{ '(', { { '\0', TokenType::OPEN_BRACKET } } },
+		{ ')', { { '\0', TokenType::CLOSE_BRACKET } } },
+		{ '[', { { '\0', TokenType::OPEN_SQUARE } } },
+		{ ']', { { '\0', TokenType::CLOSE_SQUARE } } },
+		{ '{', { { '\0', TokenType::OPEN_CURLY } } },
+		{ '}', { { '\0', TokenType::CLOSE_CURLY } } },
+
+		{ ',', { { '\0', TokenType::COMMA } } }
 	};
 
 	std::vector<Token> tokens;
@@ -77,7 +84,7 @@ std::vector<Token> Lexer(const std::string& file, int line, const std::string& f
 
 		if ((fileLine[a] == '\'' || fileLine[a] == '"') && inString == ' ')
 		{
-			FindKeyword(file, line, keywords, tokens, token);
+			FindKeyword(file, line, tokens, token);
 
 			inString = fileLine[a];
 			continue;
@@ -113,93 +120,51 @@ std::vector<Token> Lexer(const std::string& file, int line, const std::string& f
 
 		if (fileLine[a] == ' ' || fileLine[a] == '\t')
 		{
-			FindKeyword(file, line, keywords, tokens, token);
+			FindKeyword(file, line, tokens, token);
 			continue;
 		}
 
-		// scan special symbols
+		// find symbols
 
-		if (a < fileLine.length() - 1 && fileLine[a] == '.' && fileLine[a + 1] == '.')
+		auto symbol = symbols.find(fileLine[a]);
+		if (symbol != symbols.end())
 		{
-			FindKeyword(file, line, keywords, tokens, token);
-			tokens.push_back(Token{ file, line, TokenType::OPERATOR, ".." });
+			FindKeyword(file, line, tokens, token);
 
-			a++;
-			continue;
-		}
-		if (a < fileLine.length() - 1 && fileLine[a] == '<' && fileLine[a + 1] == '-')
-		{
-			FindKeyword(file, line, keywords, tokens, token);
-			tokens.push_back(Token{ file, line, TokenType::OPERATOR, "<-" });
-
-			a++;
-			continue;
-		}
-		if (a < fileLine.length() - 1 && fileLine[a] == '-' && fileLine[a + 1] == '>')
-		{
-			FindKeyword(file, line, keywords, tokens, token);
-			tokens.push_back(Token{ file, line, TokenType::OPERATOR, "->" });
-
-			a++;
-			continue;
-		}
-
-		// scan symbols
-
-		auto findSymbol = std::find_if(symbols.begin(), symbols.end(), [&](const std::pair<std::string, TokenType>& symbol) {
-			if (fileLine[a] == symbol.first[0] && symbol.first.length() == 2 && (a == fileLine.length() - 1 || fileLine[a + 1] != symbol.first[1]))
-				throw Error(file, line, "unexpected symbol '" + std::string(1, fileLine[a]) + "'");
-			return symbol.first[0] == fileLine[a];
-			});
-		if (findSymbol != symbols.end())
-		{
-			FindKeyword(file, line, keywords, tokens, token);
-			tokens.push_back(Token{ file, line, findSymbol->second, findSymbol->first });
-
-			if (findSymbol->first.length() == 2)
-				a++;
-
-			continue;
-		}
-
-		// scan double symbols
-
-		auto findDoubleSymbol = std::find_if(doubleSymbols.begin(), doubleSymbols.end(),
-			[&](const std::pair<char, std::pair<TokenType, TokenType> >& symbol) { return symbol.first == fileLine[a]; });
-		if (findDoubleSymbol != doubleSymbols.end())
-		{
-			FindKeyword(file, line, keywords, tokens, token);
-
-			if (a < fileLine.length() - 1 && fileLine[a + 1] == '=')
+			for (const auto& match : symbol->second)
 			{
-				tokens.push_back(Token{
-					file, line,
-					findDoubleSymbol->second.second,
-					std::string(1, findDoubleSymbol->first) + "="
-					});
+				if (match.first != '\0' && a < fileLine.length() - 1 && fileLine[a + 1] == match.first)
+				{
+					tokens.push_back(Token{ file, line, match.second, std::string(1, fileLine[a]) + match.first });
 
-				a++;
-			}
-			else
-			{
-				tokens.push_back(Token{
-					file, line,
-					findDoubleSymbol->second.first,
-					std::string(1, findDoubleSymbol->first)
-					});
+					a++;
+					goto CONTINUE_NEXT;
+				}
+				else if (match.first == '\0')
+				{
+					tokens.push_back(Token{ file, line, match.second, std::string(1, fileLine[a]) });
+
+					goto CONTINUE_NEXT;
+				}
 			}
 
-			continue;
+			// ignore for now since it'll throw an error if it sees a decimal
+			// but once the dot operator is added, uncomment this
+			//
+			// throw Error(file, line, "unknown symbol '"s + fileLine[a] + "'");
 		}
 
 		token += fileLine[a];
+
+		CONTINUE_NEXT:;
 	}
 
-	FindKeyword(file, line, keywords, tokens, token);
+	FindKeyword(file, line, tokens, token);
 
 	if (tokens.empty())
 		return tokens;
 
+	// allows curly brackets to be optional on single statements
 	if (tokens[0].type != TokenType::IF && tokens[0].type != TokenType::ELSE &&
 		(tokens[0].type != TokenType::ELSE || tokens[1].type != TokenType::IF) &&
 		tokens[0].type != TokenType::WHILE && tokens[0].type != TokenType::FOR &&

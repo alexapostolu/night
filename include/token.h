@@ -88,6 +88,7 @@ enum class VariableType
 
 struct Variable
 {
+	VariableType type;
 	std::string name;
 	std::shared_ptr<Expression> value;
 };
