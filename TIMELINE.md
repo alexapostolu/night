@@ -38,7 +38,7 @@ There are now compile time checks for expressions in functions! Another big step
 
 ### v4.0.1
 
-Feature boost! We have `++` and `--` operators.
+Feature boost! We now have assignment operators, casts, pass by reference, multiline comments, increment operayors, and default parameters.
 
 ### v4.0.0
 
