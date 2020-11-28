@@ -1,6 +1,6 @@
 # Night
 
-Night is an interpreted dynamically typed language that focuses on simplicity and safety. The main goal of Night is to design an intuitive and easy to use language.
+Night is an interpreted dynamically typed language built around safety. It being gradually typed, combined with a robust and safe type system, makes Night a simple yet powerful language.
 
 What makes Night different from other dynamically typed languages is its compile time checks. Whereas a language like Python does not provide type checking and many other declaration checks, Night fills this gap, eliminating hidden runtime bugs and providing safer code.
 
@@ -34,12 +34,12 @@ cd night
 
 3. Compile Night
 
-With *g++* or *clang*:
+With *g++* or *clang* (make sure it's C++17!):
 
 ```
-g++ -o night src/main.cpp
+g++ -std=c++17 -o night src/main.cpp
 
-clang++ -o night src/main.cpp
+clang++ -std=c++17 -o night src/main.cpp
 ```
 
 Or if you have GNU Make:
@@ -80,7 +80,7 @@ def fib(num)
 
 # array of two values, and appending a third
 set fib_nums = [ fib(5), fib(6) ]
-fib_nums = fib_nums <- fib(7)
+fib_nums = fib_nums.push(fib(7))
 
 # printing out the values of the array
 for (num : fib_nums)
