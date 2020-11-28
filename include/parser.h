@@ -6,11 +6,28 @@
 #include <vector>
 #include <string>
 
-// macros are awesome! (not as awesome as squids, but you get the idea)
-#define CHECK_EXPR(type, rtn) if (TypeCheckExpression(file, line, node->right, variables, functions) != type ||                               \
-						          TypeCheckExpression(file, line, node->left, variables, functions) != type)                                  \
-					              throw Error(file, line, "operator '" + node->data + "' must be used with two " + VarTypeToStr(type) + "s"); \
-                              return rtn
+#define CHECK_EXPR(check_type, rtn_type, expr)                                                                   \
+	assert(node->left != nullptr && node->right != nullptr && "binary operator should have two non-NULL nodes"); \
+																												 \
+	const Expression left  = TypeCheckExpression(file, line, node->left,  variables, functions);				 \
+	const Expression right = TypeCheckExpression(file, line, node->right, variables, functions);			     \
+																												 \
+	if (left.type != check_type)																				 \
+		OperatorError(file, line, node->data, left, night::ttos(check_type));									 \
+	if (right.type != check_type)																		         \
+		OperatorError(file, line, node->data, right, night::ttos(check_type));									 \
+																					             				 \
+	return Expression{ rtn_type, expr }
+
+inline void OperatorError(
+	const std::string& file,
+	const int          line,
+
+	const std::string& op,
+	const Expression& node,
+
+	const std::string& usedOn
+);
 
 // turns a value into an expression
 std::shared_ptr<Expression> new_expression(
@@ -30,11 +47,13 @@ std::vector<Value> TokensToValues(
 	const std::vector<Token>& tokens,
 
 	const std::vector<Variable>&    variables,
-	const std::vector<FunctionDef>& functions
+	const std::vector<FunctionDef>& functions,
+
+	int* arrayDepth = nullptr
 );
 
 // type checks expression
-VariableType TypeCheckExpression(
+Expression TypeCheckExpression(
 	const std::string& file,
 	const int          line,
 
@@ -48,15 +67,6 @@ VariableType TypeCheckExpression(
 int GetOperatorPrecedence(
 	const ValueType& type,
 	const std::string& value
-);
-
-// returns values within a set of brackets
-std::vector<Value> GetBracketExpression(
-	const std::string& file,
-	const int          line,
-
-	const std::vector<Value>& values,
-	std::size_t& index
 );
 
 // get next group of values

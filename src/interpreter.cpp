@@ -48,10 +48,8 @@ Expression EvaluateExpression(const std::shared_ptr<Expression>& node, std::vect
 			}
 
 			// interpret function body and extract return value
-			std::unique_ptr<Expression> returnValue;
+			Expression returnValue;
 			Interpreter(function->body, &returnValue);
-
-			assert(returnValue != nullptr && "function used in expression doesn't have a return statement");
 
 			// remove variables since they are now out of scope
 			variables.erase(
@@ -59,7 +57,7 @@ Expression EvaluateExpression(const std::shared_ptr<Expression>& node, std::vect
 				variables.end()
 			);
 
-			return *returnValue;
+			return returnValue;
 		}
 
 		return *node;
@@ -69,7 +67,7 @@ Expression EvaluateExpression(const std::shared_ptr<Expression>& node, std::vect
 
 	if (node->data == "+")
 	{
-		const Expression expr1 = EvaluateExpression(node->left, variables, functions);
+		const Expression expr1 = EvaluateExpression(node->left,  variables, functions);
 		const Expression expr2 = EvaluateExpression(node->right, variables, functions);
 
 		if (expr1.type == ValueType::STRING || expr2.type == ValueType::STRING)
@@ -97,35 +95,35 @@ Expression EvaluateExpression(const std::shared_ptr<Expression>& node, std::vect
 			return expression;
 		}
 
-		EVAL_EXPR(std::to_string(std::stof(expr1.data) - std::stof(expr2.data)));
+		EVAL_EXPR(std::to_string(std::stof(expr1.data) - std::stof(expr2.data)), ValueType::NUM);
 	}
 	if (node->data == "*")
 	{
-		EVAL_EXPR(std::to_string(std::stof(expr1.data) * std::stof(expr2.data)));
+		EVAL_EXPR(std::to_string(std::stof(expr1.data) * std::stof(expr2.data)), ValueType::NUM);
 	}
 	if (node->data == "/")
 	{
-		EVAL_EXPR(std::to_string(std::stof(expr1.data) / std::stof(expr2.data)));
+		EVAL_EXPR(std::to_string(std::stof(expr1.data) / std::stof(expr2.data)), ValueType::NUM);
 	}
 	if (node->data == "%")
 	{
-		EVAL_EXPR(std::to_string(std::stoi(expr1.data) % std::stoi(expr2.data)));
+		EVAL_EXPR(std::to_string(std::stoi(expr1.data) % std::stoi(expr2.data)), ValueType::NUM);
 	}
 	if (node->data == ">")
 	{
-		EVAL_EXPR(std::stof(expr1.data) > std::stof(expr2.data) ? "true" : "false");
+		EVAL_EXPR(std::stof(expr1.data) > std::stof(expr2.data) ? "true" : "false", ValueType::BOOL);
 	}
 	if (node->data == "<")
 	{
-		EVAL_EXPR(std::stof(expr1.data) < std::stof(expr2.data) ? "true" : "false");
+		EVAL_EXPR(std::stof(expr1.data) < std::stof(expr2.data) ? "true" : "false", ValueType::BOOL);
 	}
 	if (node->data == ">=")
 	{
-		EVAL_EXPR(std::stof(expr1.data) >= std::stof(expr2.data) ? "true" : "false");
+		EVAL_EXPR(std::stof(expr1.data) >= std::stof(expr2.data) ? "true" : "false", ValueType::BOOL);
 	}
 	if (node->data == "<=")
 	{
-		EVAL_EXPR(std::stof(expr1.data) <= std::stof(expr2.data) ? "true" : "false");
+		EVAL_EXPR(std::stof(expr1.data) <= std::stof(expr2.data) ? "true" : "false", ValueType::BOOL);
 	}
 	if (node->data == "!")
 	{
@@ -136,23 +134,23 @@ Expression EvaluateExpression(const std::shared_ptr<Expression>& node, std::vect
 	}
 	if (node->data == "||")
 	{
-		EVAL_EXPR(expr1.data == "true" || expr2.data == "true" ? "true" : "false");
+		EVAL_EXPR(expr1.data == "true" || expr2.data == "true" ? "true" : "false", ValueType::BOOL);
 	}
 	if (node->data == "&&")
 	{
-		EVAL_EXPR(expr1.data == "true" && expr2.data == "true" ? "true" : "false");
+		EVAL_EXPR(expr1.data == "true" && expr2.data == "true" ? "true" : "false", ValueType::BOOL);
 	}
 	if (node->data == "==")
 	{
-		EVAL_EXPR(expr1.data == expr2.data ? "true" : "false");
+		EVAL_EXPR(expr1.data == expr2.data ? "true" : "false", ValueType::BOOL);
 	}
 	if (node->data == "!=")
 	{
-		EVAL_EXPR(expr1.data != expr2.data ? "true" : "false");
+		EVAL_EXPR(expr1.data != expr2.data ? "true" : "false", ValueType::BOOL);
 	}
 	if (node->data == "[]")
 	{
-		const Expression array = EvaluateExpression(node->right, variables, functions);
+		const Expression    array = EvaluateExpression(node->right, variables, functions);
 		const unsigned long index = std::stoul(EvaluateExpression(node->extras[0], variables, functions).data);
 
 		if (array.extras.empty())
@@ -166,70 +164,35 @@ Expression EvaluateExpression(const std::shared_ptr<Expression>& node, std::vect
 			return EvaluateExpression((array.extras[index]), variables, functions);
 		}
 	}
-	if (node->data == "..")
+	if (node->data == ".")
 	{
-		const Expression start = EvaluateExpression(node->left, variables, functions);
-		const Expression end = EvaluateExpression(node->right, variables, functions);
+		assert(node->left != nullptr && node->right != nullptr && "binary node can't have NULL left or right");
 
-		Expression array{ ValueType::NUM_ARR };
-		for (int a = std::stoi(start.data); a <= std::stoi(end.data); ++a)
+		Expression object       = EvaluateExpression(node->left,  variables, functions);
+		const Expression method = *node->right;
+
+		const bool      isArray = object.type == ValueType::BOOL_ARR || object.type == ValueType::NUM_ARR ||
+								  object.type == ValueType::STRING_ARR;
+
+		if (isArray && method.data == "len")
 		{
-			array.extras.push_back(std::make_shared<Expression>(Expression{
-				ValueType::NUM,
-				std::to_string(a),
-				std::vector<std::shared_ptr<Expression> >(),
-				nullptr,
-				nullptr
-			}));
+			return Expression{ ValueType::NUM, std::to_string(object.extras.size()) };
 		}
-
-		return array;
-	}
-	if (node->data == ":")
-	{
-		const Expression index = EvaluateExpression(node->left, variables, functions);
-		const Expression value = EvaluateExpression(node->right, variables, functions);
-
-		Expression coord{ ValueType::NUM };
-		coord.data = index.data;
-		coord.extras.push_back(std::make_shared<Expression>(value));
-
-		return coord;
-	}
-	if (node->data == "<-")
-	{
-		const Expression index = EvaluateExpression(node->right, variables, functions);
-		Expression array = EvaluateExpression(node->left, variables, functions);
-
-		if (index.extras.empty())
+		if (isArray && method.data == "push" && method.extras.size() == 1)
 		{
-			array.extras.push_back(std::make_shared<Expression>(index));
+			object.extras.push_back(method.extras[0]);
+			return object;
 		}
-		else
+		if (!isArray && method.data == "len")
 		{
-			array.extras.insert(
-				array.extras.begin() + std::stoi(index.data),
-				index.extras[0]
-			);
+			return Expression{ ValueType::NUM, std::to_string(object.data.length()) };
 		}
-
-		return array;
-	}
-	if (node->data == "->")
-	{
-		const Expression index = EvaluateExpression(node->right, variables, functions);
-		Expression array = EvaluateExpression(node->left, variables, functions);
-
-		assert(!array.extras.empty() && "array shouldn't be empty");
-		array.extras.erase(array.extras.begin() + std::stoi(index.data));
-
-		return array;
 	}
 
 	assert_rtn(false && "operator missing", Expression());
 }
 
-void Interpreter(const std::vector<Statement>& statements, std::unique_ptr<Expression>* returnValue)
+void Interpreter(const std::vector<Statement>& statements, Expression* returnValue)
 {
 	static std::vector<NightVariable> variables;
 	static std::vector<NightFunction> functions;
@@ -301,7 +264,7 @@ void Interpreter(const std::vector<Statement>& statements, std::unique_ptr<Expre
 		}
 		case StatementType::RETURN: {
 			assert(returnValue != nullptr && "returnValue should not be NULL");
-			*returnValue = std::make_unique<Expression>(EvaluateExpression(std::get<Return>(statement.stmt).expression, variables, functions));
+			*returnValue = EvaluateExpression(std::get<Return>(statement.stmt).expression, variables, functions);
 
 			variables.erase(variables.begin() + variablesSize, variables.end());
 			return;
@@ -336,6 +299,12 @@ void Interpreter(const std::vector<Statement>& statements, std::unique_ptr<Expre
 				variable->data.data[index] = EvaluateExpression(std::get<Element>(statement.stmt).assign, variables, functions).data[0];
 			else
 				variable->data.extras[index] = std::make_shared<Expression>(EvaluateExpression(std::get<Element>(statement.stmt).assign, variables, functions));
+
+			break;
+		}
+		case StatementType::METHOD_CALL: {
+			NightVariable* variable = GetContainer(variables, std::get<MethodCall>(statement.stmt).name);
+			variable->data = EvaluateExpression(std::get<MethodCall>(statement.stmt).methodCall, variables, functions);
 
 			break;
 		}

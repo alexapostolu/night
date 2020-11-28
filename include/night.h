@@ -18,5 +18,12 @@ struct NightFunction
     std::vector<Statement> body;
 };
 
+struct NightClass
+{
+    std::string name;
+    std::vector<NightVariable> variables;
+    std::vector<NightVariable> methods;
+};
+
 // displays standard output
 void NightPrint(const Expression& value);

@@ -13,9 +13,9 @@ enum class TokenType
 	OPEN_SQUARE, CLOSE_SQUARE,
 	OPEN_CURLY, CLOSE_CURLY,
 
-	COMMA,
-
 	ASSIGNMENT,
+
+	COLON, COMMA,
 
 	BOOL_VAL, NUM_VAL, STRING_VAL,
 
@@ -49,6 +49,7 @@ enum class ValueType
 	BOOL, BOOL_ARR,
 	NUM, NUM_ARR,
 	STRING, STRING_ARR,
+	EMPTY_ARRAY,
 
 	VARIABLE, CALL,
 
@@ -60,9 +61,11 @@ enum class ValueType
 struct Value
 {
 	ValueType type;
-	std::string data;
 
+	std::string data;
 	std::vector<std::vector<Value> > extras;
+
+	int arrayDepth;
 };
 
 struct Statement;
@@ -76,6 +79,8 @@ struct Expression
 
 	std::shared_ptr<Expression> left;
 	std::shared_ptr<Expression> right;
+
+	int arrayDepth;
 };
 
 enum class VariableType
@@ -83,7 +88,7 @@ enum class VariableType
 	BOOL, BOOL_ARR,
 	NUM, NUM_ARR,
 	STRING, STRING_ARR,
-	COORD
+	EMPTY_ARR
 };
 
 struct Variable
@@ -145,6 +150,12 @@ struct Element
 	std::shared_ptr<Expression> assign;
 };
 
+struct MethodCall
+{
+	std::string name;
+	std::shared_ptr<Expression> methodCall;
+};
+
 enum class StatementType
 {
 	VARIABLE,
@@ -155,7 +166,8 @@ enum class StatementType
 	RETURN,
 	WHILE_LOOP,
 	FOR_LOOP,
-	ELEMENT
+	ELEMENT,
+	METHOD_CALL
 };
 
 struct Statement
@@ -171,6 +183,7 @@ struct Statement
 		Return,
 		WhileLoop,
 		ForLoop,
-		Element
+		Element,
+		MethodCall
 	> stmt;
 };

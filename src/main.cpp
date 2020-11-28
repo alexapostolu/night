@@ -24,19 +24,17 @@ std::vector<Token> OpenFile(const std::string& file)
         if (fileTokens.size() >= 1 && fileTokens[0].type == TokenType::IMPORT)
         {
             if (fileTokens.size() == 1 || fileTokens[1].type != TokenType::STRING_VAL)
-                throw Error(file, line, "expected file name after '" + fileTokens[0].value + "' statement");
+                throw Error(file, line, "expected file name (string) after '" + fileTokens[0].value + "' statement");
             if (fileTokens.size() > 2)
                 throw Error(file, line, fileTokens[0].value + " statement must be on it's own line");
 
-            std::vector<Token> importTokens = OpenFile(
+            const std::vector<Token> importTokens = OpenFile(
                 fileTokens[0].value == "import"
                     ? "../pkgs/" + fileTokens[1].value + ".night"
                     : fileTokens[1].value + ".night"
             );
 
-            fileTokens.erase(fileTokens.begin());
-            fileTokens.erase(fileTokens.begin());
-
+            fileTokens.erase(fileTokens.begin(), fileTokens.begin() + 2);
             fileTokens.insert(fileTokens.begin(), importTokens.begin(), importTokens.end());
         }
 
@@ -48,9 +46,9 @@ std::vector<Token> OpenFile(const std::string& file)
     return tokens;
 }
 
-void EntryPoint(const std::string& file)
+void _main(const std::string& file)
 {
-    std::vector<std::vector<Token> > code = SplitCode(OpenFile(file));
+    const std::vector<std::vector<Token> > code = SplitCode(OpenFile(file));
     std::vector<Statement> statements;
     for (const std::vector<Token>& tokens : code)
         Parser(statements, tokens);
@@ -64,7 +62,7 @@ int main(int argc, char* argv[])
         if (argc != 2)
             throw Error("invalid command line arguments; only pass in the file name as an argument");
         
-        EntryPoint(argv[1]);
+        _main(argv[1]);
     }
     catch (const Error& e) {
         std::cerr << e.what() << '\n';
