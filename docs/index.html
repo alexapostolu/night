@@ -8,30 +8,50 @@
 		<link rel="stylesheet" type="text/css" href="styles/index.css"/>
     </head>
     <body>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.3/p5.min.js"></script>
-		<script src="scripts/index.js"></script>
-		
-		<img src="media/night-logo-black.png" height="180">
-		<h1>NIGHT</h>
+		<div class="title">
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.3/p5.min.js"></script>
+			<script src="scripts/index.js"></script>
+			
+			<img src="media/night-logo-black.png" height="180">
+			<h1>NIGHT</h1>
 
-		<div class="bar">
-			<div class="unit"><h2>Install</h2></div>
-			<div class="unit"><h2>Learn</h2></div>
-			<div class="unit"><h2>Extras</h2></div>
+			<div id="actions">
+				<div class="action"><h2>Install</h2></div>
+				<div class="action"><h2>Learn</h2></div>
+				<div class="action"><h2>Extras</h2></div>
+			</div>
 		</div>
 
+		<hr>
 
-		<div id="desc">
-			<h2>About</h2>
-			
-			<p>Night is an interpreted dynamically typed language built around safety.
-			It being gradually typed, combined with a robust and safe type system,
-			makes Night a simple yet powerful language.</p>
+		<div class="main">
+			<p class="welcome">Welcome to Night!<br><br>Here you'll find all the nessasary resources to get started.
+				The links above provide quick access to important information, while the description below will give
+				an overview of this langauge.<br><br>Enjoy!</p>
 
-			<p>What makes Night different from other dynamically typed languages is its
+			<h2 class="heading">About</h2>
+
+			<p class="desc">Night is an interpreted dynamically typed language built around safety.
+				It being gradually typed, combined with a robust and safe type system,
+				makes Night a simple yet powerful language.</p>
+
+			<p class="desc">Here's a little sample of Night code:</p>
+
+			<script src="https://gist.github.com/DynamicSquid/01fd6cb36372bcdc66f29fe6c3681fbf.js"></script>
+
+			<h2 class="heading">Safety</h2>
+
+			<p class="desc">A major advantage Night has over other dynamically typed language is its
 				compile time checks. Whereas a language like Python does not provide type
 				checking and many other declaration checks, Night fills this gap, eliminating
 				hidden runtime bugs and providing safer code.</p>
+
+			<script src="https://gist.github.com/DynamicSquid/b51e3ccf60c6d994749f9b100cd0c6fe.js"></script>
+
+			<h2 class="heading">Type System</h2>
+
+			<p class="desc">Even though Night's dynamically typed, it still features a unique and robost type
+				system that allows for strong interfacing.</p>
 		</div>
     </body>
 </html>

@@ -1,9 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat&display=swap');
-
-body {
-    font-family: 'Montserrat';
-
-}
+@import url('https://fonts.googleapis.com/css2?family=Work+Sans&display=swap');
 
 canvas {
 	position: absolute;
@@ -14,41 +10,80 @@ canvas {
 
 img {
 	display: block;
+
+	margin-top: 100px;
 	margin-left: auto;
 	margin-right: auto;
-	margin-top: 100px;
 }
 
 h1 {
-	font-size: 50px;
-	text-align: center;
 	color: white;
+
+	text-align: center;
+
+	font-size: 50px;
+	font-family: 'Montserrat';
 }
 
-.bar {
-  display: flex;
+hr {
+	margin: 50px 12%;
+	background-color: gray;
 }
 
-.bar h2 {
-	float: left;
-	margin-top: 120px;
+#actions {
+	display: flex;
+
+	margin-top: 175px;
+	margin-left: 12%;
+	margin-right: 12%;
+}
+
+#actions h2 {
+	margin-top: 0px;
+	margin-bottom: 0px;
+	margin-left: 60px;
+	margin-right: 60px;
+	
 	border: solid;
-	padding: 20px 50px;
-	margin-left: 150px;
 	border-radius: 25px;
+	
+	padding: 20px 50px;
+	
+	text-align: center;
+	font-family: 'Montserrat';
+
 	transition-duration: 0.6s;
 }
 
-.bar h2:hover {
-  background-color: black;
-  color: white;
+#actions h2:hover {
+	background-color: black;
+	color: white;
 }
 
-.unit {
-  flex: 1;
+.action {
+  	flex: 1;
 }
 
-#desc {
+.main {	
     margin-left: 12%;
-    margin-right: 12%;
+	margin-right: 12%;
+}
+
+.main .welcome {
+	color: black;
+
+	font-size: 18px;
+	font-family: 'Work Sans';
+}
+
+.main .heading {
+	margin-top: 45px;
+	font-family: 'Montserrat';
+}
+
+.main .desc {
+	color: gray;
+
+	font-size: 17px;
+	font-family: 'Work Sans';
 }
