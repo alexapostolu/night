@@ -1,5 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat&display=swap');
 
+body {
+    font-family: 'Montserrat';
+
+}
+
 canvas {
 	position: absolute;
 	top: 0px;
@@ -15,13 +20,16 @@ img {
 }
 
 h1 {
-	font-family: 'Montserrat', sans-serif;
 	font-size: 50px;
 	text-align: center;
 	color: white;
 }
 
-h2 {
+.bar {
+  display: flex;
+}
+
+.bar h2 {
 	float: left;
 	margin-top: 120px;
 	border: solid;
@@ -31,15 +39,16 @@ h2 {
 	transition-duration: 0.6s;
 }
 
-h2:hover {
+.bar h2:hover {
   background-color: black;
   color: white;
 }
 
-.container {
-  display: flex;
-}
-
 .unit {
   flex: 1;
+}
+
+#desc {
+    margin-left: 12%;
+    margin-right: 12%;
 }

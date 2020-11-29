@@ -1,22 +1,37 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width">
-    <title>Night - Home</title>
-    <link href="style/style.css" rel="stylesheet" type="text/css"/>
-  </head>
-  <body>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title>Night - Home</title>
+		<link rel="icon" type="image/png" href="media/night-logo-black.png"/>
+		<link rel="stylesheet" type="text/css" href="styles/index.css"/>
+    </head>
+    <body>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.3/p5.min.js"></script>
-		<script src="script.js"></script>
+		<script src="scripts/index.js"></script>
 		
-		<img src="night-logo-black.png" height="180">
-		<h1>NIGHT</h1>
+		<img src="media/night-logo-black.png" height="180">
+		<h1>NIGHT</h>
 
-		<div class = "container">
+		<div class="bar">
 			<div class="unit"><h2>Install</h2></div>
 			<div class="unit"><h2>Learn</h2></div>
 			<div class="unit"><h2>Extras</h2></div>
 		</div>
-  </body>
+
+
+		<div id="desc">
+			<h2>About</h2>
+			
+			<p>Night is an interpreted dynamically typed language built around safety.
+			It being gradually typed, combined with a robust and safe type system,
+			makes Night a simple yet powerful language.</p>
+
+			<p>What makes Night different from other dynamically typed languages is its
+				compile time checks. Whereas a language like Python does not provide type
+				checking and many other declaration checks, Night fills this gap, eliminating
+				hidden runtime bugs and providing safer code.</p>
+		</div>
+    </body>
 </html>
