@@ -2,28 +2,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Work+Sans&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Anonymous+Pro&display=swap');
 
-canvas {
+#title canvas {
 	position: absolute;
 	top: 0px;
 	left: 0px;
 	z-index: -2;
 }
 
-img {
-	display: block;
+#title img {
+    display: block;
 
-	margin-top: 100px;
-	margin-left: auto;
-	margin-right: auto;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-h1 {
-	color: white;
+#title h1 {
+    color: black;
 
-	text-align: center;
+    text-align: center;
 
-	font-size: 50px;
-	font-family: 'Montserrat';
+    font-family: 'Montserrat';
 }
 
 #title hr {
@@ -44,7 +42,7 @@ h1 {
 	background-color: white;
 	color: gray;
 	
-	width: 27%;
+	width: 20%;
 	
 	margin: auto;
 	margin-top: 68px;
@@ -106,20 +104,57 @@ h1 {
 }
 
 #main {	
-	margin-left: 12%;
-	margin-right: 12%;
+    margin-left: 12%;
+    margin-right: 12%;
+}
+
+#main h1 {
+    color: black;
+
+    text-align: center;
+
+    font-size: 50px;
+    font-family: 'Montserrat';
 }
 
 #main hr {
-	background-color: gray;
+    background-color: gray;
+    
+    margin-top: 50px;
+    margin-bottom: 50px;
 }
 
-#main .heading {
-	margin-top: 40px;
-	font-family: 'Montserrat';
+#main h2 {
+    color: black;
+
+    margin-top: 50px;
+
+    font-family: 'Montserrat';
 }
 
-#main .desc {
+#main h3 {
+    color: gray;
+
+    margin-top: 30px;
+
+    font-size: 18px;
+    font-family: 'Work Sans';
+}
+
+#main a {
+    color: gray;
+    text-decoration: underline;
+}
+
+#main a:hover {
+    color: rgb(0, 195, 255);
+}
+
+#main a:active {
+    color: rgb(0, 100, 255);
+}
+
+#main p, #main ul li {
 	color: gray;
 
 	font-size: 17px;

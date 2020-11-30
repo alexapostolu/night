@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Night - Install</title>
+		<link rel="icon" type="image/png" href="media/night-logo-black.png"/>
+		<link rel="stylesheet" type="text/css" href="styles/install.css"/>
+    </head>
+    <body>
+		<div id="title">
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.3/p5.min.js"></script>
+			<script src="scripts/install.js"></script>
+			
+			<img src="media/download.png" height="180">
+			<h1>Install</h1>
+
+			<hr>
+			<p id="release">Latest Release <b>4.0.0</b></p>
+
+			<div id="actions">
+				<div class="action"><a href="install.html"><h2>Install</h2></a></div>
+				<div class="action"><h2>Learn</h2></div>
+				<div class="action"><h2>Extras</h2></div>
+			</div>
+		</div>
+
+		<div id="main">
+			<hr>
+			
+			<p>Currently, Night supports a Windows and Linux build. You can also build Night from source.</p>
+
+			<ul>
+				<li><a href="#source">Source</a></li>
+				<li><a href="#windows">Windows</a></li>
+				<li><a href="#linux">Linux</a></li>
+			</ul>
+
+			<h2 id="source">Source</h2>
+			
+			<p>The source code for Night can be found on the <a href="github.com/DynamicSquid/night">GitHub page</a>.</p>
+
+			<h3>Step 1: Install Dependencies</h3>
+
+			<p>You'll need any one of the following:</p>
+
+			<ul>
+				<li>g++ or clang</li>
+				<li>GNU Make</li>
+				<li>CMake</li>
+			</ul>
+
+			<h3>Step 2: Clone Repository</h3>
+
+			<p>Make sure to do a recursive clone to fetch the package manager submodule as well.</p>
+
+			<script src="https://gist.github.com/DynamicSquid/bb0011ff5d0a7088403bbcab33f8ef89.js"></script>
+
+			<h3>Step 3: Build Code</h3>
+
+			<p>With g++ or clang:</p>
+
+			<script src="https://gist.github.com/DynamicSquid/41fb88acee0725910b82d81123c93cd8.js"></script>
+
+			<p>With GNU Make:</p>
+
+			<script src="https://gist.github.com/DynamicSquid/b5b0a2ff0248605817a611dee41b76cc.js"></script>
+
+			<p>With CMake:</p>
+
+			<h3>Step 4: Run Code</h3>
+
+			<p>Create a file called <code>*.night</code> where you'll write your actual code, and then pass that through
+			as a command line argument.</p>
+
+			<script src="https://gist.github.com/DynamicSquid/508ec8e75909925d1ea10e1ce7da0170.js"></script>
+
+			<p>And that's it! Back to the <a href="#install">top</a>.</p>
+
+            <h2 id="windows">Windows</h2>
+
+			<p>To install Night for Windows, download the <a href="">binary</a>.<br><br>Then you can create a new file called
+			<code>*.night</code> where you'll write your actual code, and then pass that through as a command line argument.</p>
+
+			<script src="https://gist.github.com/DynamicSquid/508ec8e75909925d1ea10e1ce7da0170.js"></script>
+
+            <h2 id="linux">Linux</h2>
+
+		</div>
+    </body>
+</html>
