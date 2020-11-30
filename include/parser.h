@@ -6,29 +6,6 @@
 #include <vector>
 #include <string>
 
-#define CHECK_EXPR(check_type, rtn_type, expr)                                                                   \
-	assert(node->left != nullptr && node->right != nullptr && "binary operator should have two non-NULL nodes"); \
-																												 \
-	const Expression left  = TypeCheckExpression(file, line, node->left,  variables, functions);				 \
-	const Expression right = TypeCheckExpression(file, line, node->right, variables, functions);			     \
-																												 \
-	if (left.type != check_type)																				 \
-		OperatorError(file, line, node->data, left, night::ttos(check_type));									 \
-	if (right.type != check_type)																		         \
-		OperatorError(file, line, node->data, right, night::ttos(check_type));									 \
-																					             				 \
-	return Expression{ rtn_type, expr }
-
-inline void OperatorError(
-	const std::string& file,
-	const int          line,
-
-	const std::string& op,
-	const Expression& node,
-
-	const std::string& usedOn
-);
-
 // turns a value into an expression
 std::shared_ptr<Expression> new_expression(
 	const std::string& file,
@@ -46,21 +23,23 @@ std::shared_ptr<Expression> new_expression(
 std::vector<Value> TokensToValues(
 	const std::vector<Token>& tokens,
 
-	const std::vector<Variable>&    variables,
-	const std::vector<FunctionDef>& functions,
+	const std::vector<CheckVariable>& variables,
+	const std::vector<CheckFunction>& functions,
 
 	int* arrayDepth = nullptr
 );
 
 // type checks expression
-Expression TypeCheckExpression(
+VariableType TypeCheckExpression(
 	const std::string& file,
 	const int          line,
 
 	const std::shared_ptr<Expression>& node,
 
-	const std::vector<Variable>&    variables,
-	const std::vector<FunctionDef>& functions
+	const std::vector<CheckVariable>& variables,
+	const std::vector<CheckFunction>& functions,
+
+	const std::vector<CheckVariable>& parameters
 );
 
 // returns the operator precedence
@@ -77,8 +56,8 @@ std::shared_ptr<Expression> GetNextGroup(
 	const std::vector<Value>& values,
 	std::size_t& index,
 
-	const std::vector<Variable>&    variables,
-	const std::vector<FunctionDef>& functions
+	const std::vector<CheckVariable>& variables,
+	const std::vector<CheckFunction>& functions
 );
 
 // turns an array of values into an AST
@@ -88,8 +67,8 @@ std::shared_ptr<Expression> ParseValues(
 	
 	const std::vector<Value>& values,
 
-	const std::vector<Variable>&    variables,
-	const std::vector<FunctionDef>& functions
+	const std::vector<CheckVariable>&    variables,
+	const std::vector<CheckFunction>& functions
 );
 
 // parses an array of tokens into an array of statements

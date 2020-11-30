@@ -56,6 +56,7 @@ std::string ttos(const ValueType& type)
     case ValueType::EMPTY_ARRAY:
         return "array";
     default:
+        std::clog << (int)type << '\n';
         assert_rtn(false && "value type missing", std::string());
     }
 }
@@ -83,10 +84,21 @@ std::string ttos(const VariableType& type)
     }
 }
 
+bool find(const std::vector<VariableType>& types, const VariableType& findType)
+{
+    for (const VariableType& type : types)
+    {
+        if (type == findType)
+            return true;
+    }
+    
+    return false;
+}
+
 } // namespace night
 
 std::shared_ptr<Expression> ExtractExpression(const std::vector<Token>& tokens, const std::size_t start, const std::size_t end,
-    const std::vector<Variable>& variables, const std::vector<FunctionDef>& functions, VariableType* type)
+    const std::vector<CheckVariable>& variables, const std::vector<CheckFunction>& functions, VariableType* type)
 {
     const std::vector<Value> values = TokensToValues(
         std::vector<Token>(tokens.begin() + start, tokens.begin() + end),
@@ -94,43 +106,16 @@ std::shared_ptr<Expression> ExtractExpression(const std::vector<Token>& tokens, 
     );
 
     const std::shared_ptr<Expression> expression = ParseValues(tokens[0].file, tokens[0].line, values, variables, functions);
-    const ValueType exprType = TypeCheckExpression(tokens[0].file, tokens[0].line, expression, variables, functions).type;
+    const VariableType exprType = TypeCheckExpression(tokens[0].file, tokens[0].line, expression, variables, functions);
     
     if (type != nullptr)
-    {
-        switch (exprType)
-        {
-        case ValueType::BOOL:
-            *type = VariableType::BOOL;
-            break;
-        case ValueType::BOOL_ARR:
-            *type = VariableType::BOOL_ARR;
-            break;
-        case ValueType::NUM:
-            *type = VariableType::NUM;
-            break;
-        case ValueType::NUM_ARR:
-            *type = VariableType::NUM_ARR;
-            break;
-        case ValueType::STRING:
-            *type = VariableType::STRING;
-            break;
-        case ValueType::STRING_ARR:
-            *type = VariableType::STRING_ARR;
-            break;
-        case ValueType::EMPTY_ARRAY:
-            *type = VariableType::EMPTY_ARR;
-            break;
-        default:
-            assert(false && "value type missing");
-        }
-    }
+        *type = exprType;
 
     return expression;
 }
 
 std::shared_ptr<Expression> ExtractCondition(const std::vector<Token>& tokens, std::size_t& closeBracketIndex,
-    const std::vector<Variable>& variables, const std::vector<FunctionDef>& functions, const std::string& stmt)
+    const std::vector<CheckVariable>& variables, const std::vector<CheckFunction>& functions, const std::string& stmt, const bool inFunction)
 {
     const std::size_t start = closeBracketIndex;
 
@@ -139,7 +124,7 @@ std::shared_ptr<Expression> ExtractCondition(const std::vector<Token>& tokens, s
         throw Error(tokens[0].file, tokens[0].line, "missing closing bracket for " + stmt);
 
     VariableType type;
-    const std::shared_ptr<Expression> conditionExpr = ExtractExpression(tokens, start, closeBracketIndex, variables, functions, &type);
+    const std::shared_ptr<Expression> conditionExpr = ExtractExpression(tokens, start, closeBracketIndex, variables, functions, &type, inFunction);
 
     if (type != VariableType::BOOL)
         throw Error(tokens[0].file, tokens[0].line, stmt + " condition evaluates to a '" + night::ttos(type) + "'; conditions must evaluate to a boolean");
@@ -148,7 +133,7 @@ std::shared_ptr<Expression> ExtractCondition(const std::vector<Token>& tokens, s
 }
 
 std::vector<Statement> ExtractBody(const std::vector<Token>& tokens, const std::size_t closeBracketIndex,
-    std::vector<Variable>& variables, const std::string& stmt, const bool inFunction)
+    std::vector<CheckVariable>& variables, const std::string& stmt, const bool inFunction)
 {
     const std::vector<std::vector<Token> > splitTokens = tokens[closeBracketIndex + 1].type == TokenType::OPEN_CURLY
         ? SplitCode(std::vector<Token>(tokens.begin() + closeBracketIndex + 2, tokens.end() - 1))

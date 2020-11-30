@@ -13,7 +13,9 @@ void NightPrint(const Expression& value)
             NightPrint(*value.extras[a]);
             std::cout << ", ";
         }
-        std::cout << value.extras.back()->data << " ]";
+        
+        NightPrint(*value.extras.back());
+        std::cout << " ]";
     }
     else
     {

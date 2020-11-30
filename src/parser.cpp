@@ -6,11 +6,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-
-inline void OperatorError(const std::string& file, const int line, const std::string& op, const Expression& node, const std::string& usedOn)
-{
-	throw Error(file, line, "operator '" + op + "' is used on the value '" + node.data + "', which is a " + night::ttos(node.type) + "; operator '" + op + "' can only be used on " + usedOn);
-}
+#include <unordered_map>
 
 std::shared_ptr<Expression> new_expression(const std::string& file, const int line, const Value& value, const std::shared_ptr<Expression>& left,
 	const std::shared_ptr<Expression>& right, const std::vector<Variable>& variables, const std::vector<FunctionDef>& functions)
@@ -30,8 +26,8 @@ std::shared_ptr<Expression> new_expression(const std::string& file, const int li
 	return expression;
 }
 
-std::vector<Value> TokensToValues(const std::vector<Token>& tokens, const std::vector<Variable>& variables,
-	const std::vector<FunctionDef>& functions, int* _arrayDepth)
+std::vector<Value> TokensToValues(const std::vector<Token>& tokens, const std::vector<CheckVariable>& variables,
+	const std::vector<CheckFunction>& functions, int* _arrayDepth)
 {
 	assert(!tokens.empty() && "tokens shouldn't be empty");
 
@@ -98,20 +94,23 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, const std::v
 			{
 				values.push_back(Value{ ValueType::VARIABLE, tokens[a].value, std::vector<std::vector<Value> >(), 0 });
 
-				a += 2;
-				const std::size_t start = a;
+				while (a < tokens.size() - 1 && tokens[a + 1].type == TokenType::OPEN_SQUARE)
+				{
+					a += 2;
+					const std::size_t start = a;
 
-				AdvanceCloseBracketIndex(tokens, TokenType::OPEN_SQUARE, TokenType::CLOSE_SQUARE, a);
-				if (a >= tokens.size())
-					throw Error(file, line, "missing closing square bracket for subscript operator");
+					AdvanceCloseBracketIndex(tokens, TokenType::OPEN_SQUARE, TokenType::CLOSE_SQUARE, a);
+					if (a >= tokens.size())
+						throw Error(file, line, "missing closing square bracket for subscript operator");
 
-				Value subscript{ ValueType::OPERATOR, "[]" };
-				subscript.extras.push_back(TokensToValues(
-					std::vector<Token>(tokens.begin() + start, tokens.begin() + a),
-					variables, functions
-				));
+					Value subscript{ ValueType::OPERATOR, "[]" };
+					subscript.extras.push_back(TokensToValues(
+						std::vector<Token>(tokens.begin() + start, tokens.begin() + a),
+						variables, functions
+					));
 
-				values.push_back(subscript);
+					values.push_back(subscript);
+				}
 			}
 			else
 			{
@@ -159,9 +158,9 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, const std::v
 						&arrayDepth
 					));
 
-					if (arrayDepth == 0 && array.extras.size() == 1)
+					if (array.extras.size() == 1)
 					{
-						array.arrayDepth = 0;
+						array.arrayDepth = arrayDepth;
 						array.type = TypeCheckExpression(
 							file, line,
 							ParseValues(file, line, array.extras.back(), variables, functions),
@@ -183,8 +182,11 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, const std::v
 							break;
 						}
 					}
-					else if (arrayDepth == 0)
+					else
 					{
+						if (arrayDepth != array.arrayDepth)
+							throw Error(file, line, std::to_string(arrayDepth + 1) + "D array cannot be in the same array as a " + std::to_string(array.arrayDepth + 1) + "D array");
+
 						ValueType elemType = TypeCheckExpression(
 							file, line,
 							ParseValues(file, line, array.extras.back(), variables, functions),
@@ -203,24 +205,11 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, const std::v
 							elemType = ValueType::STRING_ARR;
 							break;
 						default:
-							assert(false && "array depth is broken; maybe it's because it's empty?");
+							break;
 						}
 
 						if (elemType != array.type)
 							throw Error(file, line, "elements in array must have the same type");
-					}
-					else if (array.extras.size() == 1)
-					{
-						array.arrayDepth = arrayDepth;
-						array.type = TypeCheckExpression(
-							file, line,
-							ParseValues(file, line, array.extras.back(), variables, functions),
-							variables, functions
-						).type;
-					}
-					else if (array.arrayDepth != arrayDepth)
-					{
-						throw Error(file, line, "elements in an array have different array depth");
 					}
 
 					start = a + 1;
@@ -268,25 +257,29 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens, const std::v
 	return values;
 }
 
-Expression TypeCheckExpression(const std::string& file, const int line, const std::shared_ptr<Expression>& node,
-	const std::vector<Variable>& variables, const std::vector<FunctionDef>& functions)
+std::vector<VariableType> TypeCheckExpression(const std::string& file, const int line, const std::shared_ptr<Expression>& node,
+	const std::vector<CheckVariable>& variables, const std::vector<CheckFunction>& functions, std::vector<CheckVariable>& parameters)
 {
 	// if node->left and node->right is NULL, then node must be a value
 	if (node->left == nullptr && node->right == nullptr)
 	{
 		if (node->type == ValueType::VARIABLE)
 		{
-			const Variable* variable = GetContainer(variables, node->data);
-			assert(variable != nullptr && "variable should already be defined; check definitions in 'TokensToValue()'");
+			const CheckVariable* checkVariable = GetContainer(variables, node->data);
+			if (checkVariable == nullptr)
+			{
+				checkVariable = GetContainer(parameters, node->data);
+				assert(checkVariable != nullptr && "variable should already be defined; check definitions in 'TokensToValue()'");
+			}
 
-			return *variable->value;
+			return checkVariable->types;
 		}
 		if (node->type == ValueType::CALL)
 		{
 			if (node->data == "input")
-				return Expression{ ValueType::STRING };
+				return { VariableType::STR };
 
-			const FunctionDef* function = GetContainer(functions, node->data);
+			const CheckFunction* function = GetContainer(functions, node->data);
 			assert(function != nullptr && "function should already be defined; check definitions in 'TokensToValue()'");
 
 			if (node->extras.size() != function->parameters.size())
@@ -294,222 +287,673 @@ Expression TypeCheckExpression(const std::string& file, const int line, const st
 
 			// type check function parameters in the function body here
 
-			for (const Statement& statement : function->body)
-			{
-				if (statement.type == StatementType::RETURN)
-					return TypeCheckExpression(file, line, std::get<Return>(statement.stmt).expression, variables, functions);
-			}
+			if (function->isVoid)
+				throw Error(file, line, "function '" + node->data + "' doesn't return a value; functions used in expressions must return a value");
 
-			throw Error(file, line, "function '" + node->data + "' doesn't return a value; functions used in expressions must return a value");
+			return function->returnValues;
 		}
 
 		// if node isn't a variable or a function call,
 		// then node must be a literal value
 
-		if (node->type != ValueType::BOOL && node->type != ValueType::BOOL_ARR && node->type != ValueType::NUM &&
-			node->type != ValueType::NUM_ARR && node->type != ValueType::STRING && node->type != ValueType::STRING_ARR)
+		switch (node->type)
+		{
+		case ValueType::BOOL:
+			return { VariableType::BOOL };
+		case ValueType::BOOL_ARR:
+			return { VariableType::BOOL_ARR };
+		case ValueType::NUM:
+			return { VariableType::NUM };
+		case ValueType::NUM_ARR:
+			return { VariableType::NUM_ARR };
+		case ValueType::STRING:
+			return { VariableType::STR };
+		case ValueType::STRING_ARR:
+			return { VariableType::STR_ARR };
+		case ValueType::EMPTY_ARRAY:
+			return { VariableType::EMPTY_ARR };
+		default:
 			throw Error(file, line, "unexpected token '" + node->data + "' in expression");
-
-		return *node;
+		}
 	}
 
 	assert(node->type == ValueType::OPERATOR && "node must be an operator");
 
 	if (node->data == "+")
 	{
-		assert(node->left != nullptr && node->right != nullptr && "binary operator should have two non-NULL nodes");
+		if (node->left->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->left->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::NUM, VariableType::STR };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::NUM) && !night::find(parameter->types, VariableType::STR))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with '+'");
+			}
+		}
+		if (node->right->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->right->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::NUM, VariableType::STR };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::NUM) && !night::find(parameter->types, VariableType::STR))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with '+'");
+			}
+		}
 
-		const Expression left  = TypeCheckExpression(file, line, node->left,  variables, functions);
-		const Expression right = TypeCheckExpression(file, line, node->right, variables, functions);
+		const std::vector<VariableType> left  = TypeCheckExpression(file, line, node->left,  variables, functions, parameters);
+		const std::vector<VariableType> right = TypeCheckExpression(file, line, node->right, variables, functions, parameters);
 
-		if (left.type == ValueType::NUM && right.type != ValueType::NUM && right.type != ValueType::STRING)
-			OperatorError(file, line, "+", right, "numbers or strings");
-		if (right.type == ValueType::NUM && left.type != ValueType::NUM && left.type != ValueType::STRING)
-			OperatorError(file, line, "+", left, "numbers or strings");
+		std::vector<VariableType> returnTypes;
 
-		return left.type == ValueType::STRING ? left : right;
+		if (night::find(left, VariableType::NUM) && night::find(right, VariableType::NUM))
+			returnTypes.push_back(VariableType::NUM);
+		if (night::find(left, VariableType::STR) || night::find(right, VariableType::STR))
+			returnTypes.push_back(VariableType::STR);
+
+		if (!returnTypes.empty())
+			throw Error(file, line, "binary operator '+' can only be used on two numbers or in string concatenation");
+
+		return returnTypes;
 	}
 	if (node->data == "-")
 	{
-		if (node->left == nullptr)
+		if (node->right->type == ValueType::VARIABLE)
 		{
-			Expression right = TypeCheckExpression(file, line, node->right, variables, functions);
-			if (right.type != ValueType::NUM)
-				OperatorError(file, line, "-", right, "numbers");
-
-			right.data = std::to_string(-std::stoi(right.data));
-			return right;
+			CheckVariable* parameter = GetContainer(parameters, node->right->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::NUM };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::NUM))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '-'");
+			}
 		}
 
-		CHECK_EXPR(ValueType::NUM, ValueType::NUM, std::to_string(std::stof(left.data) - std::stof(right.data)));
+		if (node->left == nullptr)
+		{
+			const std::vector<VariableType> right = TypeCheckExpression(file, line, node->right, variables, functions, parameters);
+
+			if (!night::find(right, VariableType::NUM))
+				throw Error(file, line, "unary operator '-' can only be used on numbers");
+
+			return { VariableType::NUM };
+		}
+
+		if (node->left->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->left->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::NUM };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::NUM))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '-'");
+			}
+		}
+
+		const std::vector<VariableType> left  = TypeCheckExpression(file, line, node->left,  variables, functions, parameters);
+		const std::vector<VariableType> right = TypeCheckExpression(file, line, node->right, variables, functions, parameters);
+
+		if (!night::find(left, VariableType::NUM) || !night::find(right, VariableType::NUM))
+			throw Error(file, line, "binary operator '-' can only be used on two numbers");
+		
+		return { VariableType::NUM };
 	}
 	if (node->data == "*")
 	{
-		CHECK_EXPR(ValueType::NUM, ValueType::NUM, std::to_string(std::stof(left.data) * std::stof(right.data)));
+		if (node->left->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->left->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::NUM };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::NUM))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '*'");
+			}
+		}
+		if (node->right->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->right->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::NUM };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::NUM))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '*'");
+			}
+		}
+
+		const std::vector<VariableType> left  = TypeCheckExpression(file, line, node->left,  variables, functions, parameters);
+		const std::vector<VariableType> right = TypeCheckExpression(file, line, node->right, variables, functions, parameters);
+
+		if (!night::find(left, VariableType::NUM) || !night::find(right, VariableType::NUM))
+			throw Error(file, line, "binary operator '*' can only be used on two numbers");
+		
+		return { VariableType::NUM };
 	}
 	if (node->data == "/")
 	{
-		assert(node->left != nullptr && node->right != nullptr && "binary operator should have two non-NULL nodes");
+		if (node->left->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->left->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::NUM };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::NUM))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '/'");
+			}
+		}
+		if (node->right->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->right->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::NUM };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::NUM))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '/'");
+			}
+		}
 
-		const Expression left  = TypeCheckExpression(file, line, node->left,  variables, functions);
-		const Expression right = TypeCheckExpression(file, line, node->right, variables, functions);
+		const std::vector<VariableType> left  = TypeCheckExpression(file, line, node->left,  variables, functions, parameters);
+		const std::vector<VariableType> right = TypeCheckExpression(file, line, node->right, variables, functions, parameters);
 
-		if (left.type == ValueType::NUM && right.type != ValueType::NUM)
-			OperatorError(file, line, "+", right, "numbers");
-		if (right.type == ValueType::NUM && left.type != ValueType::NUM)
-			OperatorError(file, line, "+", left, "numbers");
-
-		if (right.data == "0")
-			throw Error(file, line, "division by zero isn't allowed smh");
-
-		return Expression{ left.type, std::to_string(std::stof(left.data) / std::stof(right.data)) };
+		if (!night::find(left, VariableType::NUM) || !night::find(right, VariableType::NUM))
+			throw Error(file, line, "binary operator '/' can only be used on two numbers");
+		
+		return { VariableType::NUM };
 	}
 	if (node->data == "%")
 	{
-		CHECK_EXPR(ValueType::NUM, ValueType::NUM, std::to_string(std::stoi(left.data) % std::stoi(right.data)));
+		if (node->left->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->left->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::NUM };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::NUM))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '%'");
+			}
+		}
+		if (node->right->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->right->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::NUM };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::NUM))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '%'");
+			}
+		}
+
+		const std::vector<VariableType> left  = TypeCheckExpression(file, line, node->left,  variables, functions, parameters);
+		const std::vector<VariableType> right = TypeCheckExpression(file, line, node->right, variables, functions, parameters);
+
+		if (!night::find(left, VariableType::NUM) || !night::find(right, VariableType::NUM))
+			throw Error(file, line, "binary operator '%' can only be used on two numbers");
+
+		return { VariableType::NUM };
 	}
 	if (node->data == ">")
 	{
-		CHECK_EXPR(ValueType::NUM, ValueType::BOOL, "true");
+		if (node->left->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->left->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::NUM };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::NUM))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '>'");
+			}
+		}
+		if (node->right->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->right->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::NUM };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::NUM))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '>'");
+			}
+		}
+
+		const std::vector<VariableType> left  = TypeCheckExpression(file, line, node->left,  variables, functions, parameters);
+		const std::vector<VariableType> right = TypeCheckExpression(file, line, node->right, variables, functions, parameters);
+
+		if (!night::find(left, VariableType::NUM) || !night::find(right, VariableType::NUM))
+			throw Error(file, line, "binary operator '>' can only be used on two numbers");
+		
+		return { VariableType::BOOL };
 	}
 	if (node->data == "<")
 	{
-		CHECK_EXPR(ValueType::NUM, ValueType::BOOL, "true");
+		if (node->left->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->left->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::NUM };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::NUM))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '<'");
+			}
+		}
+		if (node->right->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->right->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::NUM };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::NUM))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '<'");
+			}
+		}
+
+		const std::vector<VariableType> left  = TypeCheckExpression(file, line, node->left,  variables, functions, parameters);
+		const std::vector<VariableType> right = TypeCheckExpression(file, line, node->right, variables, functions, parameters);
+
+		if (!night::find(left, VariableType::NUM) || !night::find(right, VariableType::NUM))
+			throw Error(file, line, "binary operator '<' can only be used on two numbers");
+		
+		return { VariableType::BOOL };
 	}
 	if (node->data == ">=")
 	{
-		CHECK_EXPR(ValueType::NUM, ValueType::BOOL, "true");
+		if (node->left->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->left->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::NUM };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::NUM))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '>='");
+			}
+		}
+		if (node->right->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->right->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::NUM };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::NUM))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '>='");
+			}
+		}
+
+		const std::vector<VariableType> left  = TypeCheckExpression(file, line, node->left,  variables, functions, parameters);
+		const std::vector<VariableType> right = TypeCheckExpression(file, line, node->right, variables, functions, parameters);
+
+		if (!night::find(left, VariableType::NUM) || !night::find(right, VariableType::NUM))
+			throw Error(file, line, "binary operator '>=' can only be used on two numbers");
+		
+		return { VariableType::BOOL };
 	}
 	if (node->data == "<=")
 	{
-		CHECK_EXPR(ValueType::NUM, ValueType::BOOL, "true");
+		if (node->left->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->left->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::NUM };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::NUM))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '<='");
+			}
+		}
+		if (node->right->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->right->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::NUM };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::NUM))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '<='");
+			}
+		}
+
+		const std::vector<VariableType> left  = TypeCheckExpression(file, line, node->left,  variables, functions, parameters);
+		const std::vector<VariableType> right = TypeCheckExpression(file, line, node->right, variables, functions, parameters);
+
+		if (!night::find(left, VariableType::NUM) || !night::find(right, VariableType::NUM))
+			throw Error(file, line, "binary operator '<=' can only be used on two numbers");
+		
+		return { VariableType::BOOL };
 	}
 	if (node->data == "!")
 	{
-		assert(node->right != nullptr && "unary node should have a non-NULL right node");
+		if (node->right->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->right->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::BOOL };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::BOOL))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '!'");
+			}
+		}
 
-		const Expression right = TypeCheckExpression(file, line, node->right, variables, functions);
-		if (right.type != ValueType::BOOL)
-			OperatorError(file, line, "!", right, "bools");
+		const std::vector<VariableType> right = TypeCheckExpression(file, line, node->right, variables, functions, parameters);
 
-		return right;
+		if (!night::find(right, VariableType::BOOL))
+			throw Error(file, line, "unary operator '!' can only be used on booleans");
+
+		return { VariableType::BOOL };
 	}
 	if (node->data == "||")
 	{
-		CHECK_EXPR(ValueType::BOOL, ValueType::BOOL, "true");
+		if (node->left->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->left->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::BOOL };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::BOOL))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '||'");
+			}
+		}
+		if (node->right->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->right->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::BOOL };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::BOOL))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '||'");
+			}
+		}
+
+		const std::vector<VariableType> left  = TypeCheckExpression(file, line, node->left,  variables, functions, parameters);
+		const std::vector<VariableType> right = TypeCheckExpression(file, line, node->right, variables, functions, parameters);
+
+		if (!night::find(left, VariableType::BOOL) || !night::find(right, VariableType::BOOL))
+			throw Error(file, line, "binary operator '||' can only be used on two numbers");
+
+		return { VariableType::BOOL };
 	}
 	if (node->data == "&&")
 	{
-		CHECK_EXPR(ValueType::BOOL, ValueType::BOOL, "true");
+		if (node->left->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->left->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::BOOL };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::BOOL))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '&&'");
+			}
+		}
+		if (node->right->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->right->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = { VariableType::BOOL };
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::BOOL))
+					throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with operator '&&'");
+			}
+		}
+
+		const std::vector<VariableType> left  = TypeCheckExpression(file, line, node->left,  variables, functions, parameters);
+		const std::vector<VariableType> right = TypeCheckExpression(file, line, node->right, variables, functions, parameters);
+
+		if (!night::find(left, VariableType::BOOL) || !night::find(right, VariableType::BOOL))
+			throw Error(file, line, "binary operator '&&' can only be used on two numbers");
+
+		return { VariableType::BOOL };
 	}
 	if (node->data == "==")
 	{
-		assert(node->left != nullptr && node->right != nullptr && "binary operator should have two non-NULL nodes");
+		if (node->left->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->left->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = {
+					VariableType::BOOL, VariableType::BOOL_ARR,
+					VariableType::NUM, VariableType::NUM_ARR,
+					VariableType::STR, VariableType::STR_ARR,
+					VariableType::EMPTY_ARR
+				};
+			}
+		}
+		if (node->right->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->right->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = {
+					VariableType::BOOL, VariableType::BOOL_ARR,
+					VariableType::NUM, VariableType::NUM_ARR,
+					VariableType::STR, VariableType::STR_ARR,
+					VariableType::EMPTY_ARR
+				};
+			}
+		}
 
-		const Expression left  = TypeCheckExpression(file, line, node->left,  variables, functions);
-		const Expression right = TypeCheckExpression(file, line, node->right, variables, functions);
+		const std::vector<VariableType> left  = TypeCheckExpression(file, line, node->left,  variables, functions, parameters);
+		const std::vector<VariableType> right = TypeCheckExpression(file, line, node->right, variables, functions, parameters);
 
-		if (left.type != right.type)
-			throw Error(file, line, "operator '==' can only be used on two values of the same type");
+		for (const VariableType& type : left)
+		{
+			if (night::find(right, type))
+				return { VariableType::BOOL };
+		}
 
-		return Expression{ ValueType::BOOL, "true" };
+		throw Error(file, line, "binary operator '==' can only compare values of the same type");
 	}
 	if (node->data == "!=")
 	{
-		assert(node->left != nullptr && node->right != nullptr && "binary operator should have two non-NULL nodes");
+		if (node->left->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->left->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = {
+					VariableType::BOOL, VariableType::BOOL_ARR,
+					VariableType::NUM, VariableType::NUM_ARR,
+					VariableType::STR, VariableType::STR_ARR,
+					VariableType::EMPTY_ARR
+				};
+			}
+		}
+		if (node->right->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->right->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = {
+					VariableType::BOOL, VariableType::BOOL_ARR,
+					VariableType::NUM, VariableType::NUM_ARR,
+					VariableType::STR, VariableType::STR_ARR,
+					VariableType::EMPTY_ARR
+				};
+			}
+		}
 
-		const Expression left  = TypeCheckExpression(file, line, node->left,  variables, functions);
-		const Expression right = TypeCheckExpression(file, line, node->right, variables, functions);
+		const std::vector<VariableType> left  = TypeCheckExpression(file, line, node->left,  variables, functions, parameters);
+		const std::vector<VariableType> right = TypeCheckExpression(file, line, node->right, variables, functions, parameters);
 
-		if (left.type != right.type)
-			throw Error(file, line, "operator '!=' can only be used on two values of the same type");
+		for (const VariableType& type : left)
+		{
+			if (night::find(right, type))
+				return { VariableType::BOOL };
+		}
 
-		return Expression{ ValueType::BOOL, "true" };
+		throw Error(file, line, "binary operator '!=' can only compare values of the same type");
 	}
 	if (node->data == "[]")
 	{
-		assert(node->right != nullptr && "unary node should have a non-NULL right node");
+		if (node->left->type == ValueType::VARIABLE)
+		{
+			CheckVariable* parameter = GetContainer(parameters, node->left->data);
+			if (parameter != nullptr && parameter->types.empty())
+			{
+				parameter->types = {
+					VariableType::BOOL_ARR,
+					VariableType::NUM_ARR,
+					VariableType::STR_ARR,
+					VariableType::EMPTY_ARR
+				};
+			}
+			else if (parameter != nullptr && !parameter->types.empty())
+			{
+				if (!night::find(parameter->types, VariableType::BOOL_ARR) && /*!night::find(array, VariableType::MULT_BOOL_ARR) &&*/
+					!night::find(parameter->types, VariableType::NUM_ARR) && /*!night::find(array, VariableType::MULT_NUM_ARR) &&*/
+					!night::find(parameter->types, VariableType::STR_ARR) && /*!night::find(array, VariableType::MULT_STR_ARR) &&*/
+					!night::find(parameter->types, VariableType::EMPTY_ARR) && /*!night::find(array, VariableType::MULT_EMPTY_ARR) &&*/
+					!night::find(parameter->types, VariableType::STR))
+					throw Error(file, line, "parameter " + parameter->name + " cannot be used with operator '[]'");
+			}
+		}
 
-		const Expression right   = TypeCheckExpression(file, line, node->right, variables, functions);
-		const bool       isArray = right.type == ValueType::BOOL_ARR || right.type == ValueType::NUM_ARR ||
-							       right.type == ValueType::STRING_ARR;
+		const std::vector<VariableType> array = TypeCheckExpression(file, line, node->right,     variables, functions, parameters);
+		const std::vector<VariableType> index = TypeCheckExpression(file, line, node->extras[0], variables, functions, parameters);
 
-		if (!isArray && right.type != ValueType::STRING)
-			OperatorError(file, line, "!", right, "array");
+		if (!night::find(array, VariableType::BOOL_ARR) && /*!night::find(array, VariableType::MULT_BOOL_ARR) &&*/
+			!night::find(array, VariableType::NUM_ARR) && /*!night::find(array, VariableType::MULT_NUM_ARR) &&*/
+			!night::find(array, VariableType::STR_ARR) && /*!night::find(array, VariableType::MULT_STR_ARR) &&*/
+			!night::find(array, VariableType::EMPTY_ARR) && /*!night::find(array, VariableType::MULT_EMPTY_ARR) &&*/
+			!night::find(array, VariableType::STR))
+			throw Error(file, line, "subscript operator can only be used on strings or arrays");
+		if (!night::find(index, VariableType::NUM))
+			throw Error(file, line, "subscript operator has to be a number");
 
-		assert(node->extras.size() == 1 && "operator '[]' must store the index in the first element of its extras");
-		const Expression index = TypeCheckExpression(file, line, node->extras[0], variables, functions);
-
-		if (index.type != ValueType::NUM)
-			throw Error(file, line, "operator '[]' has a " + night::ttos(index.type) + " index; operator must have a number index");
-
-		const unsigned long indexInt = std::stoul(index.data);
-		if (std::stoll(index.data) < 0)
-			throw Error(file, line, "subscript operator cannot be negative");
-		if (isArray && indexInt >= right.extras.size())
-			throw Error(file, line, "subscript operator is out of range for array; array has length '" + std::to_string(right.extras.size()) + "', subscript has index '" + index.data + "'");
-		if (!isArray && indexInt >= right.data.length())
-			throw Error(file, line, "subscript operator is out of range for string; string has length '" + std::to_string(right.data.length()) + "', subscript has index '" + index.data + "'");
-
-		return isArray
-			? *right.extras[indexInt]
-			: Expression{ ValueType::STRING, std::string(1, right.data[indexInt]) };
+		return array;
 	}
 	if (node->data == ".")
 	{
-		assert(node->left != nullptr && node->right != nullptr && "binary node can't have NULL left or right");
-
-		Expression object = TypeCheckExpression(file, line, node->left,  variables, functions);
-
-		if (node->right->left != nullptr || node->right->right != nullptr)
-			throw Error(file, line, "invalid method usage");
-		if (node->right->type != ValueType::CALL)
-			throw Error(file, line, "expected method after dot operator");
-
-		const Expression method = *node->right;
-		const bool      isArray = object.type == ValueType::BOOL_ARR || object.type == ValueType::NUM_ARR ||
-						     	  object.type == ValueType::STRING_ARR;
-
-		if (!isArray && object.type != ValueType::STRING)
-			throw Error(file, line, "value '" + object.data + "' does not have any methods");
-
-		if (isArray)
+		if (node->left->type == ValueType::VARIABLE)
 		{
-			if (method.data == "len")
+			CheckVariable* parameter = GetContainer(parameters, node->left->data);
+			if (parameter != nullptr && parameter->types.empty())
 			{
-				if (!method.extras.empty())
-					throw Error(file, line, "array method 'len()' does not take any arguments");
-
-				return Expression{ ValueType::NUM, std::to_string(object.extras.size()) };
-			}
-			if (method.data == "push")
-			{
-				if (method.extras.size() == 1)
+				if (node->right->data == "len")
 				{
-					object.extras.push_back(method.extras[0]);
-					return object;
+					parameter->types = {
+						VariableType::BOOL_ARR,
+						VariableType::NUM_ARR,
+						VariableType::STR_ARR,
+						VariableType::EMPTY_ARR,
+						VariableType::STR
+					};
 				}
-				
-				throw Error(file, line, "array method 'push()' can only take 1 argument");
+				else if (node->right->data == "push" || node->right->data == "pop")
+				{
+					parameter->types = {
+						VariableType::BOOL_ARR,
+						VariableType::NUM_ARR,
+						VariableType::STR_ARR,
+						VariableType::EMPTY_ARR
+					};
+				}
 			}
-
-			throw Error(file, line, "method '" + method.data + "' is not part of the array class");
-		}
-		else
-		{
-			if (method.data == "len")
+			else if (parameter != nullptr && !parameter->types.empty())
 			{
-				if (!method.extras.empty())
-					throw Error(file, line, "string method 'len()' does not take any arguments");
-
-				return Expression{ ValueType::NUM, std::to_string(object.data.length()) };
+				if (node->right->data == "len" || node->right->data == "push" || node->right->data == "pop")
+				{
+					if (!night::find(parameter->types, VariableType::BOOL_ARR) && /*!night::find(array, VariableType::MULT_BOOL_ARR) &&*/
+						!night::find(parameter->types, VariableType::NUM_ARR) && /*!night::find(array, VariableType::MULT_NUM_ARR) &&*/
+						!night::find(parameter->types, VariableType::STR_ARR) && /*!night::find(array, VariableType::MULT_STR_ARR) &&*/
+						!night::find(parameter->types, VariableType::EMPTY_ARR) && /*!night::find(array, VariableType::MULT_EMPTY_ARR) &&*/
+						!night::find(parameter->types, VariableType::STR))
+						throw Error(file, line, "parameter '" + parameter->name + "' cannot be used with method '" + node->right->data + "()'");
+				}
 			}
+		}
 
-			throw Error(file, line, "method '" + method.data + "' is not part of the string class");
+		const std::vector<VariableType> object = TypeCheckExpression(file, line, node->left,  variables, functions, parameters);
+
+		if (node->right->data == "len" &&
+			(night::find(object, VariableType::BOOL_ARR) || /*!night::find(array, VariableType::MULT_BOOL_ARR) &&*/
+			night::find(object, VariableType::NUM_ARR) || /*!night::find(array, VariableType::MULT_NUM_ARR) &&*/
+			night::find(object, VariableType::STR_ARR) || /*!night::find(array, VariableType::MULT_STR_ARR) &&*/
+			night::find(object, VariableType::EMPTY_ARR) ||
+			night::find(object, VariableType::STR)))
+			return { VariableType::NUM };
+		if (node->right->data == "pop")
+			return object;
+		if (node->right->data == "push")
+		{
+			std::vector<VariableType> returnTypes;
+			const std::vector<VariableType> insertElemType = TypeCheckExpression(file, line, node->right->extras[0], variables, functions, parameters);
+			if (night::find(object, VariableType::BOOL_ARR) && night::find(insertElemType, VariableType::BOOL))
+				returnTypes.push_back(VariableType::BOOL_ARR);
+			if (night::find(object, VariableType::NUM_ARR) && night::find(insertElemType, VariableType::NUM))
+				returnTypes.push_back(VariableType::NUM_ARR);
+			if (night::find(object, VariableType::STR_ARR) && night::find(insertElemType, VariableType::STR))
+				returnTypes.push_back(VariableType::STR_ARR);
+
+			return returnTypes;
 		}
 	}
 
-	assert_rtn(false && ("operator '" + node->data + "' missing from list").c_str(), Expression());
+	assert_rtn(false && ("operator '" + node->data + "' missing from list").c_str(), { (VariableType)0 });
 }
 
 int GetOperatorPrecedence(const ValueType& type, const std::string& value)
@@ -570,7 +1014,7 @@ std::shared_ptr<Expression> GetNextGroup(const std::string& file, const int line
 				groupExpression = new_expression(file, line, values[start], nullptr, nullptr, variables, functions);
 			}
 
-			if (values[index].data == "[]")
+			while (index < values.size() && values[index].type == ValueType::OPERATOR && values[index].data == "[]")
 				groupExpression = new_expression(file, line, values[index++], nullptr, groupExpression, variables, functions);
 
 			return isFrontUnary
@@ -630,14 +1074,14 @@ std::shared_ptr<Expression> ParseValues(const std::string& file, const int line,
 
 void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens, bool inFunction)
 {
-	static std::vector<Variable>    variables;
-	static std::vector<FunctionDef> functions;
+	static std::vector<CheckVariable> variables;
+	static std::vector<CheckFunction> functions;
 
 	static bool defineOnce = true;
 	if (defineOnce)
 	{
-		functions.push_back(FunctionDef{ "print" });
-		functions.push_back(FunctionDef{ "input" });
+		functions.push_back(CheckFunction{ "print", {}, true });
+		functions.push_back(CheckFunction{ "input", {}, false, { VariableType::STR } });
 
 		defineOnce = false;
 	}
@@ -661,12 +1105,15 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		if (GetContainer(functions, tokens[1].value) != nullptr)
 			throw Error(file, line, "variable '" + tokens[1].value + "' has the same name as a function; variable and function names must be unique");
 
-		VariableType type;
-		const std::shared_ptr<Expression> expression(
-			ExtractExpression(tokens, 3, tokens.size(), variables, functions, &type)
+		const std::vector<Value> values = TokensToValues(
+			std::vector<Token>(tokens.begin() + 3, tokens.end()),
+			variables, functions
 		);
 
-		variables.push_back(Variable{ type, tokens[1].value, expression });
+		const std::shared_ptr<Expression> expression = ParseValues(tokens[0].file, tokens[0].line, values, variables, functions);
+		const VariableType type = TypeCheckExpression(tokens[0].file, tokens[0].line, expression, variables, functions, {});
+
+		variables.push_back(CheckVariable{ tokens[1].value, { type } });
 
 		statements.push_back(Statement{
 			StatementType::VARIABLE,
@@ -678,15 +1125,16 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		if (tokens.size() == 2)
 			throw Error(file, line, "expected expression after assignment operator");
 
-		Variable* variable = GetContainer(variables, tokens[0].value);
+		CheckVariable* variable = GetContainer(variables, tokens[0].value);
 		if (variable == nullptr)
 			throw Error(file, line, "variable '" + tokens[0].value + "' is not defined");
 
+		VariableType type;
 		const std::shared_ptr<Expression> expression(
-			ExtractExpression(tokens, 2, tokens.size(), variables, functions)
+			ExtractExpression(tokens, 2, tokens.size(), variables, functions, &type)
 		);
 
-		variable->value = expression;
+		variable->types.push_back(type);
 
 		statements.push_back(Statement{
 			StatementType::ASSIGNMENT,
@@ -705,7 +1153,7 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		std::size_t closeBracketIndex = 2;
 
 		const std::shared_ptr<Expression> condition(
-			ExtractCondition(tokens, closeBracketIndex, variables, functions, "if condition")
+			ExtractCondition(tokens, closeBracketIndex, variables, functions, "if condition", {})
 		);
 
 		const std::vector<Statement> body(
@@ -787,14 +1235,6 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 
 			parameters.push_back(tokens[closeBracketIndex].value);
 
-			// DO DIS
-			// use try catch and loop through values
-			//
-			variables.push_back(Variable{ VariableType::NUM, tokens[closeBracketIndex].value });
-			//
-			//
-			//
-
 			if (tokens[closeBracketIndex + 1].type == TokenType::CLOSE_BRACKET)
 			{
 				closeBracketIndex++;
@@ -810,6 +1250,10 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		if (tokens[closeBracketIndex + 1].type != TokenType::OPEN_CURLY)
 			throw Error(file, line, "expected opening curly after function parameters");
 
+		// type checking paramaters
+
+		CheckFunction functionCheck{ tokens[1].value };
+
 		// constructing statement
 
 		const FunctionDef function{
@@ -818,8 +1262,6 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 			ExtractBody(tokens, closeBracketIndex, variables, "function definitions", true)
 		};
 
-		functions.push_back(function);
-
 		statements.push_back(Statement{ StatementType::FUNCTION_DEF, function });
 	}
 	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VARIABLE && tokens[1].type == TokenType::OPEN_BRACKET)
@@ -827,8 +1269,13 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		if (tokens.size() == 2 || (tokens.size() == 3 && tokens[2].type != TokenType::CLOSE_BRACKET))
 			throw Error(file, line, "missing closing bracket");
 
+		const CheckFunction* checkFunction = GetContainer(functions, tokens[0].value);
+		if (checkFunction == nullptr)
+			throw Error(file, line, "function " + tokens[0].value + "' is not defined");
+
 		// function parameters
 
+		std::vector<VariableType> parameterTypes;
 		std::vector<std::shared_ptr<Expression> > parameters;
 		for (std::size_t start = 2, a = 2, openBracketIndex = 0; a < tokens.size(); ++a)
 		{
@@ -843,11 +1290,28 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 				if (tokens[a].type == TokenType::CLOSE_BRACKET && a < tokens.size() - 1)
 					throw Error(file, line, "unexpected tokens after function call; each statement must be on it's own line");
 
-				parameters.push_back(ExtractExpression(tokens, start, a, variables, functions));
+				VariableType paramterType;
+				parameters.push_back(ExtractExpression(tokens, start, a, variables, functions, &paramterType));
+				parameterTypes.push_back(paramterType);
 
 				start = a + 1;
 				continue;
 			}
+		}
+
+		//
+		//
+		// all that's left is find parameter types for function definitions,
+		// and then we should be done!!!!!!
+		//
+
+		if (parameterTypes.size() != checkFunction->parameters.size())
+			throw Error(file, line, "function '" + tokens[0].value + "' is called with '" + std::to_string(parameterTypes.size()) + "' arguments but is defined with '" + std::to_string(checkFunction->parameters.size()) + "' parameters");
+
+		for (std::size_t a = 0; a < parameterTypes.size(); ++a)
+		{
+			if (!night::find(checkFunction->parameters[a].types, parameterTypes[a]))
+				throw Error(file, line, "argument number '" + std::to_string(a + 1) + "' for function call '" + tokens[0].value + "' cannot be used because of a type mismatch");
 		}
 
 		statements.push_back(Statement{
@@ -922,9 +1386,24 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 
 		if (rangeType != VariableType::BOOL_ARR   &&
 			rangeType != VariableType::NUM_ARR    &&
-			rangeType != VariableType::STRING_ARR &&
-			rangeType != VariableType::STRING)
+			rangeType != VariableType::STR_ARR &&
+			rangeType != VariableType::STR)
 			throw Error(file, line, "for loop range evaluated to a " + night::ttos(rangeType) + "; ranges must evaluate to a string or an array");
+
+		switch (rangeType)
+		{
+		case VariableType::BOOL_ARR:
+			rangeType = VariableType::BOOL;
+			break;
+		case VariableType::NUM_ARR:
+			rangeType = VariableType::NUM;
+			break;
+		case VariableType::STR_ARR:
+			rangeType = VariableType::STR;
+			break;
+		default:
+			break;
+		}
 
 		variables.push_back(Variable{ rangeType, tokens[2].value, rangeExpr });
 
@@ -952,7 +1431,7 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 
 		// check if variable is an array or a string
 		const bool isArray = variable->type == VariableType::BOOL_ARR || variable->type == VariableType::NUM_ARR ||
-							 variable->type == VariableType::STRING_ARR;
+							 variable->type == VariableType::STR_ARR;
 
 		if (!isArray && variable->value->type != ValueType::STRING)
 			throw Error(file, line, "variable '" + variable->name + "' doesn't contain a string or an array; to be access with an index, a variable must contain a string or an array");

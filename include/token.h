@@ -85,10 +85,25 @@ struct Expression
 
 enum class VariableType
 {
-	BOOL, BOOL_ARR,
-	NUM, NUM_ARR,
-	STRING, STRING_ARR,
-	EMPTY_ARR
+	BOOL, BOOL_ARR, MULT_BOOL_ARR,
+	NUM, NUM_ARR, MULT_NUM_ARR,
+	STR, STR_ARR, MULT_STR_ARR,
+	EMPTY_ARR, MULT_EMPTY_ARR
+};
+
+struct CheckVariable
+{
+	std::string name;
+	std::vector<VariableType> types;
+};
+
+struct CheckFunction
+{
+	std::string name;
+	std::vector<CheckVariable> parameters;
+
+	bool isVoid;
+	std::vector<VariableType> returnValues;
 };
 
 struct Variable
@@ -116,6 +131,7 @@ struct FunctionDef
 	std::string name;
 	std::vector<std::string> parameters;
 	std::vector<Statement> body;
+	std::vector<VariableType> returnTypes;
 };
 
 struct FunctionCall

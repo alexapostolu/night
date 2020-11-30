@@ -61,6 +61,8 @@ namespace night {
 std::string ttos(const ValueType& type);
 std::string ttos(const VariableType& type);
 
+bool find(const std::vector<VariableType>& types, const VariableType& findType);
+
 } // namespace night
 
 // splits a 1D array of tokens into a 2d array based on individual statements
@@ -75,8 +77,8 @@ std::shared_ptr<Expression> ExtractExpression(
     const std::size_t start,
     const std::size_t end,
 
-    const std::vector<Variable>&    variables,
-    const std::vector<FunctionDef>& functions,
+    const std::vector<CheckVariable>& variables,
+    const std::vector<CheckFunction>& functions,
 
     VariableType* type = nullptr
 );
@@ -86,10 +88,10 @@ std::shared_ptr<Expression> ExtractCondition(
     const std::vector<Token>& tokens,
     std::size_t& closeBracketIndex,
 
-    const std::vector<Variable>&    variables,
-    const std::vector<FunctionDef>& functions,
+    const std::vector<CheckVariable>& variables,
+    const std::vector<CheckFunction>& functions,
 
-    const std::string& stmt
+    const std::string& stmt,
 );
 
 // extracts body from tokens; returns a parsed statement vector
@@ -97,7 +99,7 @@ std::vector<Statement> ExtractBody(
     const std::vector<Token>& tokens,
     const std::size_t closeBracketIndex,
 
-    std::vector<Variable>& variables, // can't be const since variables need to be removed after scope finished
+    std::vector<CheckVariable>& variables, // can't be const since variables need to be removed after scope finished
 
     const std::string& stmt,
 
