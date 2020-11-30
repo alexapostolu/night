@@ -13,7 +13,7 @@ class Star {
 	display() {
 		fill(255, 255, 255, this.brightness);
 		noStroke();
-	  circle(this.x, this.y, 1);
+	  	circle(this.x, this.y, 1);
 
 		this.brightness += this.inc;
 
@@ -29,7 +29,7 @@ class Star {
 }
 
 function setup() {
-  createCanvas(windowWidth - 17, 500);
+  	createCanvas(windowWidth - 17, 500);
 
 	for (let a = 0; a < 50; ++a) {
 		stars.push(new Star());

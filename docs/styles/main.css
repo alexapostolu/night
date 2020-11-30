@@ -1,0 +1,27 @@
+body .gist .gist-file {
+	margin-top: 30px;
+	margin-bottom: 30px;
+
+    width: 100%;
+}
+
+body .gist .blob-num {
+  display: none;
+}
+
+body .gist .blob-code {
+	background-color: white;
+	color: black;
+}
+
+body .gist .gist-meta {
+    display: none;
+}
+
+body .gist .gist-data {
+    border-bottom: none;
+}
+
+body .gist ::selection {
+    background: rgb(150, 150, 150);
+}
