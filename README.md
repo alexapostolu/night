@@ -1,4 +1,6 @@
-![Night Logo](docs/media/night-logo-black.png)
+<p align="center">
+  <img src="https://github.com/DynamicSquid/night/docs/media/night-logo-black.png"/>
+</p>
 
 # Night
 
