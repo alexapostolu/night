@@ -1,3 +1,5 @@
+![Night Logo](docs/media/night-logo-black.png)
+
 # Night
 
 An interpreted programming language that focuses on simplicity and usability. The main goal of Night is to design an intuitive and easy to learn language.
