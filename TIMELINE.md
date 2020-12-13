@@ -32,13 +32,13 @@ Added classes. However they can only contain variables and methods, no inheritan
 
 Lambda functions are now added!
 
-### v4.0.2
+### v4.0.2 Scalability
 
-There are now compile time checks for expressions in functions! Another big step in improving safety.
+The implementation is now way more scalable, allowing for faster updates.
 
-### v4.0.1
+### v4.0.1 Feature Boost
 
-Feature boost! We noew have function definitions, and more!
+Feature boost! We now have casts, pass by reference, and default parameters!
 
 ### v4.0.0
 
