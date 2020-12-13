@@ -28,13 +28,13 @@ Added enumerations, but not like Java's weird enums, they're more like C's enums
 
 Added classes. However they can only contain variables and methods, no inheritance, visibility, etc. So think of them as C structs
 
-### v4.0.3
+### v4.0.3 Citizens
 
-Lambda functions are now added!
+Types and expression as first class citizens.
 
 ### v4.0.2 Scalability
 
-The implementation is now way more scalable, allowing for faster updates.
+The implementation is now way more stable and scalable, allowing for faster and safer updates.
 
 ### v4.0.1 Feature Boost
 
