@@ -1,4 +1,4 @@
-A timeline of past and future versions.
+A timeline of both past and future versions.
 
 ## Version 1
 
