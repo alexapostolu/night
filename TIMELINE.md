@@ -1,12 +1,12 @@
-A timeline of past and future versions.
+A timeline of both past and future versions.
 
 ## Version 1
 
 A complete rewrite focused on making the langauge dynamically typed, and adding useful syntax like array slicing, in addition to adding core features like classes and file handling.
-- `v4.0` will mainly focus on making the language safe and scalable
-- `v4.1` will be focused around encapsulation
-- `v4.2` will be adding utilities like file and error handling
-- `v4.3` networking??
+- `v1.0` will mainly focus on making the language safe and scalable
+- `v1.1` will be focused around encapsulation
+- `v1.2` will be adding utilities like file and error handling
+- `v1.3` networking??
 
 ### v1.2.1
 
