@@ -4,6 +4,20 @@
 #include <cassert>
 #include <string>
 
+#ifndef _DEBUG
+	inline void AssertError()
+	{
+		std::cerr << "Oops! Something unexpected has happened! Please submit an issue on the GitHub page.\n";
+		exit(1);
+	}
+
+	#undef  assert
+	#define assert(con) AssertError()
+
+	// just in case I forget to remove all the debugging print statements
+	#define clog wtf are you doing
+#endif
+
 class Error
 {
 public:
@@ -18,22 +32,3 @@ public:
 	int line;
 	std::string message;
 };
-
-// MSVC specific macro; it shouldn't be defined in release builds
-#ifdef _DEBUG
-	// similar to the assert macro, but also returns a value to avoid compiler warnings
-	#define assert_rtn(con, rtn) assert(con); return rtn
-#else
-	inline void AssertError()
-	{
-		std::cerr << "Oops! Something unexpected has happened! Please submit an issue on the GitHub page.\n";
-		exit(1);
-	}
-
-	#undef  assert
-	#define assert(con) AssertError()
-	#define assert_rtn(con, rtn) AssertError()
-
-	// just in case I forget to remove all the debugging print statements
-	#define clog wtf are you doing
-#endif

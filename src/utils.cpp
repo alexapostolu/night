@@ -61,6 +61,18 @@ std::string ttos(const VariableType& type)
 
 } // namespace night
 
+std::vector<VariableType> TypeCheckExpression(
+	const std::string& file,
+	const int          line,
+
+	const std::shared_ptr<Expression>& node,
+
+	const std::vector<CheckVariable>& variables,
+	const std::vector<CheckFunction>& functions,
+	const std::vector<CheckClass>& classes,
+
+	const std::vector<CheckVariable>& parameters
+);
 std::shared_ptr<Expression> ParseTokenExpression(const std::vector<Token>& tokens, const std::size_t start,
 	const std::size_t end, const std::vector<CheckVariable>& variables, const std::vector<CheckFunction>& functions,
 	const std::vector<CheckClass>& classes, const std::vector<CheckVariable>& parameters, std::vector<VariableType>* types)
