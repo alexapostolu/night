@@ -5,7 +5,7 @@
 
 void NightPrint(const Expression& value)
 {
-    if (value.type == ValueType::BOOL_ARR || value.type == ValueType::NUM_ARR || value.type == ValueType::STRING_ARR)
+    if (value.type == ValueType::ARRAY)
     {
         std::cout << "[ ";
         for (std::size_t a = 0; a < value.extras.size() - 1; ++a)

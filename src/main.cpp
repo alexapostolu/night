@@ -23,7 +23,7 @@ std::vector<Token> OpenFile(const std::string& file)
         std::vector<Token> fileTokens = Lexer(file, line, fileLine);
         if (fileTokens.size() >= 1 && fileTokens[0].type == TokenType::IMPORT)
         {
-            if (fileTokens.size() == 1 || fileTokens[1].type != TokenType::STRING_VAL)
+            if (fileTokens.size() == 1 || fileTokens[1].type != TokenType::STR_VAL)
                 throw Error(file, line, "expected file name (string) after '" + fileTokens[0].value + "' statement");
             if (fileTokens.size() > 2)
                 throw Error(file, line, fileTokens[0].value + " statement must be on it's own line");
@@ -46,7 +46,7 @@ std::vector<Token> OpenFile(const std::string& file)
     return tokens;
 }
 
-void _main(const std::string& file)
+void BackEnd(const std::string& file)
 {
     const std::vector<std::vector<Token> > code = SplitCode(OpenFile(file));
     std::vector<Statement> statements;
@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
         if (argc != 2)
             throw Error("invalid command line arguments; only pass in the file name as an argument");
         
-        _main(argv[1]);
+        BackEnd(argv[1]);
     }
     catch (const Error& e) {
         std::cerr << e.what() << '\n';

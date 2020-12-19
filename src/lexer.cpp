@@ -102,7 +102,7 @@ std::vector<Token> Lexer(const std::string& file, const int line, const std::str
 				newline = token.find("\\n", newline + 1);
 			}
 
-			tokens.push_back(Token{ file, line, TokenType::STRING_VAL, token });
+			tokens.push_back(Token{ file, line, TokenType::STR_VAL, token });
 			token = "";
 
 			inString = ' ';

@@ -17,7 +17,7 @@ enum class TokenType
 
 	COLON, COMMA,
 
-	BOOL_VAL, NUM_VAL, STRING_VAL,
+	BOOL_VAL, NUM_VAL, STR_VAL,
 
 	VARIABLE,
 
@@ -46,10 +46,11 @@ struct Token
 
 enum class ValueType
 {
-	BOOL, BOOL_ARR,
-	NUM, NUM_ARR,
-	STRING, STRING_ARR,
-	EMPTY_ARRAY,
+	BOOL, //BOOL_ARR,
+	NUM, //NUM_ARR,
+	STR, //STR_ARR,
+	//EMPTY_ARRAY,
+	ARRAY,
 
 	VARIABLE, CALL,
 
@@ -64,8 +65,6 @@ struct Value
 
 	std::string data;
 	std::vector<std::vector<Value> > extras;
-
-	int arrayDepth;
 };
 
 struct Statement;
@@ -79,36 +78,18 @@ struct Expression
 
 	std::shared_ptr<Expression> left;
 	std::shared_ptr<Expression> right;
-
-	int arrayDepth;
 };
 
 enum class VariableType
 {
 	BOOL, BOOL_ARR, MULT_BOOL_ARR,
-	NUM, NUM_ARR, MULT_NUM_ARR,
-	STR, STR_ARR, MULT_STR_ARR,
-	EMPTY_ARR, MULT_EMPTY_ARR
-};
-
-struct CheckVariable
-{
-	std::string name;
-	std::vector<VariableType> types;
-};
-
-struct CheckFunction
-{
-	std::string name;
-	std::vector<CheckVariable> parameters;
-
-	bool isVoid;
-	std::vector<VariableType> returnValues;
+	NUM,  NUM_ARR,  MULT_NUM_ARR,
+	STR,  STR_ARR,  MULT_STR_ARR,
+	EMPTY_ARR,      MULT_EMPTY_ARR
 };
 
 struct Variable
 {
-	VariableType type;
 	std::string name;
 	std::shared_ptr<Expression> value;
 };
@@ -130,6 +111,7 @@ struct FunctionDef
 {
 	std::string name;
 	std::vector<std::string> parameters;
+
 	std::vector<Statement> body;
 	std::vector<VariableType> returnTypes;
 };
@@ -137,7 +119,7 @@ struct FunctionDef
 struct FunctionCall
 {
 	std::string name;
-	std::vector<std::shared_ptr<Expression> > parameters;
+	std::vector<std::shared_ptr<Expression> > arguments;
 };
 
 struct Return
@@ -202,4 +184,26 @@ struct Statement
 		Element,
 		MethodCall
 	> stmt;
+};
+
+struct CheckVariable
+{
+	std::string name;
+	std::vector<VariableType> types;
+};
+
+struct CheckFunction
+{
+	std::string name;
+	std::vector<CheckVariable> parameters;
+
+	std::vector<VariableType> returnValues;
+};
+
+struct CheckClass
+{
+	std::string name;
+
+	std::vector<CheckVariable> variables;
+	std::vector<CheckFunction> methods;
 };

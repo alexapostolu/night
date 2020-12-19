@@ -21,7 +21,7 @@ public:
 
 // MSVC specific macro; it shouldn't be defined in release builds
 #ifdef _DEBUG
-	// similar to the assert macro, but also returns a value to satisfy compiler warnings
+	// similar to the assert macro, but also returns a value to avoid compiler warnings
 	#define assert_rtn(con, rtn) assert(con); return rtn
 #else
 	inline void AssertError()
