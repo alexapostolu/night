@@ -1,6 +1,6 @@
-#include "../include/lexer.h"
-#include "../include/token.h"
-#include "../include/error.h"
+#include "../include/lexer.hpp"
+#include "../include/token.hpp"
+#include "../include/error.hpp"
 
 #include <regex>
 #include <string>

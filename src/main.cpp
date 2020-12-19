@@ -1,9 +1,9 @@
-#include "../include/lexer.h"
-#include "../include/parser.h"
-#include "../include/interpreter.h"
-#include "../include/utils.h"
-#include "../include/error.h"
-#include "../include/token.h"
+#include "../include/lexer.hpp"
+#include "../include/parser.hpp"
+#include "../include/interpreter.hpp"
+#include "../include/utils.hpp"
+#include "../include/error.hpp"
+#include "../include/token.hpp"
 
 #include <fstream>
 #include <iostream>

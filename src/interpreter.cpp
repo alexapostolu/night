@@ -1,8 +1,8 @@
-#include "../include/interpreter.h"
-#include "../include/night.h"
-#include "../include/utils.h"
-#include "../include/error.h"
-#include "../include/token.h"
+#include "../include/interpreter.hpp"
+#include "../include/night.hpp"
+#include "../include/utils.hpp"
+#include "../include/error.hpp"
+#include "../include/token.hpp"
 
 #include <iostream>
 #include <memory>

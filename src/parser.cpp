@@ -1,7 +1,7 @@
-#include "../include/parser.h"
-#include "../include/utils.h"
-#include "../include/token.h"
-#include "../include/error.h"
+#include "../include/parser.hpp"
+#include "../include/utils.hpp"
+#include "../include/token.hpp"
+#include "../include/error.hpp"
 
 #include <memory>
 #include <string>

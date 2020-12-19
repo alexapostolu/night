@@ -1,4 +1,4 @@
-#include "../include/error.h"
+#include "../include/error.hpp"
 
 #include <string>
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "night.h"
-#include "token.h"
+#include "night.hpp"
+#include "token.hpp"
 
 #include <memory>
 #include <vector>

@@ -1,5 +1,5 @@
-#include "../include/night.h"
-#include "../include/token.h"
+#include "../include/night.hpp"
+#include "../include/token.hpp"
 
 #include <iostream>
 
