@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-Expression EvaluateExpression(const std::shared_ptr<Expression>& node, std::vector<NightVariable>& variables,
+NightData EvaluateExpression(const std::shared_ptr<Expression>& node, std::vector<NightVariable>& variables,
 	const std::vector<NightFunction>& functions)
 {
 	assert(node != nullptr && "node should not be NULL");
@@ -17,6 +17,42 @@ Expression EvaluateExpression(const std::shared_ptr<Expression>& node, std::vect
 	// if left and right node are NULL, then node must be a value
 	if (node->left == nullptr && node->right == nullptr)
 	{
+		if (node->type == ValueType::ARRAY)
+		{
+			// compile time checks?
+
+			NightData data;
+			for (const std::shared_ptr<Expression>& element : node->extras)
+				data.extras.push_back(EvaluateExpression(element, variables, functions));
+
+			if (data.extras.empty())
+			{
+				data.type = VariableType::EMPTY_ARR;
+				return data;
+			}
+
+			switch (data.extras.back().type)
+			{
+			case VariableType::BOOL:
+				data.type = VariableType::BOOL_ARR;
+			case VariableType::NUM:
+				data.type = VariableType::NUM_ARR;
+			case VariableType::STR:
+				data.type = VariableType::STR_ARR;
+			case VariableType::BOOL_ARR:
+				data.type = VariableType::MULT_BOOL_ARR;
+			case VariableType::NUM_ARR:
+				data.type = VariableType::MULT_NUM_ARR;
+			case VariableType::STR_ARR:
+				data.type = VariableType::MULT_STR_ARR;
+			case VariableType::EMPTY_ARR:
+				data.type = VariableType::MULT_EMPTY_ARR;
+			default:
+				data.type = data.extras.back().type;
+			}
+
+			return data;
+		}
 		if (node->type == ValueType::VARIABLE)
 		{
 			const NightVariable* variableValue = night::get_container(variables, node->data);
@@ -31,7 +67,7 @@ Expression EvaluateExpression(const std::shared_ptr<Expression>& node, std::vect
 				std::string uinput;
 				getline(std::cin, uinput);
 
-				return Expression{ ValueType::STR, uinput };
+				return NightData{ VariableType::STR, uinput };
 			}
 
 		    const NightFunction* function = night::get_container(functions, node->data);
@@ -48,7 +84,7 @@ Expression EvaluateExpression(const std::shared_ptr<Expression>& node, std::vect
 			}
 
 			// interpret function body and extract return value
-			Expression returnValue;
+			NightData returnValue;
 			Interpreter(function->body, &returnValue);
 
 			// remove variables since they are now out of scope
@@ -60,26 +96,34 @@ Expression EvaluateExpression(const std::shared_ptr<Expression>& node, std::vect
 			return returnValue;
 		}
 
-		return *node;
+		switch (node->type)
+		{
+		case ValueType::BOOL:
+			return NightData{ VariableType::BOOL, node->data };
+		case ValueType::NUM:
+			return NightData{ VariableType::NUM, node->data };
+		case ValueType::STR:
+			return NightData{ VariableType::STR, node->data };
+		}
 	}
 
 	assert(node->type == ValueType::OPERATOR && "node should be operator");
 
 	if (node->data == "+")
 	{
-		const Expression expr1 = EvaluateExpression(node->left,  variables, functions);
-		const Expression expr2 = EvaluateExpression(node->right, variables, functions);
+		const NightData expr1 = EvaluateExpression(node->left,  variables, functions);
+		const NightData expr2 = EvaluateExpression(node->right, variables, functions);
 
-		if (expr1.type == ValueType::STR || expr2.type == ValueType::STR)
+		if (expr1.type == VariableType::STR || expr2.type == VariableType::STR)
 		{
-			return Expression{
-				ValueType::STR,
+			return NightData{
+				VariableType::STR,
 				expr1.data + expr2.data
 			};
 		}
 		else
 		{
-			return Expression{
+			return NightData{
 				expr1.type,
 				std::to_string(std::stof(expr1.data) + std::stof(expr2.data))
 			};
@@ -89,107 +133,114 @@ Expression EvaluateExpression(const std::shared_ptr<Expression>& node, std::vect
 	{
 		if (node->left == nullptr)
 		{
-			Expression expression = EvaluateExpression(node->right, variables, functions);
+			NightData expression = EvaluateExpression(node->right, variables, functions);
 			expression.data = std::to_string(-std::stof(expression.data));
 
 			return expression;
 		}
 
-		EVAL_EXPR(std::to_string(std::stof(expr1.data) - std::stof(expr2.data)), ValueType::NUM);
+		EVAL_EXPR(std::to_string(std::stof(expr1.data) - std::stof(expr2.data)), VariableType::NUM);
 	}
 	if (node->data == "*")
 	{
-		EVAL_EXPR(std::to_string(std::stof(expr1.data) * std::stof(expr2.data)), ValueType::NUM);
+		EVAL_EXPR(std::to_string(std::stof(expr1.data) * std::stof(expr2.data)), VariableType::NUM);
 	}
 	if (node->data == "/")
 	{
-		EVAL_EXPR(std::to_string(std::stof(expr1.data) / std::stof(expr2.data)), ValueType::NUM);
+		EVAL_EXPR(std::to_string(std::stof(expr1.data) / std::stof(expr2.data)), VariableType::NUM);
 	}
 	if (node->data == "%")
 	{
-		EVAL_EXPR(std::to_string(std::stoi(expr1.data) % std::stoi(expr2.data)), ValueType::NUM);
+		EVAL_EXPR(std::to_string(std::stoi(expr1.data) % std::stoi(expr2.data)), VariableType::NUM);
 	}
 	if (node->data == ">")
 	{
-		EVAL_EXPR(std::stof(expr1.data) > std::stof(expr2.data) ? "true" : "false", ValueType::BOOL);
+		EVAL_EXPR(std::stof(expr1.data) > std::stof(expr2.data) ? "true" : "false", VariableType::BOOL);
 	}
 	if (node->data == "<")
 	{
-		EVAL_EXPR(std::stof(expr1.data) < std::stof(expr2.data) ? "true" : "false", ValueType::BOOL);
+		EVAL_EXPR(std::stof(expr1.data) < std::stof(expr2.data) ? "true" : "false", VariableType::BOOL);
 	}
 	if (node->data == ">=")
 	{
-		EVAL_EXPR(std::stof(expr1.data) >= std::stof(expr2.data) ? "true" : "false", ValueType::BOOL);
+		EVAL_EXPR(std::stof(expr1.data) >= std::stof(expr2.data) ? "true" : "false", VariableType::BOOL);
 	}
 	if (node->data == "<=")
 	{
-		EVAL_EXPR(std::stof(expr1.data) <= std::stof(expr2.data) ? "true" : "false", ValueType::BOOL);
+		EVAL_EXPR(std::stof(expr1.data) <= std::stof(expr2.data) ? "true" : "false", VariableType::BOOL);
 	}
 	if (node->data == "!")
 	{
-		Expression expression = EvaluateExpression(node->right, variables, functions);
+		NightData expression = EvaluateExpression(node->right, variables, functions);
 		expression.data = expression.data == "true" ? "false" : "true";
 
 		return expression;
 	}
 	if (node->data == "||")
 	{
-		EVAL_EXPR(expr1.data == "true" || expr2.data == "true" ? "true" : "false", ValueType::BOOL);
+		EVAL_EXPR(expr1.data == "true" || expr2.data == "true" ? "true" : "false", VariableType::BOOL);
 	}
 	if (node->data == "&&")
 	{
-		EVAL_EXPR(expr1.data == "true" && expr2.data == "true" ? "true" : "false", ValueType::BOOL);
+		EVAL_EXPR(expr1.data == "true" && expr2.data == "true" ? "true" : "false", VariableType::BOOL);
 	}
 	if (node->data == "==")
 	{
-		EVAL_EXPR(expr1.data == expr2.data ? "true" : "false", ValueType::BOOL);
+		EVAL_EXPR(expr1.data == expr2.data ? "true" : "false", VariableType::BOOL);
 	}
 	if (node->data == "!=")
 	{
-		EVAL_EXPR(expr1.data != expr2.data ? "true" : "false", ValueType::BOOL);
+		EVAL_EXPR(expr1.data != expr2.data ? "true" : "false", VariableType::BOOL);
 	}
 	if (node->data == "[]")
 	{
-		const Expression    array = EvaluateExpression(node->right, variables, functions);
+		const NightData     array = EvaluateExpression(node->right, variables, functions);
 		const unsigned long index = std::stoul(EvaluateExpression(node->extras[0], variables, functions).data);
 
 		if (array.extras.empty())
 		{
-			assert(index >= 0 && index < array.data.length() && "string subscript out of range");
-			return Expression{ ValueType::STR, std::string(1, array.data[index]) };
+			if (index < 0 || index >= array.data.length())
+				throw Error("string subscript out of range");
+
+			return NightData{ VariableType::STR, std::string(1, array.data[index]) };
 		}
 		else
 		{
-			assert(index >= 0 && index < array.extras.size() && "array subscript out of range");
-			return EvaluateExpression((array.extras[index]), variables, functions);
+			if (index < 0 || index >= array.extras.size())
+				throw Error("array subscript is out of range");
+
+			return array.extras[index];
 		}
 	}
 	if (node->data == ".")
 	{
 		assert(node->left != nullptr && node->right != nullptr && "binary node can't have NULL left or right");
 
-		Expression object       = EvaluateExpression(node->left,  variables, functions);
+		NightData object        = EvaluateExpression(node->left,  variables, functions);
 		const Expression method = *node->right;
 
-		if (object.type == ValueType::ARRAY && method.data == "len")
+		const bool is_array = object.type != VariableType::BOOL && object.type != VariableType::NUM;
+
+		if (is_array && method.data == "len")
 		{
-			return Expression{ ValueType::NUM, std::to_string(object.extras.size()) };
+			return NightData{ VariableType::NUM, std::to_string(object.extras.size()) };
 		}
-		if (object.type == ValueType::ARRAY && method.data == "push" && method.extras.size() == 1)
+		if (is_array && method.data == "push" && method.extras.size() == 1)
 		{
-			object.extras.push_back(method.extras[0]);
+			object.extras.push_back(EvaluateExpression(method.extras[0], variables, functions));
 			return object;
 		}
-		if (object.type == ValueType::STR && method.data == "len")
+		if (object.type == VariableType::STR && method.data == "len")
 		{
-			return Expression{ ValueType::NUM, std::to_string(object.data.length()) };
+			return NightData{ VariableType::NUM, std::to_string(object.data.length()) };
 		}
 	}
 
-	assert_rtn(false && "operator missing", Expression());
+	assert(false && "operator missing");
+	return NightData();
 }
 
-void Interpreter(const std::vector<Statement>& statements, Expression* returnValue)
+void Interpreter(const std::vector<Statement>& statements, NightData* returnValue)
 {
 	static std::vector<NightVariable> variables;
 	static std::vector<NightFunction> functions;
@@ -212,7 +263,25 @@ void Interpreter(const std::vector<Statement>& statements, Expression* returnVal
 			NightVariable* variable = night::get_container(variables, std::get<Assignment>(statement.stmt).name);
 			assert(variable != nullptr && "definitions should be checked in the parser");
 
-			variable->data = EvaluateExpression(std::get<Assignment>(statement.stmt).value, variables, functions);
+			switch (std::get<Assignment>(statement.stmt).type)
+			{
+			case '=':
+				variable->value = EvaluateExpression(std::get<Assignment>(statement.stmt).value, variables, functions);
+			case '+':
+				if (variable->value.type == VariableType::STR)
+				{
+					variable->value.data += EvaluateExpression(std::get<Assignment>(statement.stmt).value, variables, functions).data;
+				}
+				else
+				{
+					variable->value.data = std::to_string(
+						std::stoi(variable->value.data) +
+						std::stoi(EvaluateExpression(std::get<Assignment>(statement.stmt).value, variables, functions).data)
+					);
+				}
+			default:
+				break;
+			}
 
 			break;
 		}
@@ -273,16 +342,29 @@ void Interpreter(const std::vector<Statement>& statements, Expression* returnVal
 			break;
 		}
 		case StatementType::FOR_LOOP: {
-			const Expression range = EvaluateExpression(std::get<ForLoop>(statement.stmt).range, variables, functions);
+			const NightData range = EvaluateExpression(std::get<ForLoop>(statement.stmt).range, variables, functions);
 
 			variables.push_back(NightVariable{ std::get<ForLoop>(statement.stmt).iterator, Expression() });
-			NightVariable* index = &variables.back();
+			const std::size_t index = variables.size() - 1;
 
-			for (const std::shared_ptr<Expression>& rangeValue : range.extras)
+			if (range.type == VariableType::STR)
 			{
-				index->data = EvaluateExpression(rangeValue, variables, functions);
-				Interpreter(std::get<ForLoop>(statement.stmt).body);
+				for (char rangeValue : range.data)
+				{
+					variables[index].data = Expression{ ValueType::STR, std::string(1, rangeValue) };
+					Interpreter(std::get<ForLoop>(statement.stmt).body);
+				}
 			}
+			else
+			{
+				for (const std::shared_ptr<Expression>& rangeValue : range.extras)
+				{
+					variables[index].data = EvaluateExpression(rangeValue, variables, functions);
+					Interpreter(std::get<ForLoop>(statement.stmt).body);
+				}
+			}
+
+			variables.erase(variables.begin() + index);
 
 			break;
 		}

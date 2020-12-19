@@ -41,7 +41,7 @@ struct Token
 	int line;
 
 	TokenType type;
-	std::string value;
+	std::string data;
 };
 
 enum class ValueType
@@ -96,6 +96,8 @@ struct Variable
 
 struct Assignment
 {
+	char type;
+
 	std::string name;
 	std::shared_ptr<Expression> value;
 };
@@ -195,7 +197,7 @@ struct CheckVariable
 struct CheckFunction
 {
 	std::string name;
-	std::vector<CheckVariable> parameters;
+	std::vector<std::vector<VariableType> > parameters;
 
 	std::vector<VariableType> returnValues;
 };

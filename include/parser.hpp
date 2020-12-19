@@ -54,9 +54,9 @@ std::vector<VariableType> TypeCheckExpression(
 
 	const std::vector<CheckVariable>& variables,
 	const std::vector<CheckFunction>& functions,
-	const std::vector<CheckClass>&    classes,
+	const std::vector<CheckClass>& classes,
 
-	const std::vector<CheckVariable>& parameters
+	std::vector<CheckVariable>& parameters
 );
 
 // parses an array of tokens into an array of statements

@@ -5,10 +5,18 @@
 #include <string>
 #include <vector>
 
+struct NightData
+{
+    VariableType type;
+
+    std::string data;
+    std::vector<NightData> extras;
+};
+
 struct NightVariable
 {
     std::string name;
-    Expression data;
+    NightData value;
 };
 
 struct NightFunction
@@ -26,4 +34,4 @@ struct NightClass
 };
 
 // displays standard output
-void NightPrint(const Expression& value);
+void NightPrint(const NightData& value);

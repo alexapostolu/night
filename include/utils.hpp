@@ -97,7 +97,7 @@ std::shared_ptr<Expression> ParseTokenExpression(
 	const std::vector<CheckFunction>& functions,
 	const std::vector<CheckClass>&    classes,
 
-	const std::vector<CheckVariable>& parameters,
+	std::vector<CheckVariable>& parameters,
 
 	std::vector<VariableType>* types = nullptr
 );
@@ -111,7 +111,7 @@ std::shared_ptr<Expression> ExtractCondition(
 	const std::vector<CheckFunction>& functions,
 	const std::vector<CheckClass>&    classes,
 
-	const std::vector<CheckVariable>& parameters,
+	std::vector<CheckVariable>& parameters,
 
 	const std::string& stmt
 );

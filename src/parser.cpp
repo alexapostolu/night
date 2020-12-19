@@ -22,7 +22,7 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens)
 		{
 			if (a < tokens.size() - 1 && tokens[a + 1].type == TokenType::OPEN_BRACKET)
 			{
-				Value functionCall{ ValueType::CALL, tokens[a].value };
+				Value functionCall{ ValueType::CALL, tokens[a].data };
 
 				if (tokens[a + 2].type == TokenType::CLOSE_BRACKET)
 				{
@@ -66,7 +66,7 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens)
 			}
 			else if (a < tokens.size() - 1 && tokens[a + 1].type == TokenType::OPEN_SQUARE)
 			{
-				values.push_back(Value{ ValueType::VARIABLE, tokens[a].value });
+				values.push_back(Value{ ValueType::VARIABLE, tokens[a].data });
 
 				while (a < tokens.size() - 1 && tokens[a + 1].type == TokenType::OPEN_SQUARE)
 				{
@@ -87,7 +87,7 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens)
 			}
 			else
 			{
-				values.push_back(Value{ ValueType::VARIABLE, tokens[a].value });
+				values.push_back(Value{ ValueType::VARIABLE, tokens[a].data });
 			}
 		}
 		else if (tokens[a].type == TokenType::OPEN_SQUARE)
@@ -142,25 +142,25 @@ std::vector<Value> TokensToValues(const std::vector<Token>& tokens)
 			switch (tokens[a].type)
 			{
 			case TokenType::BOOL_VAL:
-				values.push_back(Value{ ValueType::BOOL, tokens[a].value });
+				values.push_back(Value{ ValueType::BOOL, tokens[a].data });
 				break;
 			case TokenType::NUM_VAL:
-				values.push_back(Value{ ValueType::NUM, tokens[a].value });
+				values.push_back(Value{ ValueType::NUM, tokens[a].data });
 				break;
 			case TokenType::STR_VAL:
-				values.push_back(Value{ ValueType::STR, tokens[a].value });
+				values.push_back(Value{ ValueType::STR, tokens[a].data });
 				break;
 			case TokenType::OPEN_BRACKET:
-				values.push_back(Value{ ValueType::OPEN_BRACKET, tokens[a].value });
+				values.push_back(Value{ ValueType::OPEN_BRACKET, tokens[a].data });
 				break;
 			case TokenType::CLOSE_BRACKET:
-				values.push_back(Value{ ValueType::CLOSE_BRACKET, tokens[a].value });
+				values.push_back(Value{ ValueType::CLOSE_BRACKET, tokens[a].data });
 				break;
 			case TokenType::OPERATOR:
-				values.push_back(Value{ ValueType::OPERATOR, tokens[a].value });
+				values.push_back(Value{ ValueType::OPERATOR, tokens[a].data });
 				break;
 			default:
-				throw Error(file, line, "unexpected token '" + tokens[a].value + "' in expression");
+				throw Error(file, line, "unexpected token '" + tokens[a].data + "' in expression");
 			}
 		}
 	}
@@ -250,7 +250,8 @@ int GetOperatorPrecedence(const ValueType& type, const std::string& value)
 		}
 	}
 
-	assert_rtn(false && "operator missing", 0);
+	assert(false && "operator missing");
+	return 0;
 }
 
 std::shared_ptr<Expression> ValuesToExpression(const std::string& file, const int line, const std::vector<Value>& values)
@@ -377,7 +378,7 @@ std::vector<VariableType> TypeCheckExpression(const std::string& file, const int
 
 				for (const VariableType& argumentType : argumentTypes)
 				{
-					if (!night::find_type(function->parameters[a].types, argumentType))
+					if (!night::find_type(function->parameters[a], argumentType))
 						throw Error(file, line, "argument number '" + std::to_string(a + 1) + "' for function call '" + function->name + "' cannot be used because of a type mismatch");
 				}
 			}
@@ -439,7 +440,7 @@ std::vector<VariableType> TypeCheckExpression(const std::string& file, const int
 		if (night::find_type(left, VariableType::STR) || night::find_type(right, VariableType::STR))
 			returnTypes.push_back(VariableType::STR);
 
-		if (!returnTypes.empty())
+		if (returnTypes.empty())
 			throw Error(file, line, "binary operator '+' can only be used on two numbers or in string concatenation");
 
 		return returnTypes;
@@ -1029,7 +1030,8 @@ std::vector<VariableType> TypeCheckExpression(const std::string& file, const int
 		}
 	}
 
-	assert_rtn(false && "operator missing from list", { (VariableType)0 });
+	assert(false && "operator missing from list");
+	return {};
 }
 
 void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens)
@@ -1044,16 +1046,18 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 	static bool defineOnce = true;
 	if (defineOnce)
 	{
-		functions.push_back(CheckFunction{ "print", {}, {} });
+		// yuck!
+
+		functions.push_back(CheckFunction{ "print", { { VariableType::BOOL, VariableType::BOOL_ARR, VariableType::MULT_BOOL_ARR, VariableType::NUM, VariableType::NUM_ARR, VariableType::MULT_NUM_ARR, VariableType::STR, VariableType::STR_ARR, VariableType::MULT_STR_ARR, VariableType::EMPTY_ARR, VariableType::MULT_EMPTY_ARR } } });
 		functions.push_back(CheckFunction{ "input", {}, { VariableType::STR } });
 
 		classes.push_back(CheckClass{ "array" });
 		classes.back().methods = {
 			CheckFunction{ "len",  {},            { VariableType::NUM }            },
-			CheckFunction{ "push", { { "" } }                                   },
-			CheckFunction{ "push", { { "", { VariableType::NUM } }, { "" } } },
+			CheckFunction{ "push", { {} }                                   },
+			CheckFunction{ "push", { {VariableType::NUM} }, {}                      },
 			CheckFunction{ "pop"                                                   },
-			CheckFunction{ "pop",  { { "", { VariableType::NUM } } }            }
+			CheckFunction{ "pop",  { {VariableType::NUM } } }
 		};
 
 		defineOnce = false;
@@ -1073,25 +1077,25 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		if (tokens.size() == 3)
 			throw Error(file, line, "expected expression after assignment operator");
 
-		if (night::find_container(variables, tokens[1].value))
-			throw Error(file, line, "variable '" + tokens[1].value + "' is already defined");
-		if (night::find_container(functions, tokens[1].value))
-			throw Error(file, line, "variable '" + tokens[1].value + "' has the same name as a function; variable and function names must be unique");
-		if (night::find_container(classes, tokens[1].value))
-			throw Error(file, line, "variable '" + tokens[1].value + "' has the same name as a class; variable and class names must be unique");
-		if (night::find_container(parameters, tokens[1].value))
-			throw Error(file, line, "variable '" + tokens[1].value + "' cannot have the same name as a parameter");
+		if (night::find_container(variables, tokens[1].data))
+			throw Error(file, line, "variable '" + tokens[1].data + "' is already defined");
+		if (night::find_container(functions, tokens[1].data))
+			throw Error(file, line, "variable '" + tokens[1].data + "' has the same name as a function; variable and function names must be unique");
+		if (night::find_container(classes, tokens[1].data))
+			throw Error(file, line, "variable '" + tokens[1].data + "' has the same name as a class; variable and class names must be unique");
+		if (night::find_container(parameters, tokens[1].data))
+			throw Error(file, line, "variable '" + tokens[1].data + "' cannot have the same name as a parameter");
 
 		std::vector<VariableType> types;
 		const std::shared_ptr<Expression> expression = ParseTokenExpression(
 			tokens, 3, tokens.size(), variables, functions, classes, parameters, &types
 		);
 
-		variables.push_back(CheckVariable{ tokens[1].value, types });
+		variables.push_back(CheckVariable{ tokens[1].data, types });
 
 		statements.push_back(Statement{
 			StatementType::VARIABLE,
-			Variable{ tokens[1].value, expression }
+			Variable{ tokens[1].data, expression }
 		});
 	}
 	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VARIABLE && tokens[1].type == TokenType::ASSIGNMENT)
@@ -1099,24 +1103,33 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		if (tokens.size() == 2)
 			throw Error(file, line, "expected expression after assignment operator");
 
-		CheckVariable* variable = night::get_container(variables, tokens[0].value);
+		CheckVariable* variable = night::get_container(variables, tokens[0].data);
 		if (variable == nullptr)
 		{
-			variable = night::get_container(parameters, tokens[0].value);
+			variable = night::get_container(parameters, tokens[0].data);
 			if (variable == nullptr)
-				throw Error(file, line, "variable '" + tokens[0].value + "' is not defined");
+				throw Error(file, line, "variable '" + tokens[0].data + "' is not defined");
 		}
+
+		if (tokens[1].data == "+=" && !night::find_type(variable->types, VariableType::NUM) &&
+			!night::find_type(variable->types, VariableType::STR))
+			throw Error(file, line, "variable '" + variable->name + "' does not contain types 'num' and 'str', but assignment '+=' requires variables to contain type  'num' and 'str'");
+		if (tokens[1].data != "=" && tokens[1].data != "+=" && !night::find_type(variable->types, VariableType::NUM))
+			throw Error(file, line, "variable '" + variable->name + "' does not contain type 'num', but assignment '" + tokens[1].data + "' requires variables to contain type 'num'");
 
 		std::vector<VariableType> types;
 		const std::shared_ptr<Expression> expression = ParseTokenExpression(
-			tokens, 3, tokens.size(), variables, functions, classes, parameters, &types
+			tokens, 2, tokens.size(), variables, functions, classes, parameters, &types
 		);
+
+		if (tokens[1].data != "=" && tokens[1].data != "+=" && !night::find_type(types, VariableType::NUM))
+			throw Error(file, line, "expression does not contain type 'num', but assignment '+=' requires expression to contain type 'num'");
 
 		variable->types.insert(variable->types.end(), types.begin(), types.end());
 
 		statements.push_back(Statement{
 			StatementType::ASSIGNMENT,
-			Assignment{ tokens[0].value, expression }
+			Assignment{ tokens[1].data[0], tokens[0].data, expression }
 		});
 	}
 	else if (tokens.size() >= 1 && tokens[0].type == TokenType::IF)
@@ -1198,12 +1211,12 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		if (tokens.size() == 4 || (tokens.size() == 5 && tokens[4].type != TokenType::OPEN_CURLY))
 			throw Error(file, line, "expected open curly bracket for function body");
 
-		if (night::find_container(variables, tokens[1].value))
-			throw Error("function '" + tokens[1].value + "' has the same name as a variable; variable and function names must be unique");
-		if (night::find_container(functions, tokens[1].value))
-			throw Error("function '" + tokens[1].value + "' is already defined");
-		if (night::find_container(classes, tokens[1].value))
-			throw Error("function '" + tokens[1].value + "' has the same name as a class; function and class names must be unique");
+		if (night::find_container(variables, tokens[1].data))
+			throw Error("function '" + tokens[1].data + "' has the same name as a variable; variable and function names must be unique");
+		if (night::find_container(functions, tokens[1].data))
+			throw Error("function '" + tokens[1].data + "' is already defined");
+		if (night::find_container(classes, tokens[1].data))
+			throw Error("function '" + tokens[1].data + "' has the same name as a class; function and class names must be unique");
 
 		// function parameters
 
@@ -1215,17 +1228,17 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 			if (tokens[closeBracketIndex].type != TokenType::VARIABLE)
 				throw Error(file, line, "expected variable names as function parameters");
 
-			if (night::find_container(variables, tokens[closeBracketIndex].value))
+			if (night::find_container(variables, tokens[closeBracketIndex].data))
 				throw Error(file, line, "function parameter cannot have the same name as another variable");
-			if (night::find_container(functions, tokens[closeBracketIndex].value))
+			if (night::find_container(functions, tokens[closeBracketIndex].data))
 				throw Error(file, line, "function parameter cannot have the same name as a function");
-			if (night::find_container(classes, tokens[closeBracketIndex].value))
+			if (night::find_container(classes, tokens[closeBracketIndex].data))
 				throw Error(file, line, "function parameter cannot have the same name as a class");
-			if (night::find_container(parameters, tokens[closeBracketIndex].value))
+			if (night::find_container(parameters, tokens[closeBracketIndex].data))
 				throw Error(file, line, "function parameters cannot have the same names");
 
-			parameterNames.push_back(tokens[closeBracketIndex].value);
-			parameters.push_back({ tokens[closeBracketIndex].value });
+			parameterNames.push_back(tokens[closeBracketIndex].data);
+			parameters.push_back({ tokens[closeBracketIndex].data });
 
 			if (tokens[closeBracketIndex + 1].type == TokenType::CLOSE_BRACKET)
 			{
@@ -1244,14 +1257,14 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 
 		// type checking parameters
 
-		CheckFunction functionCheck{ tokens[1].value };
+		CheckFunction functionCheck{ tokens[1].data };
 
 		// constructing statement
 
 		inFunction = true;
 
 		const FunctionDef function{
-			tokens[1].value,
+			tokens[1].data,
 			parameterNames,
 			ExtractBody(tokens, closeBracketIndex, variables, "function definitions")
 		};
@@ -1265,14 +1278,14 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		if (tokens.size() == 2 || (tokens.size() == 3 && tokens[2].type != TokenType::CLOSE_BRACKET))
 			throw Error(file, line, "missing closing bracket");
 
-		const CheckFunction* checkFunction = night::get_container(functions, tokens[0].value);
+		const CheckFunction* checkFunction = night::get_container(functions, tokens[0].data);
 		if (checkFunction == nullptr)
-			throw Error(file, line, "function " + tokens[0].value + "' is not defined");
+			throw Error(file, line, "function " + tokens[0].data + "' is not defined");
 
 		// function parameters
 
-		std::vector<std::vector<VariableType> > argument_types;
-		std::vector<std::shared_ptr<Expression> >      argument_expressions;
+		std::vector<std::vector<VariableType> >   argument_types;
+		std::vector<std::shared_ptr<Expression> > argument_expressions;
 
 		for (std::size_t start = 2, a = 2, openBracketIndex = 0; a < tokens.size(); ++a)
 		{
@@ -1300,20 +1313,20 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		}
 
 		if (argument_types.size() != checkFunction->parameters.size())
-			throw Error(file, line, "function '" + tokens[0].value + "' is called with '" + std::to_string(argument_types.size()) + "' arguments but is defined with '" + std::to_string(checkFunction->parameters.size()) + "' parameters");
+			throw Error(file, line, "function '" + tokens[0].data + "' is called with '" + std::to_string(argument_types.size()) + "' arguments but is defined with '" + std::to_string(checkFunction->parameters.size()) + "' parameters");
 
 		for (std::size_t a = 0; a < checkFunction->parameters.size(); ++a)
 		{
 			for (const VariableType& parameterType : argument_types[a])
 			{
-				if (!night::find_type(checkFunction->parameters[a].types, parameterType))
-					throw Error(file, line, "argument number '" + std::to_string(a + 1) + "' for function call '" + tokens[0].value + "' cannot be used because of a type mismatch");
+				if (!night::find_type(checkFunction->parameters[a], parameterType))
+					throw Error(file, line, "argument number '" + std::to_string(a + 1) + "' for function call '" + tokens[0].data + "' cannot be used because of a type mismatch");
 			}
 		}
 
 		statements.push_back(Statement{
 			StatementType::FUNCTION_CALL,
-			FunctionCall{ tokens[0].value, argument_expressions }
+			FunctionCall{ tokens[0].data, argument_expressions }
 		});
 	}
 	else if (tokens.size() >= 1 && tokens[0].type == TokenType::RETURN)
@@ -1365,12 +1378,12 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		if (tokens.size() == 4)
 			throw Error(file, line, "expected array after colon");
 
-		if (!night::find_container(variables, tokens[2].value))
-			throw Error(file, line, "variable '" + tokens[2].value + "' is already defined");
+		if (night::find_container(variables, tokens[2].data))
+			throw Error(file, line, "variable '" + tokens[2].data + "' is already defined");
 
 		// evaluating iterator and range
 
-		std::size_t closeBracketIndex = 4; // starts at range
+		std::size_t closeBracketIndex = 4;
 		AdvanceToCloseBracket(tokens, TokenType::OPEN_BRACKET, TokenType::CLOSE_BRACKET, closeBracketIndex);
 		
 		if (closeBracketIndex >= tokens.size())
@@ -1399,7 +1412,7 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		if (night::find_type(rangeTypes, VariableType::EMPTY_ARR))
 			throw Error(file, line, "for loop range evaluates to an empty array; for loop ranges can only be strings or non-empty arrays");
 
-		variables.push_back(CheckVariable{ tokens[2].value, iteratorTypes });
+		variables.push_back(CheckVariable{ tokens[2].data, iteratorTypes });
 
 		// extracting scope and constructing statement
 
@@ -1411,7 +1424,7 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 
 		statements.push_back(Statement{
 			StatementType::FOR_LOOP,
-			ForLoop{ tokens[2].value, rangeExpr, body }
+			ForLoop{ tokens[2].data, rangeExpr, body }
 		});
 	}
 	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VARIABLE && tokens[1].type == TokenType::OPEN_SQUARE)
@@ -1419,9 +1432,9 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		if (tokens.size() == 2)
 			throw Error(file, line, "expected index after open square");
 
-		const CheckVariable* variable = night::get_container(variables, tokens[0].value);
+		const CheckVariable* variable = night::get_container(variables, tokens[0].data);
 		if (variable == nullptr)
-			throw Error(file, line, "variable '" + tokens[1].value + "' is not defined");
+			throw Error(file, line, "variable '" + tokens[1].data + "' is not defined");
 
 		// check if variable is an array or a string
 		const bool isArray = night::find_type(variable->types, VariableType::BOOL_ARR) ||
@@ -1447,7 +1460,7 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		);
 
 		if (!night::find_type(elemType, VariableType::NUM))
-			throw Error(file, line, "index for array '" + tokens[0].value + "' does not contain a type int");
+			throw Error(file, line, "index for array '" + tokens[0].data + "' does not contain a type int");
 
 		// extract expression
 
@@ -1462,12 +1475,12 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 		
 		statements.push_back(Statement{
 			StatementType::ELEMENT,
-			Element{ tokens[0].value, elemExpr, assignExpr }
+			Element{ tokens[0].data, elemExpr, assignExpr }
 		});
 	}
 	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VARIABLE && tokens[1].type == TokenType::OPERATOR)
 	{
-		if (tokens[1].value != ".")
+		if (tokens[1].data != ".")
 			throw Error(file, line, "invalid syntax");
 		if (tokens.size() == 2)
 			throw Error(file, line, "expected method name after dot operator");
@@ -1478,7 +1491,7 @@ void Parser(std::vector<Statement>& statements, const std::vector<Token>& tokens
 
 		statements.push_back(Statement{
 			StatementType::METHOD_CALL,
-			MethodCall{ tokens[0].value, object }
+			MethodCall{ tokens[0].data, object }
 		});
 	}
 	else

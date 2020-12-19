@@ -55,27 +55,16 @@ std::string ttos(const VariableType& type)
 	case VariableType::EMPTY_ARR:
 		return "array";
 	default:
-		assert_rtn(false && "variable type is missing", std::string());
+		assert(false && "variable type is missing");
+		return std::string();
 	}
 }
 
 } // namespace night
 
-std::vector<VariableType> TypeCheckExpression(
-	const std::string& file,
-	const int          line,
-
-	const std::shared_ptr<Expression>& node,
-
-	const std::vector<CheckVariable>& variables,
-	const std::vector<CheckFunction>& functions,
-	const std::vector<CheckClass>& classes,
-
-	const std::vector<CheckVariable>& parameters
-);
 std::shared_ptr<Expression> ParseTokenExpression(const std::vector<Token>& tokens, const std::size_t start,
 	const std::size_t end, const std::vector<CheckVariable>& variables, const std::vector<CheckFunction>& functions,
-	const std::vector<CheckClass>& classes, const std::vector<CheckVariable>& parameters, std::vector<VariableType>* types)
+	const std::vector<CheckClass>& classes, std::vector<CheckVariable>& parameters, std::vector<VariableType>* types)
 {
 	const std::vector<Value> values = TokensToValues(
 		std::vector<Token>(tokens.begin() + start, tokens.begin() + end)
@@ -97,7 +86,7 @@ std::shared_ptr<Expression> ParseTokenExpression(const std::vector<Token>& token
 
 std::shared_ptr<Expression> ExtractCondition(const std::vector<Token>& tokens, std::size_t& closeBracketIndex,
 	const std::vector<CheckVariable>& variables, const std::vector<CheckFunction>& functions,
-	const std::vector<CheckClass>& classes, const std::vector<CheckVariable>& parameters, const std::string& stmt)
+	const std::vector<CheckClass>& classes, std::vector<CheckVariable>& parameters, const std::string& stmt)
 {
 	const std::size_t start = closeBracketIndex;
 
