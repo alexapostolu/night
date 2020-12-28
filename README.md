@@ -109,4 +109,4 @@ if (false)
 }
 ```
 
-More information regarding the syntax can be found on the [Night website](https://night-website.dynamicsquid.repl.co/html/reference.html).
+More information regarding the syntax can be found on the [Night website](http://night.dynamicsquid.repl.co/).
