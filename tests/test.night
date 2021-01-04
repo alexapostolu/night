@@ -1,1 +1,26 @@
-print('Hello Night!\n')
+set boolean = true || !(false && (!(true))) == (5 + 7 > 3)
+set integer = 3 + ((4) - 8) * 6 / 3 % ((5))
+set float   = (integer + 4.0) * 4
+set string  = 'dynamic' + "squid" + integer
+
+print(boolean + '\n')
+print(integer + '\n')
+print(float   + '\n')
+print(string  + '\n')
+
+if (true)
+	print('no braces')
+else if (false)
+	print('no braces')
+else if (true)
+	print('no braces')
+else
+	print('no braces')
+
+if (true) {
+	print('same line brace')
+}
+else
+{
+	print('new line brace')
+}
