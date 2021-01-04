@@ -7,15 +7,12 @@
 #ifndef _DEBUG
 	inline void AssertError()
 	{
-		std::cerr << "Oops! Something unexpected has happened! Please submit an issue on the GitHub page.\n";
+		std::clog << "Oops! Something unexpected has happened! Please submit an issue on the GitHub page.\n";
 		exit(1);
 	}
 
 	#undef  assert
 	#define assert(con) AssertError()
-
-	// just in case I forget to remove all the debugging print statements
-	#define clog wtf are you doing
 #endif
 
 class Error

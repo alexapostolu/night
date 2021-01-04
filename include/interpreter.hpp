@@ -14,10 +14,13 @@
 
 // evaluates an expression
 NightData EvaluateExpression(
-	const std::shared_ptr<Expression>& node,
+	const std::shared_ptr<Expression>&node,
 
-	std::vector<NightVariable>&       variables, // can't be const due to function parameters
-	const std::vector<NightFunction>& functions
+	std::vector<NightVariable>&variables, // can't be const due to function parameters
+	const std::vector<NightFunction>&functions,
+
+	// removes variables on return statements to prevent recursion errors
+	bool remove_variables = false
 );
 
 // interprets expressions

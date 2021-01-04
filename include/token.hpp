@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <variant>
 #include <string>
 #include <vector>
@@ -46,10 +47,7 @@ struct Token
 
 enum class ValueType
 {
-	BOOL, //BOOL_ARR,
-	NUM, //NUM_ARR,
-	STR, //STR_ARR,
-	//EMPTY_ARRAY,
+	BOOL, NUM, STR,
 	ARRAY,
 
 	VARIABLE, CALL,
@@ -59,11 +57,16 @@ enum class ValueType
 	OPEN_BRACKET, CLOSE_BRACKET
 };
 
+// move this to parser if it isn't used anywhere else
 struct Value
 {
 	ValueType type;
 
 	std::string data;
+
+	// array's are classified as one value, so their elements are stored
+	// in 'extras'; ditto for function calls, as 'extras' stores their
+	// arguments
 	std::vector<std::vector<Value> > extras;
 };
 
@@ -82,10 +85,11 @@ struct Expression
 
 enum class VariableType
 {
-	BOOL, BOOL_ARR, MULT_BOOL_ARR,
-	NUM,  NUM_ARR,  MULT_NUM_ARR,
-	STR,  STR_ARR,  MULT_STR_ARR,
-	EMPTY_ARR,      MULT_EMPTY_ARR
+	BOOL,
+	NUM,
+	STR,
+	ARRAY,
+	CLASS
 };
 
 struct Variable
@@ -106,7 +110,29 @@ struct Conditional
 {
 	std::shared_ptr<Expression> condition;
 	std::vector<Statement> body;
+
+	bool is_else() const;
+};
+
+struct IfStatement
+{
 	std::vector<Conditional> chains;
+};
+
+// used for FunctionDef and CheckFunction
+struct ReturnValue
+{
+	// note about the name of the return type:
+	//
+	// if the return type of a function is an object, the class of which the
+	// object belongs to needs to be noted in order to perform type checks
+	//
+	// this is done using the 'name' variable to store the classes name
+
+	// make this std::optional?
+	// see how it' sused first, then make it optional
+	std::string name;
+	VariableType type;
 };
 
 struct FunctionDef
@@ -115,7 +141,7 @@ struct FunctionDef
 	std::vector<std::string> parameters;
 
 	std::vector<Statement> body;
-	std::vector<VariableType> returnTypes;
+	std::vector<ReturnValue> return_types;
 };
 
 struct FunctionCall
@@ -137,7 +163,7 @@ struct WhileLoop
 
 struct ForLoop
 {
-	std::string iterator;
+	std::string iterator_name;
 	std::shared_ptr<Expression> range;
 
 	std::vector<Statement> body;
@@ -153,14 +179,14 @@ struct Element
 struct MethodCall
 {
 	std::string name;
-	std::shared_ptr<Expression> methodCall;
+	std::shared_ptr<Expression> method_call;
 };
 
 enum class StatementType
 {
 	VARIABLE,
 	ASSIGNMENT,
-	CONDITIONAL,
+	IF_STATEMENT,
 	FUNCTION_DEF,
 	FUNCTION_CALL,
 	RETURN,
@@ -177,7 +203,7 @@ struct Statement
 	std::variant<
 		Variable,
 		Assignment,
-		Conditional,
+		IfStatement,
 		FunctionDef,
 		FunctionCall,
 		Return,
@@ -186,26 +212,4 @@ struct Statement
 		Element,
 		MethodCall
 	> stmt;
-};
-
-struct CheckVariable
-{
-	std::string name;
-	std::vector<VariableType> types;
-};
-
-struct CheckFunction
-{
-	std::string name;
-	std::vector<std::vector<VariableType> > parameters;
-
-	std::vector<VariableType> returnValues;
-};
-
-struct CheckClass
-{
-	std::string name;
-
-	std::vector<CheckVariable> variables;
-	std::vector<CheckFunction> methods;
 };

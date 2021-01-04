@@ -10,7 +10,7 @@
 #include <vector>
 
 NightData EvaluateExpression(const std::shared_ptr<Expression>& node, std::vector<NightVariable>& variables,
-	const std::vector<NightFunction>& functions)
+	const std::vector<NightFunction>& functions, bool check)
 {
 	assert(node != nullptr && "node should not be NULL");
 
@@ -35,18 +35,25 @@ NightData EvaluateExpression(const std::shared_ptr<Expression>& node, std::vecto
 			{
 			case VariableType::BOOL:
 				data.type = VariableType::BOOL_ARR;
+				break;
 			case VariableType::NUM:
 				data.type = VariableType::NUM_ARR;
+				break;
 			case VariableType::STR:
 				data.type = VariableType::STR_ARR;
+				break;
 			case VariableType::BOOL_ARR:
 				data.type = VariableType::MULT_BOOL_ARR;
+				break;
 			case VariableType::NUM_ARR:
 				data.type = VariableType::MULT_NUM_ARR;
+				break;
 			case VariableType::STR_ARR:
 				data.type = VariableType::MULT_STR_ARR;
+				break;
 			case VariableType::EMPTY_ARR:
 				data.type = VariableType::MULT_EMPTY_ARR;
+				break;
 			default:
 				data.type = data.extras.back().type;
 			}
@@ -55,10 +62,11 @@ NightData EvaluateExpression(const std::shared_ptr<Expression>& node, std::vecto
 		}
 		if (node->type == ValueType::VARIABLE)
 		{
-			const NightVariable* variableValue = night::get_container(variables, node->data);
-			assert(variableValue != nullptr && "variableValue is not defined");
+			NightVariable* variable = night::get_container(variables, node->data);
+			std::cout << node->data << '\n';
+			assert(variable != nullptr && "variable is not defined");
 
-			return variableValue->data;
+			return variable->value;
 		}
 		if (node->type == ValueType::CALL)
 		{
@@ -73,25 +81,39 @@ NightData EvaluateExpression(const std::shared_ptr<Expression>& node, std::vecto
 		    const NightFunction* function = night::get_container(functions, node->data);
 			assert(function != nullptr && "function is not defined");
 
+			std::vector<NightVariable> varables(variables);
 			// create variables from parameters
 			assert(function->parameters.size() == node->extras.size() && "function parameters and function call don't match");
 			for (std::size_t a = 0; a < function->parameters.size(); ++a)
 			{
+				/*
 				variables.push_back(NightVariable{
 					function->parameters[a],
 					EvaluateExpression(node->extras[a], variables, functions)
 				});
+				*/
+				for (NightVariable& variable : variables)
+				{
+					if (variable.name == function->parameters[a])
+					{
+						variable.value = EvaluateExpression(node->extras[a], variables, functions);
+					}
+				}
 			}
 
 			// interpret function body and extract return value
 			NightData returnValue;
+			returnValue.data = "___NO___";
 			Interpreter(function->body, &returnValue);
+			variables = varables;
 
 			// remove variables since they are now out of scope
+			/*
 			variables.erase(
 				variables.begin() + variables.size() - function->parameters.size(),
 				variables.end()
 			);
+			*/
 
 			return returnValue;
 		}
@@ -114,15 +136,20 @@ NightData EvaluateExpression(const std::shared_ptr<Expression>& node, std::vecto
 		const NightData expr1 = EvaluateExpression(node->left,  variables, functions);
 		const NightData expr2 = EvaluateExpression(node->right, variables, functions);
 
+		if (expr1.type != VariableType::BOOL && expr1.type != VariableType::NUM && expr1.type != VariableType::STR)
+			throw Error("operator '+' can only be used on numbers or strings");
+		if (expr2.type != VariableType::BOOL && expr2.type != VariableType::NUM && expr2.type != VariableType::STR)
+			throw Error("operator '+' can only be used on numbers or strings");
+
 		if (expr1.type == VariableType::STR || expr2.type == VariableType::STR)
 		{
-			return NightData{
-				VariableType::STR,
-				expr1.data + expr2.data
-			};
+			return NightData{ VariableType::STR, expr1.data + expr2.data };
 		}
 		else
 		{
+			if (expr1.type != VariableType::NUM || expr2.type != VariableType::NUM)
+				throw Error("operator '+' can only be used on numbers or strings");
+
 			return NightData{
 				expr1.type,
 				std::to_string(std::stof(expr1.data) + std::stof(expr2.data))
@@ -197,7 +224,7 @@ NightData EvaluateExpression(const std::shared_ptr<Expression>& node, std::vecto
 		const NightData     array = EvaluateExpression(node->right, variables, functions);
 		const unsigned long index = std::stoul(EvaluateExpression(node->extras[0], variables, functions).data);
 
-		if (array.extras.empty())
+		if (array.type == VariableType::STR)
 		{
 			if (index < 0 || index >= array.data.length())
 				throw Error("string subscript out of range");
@@ -219,15 +246,29 @@ NightData EvaluateExpression(const std::shared_ptr<Expression>& node, std::vecto
 		NightData object        = EvaluateExpression(node->left,  variables, functions);
 		const Expression method = *node->right;
 
-		const bool is_array = object.type != VariableType::BOOL && object.type != VariableType::NUM;
+		const bool is_array = object.type != VariableType::BOOL && object.type != VariableType::NUM && object.type != VariableType::STR;
 
 		if (is_array && method.data == "len")
 		{
 			return NightData{ VariableType::NUM, std::to_string(object.extras.size()) };
 		}
-		if (is_array && method.data == "push" && method.extras.size() == 1)
+		if (is_array && method.data == "push")
 		{
-			object.extras.push_back(EvaluateExpression(method.extras[0], variables, functions));
+			const NightData value = EvaluateExpression(method.extras[0], variables, functions);
+			object.extras.push_back(value);
+
+			return object;
+		}
+		if (is_array && method.data == "pop" && method.extras.empty())
+		{
+			object.extras.pop_back();
+			return object;
+		}
+		if (is_array && method.data == "pop" && !method.extras.empty())
+		{
+			const NightData index = EvaluateExpression(method.extras[0], variables, functions);
+			object.extras.erase(object.extras.begin() + std::stoi(index.data));
+
 			return object;
 		}
 		if (object.type == VariableType::STR && method.data == "len")
@@ -246,7 +287,7 @@ void Interpreter(const std::vector<Statement>& statements, NightData* returnValu
 	static std::vector<NightFunction> functions;
 
 	const std::size_t variablesSize = variables.size();
-
+ 
 	for (const Statement& statement : statements)
 	{
 		switch (statement.type)
@@ -267,18 +308,29 @@ void Interpreter(const std::vector<Statement>& statements, NightData* returnValu
 			{
 			case '=':
 				variable->value = EvaluateExpression(std::get<Assignment>(statement.stmt).value, variables, functions);
-			case '+':
+				break;
+			case '+': {
+				const NightData assign = EvaluateExpression(std::get<Assignment>(statement.stmt).value, variables, functions);
+
 				if (variable->value.type == VariableType::STR)
 				{
-					variable->value.data += EvaluateExpression(std::get<Assignment>(statement.stmt).value, variables, functions).data;
+					variable->value.data += assign.data;
+				}
+				else if (variable->value.type == VariableType::NUM)
+				{
+					if (assign.type != VariableType::NUM)
+						throw Error("assignment '+=' can only be used on numbers and strings");
+
+					variable->value.data = std::to_string(
+						std::stof(variable->value.data) + std::stof(assign.data)
+					);
 				}
 				else
 				{
-					variable->value.data = std::to_string(
-						std::stoi(variable->value.data) +
-						std::stoi(EvaluateExpression(std::get<Assignment>(statement.stmt).value, variables, functions).data)
-					);
+					throw Error("assignment '+=' can only be used on numbers or strings");
 				}
+				break;
+			}
 			default:
 				break;
 			}
@@ -288,7 +340,7 @@ void Interpreter(const std::vector<Statement>& statements, NightData* returnValu
 		case StatementType::CONDITIONAL: {
 			if (EvaluateExpression(std::get<Conditional>(statement.stmt).condition, variables, functions).data == "true")
 			{
-				Interpreter(std::get<Conditional>(statement.stmt).body);
+				Interpreter(std::get<Conditional>(statement.stmt).body, returnValue);
 				break;
 			}
 
@@ -296,7 +348,7 @@ void Interpreter(const std::vector<Statement>& statements, NightData* returnValu
 			{
 				if (conditional.condition == nullptr || EvaluateExpression(conditional.condition, variables, functions).data == "true")
 				{
-					Interpreter(conditional.body);
+					Interpreter(conditional.body, returnValue);
 					break;
 				}
 			}
@@ -316,13 +368,22 @@ void Interpreter(const std::vector<Statement>& statements, NightData* returnValu
 			if (std::get<FunctionCall>(statement.stmt).name == "print")
 			{
 				for (const std::shared_ptr<Expression>& parameter : std::get<FunctionCall>(statement.stmt).arguments)
-					NightPrint(EvaluateExpression(parameter, variables, functions));
+				{
+					const NightData data = EvaluateExpression(parameter, variables, functions);
+					NightPrint(data);
+				}
 
 				break;
 			}
 
 			const NightFunction* function = night::get_container(functions, std::get<FunctionCall>(statement.stmt).name);
 			assert(function != nullptr && "definitions should be checked in the parser");
+
+			for (std::size_t a = 0; a < function->parameters.size(); ++a)
+			{
+				const NightData eval = EvaluateExpression(std::get<FunctionCall>(statement.stmt).arguments[a], variables, functions);
+				variables.push_back(NightVariable{ function->parameters[a], eval });
+			}
 
 			Interpreter(function->body);
 
@@ -332,7 +393,7 @@ void Interpreter(const std::vector<Statement>& statements, NightData* returnValu
 			assert(returnValue != nullptr && "returnValue should not be NULL");
 			*returnValue = EvaluateExpression(std::get<Return>(statement.stmt).expression, variables, functions);
 
-			variables.erase(variables.begin() + variablesSize, variables.end());
+			variables.erase(std::begin(variables) + variablesSize, std::end(variables));
 			return;
 		}
 		case StatementType::WHILE_LOOP: {
@@ -344,27 +405,27 @@ void Interpreter(const std::vector<Statement>& statements, NightData* returnValu
 		case StatementType::FOR_LOOP: {
 			const NightData range = EvaluateExpression(std::get<ForLoop>(statement.stmt).range, variables, functions);
 
-			variables.push_back(NightVariable{ std::get<ForLoop>(statement.stmt).iterator, Expression() });
-			const std::size_t index = variables.size() - 1;
+			variables.push_back(NightVariable{ std::get<ForLoop>(statement.stmt).iterator, NightData() });
+			NightVariable* iterator = &variables.back();
 
 			if (range.type == VariableType::STR)
 			{
 				for (char rangeValue : range.data)
 				{
-					variables[index].data = Expression{ ValueType::STR, std::string(1, rangeValue) };
+					iterator->value = NightData{ VariableType::STR, std::string(1, rangeValue) };
 					Interpreter(std::get<ForLoop>(statement.stmt).body);
 				}
 			}
 			else
 			{
-				for (const std::shared_ptr<Expression>& rangeValue : range.extras)
+				for (const NightData& rangeValue : range.extras)
 				{
-					variables[index].data = EvaluateExpression(rangeValue, variables, functions);
+					iterator->value = rangeValue;
 					Interpreter(std::get<ForLoop>(statement.stmt).body);
 				}
 			}
 
-			variables.erase(variables.begin() + index);
+			variables.pop_back();
 
 			break;
 		}
@@ -374,16 +435,16 @@ void Interpreter(const std::vector<Statement>& statements, NightData* returnValu
 
 			const std::size_t index = std::stoi(EvaluateExpression(std::get<Element>(statement.stmt).index, variables, functions).data);
 
-			if (variable->data.type == ValueType::STR)
-				variable->data.data[index] = EvaluateExpression(std::get<Element>(statement.stmt).assign, variables, functions).data[0];
+			if (variable->value.type == VariableType::STR)
+				variable->value.data[index] = EvaluateExpression(std::get<Element>(statement.stmt).assign, variables, functions).data[0];
 			else
-				variable->data.extras[index] = std::make_shared<Expression>(EvaluateExpression(std::get<Element>(statement.stmt).assign, variables, functions));
+				variable->value.extras[index] = EvaluateExpression(std::get<Element>(statement.stmt).assign, variables, functions);
 
 			break;
 		}
 		case StatementType::METHOD_CALL: {
 			NightVariable* variable = night::get_container(variables, std::get<MethodCall>(statement.stmt).name);
-			variable->data = EvaluateExpression(std::get<MethodCall>(statement.stmt).methodCall, variables, functions);
+			variable->value = EvaluateExpression(std::get<MethodCall>(statement.stmt).methodCall, variables, functions);
 
 			break;
 		}
@@ -391,7 +452,10 @@ void Interpreter(const std::vector<Statement>& statements, NightData* returnValu
 			assert(false && "statement missing");
 		}
 		}
+
+		if (returnValue != nullptr && returnValue->data != "___NO___")
+			break;
 	}
 
-	variables.erase(variables.begin() + variablesSize, variables.end());
+	variables.erase(std::begin(variables) + variablesSize, std::end(variables));
 }
