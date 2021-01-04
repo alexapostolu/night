@@ -165,7 +165,7 @@ std::vector<Token> Lexer(const std::string& file, const int line, const std::str
 		tokens[0].type != TokenType::IF && tokens[0].type != TokenType::ELSE &&
 		(tokens[0].type != TokenType::ELSE || tokens[1].type != TokenType::IF) &&
 		tokens[0].type != TokenType::WHILE && tokens[0].type != TokenType::FOR &&
-		tokens.back().type != TokenType::OPEN_CURLY)
+		tokens.back().type != TokenType::OPEN_CURLY && tokens[0].type != TokenType::DEF)
 		tokens.push_back(Token{ file, line, TokenType::EOL, "EOF" });
 
 	return tokens;

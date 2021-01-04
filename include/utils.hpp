@@ -3,7 +3,6 @@
 #include "token.hpp"
 
 #include <memory>
-#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -30,9 +29,6 @@ void AdvanceToCloseBracket(const std::vector<Unit>& units,
 }
 
 namespace night {
-   
-// converts a variable type to a string
-std::string ttos(const VariableType& type);
 
 // finds object in array using its name attribute
 // returns object's address if found, otherwise returns NULL
@@ -48,35 +44,30 @@ T* get_container(std::vector<T>& container, const std::string& name)
 	return nullptr;
 }
 
-// finds object in array using its name attribute
-// returns object's address if found, otherwise returns NULL
+// finds element in array
 template <typename T>
-const T* get_container(const std::vector<T>& container, const std::string& name)
+bool find_container(const std::vector<T>& container, const std::string& name)
 {
 	for (const T& object : container)
 	{
 		if (name == object.name)
-			return &object;
+			return true;
 	}
 
-	return nullptr;
+	return false;
 }
 
-template <typename T>
-bool find_container(const std::vector<T>& container, const std::string& name)
-{
-	return std::find_if(container.begin(), container.end(), [&](const T& object) {
-		return name == object.name;
-	}) != container.end();
-}
-
-// finds element in array
+// finds enum type in array
 template <typename T>
 bool find_type(const std::vector<T>& container, const T& data)
 {
-	return std::find_if(container.begin(), container.end(), [&](const T& object) {
-		return data == object;
-	}) != container.end();
+	for (const T& type : container)
+	{
+		if (data == type)
+			return true;
+	}
+
+	return false;
 }
 
 } // namespace night
@@ -84,44 +75,4 @@ bool find_type(const std::vector<T>& container, const T& data)
 // splits a 1D array of tokens into a 2d array based on individual statements
 std::vector<std::vector<Token> > SplitCode(
 	const std::vector<Token>& tokens
-);
-
-// extracts expression from tokens; returns a type checked expression
-std::shared_ptr<Expression> ParseTokenExpression(
-	const std::vector<Token>& tokens,
-
-	const std::size_t start,
-	const std::size_t end,
-
-	const std::vector<CheckVariable>& variables,
-	const std::vector<CheckFunction>& functions,
-	const std::vector<CheckClass>&    classes,
-
-	std::vector<CheckVariable>& parameters,
-
-	std::vector<VariableType>* types = nullptr
-);
-
-// extracts condition from tokens; returns a type checked expression
-std::shared_ptr<Expression> ExtractCondition(
-	const std::vector<Token>& tokens,
-	std::size_t& closeBracketIndex,
-
-	const std::vector<CheckVariable>& variables,
-	const std::vector<CheckFunction>& functions,
-	const std::vector<CheckClass>&    classes,
-
-	std::vector<CheckVariable>& parameters,
-
-	const std::string& stmt
-);
-
-// extracts body from tokens; returns a parsed statement vector
-std::vector<Statement> ExtractBody(
-	const std::vector<Token>& tokens,
-	const std::size_t closeBracketIndex,
-
-	std::vector<CheckVariable>& variables, // can't be const since variables need to be removed after scope finished
-
-	const std::string& stmt
 );
