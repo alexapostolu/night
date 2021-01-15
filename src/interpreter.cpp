@@ -337,7 +337,7 @@ void Interpreter(const std::vector<Statement>& statements, NightData* returnValu
 
 			break;
 		}
-		case StatementType::CONDITIONAL: {
+		case StatementType::IF_STATEMENT: {
 			if (EvaluateExpression(std::get<Conditional>(statement.stmt).condition, variables, functions).data == "true")
 			{
 				Interpreter(std::get<Conditional>(statement.stmt).body, returnValue);
@@ -444,7 +444,7 @@ void Interpreter(const std::vector<Statement>& statements, NightData* returnValu
 		}
 		case StatementType::METHOD_CALL: {
 			NightVariable* variable = night::get_container(variables, std::get<MethodCall>(statement.stmt).name);
-			variable->value = EvaluateExpression(std::get<MethodCall>(statement.stmt).methodCall, variables, functions);
+			variable->value = EvaluateExpression(std::get<MethodCall>(statement.stmt).method_call, variables, functions);
 
 			break;
 		}
