@@ -14,7 +14,6 @@ void FindKeyword(
 	std::string& token
 );
 
-// scans code
 std::vector<Token> Lexer(
 	const std::string& file,
 	const int          line,

@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <unordered_set>
+#include <optional>
 
 /* methods */
 
@@ -16,12 +17,12 @@ Parser::Parser(std::vector<Statement>& statements, const std::vector<Token>& _to
 {
 	if (tokens.size() >= 1 && tokens[0].type == TokenType::SET)
 	{
-		if (tokens.size() == 1 || tokens[1].type != TokenType::VARIABLE)
-			throw Error(file, line, "expected variable name after 'set' keyword");
-		if (tokens.size() == 2 || tokens[2].type != TokenType::ASSIGNMENT)
-			throw Error(file, line, "expected assignment operator after variable name");
+		if (tokens.size() == 1 || tokens[1].type != TokenType::VAR)
+			throw Error(file, line, "expected variable name after keyword 'set'");
+		if (tokens.size() == 2 || tokens[2].type != TokenType::ASSIGN)
+			throw Error(file, line, "expected assignment symbol '=' after variable name");
 		if (tokens.size() == 3)
-			throw Error(file, line, "expected expression after assignment operator");
+			throw Error(file, line, "expected expression after assignment symbol '='");
 
 		if (night::find_container(check_variables, tokens[1].data))
 			throw Error(file, line, "variable '" + tokens[1].data + "' is already defined");
@@ -42,7 +43,7 @@ Parser::Parser(std::vector<Statement>& statements, const std::vector<Token>& _to
 			Variable{ tokens[1].data, expression }
 		});
 	}
-	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VARIABLE && tokens[1].type == TokenType::ASSIGNMENT)
+	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VAR && tokens[1].type == TokenType::ASSIGN)
 	{
 		if (tokens.size() == 2)
 			throw Error(file, line, "expected expression after assignment operator");
@@ -133,7 +134,7 @@ Parser::Parser(std::vector<Statement>& statements, const std::vector<Token>& _to
 		if (in_function)
 			throw Error(file, line, "function definition found within function definition; functions cannot contain functions");
 
-		if (tokens.size() == 1 || tokens[1].type != TokenType::VARIABLE)
+		if (tokens.size() == 1 || tokens[1].type != TokenType::VAR)
 			throw Error(file, line, "expected function name after 'def' keyword");
 		if (tokens.size() == 2 || tokens[2].type != TokenType::OPEN_BRACKET)
 			throw Error(file, line, "expected open bracket after function name");
@@ -159,7 +160,7 @@ Parser::Parser(std::vector<Statement>& statements, const std::vector<Token>& _to
 		std::size_t closeBracketIndex = 3;
 		for (; closeBracketIndex < tokens.size() && tokens[closeBracketIndex].type != TokenType::CLOSE_BRACKET; closeBracketIndex += 2)
 		{
-			if (tokens[closeBracketIndex].type != TokenType::VARIABLE)
+			if (tokens[closeBracketIndex].type != TokenType::VAR)
 				throw Error(file, line, "expected variable names as function parameters");
 
 			if (night::find_container(check_variables, tokens[closeBracketIndex].data))
@@ -193,7 +194,7 @@ Parser::Parser(std::vector<Statement>& statements, const std::vector<Token>& _to
 		check_functions.push_back({ tokens[1].data });
 
 		CheckFunction* check_function = &check_functions.back();
-		check_function->return_types = std::vector<std::pair<std::string, VariableType> >();
+		//check_function->return_values = std::vector<std::pair<std::string, VariableType> >();
 		check_function->parameters.resize(parameter_names.size());
 
 		in_function = true;
@@ -225,7 +226,7 @@ Parser::Parser(std::vector<Statement>& statements, const std::vector<Token>& _to
 
 		statements.push_back(Statement{ StatementType::FUNCTION_DEF, function });
 	}
-	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VARIABLE && tokens[1].type == TokenType::OPEN_BRACKET)
+	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VAR && tokens[1].type == TokenType::OPEN_BRACKET)
 	{
 		if (tokens.size() == 2 || (tokens.size() == 3 && tokens[2].type != TokenType::CLOSE_BRACKET))
 			throw Error(file, line, "missing closing bracket");
@@ -326,7 +327,7 @@ Parser::Parser(std::vector<Statement>& statements, const std::vector<Token>& _to
 	{
 		if (tokens.size() == 1 || tokens[1].type != TokenType::OPEN_BRACKET)
 			throw Error(file, line, "expected open bracket after 'for' keyword");
-		if (tokens.size() == 2 || tokens[2].type != TokenType::VARIABLE)
+		if (tokens.size() == 2 || tokens[2].type != TokenType::VAR)
 			throw Error(file, line, "expected iterator name after open bracket");
 		if (tokens.size() == 3 || tokens[3].type != TokenType::COLON)
 			throw Error(file, line, "expected colon after iterator name");
@@ -366,7 +367,7 @@ Parser::Parser(std::vector<Statement>& statements, const std::vector<Token>& _to
 			ForLoop{ tokens[2].data, range_expr, body }
 		});
 	}
-	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VARIABLE && tokens[1].type == TokenType::OPEN_SQUARE)
+	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VAR && tokens[1].type == TokenType::OPEN_SQUARE)
 	{
 		if (tokens.size() == 2)
 			throw Error(file, line, "expected index after open square");
@@ -385,7 +386,7 @@ Parser::Parser(std::vector<Statement>& statements, const std::vector<Token>& _to
 		// extract and evaluate element
 
 		std::size_t assignmentIndex = 2;
-		for (; assignmentIndex < tokens.size() && tokens[assignmentIndex].type != TokenType::ASSIGNMENT; ++assignmentIndex);
+		for (; assignmentIndex < tokens.size() && tokens[assignmentIndex].type != TokenType::ASSIGN; ++assignmentIndex);
 
 		if (tokens[assignmentIndex - 1].type != TokenType::CLOSE_SQUARE)
 			throw Error(file, line, "missing closing square");
@@ -419,7 +420,7 @@ Parser::Parser(std::vector<Statement>& statements, const std::vector<Token>& _to
 			Element{ tokens[0].data, elemExpr, assignExpr }
 		});
 	}
-	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VARIABLE && tokens[1].type == TokenType::OPERATOR)
+	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VAR && tokens[1].type == TokenType::OPERATOR)
 	{
 		if (tokens[1].data != ".")
 			throw Error(file, line, "invalid syntax");
@@ -444,43 +445,41 @@ std::vector<Value> Parser::TokensToValues(const std::vector<Token>& tokens)
 {
 	assert(!tokens.empty() && "tokens shouldn't be empty");
 
-	const std::string file = tokens[0].file;
-	const int         line = tokens[0].line;
-
 	std::vector<Value> values;
 	for (std::size_t a = 0; a < tokens.size(); ++a)
 	{
-		if (tokens[a].type == TokenType::VARIABLE)
+		if (tokens[a].type == TokenType::VAR)
 		{
 			if (a < tokens.size() - 1 && tokens[a + 1].type == TokenType::OPEN_BRACKET)
 			{
-				Value functionCall{ ValueType::CALL, tokens[a].data };
+				Value value_call{ ValueType::CALL, tokens[a].data };
 
 				if (tokens[a + 2].type == TokenType::CLOSE_BRACKET)
 				{
-					values.push_back(functionCall);
+					values.push_back(value_call);
 					continue;
 				}
 
 				a += 2;
 
-				for (int start = a, openBracketCount = 0, openSquareCount = 0; a < tokens.size(); ++a)
+				int open_bracket_count = 0, open_square_count = 0;
+				for (std::size_t start = a; a < tokens.size(); ++a)
 				{
 					if (tokens[a].type == TokenType::OPEN_BRACKET)
-						openBracketCount++;
+						open_bracket_count++;
 					else if (tokens[a].type == TokenType::CLOSE_BRACKET)
-						openBracketCount--;
+						open_bracket_count--;
 					else if (tokens[a].type == TokenType::OPEN_SQUARE)
-						openSquareCount++;
+						open_square_count++;
 					else if (tokens[a].type == TokenType::CLOSE_SQUARE)
-						openSquareCount--;
+						open_square_count--;
 
-					if (openSquareCount == 0 && ((tokens[a].type == TokenType::COMMA && openBracketCount == 0) ||
-						(tokens[a].type == TokenType::CLOSE_BRACKET && openBracketCount == -1)))
+					if (open_square_count == 0 && ((tokens[a].type == TokenType::COMMA && open_bracket_count == 0) ||
+						(tokens[a].type == TokenType::CLOSE_BRACKET && open_bracket_count == -1)))
 					{
-						functionCall.extras.push_back(TokensToValues(
-							std::vector<Token>(tokens.begin() + start, tokens.begin() + a)
-						));
+						value_call.extras.push_back(
+							TokensToValues(night::access(tokens, start, a))
+						);
 
 						start = a + 1;
 
@@ -494,7 +493,7 @@ std::vector<Value> Parser::TokensToValues(const std::vector<Token>& tokens)
 				if (a >= tokens.size())
 					throw Error(file, line, "missing closing bracket for function call");
 
-				values.push_back(functionCall);
+				values.push_back(value_call);
 			}
 			else if (a < tokens.size() - 1 && tokens[a + 1].type == TokenType::OPEN_SQUARE)
 			{
@@ -509,12 +508,10 @@ std::vector<Value> Parser::TokensToValues(const std::vector<Token>& tokens)
 					if (a >= tokens.size())
 						throw Error(file, line, "missing closing square bracket for subscript operator");
 
-					Value subscript{ ValueType::OPERATOR, "[]" };
-					subscript.extras.push_back(TokensToValues(
+					values.push_back({ ValueType::OPERATOR, "[]" });
+					values.back().extras.push_back(TokensToValues(
 						std::vector<Token>(tokens.begin() + start, tokens.begin() + a)
 					));
-
-					values.push_back(subscript);
 				}
 			}
 			else
@@ -524,35 +521,36 @@ std::vector<Value> Parser::TokensToValues(const std::vector<Token>& tokens)
 		}
 		else if (tokens[a].type == TokenType::OPEN_SQUARE)
 		{
-			Value array{ ValueType::ARRAY };
+			Value value_array{ ValueType::ARRAY, "[..]" };
 
 			a++;
 
 			if (tokens[a].type == TokenType::CLOSE_SQUARE)
 			{
-				values.push_back(Value{ ValueType::ARRAY });
+				values.push_back(value_array);
 				continue;
 			}
 
 			// parse array elements
-			for (int start = a, openBracketCount = 0, openSquareCount = 0; a < tokens.size(); ++a)
+			int open_bracket_count = 0, open_square_count = 0;
+			for (std::size_t start = a; a < tokens.size(); ++a)
 			{
 				if (tokens[a].type == TokenType::OPEN_BRACKET)
-					openBracketCount++;
+					open_bracket_count++;
 				else if (tokens[a].type == TokenType::CLOSE_BRACKET)
-					openBracketCount--;
+					open_bracket_count--;
 				else if (tokens[a].type == TokenType::OPEN_SQUARE)
-					openSquareCount++;
+					open_square_count++;
 				else if (tokens[a].type == TokenType::CLOSE_SQUARE)
-					openSquareCount--;
+					open_square_count--;
 
 				// end of element reached; add it to array
-				if (openBracketCount == 0 && ((tokens[a].type == TokenType::COMMA && openSquareCount == 0) ||
-					(tokens[a].type == TokenType::CLOSE_SQUARE && openSquareCount == -1)))
+				if (open_bracket_count == 0 && ((tokens[a].type == TokenType::COMMA && open_square_count == 0) ||
+					(tokens[a].type == TokenType::CLOSE_SQUARE && open_square_count == -1)))
 				{
-					array.extras.push_back(TokensToValues(
-						std::vector<Token>(tokens.begin() + start, tokens.begin() + a)
-					));
+					value_array.extras.push_back(
+						TokensToValues(night::access(tokens, start, a))
+					);
 
 					start = a + 1;
 
@@ -566,19 +564,19 @@ std::vector<Value> Parser::TokensToValues(const std::vector<Token>& tokens)
 			if (a >= tokens.size())
 				throw Error(file, line, "missing closing square bracket for array");
 
-			values.push_back(array);
+			values.push_back(value_array);
 		}
 		else
 		{
 			switch (tokens[a].type)
 			{
-			case TokenType::BOOL_VAL:
+			case TokenType::BOOL:
 				values.push_back(Value{ ValueType::BOOL, tokens[a].data });
 				break;
-			case TokenType::NUM_VAL:
+			case TokenType::NUM:
 				values.push_back(Value{ ValueType::NUM, tokens[a].data });
 				break;
-			case TokenType::STR_VAL:
+			case TokenType::STR:
 				values.push_back(Value{ ValueType::STR, tokens[a].data });
 				break;
 			case TokenType::OPEN_BRACKET:
@@ -622,6 +620,10 @@ std::shared_ptr<Expression> Parser::GetNextGroup(const std::vector<Value>& value
 	if (isFrontUnary)
 		index++;
 
+	if (values[index].type == ValueType::OPERATOR && (values[index].data == "!" || values[index].data == "-"))
+		throw Error(file, line, "unary operators cannot be adjacent to one another");
+
+	/*
 	int openBracketCount = 0;
 	for (std::size_t start = index; index < values.size(); ++index)
 	{
@@ -636,7 +638,7 @@ std::shared_ptr<Expression> Parser::GetNextGroup(const std::vector<Value>& value
 			if (values[start].type == ValueType::OPEN_BRACKET)
 			{
 				groupExpression = ValuesToExpression(
-					std::vector<Value>(values.begin() + start + 1, values.begin() + index - (index == values.size() - 1 ? 0 : 1))
+					night::access(values, start + 1, index - (index == values.size() - 1 ? 0 : 1))
 				);
 			}
 			else
@@ -652,8 +654,50 @@ std::shared_ptr<Expression> Parser::GetNextGroup(const std::vector<Value>& value
 				: groupExpression;
 		}
 	}
+	*/
 
-	throw Error(file, line, "missing closing bracket in expression");
+	// increments index to next operator
+	std::size_t start = index;
+	for (int open_bracket_count = 0; index < values.size(); ++index)
+	{
+		if (values[index].type == ValueType::OPEN_BRACKET)
+			open_bracket_count++;
+		else if (values[index].type == ValueType::CLOSE_BRACKET)
+			open_bracket_count--;
+		
+		if (open_bracket_count == 0 && (values[index].type == ValueType::OPERATOR || index == values.size() - 1))
+		{
+			if (index == values.size() - 1)
+			{
+				if (values[index].type == ValueType::OPERATOR)
+					throw Error(file, line, "expected value after operator '" + values[index].data + "'");
+
+				index++;
+			}
+
+			break;
+		}
+		else if (index == values.size() - 1 && open_bracket_count > 0)
+		{
+			throw Error(file, line, "missing closing bracket in expression");
+		}
+		else if (index == values.size() - 1 && open_bracket_count < 0)
+		{
+			throw Error(file, line, "missing opening bracket in expression");
+		}
+	}
+
+	// change to regular pointer?
+	std::shared_ptr<Expression> group_expression = values[start].type == ValueType::OPEN_BRACKET
+		? ValuesToExpression(night::access(values, start + 1, index - 1))
+		: new_expression(values[start], nullptr, nullptr);
+
+	while (index < values.size() && values[index].type == ValueType::OPERATOR && values[index].data == "[]")
+		group_expression = new_expression(values[index++], nullptr, group_expression);
+
+	return isFrontUnary
+		? new_expression(values[start - 1], nullptr, group_expression)
+		: group_expression;
 }
 
 int Parser::GetOperatorPrecedence(const ValueType& type, const std::string& value)
@@ -730,6 +774,17 @@ std::shared_ptr<Expression> Parser::ValuesToExpression(const std::vector<Value>&
 std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Expression>& node,
 	const std::string& op_name, const std::vector<VariableType>& required_types, bool* turn_into_array)
 {
+	// this variable is used to store the class in an expression, since
+	// returning VariableType::CLASS isn't enough - the name of the class
+	// is also needed
+	//
+	// however, there can be multiple classes that are returned, so we
+	// need a vector to store them
+	//
+	// but that's going to be a big change, so let's just focus on one
+	// class return type first :)
+	//
+	//std::vector<CheckClass*> check_object
 	static CheckClass* check_object;
 
 	assert(node != nullptr && "node cannot be NULL");
@@ -757,6 +812,9 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Expr
 			CheckVariable* check_variable = night::get_container(check_variables, node->data);
 			if (check_variable == nullptr)
 			{
+				// bottom part of an AST
+				// you can't return just CLASS, you also need to know what class it is
+				// so that's why we store that info in this static variable
 				check_object = night::get_container(check_classes, node->data);
 				if (check_object == nullptr)
 					throw Error(file, line, "variable '" + node->data + "' is undefined");
@@ -776,48 +834,48 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Expr
 		}
 		if (node->type == ValueType::CALL)
 		{
-			CheckFunction* function = night::get_container(check_functions, node->data);
-			if (function == nullptr)
+			CheckFunction* check_function = night::get_container(check_functions, node->data);
+			if (check_function == nullptr)
 				throw Error(file, line, "function '" + node->data + "' is not defined");
 
-			if (!function->return_types.has_value())
+			if (check_function->is_void)
 				throw Error(file, line, "function '" + node->data + "' doesn't return a value; functions used in expressions must return a value");
-			if (node->extras.size() != function->parameters.size())
-				throw Error(file, line, "function '" + node->data + "' was called with '" + std::to_string(node->extras.size()) + "' arguments, but was defined with '" + std::to_string(function->parameters.size()) + "' parameters");
+			if (node->extras.size() != check_function->parameters.size())
+				throw Error(file, line, "function '" + node->data + "' was called with '" + std::to_string(node->extras.size()) + "' arguments, but was defined with '" + std::to_string(check_function->parameters.size()) + "' parameters");
 
 			// type checking function parameters
-			for (std::size_t a = 0; a < function->parameters.size(); ++a)
+			for (std::size_t a = 0; a < check_function->parameters.size(); ++a)
 			{
 				const std::vector<VariableType> argumentTypes = TypeCheckExpression(node->extras[a], "", {});
 
-				if (function->parameters[a].empty())
+				if (check_function->parameters[a].empty())
 				{
-					function->parameters[a] = argumentTypes;
+					check_function->parameters[a] = argumentTypes;
 					continue;
 				}
 
 				for (const VariableType& argumentType : argumentTypes)
 				{
-					if (!night::find_type(function->parameters[a], argumentType))
-						throw Error(file, line, "argument number '" + std::to_string(a + 1) + "' for function call '" + function->name + "' cannot be used because of a type mismatch");
+					if (!night::find_type(check_function->parameters[a], argumentType))
+						throw Error(file, line, "argument number '" + std::to_string(a + 1) + "' for function call '" + check_function->name + "' cannot be used because of a type mismatch");
 				}
 			}
 
 			// type checking return values
-			if (function->return_types.value().empty())
+			if (check_function->return_types.empty())
 			{
-				function->return_types = required_types;
+				check_function->return_types = required_types;
 			}
-			else if (!function->return_types.value().empty() && !required_types.empty())
+			else if (!check_function->return_types.empty() && !required_types.empty())
 			{
 				for (const VariableType& required_type : required_types)
 				{
-					if (!night::find_type(function->return_types.value(), required_type))
+					if (!night::find_type(check_function->return_types, required_type))
 						throw Error(file, line, "function '" + node->data + "' can not be used with operator '" + op_name + "'");
 				}
 			}
 
-			return function->return_types.value();
+			return check_function->return_types;
 		}
 
 		switch (node->type)
@@ -1037,38 +1095,35 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Expr
 		assert(node->right->left == nullptr && node->right->right == nullptr && "method can't be part of an expression");
 
 		// the required_types argument is faulty; check to see what methods are present, then send them through to the function
+		// so if object is a string, then only send VariableType::STR through
 		const std::vector<VariableType> object = TypeCheckExpression(
 			node->left, node->data, { VariableType::STR, VariableType::ARRAY, VariableType::CLASS }
 		);
 
-		if (check_object == nullptr)
+		if (check_object == nullptr && node->left->type != ValueType::ARRAY && node->left->type != ValueType::STR)
 			throw Error(file, line, "variable '" + node->left->data + "' is used with methods; only objects can be used with methods");
 
-		// THIS MIGHT BE CAUSE BIG PROBLEM!!!!
-		// test this, because I don't know if it's correct or not
-		for (const CheckFunction& method : check_object->methods)
-		{
-			if (method.name == node->right->data)
-			{
-				if (method.is_null())
-					throw Error(file, line, "method '" + method.name + "' has a NULL return type; methods in expressions are required to have non-NULL return types");
+		// find return type of method
+		const CheckFunction* method = night::get_container(check_object->methods, node->right->data);
+		if (method == nullptr)
+			throw Error(file, line, "object '" + check_object->name + "' does not have method '" + node->right->data + "()'");
+		
+		if (method->is_void)
+			throw Error(file, line, "method '" + method->name + "' has a NULL return type; methods in expressions are required to have non-NULL return types");
 				
-				for (std::size_t a = 0; a < method.return_types().size(); ++a)
-				{
-					if (method.return_types()[a] == VariableType::CLASS)
-					{
-						check_object = night::get_container(check_classes, method.return_values.value()[a].name);
-						assert(check_object != nullptr && "I think you need to throw an error");
+		check_object = nullptr;
 
-						break;
-					}
-				}
-
-				return method.return_types();
+		// if return type is a class, set check_object to it
+		for (const VariableType& return_type : method->return_types)
+		{
+			if (return_type.type == VariableType::CLASS)
+			{
+				check_object = night::get_container(check_classes, return_type.class_name);
+				assert(check_object != nullptr && "class name should be defined when the method is defined; check the method definition section of the parser to catch this error");
 			}
 		}
 
-		throw Error(file, line, "object '" + check_object->name + "' does not have method '" + node->right->data + "()'");
+		return method->return_types;
 	}
 
 	assert(false && "operator missing from list");
@@ -1078,11 +1133,11 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Expr
 std::shared_ptr<Expression> Parser::ParseTokenExpression(const std::size_t start,
 	const std::size_t end, std::vector<VariableType>& types)
 {
-	const std::vector<Value> values = TokensToValues(std::vector<Token>(std::begin(tokens) + start, std::begin(tokens) + end));
+	const std::vector<Value> values = TokensToValues(night::access(tokens, start, end));
 	const std::shared_ptr<Expression> expression = ValuesToExpression(values);
-	const std::vector<VariableType> exprTypes = TypeCheckExpression(expression, "", {});
+	const std::vector<VariableType> expr_types = TypeCheckExpression(expression);
 
-	types.insert(std::end(types), std::begin(exprTypes), std::end(exprTypes));
+	types.insert(std::end(types), std::begin(expr_types), std::end(expr_types));
 
 	return expression;
 }
@@ -1136,24 +1191,13 @@ bool Parser::CheckVariable::is_param() const
 
 bool Parser::CheckFunction::is_empty() const
 {
-	return !return_values.has_value();
+	return !is_void && return_types.empty();
 }
-
-bool Parser::CheckFunction::is_void() const
-{
-	return !return_values.has_value();
-}
-
-std::vector<VariableType> Parser::CheckFunction::return_types() const
-{
-	std::vector<VariableType> types(return_values->size());
-	for (std::size_t a = 0; a < return_values->size(); ++a)
-		types[a] = return_values.value()[a].type;
-
-	return types;
-};
 
 /* private variables */
+
+bool Parser::in_function = false;
+std::vector<VariableType> Parser::return_types;
 
 const std::vector<VariableType> Parser::all_types{
 	VariableType::BOOL, VariableType::NUM,
@@ -1162,29 +1206,26 @@ const std::vector<VariableType> Parser::all_types{
 
 std::vector<Parser::CheckVariable> Parser::check_variables;
 std::vector<Parser::CheckFunction> Parser::check_functions{
-	CheckFunction{ "print", { { all_types } }, std::vector<ReturnValue>()                                 },
-	CheckFunction{ "input", {},                std::vector<ReturnValue>{ { nullptr, VariableType::STR } } }
+	CheckFunction{ "print", { { all_types } }, std::vector<VariableType>()                                 },
+	CheckFunction{ "input", {},                std::vector<VariableType>{ { nullptr, VariableType::STR } } }
 };
 std::vector<Parser::CheckClass>    Parser::check_classes{
 	CheckClass{
 		"array",
 		std::vector<CheckVariable>(),
 		std::vector<CheckFunction>{
-			{ "len",  {},                                                 std::vector<ReturnValue>{ { nullptr, VariableType::NUM } } },
-			{ "push", { { VariableType::ARRAY } },                        std::vector<ReturnValue>()								 },
-			{ "push", { { VariableType::NUM }, { VariableType::ARRAY } }, std::vector<ReturnValue>()								 },
-			{ "pop",  {},                                                 std::vector<ReturnValue>()								 },
-			{ "pop",  { { VariableType::NUM } },                          std::vector<ReturnValue>()								 }
+			{ "len",  {},                                                 std::vector<VariableType>{ { nullptr, VariableType::NUM } } },
+			{ "push", { { VariableType::ARRAY } },                        std::vector<VariableType>()								 },
+			{ "push", { { VariableType::NUM }, { VariableType::ARRAY } }, std::vector<VariableType>()								 },
+			{ "pop",  {},                                                 std::vector<VariableType>()								 },
+			{ "pop",  { { VariableType::NUM } },                          std::vector<VariableType>()								 }
 		}
 	},
 	CheckClass{
 		"string",
 		std::vector<CheckVariable>(),
 		std::vector<CheckFunction>{
-			{ "len",  {}, std::vector<ReturnValue>{ { nullptr, VariableType::NUM } } }
+			{ "len",  {}, std::vector<VariableType>{ { nullptr, VariableType::NUM } } }
 		}
 	}
 };
-
-bool Parser::in_function = false;
-std::vector<VariableType> Parser::return_types;

@@ -76,7 +76,7 @@ Night is an imperative dynamically typed language with light syntax.
 Here is a little sample of Night:
 
 ```py
-# classic fibonacci sequence using recursion
+# fibonacci sequence using recursion
 def fib(num)
 {
     if (num <= 1)
