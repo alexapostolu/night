@@ -21,7 +21,7 @@ And if you wish, you can build Night from source as well.
 
 ### Building from Source
 
-1. Install *g++* or *clang++*
+1. Install *g++* (version 7.1+) or *clang++* (version 5+)
 
 2. Clone this repository
 
@@ -41,7 +41,7 @@ cd night
 
 3. Compile Night
 
-With *g++* or *clang* (make sure it's C++17!):
+With *g++* or *clang* (make sure it supports C++17!):
 
 ```
 g++ -std=c++17 -o night src/main.cpp
