@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 #include <unordered_set>
-#include <optional>
 
 /* methods */
 
@@ -677,43 +676,6 @@ std::shared_ptr<Expression> Parser::GetNextGroup(const std::vector<Value>& value
 			break;
 		}
 	}
-	*/
-
-	// increments index to next operator
-	std::size_t start = index;
-	for (int open_bracket_count = 0; index < values.size(); ++index)
-	{
-		if (values[index].type == ValueType::OPEN_BRACKET)
-			open_bracket_count++;
-		else if (values[index].type == ValueType::CLOSE_BRACKET)
-			open_bracket_count--;
-		
-		if (open_bracket_count == 0 && (values[index].type == ValueType::OPERATOR || index == values.size() - 1))
-		{
-			if (index == values.size() - 1)
-			{
-				if (values[index].type == ValueType::OPERATOR)
-					throw Error(file, line, "expected value after operator '" + values[index].data + "'");
-
-				index++;
-			}
-
-			break;
-		}
-		else if (index == values.size() - 1 && open_bracket_count > 0)
-		{
-			throw Error(file, line, "missing closing bracket in expression");
-		}
-		else if (index == values.size() - 1 && open_bracket_count < 0)
-		{
-			throw Error(file, line, "missing opening bracket in expression");
-		}
-	}
-
-	// change to regular pointer?
-	std::shared_ptr<Expression> group_expression = values[start].type == ValueType::OPEN_BRACKET
-		? ValuesToExpression(night::access(values, start + 1, index - 1))
-		: new_expression(values[start], nullptr, nullptr);
 
 	// evaluate brackets
 	std::shared_ptr<Expression> group_expression = values[start].type == ValueType::OPEN_BRACKET
@@ -842,9 +804,6 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Expr
 			CheckVariable* check_variable = night::get_container(check_variables, node->data);
 			if (check_variable == nullptr)
 			{
-				// bottom part of an AST
-				// you can't return just CLASS, you also need to know what class it is
-				// so that's why we store that info in this static variable
 				check_object = night::get_container(check_classes, node->data);
 				if (check_object == nullptr)
 					throw BackError(file, line, "variable '" + node->data + "' is undefined");
