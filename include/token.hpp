@@ -86,7 +86,10 @@ struct Expression
 
 struct VariableType
 {
-	enum Type {
+	// if it's an object, then this variable stores the name of the class
+	std::string class_name;
+
+	enum : int { // why do I have to do ':int'? if I remove it, things don't work, but I don't know why
 		BOOL,
 		NUM,
 		STR,
@@ -94,18 +97,11 @@ struct VariableType
 		CLASS
 	} type;
 
-	// if it's an object, then this variable stores the name of the class
-	std::string class_name;
+	VariableType();
 
-	VariableType() {}
-	VariableType(const Type& _type)
+	template <typename T>
+	VariableType(const T& _type)
 		: type(_type) {}
-
-	bool operator==(const Type& _type) const;
-	bool operator!=(const Type& _type) const;
-
-	bool operator==(const VariableType& _type) const;
-	bool operator!=(const VariableType& _type) const;
 };
 
 struct Variable

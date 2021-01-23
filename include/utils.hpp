@@ -45,6 +45,18 @@ T* get_container(std::vector<T>& container, const std::string& name)
 	return nullptr;
 }
 
+template <typename T>
+const T* get_container(const std::vector<T>& container, const std::string& name)
+{
+	for (const T& object : container)
+	{
+		if (name == object.name)
+			return &object;
+	}
+
+	return nullptr;
+}
+
 // finds element in array
 template <typename T>
 bool find_container(const std::vector<T>& container, const std::string& name)
@@ -59,8 +71,27 @@ bool find_container(const std::vector<T>& container, const std::string& name)
 }
 
 // finds enum type in array
-//template <typename T>
-bool find_type(const std::vector<VariableType>& container, const VariableType& var_type);
+template <typename T>
+bool find_type(const std::vector<VariableType>& container, const T& var_type)
+{
+	for (const VariableType& contain_type : container)
+	{
+		if ((var_type.type == VariableType::CLASS && contain_type.type == VariableType::CLASS && var_type.name == contain_type.name) ||
+			(var_type.type == contain_type.type))
+			return true;
+	}
+
+	return false;
+}
+
+template <typename T>
+std::vector<T> access(const std::vector<T>& container, std::size_t start, std::size_t end)
+{
+	return std::vector<T>(
+		std::begin(container) + start,
+		std::begin(container) + end
+	);
+}
 
 } // namespace night
 
