@@ -6,25 +6,21 @@
 #include <memory>
 #include <vector>
 
-// "mAcRoS aRe BaD, dOn'T uSe ThEm, reeeeeeee" - haha macro go brrrrrrrrrrrr
-#define EVAL_EXPR(expr, rtn)											     	   \
-	const NightData expr1 = EvaluateExpression(node->left,  variables, functions); \
-	const NightData expr2 = EvaluateExpression(node->right, variables, functions); \
-	return NightData{ rtn, expr };
+class Interpreter
+{
+public:
+	Interpreter(
+		const std::vector<Statement>& statements,
+		NightData* return_value = nullptr
+	);
 
-// evaluates an expression
-NightData EvaluateExpression(
-	const std::shared_ptr<Expression>&node,
+private:
+	NightData EvaluateExpression(
+		const std::shared_ptr<Expression>& node // raw pointer?
+	);
 
-	std::vector<NightVariable>&variables, // can't be const due to function parameters
-	const std::vector<NightFunction>&functions,
-
-	// removes variables on return statements to prevent recursion errors
-	bool remove_variables = false
-);
-
-// interprets expressions
-void Interpreter(
-	const std::vector<Statement>& statements,
-	NightData* returnValue = nullptr
-);
+private:
+	static std::vector<NightVariable> night_variables;
+	static std::vector<NightFunction> night_functions;
+	static std::vector<NightClass>    night_classes;
+};

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <optional>
 #include <variant>
 #include <string>
 #include <vector>
@@ -14,13 +13,13 @@ enum class TokenType
 	OPEN_SQUARE, CLOSE_SQUARE,
 	OPEN_CURLY, CLOSE_CURLY,
 
-	ASSIGNMENT,
+	ASSIGN,
 
 	COLON, COMMA,
 
-	BOOL_VAL, NUM_VAL, STR_VAL,
+	BOOL, NUM, STR,
 
-	VARIABLE,
+	VAR,
 
 	SET,
 
@@ -61,11 +60,10 @@ enum class ValueType
 struct Value
 {
 	ValueType type;
-
 	std::string data;
 
-	// array's are classified as one value, so their elements are stored
-	// in 'extras'; ditto for function calls, as 'extras' stores their
+	// arrays are classified as one value, so their elements are stored
+	// in 'extras'; same for function calls, as 'extras' stores their
 	// arguments
 	std::vector<std::vector<Value> > extras;
 };
@@ -74,6 +72,9 @@ struct Statement;
 
 struct Expression
 {
+	const std::string file;
+	const int line;
+
 	ValueType type;
 
 	std::string data;
@@ -83,13 +84,28 @@ struct Expression
 	std::shared_ptr<Expression> right;
 };
 
-enum class VariableType
+struct VariableType
 {
-	BOOL,
-	NUM,
-	STR,
-	ARRAY,
-	CLASS
+	enum Type {
+		BOOL,
+		NUM,
+		STR,
+		ARRAY,
+		CLASS
+	} type;
+
+	// if it's an object, then this variable stores the name of the class
+	std::string class_name;
+
+	VariableType() {}
+	VariableType(const Type& _type)
+		: type(_type) {}
+
+	bool operator==(const Type& _type) const;
+	bool operator!=(const Type& _type) const;
+
+	bool operator==(const VariableType& _type) const;
+	bool operator!=(const VariableType& _type) const;
 };
 
 struct Variable
@@ -100,7 +116,7 @@ struct Variable
 
 struct Assignment
 {
-	char type;
+	char assign_type;
 
 	std::string name;
 	std::shared_ptr<Expression> value;
@@ -119,29 +135,13 @@ struct IfStatement
 	std::vector<Conditional> chains;
 };
 
-// used for FunctionDef and CheckFunction
-struct ReturnValue
-{
-	// note about the name of the return type:
-	//
-	// if the return type of a function is an object, the class of which the
-	// object belongs to needs to be noted in order to perform type checks
-	//
-	// this is done using the 'name' variable to store the classes name
-
-	// make this std::optional?
-	// see how it' sused first, then make it optional
-	std::string name;
-	VariableType type;
-};
-
 struct FunctionDef
 {
 	std::string name;
 	std::vector<std::string> parameters;
 
 	std::vector<Statement> body;
-	std::vector<ReturnValue> return_types;
+	std::vector<VariableType> return_types;
 };
 
 struct FunctionCall
@@ -198,7 +198,10 @@ enum class StatementType
 
 struct Statement
 {
-	StatementType type;
+	const std::string file;
+	const int line;
+
+	const StatementType type;
 
 	std::variant<
 		Variable,

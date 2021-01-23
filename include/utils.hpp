@@ -1,6 +1,7 @@
 #pragma once
 
 #include "token.hpp"
+#include "error.hpp"
 
 #include <memory>
 #include <string>
@@ -58,17 +59,8 @@ bool find_container(const std::vector<T>& container, const std::string& name)
 }
 
 // finds enum type in array
-template <typename T>
-bool find_type(const std::vector<T>& container, const T& data)
-{
-	for (const T& type : container)
-	{
-		if (data == type)
-			return true;
-	}
-
-	return false;
-}
+//template <typename T>
+bool find_type(const std::vector<VariableType>& container, const VariableType& var_type);
 
 } // namespace night
 

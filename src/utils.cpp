@@ -29,3 +29,16 @@ std::vector<std::vector<Token> > SplitCode(const std::vector<Token>& tokens)
 
 	return code;
 }
+
+bool night::find_type(const std::vector<VariableType>& container, const VariableType& var_type)
+{
+	assert(var_type.type != VariableType::CLASS && "shitihisuhf");
+
+	for (const VariableType& contain_type : container)
+	{
+		if (var_type == contain_type.type)
+			return true;
+	}
+
+	return false;
+}

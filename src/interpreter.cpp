@@ -9,346 +9,111 @@
 #include <string>
 #include <vector>
 
-NightData EvaluateExpression(const std::shared_ptr<Expression>& node, std::vector<NightVariable>& variables,
-	const std::vector<NightFunction>& functions, bool check)
+Interpreter::Interpreter(const std::vector<Statement>& statements, NightData* return_value)
 {
-	assert(node != nullptr && "node should not be NULL");
-
-	// if left and right node are NULL, then node must be a value
-	if (node->left == nullptr && node->right == nullptr)
-	{
-		if (node->type == ValueType::ARRAY)
-		{
-			// compile time checks?
-
-			NightData data;
-			for (const std::shared_ptr<Expression>& element : node->extras)
-				data.extras.push_back(EvaluateExpression(element, variables, functions));
-
-			if (data.extras.empty())
-			{
-				data.type = VariableType::EMPTY_ARR;
-				return data;
-			}
-
-			switch (data.extras.back().type)
-			{
-			case VariableType::BOOL:
-				data.type = VariableType::BOOL_ARR;
-				break;
-			case VariableType::NUM:
-				data.type = VariableType::NUM_ARR;
-				break;
-			case VariableType::STR:
-				data.type = VariableType::STR_ARR;
-				break;
-			case VariableType::BOOL_ARR:
-				data.type = VariableType::MULT_BOOL_ARR;
-				break;
-			case VariableType::NUM_ARR:
-				data.type = VariableType::MULT_NUM_ARR;
-				break;
-			case VariableType::STR_ARR:
-				data.type = VariableType::MULT_STR_ARR;
-				break;
-			case VariableType::EMPTY_ARR:
-				data.type = VariableType::MULT_EMPTY_ARR;
-				break;
-			default:
-				data.type = data.extras.back().type;
-			}
-
-			return data;
-		}
-		if (node->type == ValueType::VARIABLE)
-		{
-			NightVariable* variable = night::get_container(variables, node->data);
-			std::cout << node->data << '\n';
-			assert(variable != nullptr && "variable is not defined");
-
-			return variable->value;
-		}
-		if (node->type == ValueType::CALL)
-		{
-			if (node->data == "input")
-			{
-				std::string uinput;
-				getline(std::cin, uinput);
-
-				return NightData{ VariableType::STR, uinput };
-			}
-
-		    const NightFunction* function = night::get_container(functions, node->data);
-			assert(function != nullptr && "function is not defined");
-
-			std::vector<NightVariable> varables(variables);
-			// create variables from parameters
-			assert(function->parameters.size() == node->extras.size() && "function parameters and function call don't match");
-			for (std::size_t a = 0; a < function->parameters.size(); ++a)
-			{
-				/*
-				variables.push_back(NightVariable{
-					function->parameters[a],
-					EvaluateExpression(node->extras[a], variables, functions)
-				});
-				*/
-				for (NightVariable& variable : variables)
-				{
-					if (variable.name == function->parameters[a])
-					{
-						variable.value = EvaluateExpression(node->extras[a], variables, functions);
-					}
-				}
-			}
-
-			// interpret function body and extract return value
-			NightData returnValue;
-			returnValue.data = "___NO___";
-			Interpreter(function->body, &returnValue);
-			variables = varables;
-
-			// remove variables since they are now out of scope
-			/*
-			variables.erase(
-				variables.begin() + variables.size() - function->parameters.size(),
-				variables.end()
-			);
-			*/
-
-			return returnValue;
-		}
-
-		switch (node->type)
-		{
-		case ValueType::BOOL:
-			return NightData{ VariableType::BOOL, node->data };
-		case ValueType::NUM:
-			return NightData{ VariableType::NUM, node->data };
-		case ValueType::STR:
-			return NightData{ VariableType::STR, node->data };
-		}
-	}
-
-	assert(node->type == ValueType::OPERATOR && "node should be operator");
-
-	if (node->data == "+")
-	{
-		const NightData expr1 = EvaluateExpression(node->left,  variables, functions);
-		const NightData expr2 = EvaluateExpression(node->right, variables, functions);
-
-		if (expr1.type != VariableType::BOOL && expr1.type != VariableType::NUM && expr1.type != VariableType::STR)
-			throw Error("operator '+' can only be used on numbers or strings");
-		if (expr2.type != VariableType::BOOL && expr2.type != VariableType::NUM && expr2.type != VariableType::STR)
-			throw Error("operator '+' can only be used on numbers or strings");
-
-		if (expr1.type == VariableType::STR || expr2.type == VariableType::STR)
-		{
-			return NightData{ VariableType::STR, expr1.data + expr2.data };
-		}
-		else
-		{
-			if (expr1.type != VariableType::NUM || expr2.type != VariableType::NUM)
-				throw Error("operator '+' can only be used on numbers or strings");
-
-			return NightData{
-				expr1.type,
-				std::to_string(std::stof(expr1.data) + std::stof(expr2.data))
-			};
-		}
-	}
-	if (node->data == "-")
-	{
-		if (node->left == nullptr)
-		{
-			NightData expression = EvaluateExpression(node->right, variables, functions);
-			expression.data = std::to_string(-std::stof(expression.data));
-
-			return expression;
-		}
-
-		EVAL_EXPR(std::to_string(std::stof(expr1.data) - std::stof(expr2.data)), VariableType::NUM);
-	}
-	if (node->data == "*")
-	{
-		EVAL_EXPR(std::to_string(std::stof(expr1.data) * std::stof(expr2.data)), VariableType::NUM);
-	}
-	if (node->data == "/")
-	{
-		EVAL_EXPR(std::to_string(std::stof(expr1.data) / std::stof(expr2.data)), VariableType::NUM);
-	}
-	if (node->data == "%")
-	{
-		EVAL_EXPR(std::to_string(std::stoi(expr1.data) % std::stoi(expr2.data)), VariableType::NUM);
-	}
-	if (node->data == ">")
-	{
-		EVAL_EXPR(std::stof(expr1.data) > std::stof(expr2.data) ? "true" : "false", VariableType::BOOL);
-	}
-	if (node->data == "<")
-	{
-		EVAL_EXPR(std::stof(expr1.data) < std::stof(expr2.data) ? "true" : "false", VariableType::BOOL);
-	}
-	if (node->data == ">=")
-	{
-		EVAL_EXPR(std::stof(expr1.data) >= std::stof(expr2.data) ? "true" : "false", VariableType::BOOL);
-	}
-	if (node->data == "<=")
-	{
-		EVAL_EXPR(std::stof(expr1.data) <= std::stof(expr2.data) ? "true" : "false", VariableType::BOOL);
-	}
-	if (node->data == "!")
-	{
-		NightData expression = EvaluateExpression(node->right, variables, functions);
-		expression.data = expression.data == "true" ? "false" : "true";
-
-		return expression;
-	}
-	if (node->data == "||")
-	{
-		EVAL_EXPR(expr1.data == "true" || expr2.data == "true" ? "true" : "false", VariableType::BOOL);
-	}
-	if (node->data == "&&")
-	{
-		EVAL_EXPR(expr1.data == "true" && expr2.data == "true" ? "true" : "false", VariableType::BOOL);
-	}
-	if (node->data == "==")
-	{
-		EVAL_EXPR(expr1.data == expr2.data ? "true" : "false", VariableType::BOOL);
-	}
-	if (node->data == "!=")
-	{
-		EVAL_EXPR(expr1.data != expr2.data ? "true" : "false", VariableType::BOOL);
-	}
-	if (node->data == "[]")
-	{
-		const NightData     array = EvaluateExpression(node->right, variables, functions);
-		const unsigned long index = std::stoul(EvaluateExpression(node->extras[0], variables, functions).data);
-
-		if (array.type == VariableType::STR)
-		{
-			if (index < 0 || index >= array.data.length())
-				throw Error("string subscript out of range");
-
-			return NightData{ VariableType::STR, std::string(1, array.data[index]) };
-		}
-		else
-		{
-			if (index < 0 || index >= array.extras.size())
-				throw Error("array subscript is out of range");
-
-			return array.extras[index];
-		}
-	}
-	if (node->data == ".")
-	{
-		assert(node->left != nullptr && node->right != nullptr && "binary node can't have NULL left or right");
-
-		NightData object        = EvaluateExpression(node->left,  variables, functions);
-		const Expression method = *node->right;
-
-		const bool is_array = object.type != VariableType::BOOL && object.type != VariableType::NUM && object.type != VariableType::STR;
-
-		if (is_array && method.data == "len")
-		{
-			return NightData{ VariableType::NUM, std::to_string(object.extras.size()) };
-		}
-		if (is_array && method.data == "push")
-		{
-			const NightData value = EvaluateExpression(method.extras[0], variables, functions);
-			object.extras.push_back(value);
-
-			return object;
-		}
-		if (is_array && method.data == "pop" && method.extras.empty())
-		{
-			object.extras.pop_back();
-			return object;
-		}
-		if (is_array && method.data == "pop" && !method.extras.empty())
-		{
-			const NightData index = EvaluateExpression(method.extras[0], variables, functions);
-			object.extras.erase(object.extras.begin() + std::stoi(index.data));
-
-			return object;
-		}
-		if (object.type == VariableType::STR && method.data == "len")
-		{
-			return NightData{ VariableType::NUM, std::to_string(object.data.length()) };
-		}
-	}
-
-	assert(false && "operator missing");
-	return NightData();
-}
-
-void Interpreter(const std::vector<Statement>& statements, NightData* returnValue)
-{
-	static std::vector<NightVariable> variables;
-	static std::vector<NightFunction> functions;
-
-	const std::size_t variablesSize = variables.size();
+	const std::size_t variables_size = night_variables.size();
  
 	for (const Statement& statement : statements)
 	{
+		const std::string file = statement.file;
+		const int		  line = statement.line;
+
 		switch (statement.type)
 		{
 		case StatementType::VARIABLE: {
-			variables.push_back(NightVariable{
+			night_variables.push_back(NightVariable{
 				std::get<Variable>(statement.stmt).name,
-				EvaluateExpression(std::get<Variable>(statement.stmt).value, variables, functions)
+				EvaluateExpression(std::get<Variable>(statement.stmt).value)
 			});
 
 			break;
 		}
 		case StatementType::ASSIGNMENT: {
-			NightVariable* variable = night::get_container(variables, std::get<Assignment>(statement.stmt).name);
-			assert(variable != nullptr && "definitions should be checked in the parser");
+			NightVariable* night_variable = night::get_container(night_variables, std::get<Assignment>(statement.stmt).name);
+			assert(night_variable != nullptr && "definitions should be checked in the parser");
 
-			switch (std::get<Assignment>(statement.stmt).type)
+			const NightData assign_expr = EvaluateExpression(std::get<Assignment>(statement.stmt).value);
+
+			switch (std::get<Assignment>(statement.stmt).assign_type)
 			{
 			case '=':
-				variable->value = EvaluateExpression(std::get<Assignment>(statement.stmt).value, variables, functions);
+				night_variable->value = assign_expr;
 				break;
-			case '+': {
-				const NightData assign = EvaluateExpression(std::get<Assignment>(statement.stmt).value, variables, functions);
-
-				if (variable->value.type == VariableType::STR)
+			case '+':
+				if (night_variable->value.type == VariableType::STR)
 				{
-					variable->value.data += assign.data;
+					night_variable->value.data += assign_expr.data;
 				}
-				else if (variable->value.type == VariableType::NUM)
+				else if (night_variable->value.type == VariableType::NUM)
 				{
-					if (assign.type != VariableType::NUM)
-						throw Error("assignment '+=' can only be used on numbers and strings");
+					if (assign_expr.type != VariableType::NUM)
+						throw BackError(file, line, "assignment '+=' can only be used on numbers and strings");
 
-					variable->value.data = std::to_string(
-						std::stof(variable->value.data) + std::stof(assign.data)
+					night_variable->value.data = std::to_string(
+						std::stof(night_variable->value.data) + std::stof(assign_expr.data)
 					);
 				}
 				else
 				{
-					throw Error("assignment '+=' can only be used on numbers or strings");
+					throw BackError(file, line, "assignment '+=' can only be used on numbers or strings");
 				}
 				break;
-			}
-			default:
+			case '-':
+				if (night_variable->value.type != VariableType::NUM)
+					throw BackError(file, line, "assignment '-=' can only be used on numbers");
+				if (assign_expr.type != VariableType::NUM)
+					throw BackError(file, line, "assignment '-=' can only be used on numbers");
+
+				night_variable->value.data = std::to_string(
+					std::stof(night_variable->value.data) - std::stof(assign_expr.data)
+				);
+				
 				break;
+			case '*':
+				if (night_variable->value.type != VariableType::NUM)
+					throw BackError(file, line, "assignment '-=' can only be used on numbers");
+				if (assign_expr.type != VariableType::NUM)
+					throw BackError(file, line, "assignment '-=' can only be used on numbers");
+
+				night_variable->value.data = std::to_string(
+					std::stof(night_variable->value.data) * std::stof(assign_expr.data)
+				);
+
+				break;
+			case '/':
+				if (night_variable->value.type != VariableType::NUM)
+					throw BackError(file, line, "assignment '/=' can only be used on numbers");
+				if (assign_expr.type != VariableType::NUM)
+					throw BackError(file, line, "assignment '/=' can only be used on numbers");
+
+				night_variable->value.data = std::to_string(
+					std::stof(night_variable->value.data) / std::stof(assign_expr.data)
+				);
+
+				break;
+			case '%':
+				if (night_variable->value.type != VariableType::NUM)
+					throw BackError(file, line, "assignment '%=' can only be used on numbers");
+				if (assign_expr.type != VariableType::NUM)
+					throw BackError(file, line, "assignment '%=' can only be used on numbers");
+
+				night_variable->value.data = std::to_string(
+					std::stoi(night_variable->value.data) % std::stoi(assign_expr.data)
+				);
+
+				break;
+			default:
+				assert(false && "missing assignment operator");
 			}
 
 			break;
 		}
-		case StatementType::CONDITIONAL: {
-			if (EvaluateExpression(std::get<Conditional>(statement.stmt).condition, variables, functions).data == "true")
+		case StatementType::IF_STATEMENT: {
+			for (const Conditional& conditional : std::get<IfStatement>(statement.stmt).chains)
 			{
-				Interpreter(std::get<Conditional>(statement.stmt).body, returnValue);
-				break;
-			}
-
-			for (const Conditional& conditional : std::get<Conditional>(statement.stmt).chains)
-			{
-				if (conditional.condition == nullptr || EvaluateExpression(conditional.condition, variables, functions).data == "true")
+				if (conditional.condition == nullptr || EvaluateExpression(conditional.condition).data == "true")
 				{
-					Interpreter(conditional.body, returnValue);
+					Interpreter(conditional.body, return_value);
 					break;
 				}
 			}
@@ -356,7 +121,7 @@ void Interpreter(const std::vector<Statement>& statements, NightData* returnValu
 			break;
 		}
 		case StatementType::FUNCTION_DEF: {
-			functions.push_back(NightFunction{
+			night_functions.push_back(NightFunction{
 				std::get<FunctionDef>(statement.stmt).name,
 				std::get<FunctionDef>(statement.stmt).parameters,
 				std::get<FunctionDef>(statement.stmt).body
@@ -367,22 +132,23 @@ void Interpreter(const std::vector<Statement>& statements, NightData* returnValu
 		case StatementType::FUNCTION_CALL: {
 			if (std::get<FunctionCall>(statement.stmt).name == "print")
 			{
-				for (const std::shared_ptr<Expression>& parameter : std::get<FunctionCall>(statement.stmt).arguments)
-				{
-					const NightData data = EvaluateExpression(parameter, variables, functions);
-					NightPrint(data);
-				}
+				const NightData data = EvaluateExpression(std::get<FunctionCall>(statement.stmt).arguments[0]);
+
+				if (data.type == VariableType::CLASS)
+					throw BackError(file, line, "function 'print()' cannot accept a class argument");
+
+				NightPrint(data);
 
 				break;
 			}
 
-			const NightFunction* function = night::get_container(functions, std::get<FunctionCall>(statement.stmt).name);
+			const NightFunction* function = night::get_container(night_functions, std::get<FunctionCall>(statement.stmt).name);
 			assert(function != nullptr && "definitions should be checked in the parser");
 
-			for (std::size_t a = 0; a < function->parameters.size(); ++a)
+			for (std::size_t a = 0; a < function->params.size(); ++a)
 			{
-				const NightData eval = EvaluateExpression(std::get<FunctionCall>(statement.stmt).arguments[a], variables, functions);
-				variables.push_back(NightVariable{ function->parameters[a], eval });
+				const NightData eval = EvaluateExpression(std::get<FunctionCall>(statement.stmt).arguments[a]);
+				night_variables.push_back(NightVariable{ function->params[a], eval });
 			}
 
 			Interpreter(function->body);
@@ -390,23 +156,27 @@ void Interpreter(const std::vector<Statement>& statements, NightData* returnValu
 			break;
 		}
 		case StatementType::RETURN: {
-			assert(returnValue != nullptr && "returnValue should not be NULL");
-			*returnValue = EvaluateExpression(std::get<Return>(statement.stmt).expression, variables, functions);
+			assert(return_value != nullptr && "return_value should not be NULL");
+			*return_value = EvaluateExpression(std::get<Return>(statement.stmt).expression);
 
-			variables.erase(std::begin(variables) + variablesSize, std::end(variables));
+			night_variables.erase(
+				std::begin(night_variables) + variables_size,
+				std::end(night_variables)
+			);
+
 			return;
 		}
 		case StatementType::WHILE_LOOP: {
-			while (EvaluateExpression(std::get<WhileLoop>(statement.stmt).condition, variables, functions).data == "true")
+			while (EvaluateExpression(std::get<WhileLoop>(statement.stmt).condition).data == "true")
 				Interpreter(std::get<WhileLoop>(statement.stmt).body);
 
 			break;
 		}
 		case StatementType::FOR_LOOP: {
-			const NightData range = EvaluateExpression(std::get<ForLoop>(statement.stmt).range, variables, functions);
+			const NightData range = EvaluateExpression(std::get<ForLoop>(statement.stmt).range);
 
-			variables.push_back(NightVariable{ std::get<ForLoop>(statement.stmt).iterator, NightData() });
-			NightVariable* iterator = &variables.back();
+			night_variables.push_back(NightVariable{ std::get<ForLoop>(statement.stmt).iterator_name, NightData() });
+			NightVariable* iterator = &night_variables.back();
 
 			if (range.type == VariableType::STR)
 			{
@@ -425,26 +195,26 @@ void Interpreter(const std::vector<Statement>& statements, NightData* returnValu
 				}
 			}
 
-			variables.pop_back();
+			night_variables.pop_back();
 
 			break;
 		}
 		case StatementType::ELEMENT: {
-			NightVariable* variable = night::get_container(variables, std::get<Element>(statement.stmt).name);
+			NightVariable* variable = night::get_container(night_variables, std::get<Element>(statement.stmt).name);
 			assert(variable != nullptr && "definitions should be checked in the parser");
 
-			const std::size_t index = std::stoi(EvaluateExpression(std::get<Element>(statement.stmt).index, variables, functions).data);
+			const std::size_t index = std::stoi(EvaluateExpression(std::get<Element>(statement.stmt).index).data);
 
 			if (variable->value.type == VariableType::STR)
-				variable->value.data[index] = EvaluateExpression(std::get<Element>(statement.stmt).assign, variables, functions).data[0];
+				variable->value.data[index] = EvaluateExpression(std::get<Element>(statement.stmt).assign).data[0];
 			else
-				variable->value.extras[index] = EvaluateExpression(std::get<Element>(statement.stmt).assign, variables, functions);
+				variable->value.extras[index] = EvaluateExpression(std::get<Element>(statement.stmt).assign);
 
 			break;
 		}
 		case StatementType::METHOD_CALL: {
-			NightVariable* variable = night::get_container(variables, std::get<MethodCall>(statement.stmt).name);
-			variable->value = EvaluateExpression(std::get<MethodCall>(statement.stmt).methodCall, variables, functions);
+			NightVariable* variable = night::get_container(night_variables, std::get<MethodCall>(statement.stmt).name);
+			variable->value = EvaluateExpression(std::get<MethodCall>(statement.stmt).method_call);
 
 			break;
 		}
@@ -452,10 +222,371 @@ void Interpreter(const std::vector<Statement>& statements, NightData* returnValu
 			assert(false && "statement missing");
 		}
 		}
-
-		if (returnValue != nullptr && returnValue->data != "___NO___")
-			break;
 	}
 
-	variables.erase(std::begin(variables) + variablesSize, std::end(variables));
+	night_variables.erase(
+		std::begin(night_variables) + variables_size,
+		std::end(night_variables)
+	);
 }
+
+NightData Interpreter::EvaluateExpression(const std::shared_ptr<Expression>& node)
+{
+	assert(node != nullptr && "node shouldn't be NULL");
+
+	// if left and right node are NULL, then node must be a value
+	if (node->left == nullptr && node->right == nullptr)
+	{
+		if (node->type == ValueType::ARRAY)
+		{
+			NightData night_data{ VariableType::ARRAY };
+
+			night_data.extras.reserve(node->extras.size());
+			for (const std::shared_ptr<Expression>& element : node->extras)
+				night_data.extras.push_back(EvaluateExpression(element));
+
+			return night_data;
+		}
+		if (node->type == ValueType::VARIABLE)
+		{
+			const NightVariable* variable = night::get_container(night_variables, node->data);
+			assert(variable != nullptr && "definition checks should be handled in the parser");
+
+			return variable->value;
+		}
+		if (node->type == ValueType::CALL)
+		{
+			if (node->data == "input")
+			{
+				std::string user_input;
+				getline(std::cin, user_input);
+
+				return NightData{ VariableType::STR, user_input };
+			}
+
+			const NightFunction* night_function = night::get_container(night_functions, node->data);
+			assert(night_function != nullptr && "definition checks should be handled in the parser");
+			assert(night_function->params.size() == node->extras.size() && "parameter checks should be handled in the parser");
+
+			const std::size_t variables_size = night_variables.size();
+
+			// change value of parameter if it is a recursive call
+			// if it's not a recursive call, then create a new variable
+			for (std::size_t a = 0; a < night_function->params.size(); ++a)
+			{
+				NightVariable* parameter = night::get_container(night_variables, night_function->params[a]);
+
+				if (parameter == nullptr) // non-recursive
+				{
+					night_variables.push_back(NightVariable{
+						night_function->params[a],
+						EvaluateExpression(node->extras[a])
+					});
+				}
+				else // recursive
+				{
+					parameter->value = EvaluateExpression(node->extras[a]);
+				}
+			}
+
+			// remove non-recursive variables out of scope here
+
+			NightData return_value;
+			Interpreter(night_function->body, &return_value);
+
+			// remove function parameters and variables out of scope
+			// and if this is a recursive call, it won't affect anything
+			night_variables.erase(
+				std::begin(night_variables) + variables_size,
+				std::end(night_variables)
+			);
+
+			return return_value;
+		}
+
+		switch (node->type)
+		{
+		case ValueType::BOOL:
+			return NightData{ VariableType::BOOL, node->data };
+		case ValueType::NUM:
+			return NightData{ VariableType::NUM, node->data };
+		case ValueType::STR:
+			return NightData{ VariableType::STR, node->data };
+		}
+	}
+
+	assert(node->type == ValueType::OPERATOR && "node should be operator");
+
+	// since expressions can only be on one line, this works fine
+	const std::string file = node->file;
+	const int         line = node->line;
+
+	if (node->data == "+")
+	{
+		const NightData value1 = EvaluateExpression(node->left);
+		const NightData value2 = EvaluateExpression(node->right);
+
+		if (value1.type != VariableType::NUM && value1.type != VariableType::STR)
+			throw BackError(file, line, "operator '+' can only be used on numbers or strings");
+		if (value2.type != VariableType::NUM && value2.type != VariableType::STR)
+			throw BackError(file, line, "operator '+' can only be used on numbers or strings");
+
+		if (value1.type == VariableType::STR || value2.type == VariableType::STR)
+		{
+			return NightData{ VariableType::STR, value1.data + value2.data };
+		}
+		else
+		{
+			return NightData{
+				VariableType::NUM,
+				std::to_string(std::stof(value1.data) + std::stof(value2.data))
+			};
+		}
+	}
+	if (node->data == "-")
+	{
+		if (node->left == nullptr)
+		{
+			NightData value = EvaluateExpression(node->right);
+
+			if (value.type != VariableType::NUM)
+				throw BackError(file, line, "unary operator '-' can only be used on numbers");
+
+			value.data = std::to_string(-std::stof(value.data));
+
+			return value;
+		}
+
+		const NightData value1 = EvaluateExpression(node->left);
+		const NightData value2 = EvaluateExpression(node->right);
+
+		if (value1.type != VariableType::NUM || value2.type != VariableType::NUM)
+			throw BackError(file, line, "binary operator '-' can only be used on numbers");
+
+		return NightData{
+			VariableType::NUM,
+			std::to_string(std::stof(value1.data) - std::stof(value2.data))
+		};
+	}
+	if (node->data == "*")
+	{
+		const NightData value1 = EvaluateExpression(node->left);
+		const NightData value2 = EvaluateExpression(node->right);
+
+		if (value1.type != VariableType::NUM || value2.type != VariableType::NUM)
+			throw BackError(file, line, "binary operator '*' can only be used on numbers");
+
+		return NightData{
+			VariableType::NUM,
+			std::to_string(std::stof(value1.data) * std::stof(value2.data))
+		};
+	}
+	if (node->data == "/")
+	{
+		const NightData value1 = EvaluateExpression(node->left);
+		const NightData value2 = EvaluateExpression(node->right);
+
+		if (value1.type != VariableType::NUM || value2.type != VariableType::NUM)
+			throw BackError(file, line, "binary operator '/' can only be used on numbers");
+
+		return NightData{
+			VariableType::NUM,
+			std::to_string(std::stof(value1.data) / std::stof(value2.data))
+		};
+	}
+	if (node->data == "%")
+	{
+		const NightData value1 = EvaluateExpression(node->left);
+		const NightData value2 = EvaluateExpression(node->right);
+
+		if (value1.type != VariableType::NUM || value2.type != VariableType::NUM)
+			throw BackError(file, line, "binary operator '%' can only be used on numbers");
+
+		return NightData{
+			VariableType::NUM,
+			std::to_string(std::stoi(value1.data) % std::stoi(value2.data))
+		};
+	}
+	if (node->data == ">")
+	{
+		const NightData value1 = EvaluateExpression(node->left);
+		const NightData value2 = EvaluateExpression(node->right);
+
+		if (value1.type != VariableType::NUM || value2.type != VariableType::NUM)
+			throw BackError(file, line, "binary operator '>' can only be used on numbers");
+
+		return NightData{
+			VariableType::BOOL,
+			std::stof(value1.data) > std::stof(value2.data) ? "true" : "false"
+		};
+	}
+	if (node->data == "<")
+	{
+		const NightData value1 = EvaluateExpression(node->left);
+		const NightData value2 = EvaluateExpression(node->right);
+
+		if (value1.type != VariableType::NUM || value2.type != VariableType::NUM)
+			throw BackError(file, line, "binary operator '<' can only be used on numbers");
+
+		return NightData{
+			VariableType::BOOL,
+			std::stof(value1.data) < std::stof(value2.data) ? "true" : "false"
+		};
+	}
+	if (node->data == ">=")
+	{
+		const NightData value1 = EvaluateExpression(node->left);
+		const NightData value2 = EvaluateExpression(node->right);
+
+		if (value1.type != VariableType::NUM || value2.type != VariableType::NUM)
+			throw BackError(file, line, "binary operator '>=' can only be used on numbers");
+
+		return NightData{
+			VariableType::BOOL,
+			std::stof(value1.data) >= std::stof(value2.data) ? "true" : "false"
+		};
+	}
+	if (node->data == "<=")
+	{
+		const NightData value1 = EvaluateExpression(node->left);
+		const NightData value2 = EvaluateExpression(node->right);
+
+		if (value1.type != VariableType::NUM || value2.type != VariableType::NUM)
+			throw BackError(file, line, "binary operator '<=' can only be used on numbers");
+
+		return NightData{
+			VariableType::BOOL,
+			std::stof(value1.data) <= std::stof(value2.data) ? "true" : "false"
+		};
+	}
+	if (node->data == "!")
+	{
+		NightData value = EvaluateExpression(node->right);
+
+		if (value.type != VariableType::BOOL)
+			throw BackError(file, line, "unary operator '!' can only be used on booleans");
+
+		value.data = value.data == "true" ? "false" : "true";
+		return value;
+	}
+	if (node->data == "||")
+	{
+		const NightData value1 = EvaluateExpression(node->left);
+		const NightData value2 = EvaluateExpression(node->right);
+
+		if (value1.type != VariableType::BOOL || value2.type != VariableType::BOOL)
+			throw BackError(file, line, "binary operator '||' can only be used on booleans");
+
+		return NightData{
+			VariableType::BOOL,
+			value1.data == "true" || value2.data == "true" ? "true" : "false"
+		};
+	}
+	if (node->data == "&&")
+	{
+		const NightData value1 = EvaluateExpression(node->left);
+		const NightData value2 = EvaluateExpression(node->right);
+
+		if (value1.type != VariableType::BOOL || value2.type != VariableType::BOOL)
+			throw BackError(file, line, "binary operator '&&' can only be used on booleans");
+
+		return NightData{
+			VariableType::BOOL,
+			value1.data == "true" && value2.data == "true" ? "true" : "false"
+		};
+	}
+	if (node->data == "==")
+	{
+		const NightData value1 = EvaluateExpression(node->left);
+		const NightData value2 = EvaluateExpression(node->right);
+
+		if (value1.type != value2.type)
+			throw BackError(file, line, "binary operator '==' can only be used on values with the same type");
+		if (value1.type == VariableType::CLASS) // I'll have operator overloading soon :)
+			throw BackError(file, line, "binary operator '==' cannot compare two objects");
+
+		return NightData{
+			VariableType::BOOL,
+			value1.data == value2.data ? "true" : "false"
+		};
+	}
+	if (node->data == "!=")
+	{
+		const NightData value1 = EvaluateExpression(node->left);
+		const NightData value2 = EvaluateExpression(node->right);
+
+		if (value1.type != value2.type)
+			throw BackError(file, line, "binary operator '!=' can only be used on values with the same type");
+		if (value1.type == VariableType::CLASS)
+			throw BackError(file, line, "binary operator '!=' cannot compare two objects");
+
+		return NightData{
+			VariableType::BOOL,
+			value1.data != value2.data ? "true" : "false"
+		};
+	}
+	if (node->data == "[]")
+	{
+		const NightData array = EvaluateExpression(node->right);
+		const long long index = std::stoll(EvaluateExpression(node->extras[0]).data);
+
+		if (array.type == VariableType::STR)
+		{
+			if (index < 0 || index >= array.data.length())
+				throw BackError(file, line, "string subscript out of range");
+
+			return NightData{ VariableType::STR, std::string(1, array.data[(std::size_t)index]) };
+		}
+		else
+		{
+			if (index < 0 || index >= array.extras.size())
+				throw BackError(file, line, "array subscript is out of range");
+
+			return array.extras[(std::size_t)index];
+		}
+	}
+	if (node->data == ".")
+	{
+		assert(node->left != nullptr && node->right != nullptr && "binary node can't have NULL left or right");
+
+		NightData object = EvaluateExpression(node->left);
+		const Expression method = *node->right;
+
+		const bool is_array = object.type != VariableType::BOOL && object.type != VariableType::NUM && object.type != VariableType::STR;
+
+		if (is_array && method.data == "len")
+		{
+			return NightData{ VariableType::NUM, std::to_string(object.extras.size()) };
+		}
+		if (is_array && method.data == "push")
+		{
+			const NightData value = EvaluateExpression(method.extras[0]);
+			object.extras.push_back(value);
+
+			return object;
+		}
+		if (is_array && method.data == "pop" && method.extras.empty())
+		{
+			object.extras.pop_back();
+			return object;
+		}
+		if (is_array && method.data == "pop" && !method.extras.empty())
+		{
+			const NightData index = EvaluateExpression(method.extras[0]);
+			object.extras.erase(object.extras.begin() + std::stoi(index.data));
+
+			return object;
+		}
+		if (object.type == VariableType::STR && method.data == "len")
+		{
+			return NightData{ VariableType::NUM, std::to_string(object.data.length()) };
+		}
+	}
+
+	assert(false && "operator missing");
+	return {};
+}
+
+std::vector<NightVariable> Interpreter::night_variables;
+std::vector<NightFunction> Interpreter::night_functions;
+std::vector<NightClass>    Interpreter::night_classes;

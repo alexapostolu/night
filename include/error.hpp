@@ -1,31 +1,61 @@
 #pragma once
 
 #include <iostream>
-#include <cassert>
 #include <string>
-
-#ifndef _DEBUG
-	inline void AssertError()
-	{
-		std::clog << "Oops! Something unexpected has happened! Please submit an issue on the GitHub page.\n";
-		exit(1);
-	}
-
-	#undef  assert
-	#define assert(con) AssertError()
-#endif
 
 class Error
 {
 public:
-	Error(const std::string& _message);
-	Error(const std::string& _file, int _line, const std::string& _message);
+	virtual std::string what() const = 0;
 
+protected:
+	std::string msg;
+};
+
+class FrontError
+	: public Error
+{
 public:
+	FrontError(const std::string& _msg);
+
+	std::string what() const;
+};
+
+class BackError
+	: public Error
+{
+public:
+	BackError(const std::string& _file, const int _line, const std::string& _msg);
+
+	// for better error messages
+	/*
+	BackError(
+		const std::string& _file,
+		const int _line,
+		
+		const std::string& _desc,
+		const std::string& _note
+	);
+	*/
+
 	std::string what() const;
 
-public:
+private:
 	std::string file;
 	int line;
-	std::string message;
+
+	// for better error messages
+	// const std::string note;
 };
+
+#ifndef _DEBUG
+	#undef  assert
+	#define assert(con) std::cout << "Uh oh! Something unexpected has happened! Please submit an issue on the GitHub page:\n" \
+								  << "github.com/dynamicsquid/night\n";														  \
+                        exit(1)
+#else
+	// makes it easier for debugging purposes as it shows where exactly the
+	// error is thrown
+	#include <cassert>
+	#define BackError(file, line, msg) BackError(__FILE__, __LINE__, std::to_string(line) + ' ' + msg)
+#endif

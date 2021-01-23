@@ -10,9 +10,12 @@
 
 void FindKeyword(const std::string& file, const int line, std::vector<Token>& tokens, std::string& token)
 {
+	if (token.empty())
+		return;
+
 	const std::unordered_map<std::string, TokenType> keywords{
-		{ "true", TokenType::BOOL_VAL },
-		{ "false", TokenType::BOOL_VAL },
+		{ "true", TokenType::BOOL },
+		{ "false", TokenType::BOOL },
 		{ "set", TokenType::SET },
 		{ "if", TokenType::IF },
 		{ "else", TokenType::ELSE },
@@ -24,18 +27,14 @@ void FindKeyword(const std::string& file, const int line, std::vector<Token>& to
 		{ "include", TokenType::IMPORT }
 	};
 
-	if (token.empty())
-		return;
-
-	const auto findKeyword = keywords.find(token);
-	if (findKeyword != keywords.end())
-		tokens.push_back(Token{ file, line, findKeyword->second, token });
-	else if (std::regex_match(token, std::regex("((\\+|-)?([0-9]+)(\\.[0-9]+)?)|((\\+|-)?\\.?[0-9]+)")))
-		tokens.push_back(Token{ file, line, TokenType::NUM_VAL, token });
+	if (const auto find_keyword = keywords.find(token); find_keyword != std::end(keywords))
+		tokens.push_back(Token{ file, line, find_keyword->second, token });
+	else if (std::regex_match(token, std::regex("((\\+|-)?([0-9]+)(\\.[0-9]+)?)|((\\+|-)?\\.?[0-9]+)"))) // shorten regex so negatives or positives don't count; do testing first
+		tokens.push_back(Token{ file, line, TokenType::NUM, token });
 	else if (std::regex_match(token, std::regex("[a-zA-Z_][a-zA-Z_0-9]*")))
-		tokens.push_back(Token{ file, line, TokenType::VARIABLE, token });
+		tokens.push_back(Token{ file, line, TokenType::VAR, token });
 	else
-		throw Error(file, line, "unknown token '" + token + "'");
+		throw BackError(file, line, "unknown token '" + token + "'");
 
 	token = "";
 }
@@ -43,11 +42,11 @@ void FindKeyword(const std::string& file, const int line, std::vector<Token>& to
 std::vector<Token> Lexer(const std::string& file, const int line, const std::string& fileLine)
 {
 	const std::unordered_map<char, std::vector<std::pair<char, TokenType> > > symbols{
-		{ '+', { { '=', TokenType::ASSIGNMENT }, { '\0', TokenType::OPERATOR } } },
-		{ '-', { { '=', TokenType::ASSIGNMENT }, { '\0', TokenType::OPERATOR } } },
-		{ '*', { { '=', TokenType::ASSIGNMENT }, { '\0', TokenType::OPERATOR } } },
-		{ '/', { { '=', TokenType::ASSIGNMENT }, { '\0', TokenType::OPERATOR } } },
-		{ '%', { { '=', TokenType::ASSIGNMENT }, { '\0', TokenType::OPERATOR } } },
+		{ '+', { { '=', TokenType::ASSIGN }, { '\0', TokenType::OPERATOR } } },
+		{ '-', { { '=', TokenType::ASSIGN }, { '\0', TokenType::OPERATOR } } },
+		{ '*', { { '=', TokenType::ASSIGN }, { '\0', TokenType::OPERATOR } } },
+		{ '/', { { '=', TokenType::ASSIGN }, { '\0', TokenType::OPERATOR } } },
+		{ '%', { { '=', TokenType::ASSIGN }, { '\0', TokenType::OPERATOR } } },
 
 		{ '>', { { '=', TokenType::OPERATOR }, { '\0', TokenType::OPERATOR } } },
 		{ '<', { { '=', TokenType::OPERATOR }, { '\0', TokenType::OPERATOR } } },
@@ -58,7 +57,7 @@ std::vector<Token> Lexer(const std::string& file, const int line, const std::str
 
 		{ '.', { { '\0', TokenType::OPERATOR } } },
 
-		{ '=', { { '=', TokenType::OPERATOR }, { '\0', TokenType::ASSIGNMENT } } },
+		{ '=', { { '=', TokenType::OPERATOR }, { '\0', TokenType::ASSIGN } } },
 
 		{ '(', { { '\0', TokenType::OPEN_BRACKET } } },
 		{ ')', { { '\0', TokenType::CLOSE_BRACKET } } },
@@ -102,7 +101,7 @@ std::vector<Token> Lexer(const std::string& file, const int line, const std::str
 				newline = token.find("\\n", newline + 1);
 			}
 
-			tokens.push_back(Token{ file, line, TokenType::STR_VAL, token });
+			tokens.push_back(Token{ file, line, TokenType::STR, token });
 			token = "";
 
 			inString = ' ';
@@ -123,7 +122,7 @@ std::vector<Token> Lexer(const std::string& file, const int line, const std::str
 		// find symbols
 
 		auto symbol = symbols.find(fileLine[a]);
-		if (symbol != symbols.end())
+		if (symbol != std::end(symbols))
 		{
 			if (symbol->first == '.' && !token.empty() && token.back() - '0' >= 0 && token.back() - '0' <= 9)
 			{
@@ -150,7 +149,7 @@ std::vector<Token> Lexer(const std::string& file, const int line, const std::str
 				}
 			}
 
-			throw Error(file, line, std::string("unknown symbol '") + fileLine[a] + "'");
+			throw BackError(file, line, std::string("unknown symbol '") + fileLine[a] + "'");
 		}
 
 		token += fileLine[a];

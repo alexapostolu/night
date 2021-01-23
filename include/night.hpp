@@ -22,7 +22,7 @@ struct NightVariable
 struct NightFunction
 {
     std::string name;
-    std::vector<std::string> parameters;
+    std::vector<std::string> params;
     std::vector<Statement> body;
 };
 
