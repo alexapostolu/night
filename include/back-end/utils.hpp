@@ -1,7 +1,8 @@
 #pragma once
 
 #include "token.hpp"
-#include "error.hpp"
+#include "../error.hpp"
+#include "night.hpp"
 
 #include <memory>
 #include <string>
@@ -58,9 +59,44 @@ bool find_container(const std::vector<T>& container, const std::string& name)
 	return false;
 }
 
-// finds enum type in array
-//template <typename T>
-bool find_type(const std::vector<VariableType>& container, const VariableType& var_type);
+bool find_variable(
+	const Scope& scope,
+	const std::string& name
+);
+
+// since the implementation is the same, make this into a template?
+const CheckVariable* get_variable(
+	const Scope& scope,
+	const std::string& var_name
+);
+
+// do I need dis?
+//
+//
+//
+//
+//
+//
+CheckVariable* get_variable(
+	Scope& scope,
+	const std::string& var_name
+);
+
+template <typename Type, typename... Types>
+bool find_type(const std::vector<VariableType>& container, Type type, Types... types)
+{
+	for (const VariableType& var_type : container)
+	{
+		if (var_type == type && type == VariableType::CLASS && var_type.class_name == type.class_name)
+			return true;
+	}
+
+	return find_type(container, types);
+}
+
+bool find_type(const std::vector<VariableType>& container) { return false; }
+
+NightVariable* get_variable(NightScope& scope, const std::string& var_name);
 
 } // namespace night
 

@@ -1,9 +1,23 @@
 #pragma once
 
-#include "../error.hpp"
+#include "../back-end/token.hpp"
 
-void FrontEnd(const int argc)
-{
-	if (argc != 2)
-		throw FrontError("invalid command line arguments; only pass in the file name as an argument");
-}
+#include <fstream>
+#include <string>
+#include <vector>
+
+// entry point - calls on the back end as well
+void FrontEnd(
+	const int argc,
+	char* argv[]
+);
+
+/*
+void EvaluateCommands(
+	char* argv[]
+);
+*/
+
+std::vector<Token> OpenFile(
+	const std::string& file
+);

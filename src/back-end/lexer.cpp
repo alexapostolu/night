@@ -1,6 +1,6 @@
-#include "../include/lexer.hpp"
-#include "../include/token.hpp"
-#include "../include/error.hpp"
+#include "../../include/back-end/lexer.hpp"
+#include "../../include/back-end/token.hpp"
+#include "../../include/error.hpp"
 
 #include <regex>
 #include <string>
@@ -27,10 +27,12 @@ void FindKeyword(const std::string& file, const int line, std::vector<Token>& to
 		{ "include", TokenType::IMPORT }
 	};
 
-	if (const auto find_keyword = keywords.find(token); find_keyword != std::end(keywords))
+	if (const auto find_keyword = keywords.find(token); find_keyword != keywords.end())
 		tokens.push_back(Token{ file, line, find_keyword->second, token });
-	else if (std::regex_match(token, std::regex("((\\+|-)?([0-9]+)(\\.[0-9]+)?)|((\\+|-)?\\.?[0-9]+)"))) // shorten regex so negatives or positives don't count; do testing first
-		tokens.push_back(Token{ file, line, TokenType::NUM, token });
+	else if (std::regex_match(token, std::regex("[0-9]+")))
+		tokens.push_back(Token{ file, line, TokenType::INT, token });
+	else if (std::regex_match(token, std::regex("([0-9]+)(\\.[0-9]+)?")))
+		tokens.push_back(Token{ file, line, TokenType::FLOAT, token });
 	else if (std::regex_match(token, std::regex("[a-zA-Z_][a-zA-Z_0-9]*")))
 		tokens.push_back(Token{ file, line, TokenType::VAR, token });
 	else
@@ -122,7 +124,7 @@ std::vector<Token> Lexer(const std::string& file, const int line, const std::str
 		// find symbols
 
 		auto symbol = symbols.find(fileLine[a]);
-		if (symbol != std::end(symbols))
+		if (symbol != symbols.end())
 		{
 			if (symbol->first == '.' && !token.empty() && token.back() - '0' >= 0 && token.back() - '0' <= 9)
 			{

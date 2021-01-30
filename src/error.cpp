@@ -30,23 +30,25 @@ BackError::BackError(const std::string& _file, const int _line, const std::strin
 }
 
 /*
-BackError::BackError(const std::string& _file, const int _line, const std::string& _desc, const std::string& _note)
-	: file(_file), line(_line), desc(_desc), note(_note)
+BackError::BackError(const std::string& _type, const std::string& _file, const int _line, const int start, const int end,
+	const std::string& _desc, const std::string& _note, const std::string& _link)
+	: _type(_type), file(_file), line(_line), start(_start), end(_end), desc(_desc), note(_note), link(_link)
 {
 	std::ifstream code(file);
-	assert(file.is_open() && "shit");
+	assert(code.is_open() && "shit"); // I blame the user for this one
 
-	std::string line;
-	for (int a = 0; a < line; ++a)
-		getline(code, line);
+	std::cout << "error - " << type << '\n';
+	std::cout << file << " | " << line << " | " << start << "\n\n";
 
-	std::cout
-		<< file
-		<< line
-		<< desc
-		<< code
-		<< note
-		<< '\n';
+	std::cout << desc << "\n\n";
+
+	std::cout << line << ": " << code_line << "\n\n";
+	for (int a = start; a <= end; ++a)
+		std::cout << '~';
+
+	std::cout << note << '\n'
+	if (link != "")
+		std::cout << "for more information, visit: github.io/night/" << link << '\n';
 }
 */
 

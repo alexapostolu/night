@@ -17,7 +17,7 @@ enum class TokenType
 
 	COLON, COMMA,
 
-	BOOL, NUM, STR,
+	BOOL, INT, FLOAT, STR,
 
 	VAR,
 
@@ -46,7 +46,7 @@ struct Token
 
 enum class ValueType
 {
-	BOOL, NUM, STR,
+	BOOL, INT, FLOAT, STR,
 	ARRAY,
 
 	VARIABLE, CALL,
@@ -70,25 +70,12 @@ struct Value
 
 struct Statement;
 
-struct Expression
-{
-	const std::string file;
-	const int line;
-
-	ValueType type;
-
-	std::string data;
-	std::vector<std::shared_ptr<Expression> > extras;
-
-	std::shared_ptr<Expression> left;
-	std::shared_ptr<Expression> right;
-};
-
 struct VariableType
 {
 	enum Type {
 		BOOL,
-		NUM,
+		INT,
+		FLOAT,
 		STR,
 		ARRAY,
 		CLASS
@@ -100,12 +87,83 @@ struct VariableType
 	VariableType() {}
 	VariableType(const Type& _type)
 		: type(_type) {}
+	VariableType(const Type& _type, const std::string& _name)
+		: type(_type), class_name(_name) {}
 
+	// wtf is this??
+	// do I need?????
+	//
+	//
+	//
 	bool operator==(const Type& _type) const;
 	bool operator!=(const Type& _type) const;
 
 	bool operator==(const VariableType& _type) const;
 	bool operator!=(const VariableType& _type) const;
+};
+
+struct CheckVariable
+{
+	// a note about parameters:
+	//
+	// to perform type checking, parameters' types must be evaluated when the
+	// function is defined
+	//
+	// they are stored in the same array as normal variables, so the only
+	// difference is that they don't have a type: `types.empty()`
+	//
+	// their types are giving to them through the expressions they encounter,
+	// for example 'param + 5' would mean 'param' is an 'int'
+	//
+	// if a parameter still doesn't have a type at the end of the function,
+	// then it is given all the types
+	//
+	// once a parameter has types, it then behaves like a normal variable
+
+	std::string name;
+	std::vector<VariableType> types;
+};
+
+struct CheckFunction
+{
+	std::string name;
+	std::vector<std::vector<VariableType> > parameters;
+
+	// a note about 'return_values':
+	//
+	// if std::optional doesn't contain a value, then the function is waiting
+	// to be assigned return types (perhaps it's a recursive call)
+	//
+	// if std::optional does contain a value, but the vector is empty, then
+	// it is a void function
+
+	std::vector<VariableType> return_types;
+
+	bool is_void;
+	bool is_empty() const { return !is_void && return_types.empty(); };
+};
+
+struct CheckClass
+{
+	std::string name;
+
+	std::vector<CheckVariable> variables;
+	std::vector<CheckFunction> methods;
+};
+
+struct Expression
+{
+	const std::string file;
+	const int line;
+
+	ValueType type;
+
+	std::string data;
+
+	std::vector<std::shared_ptr<Expression> > extras;
+
+	std::shared_ptr<Expression> left;
+	std::shared_ptr<Expression> right;
 };
 
 struct Variable
@@ -122,10 +180,20 @@ struct Assignment
 	std::shared_ptr<Expression> value;
 };
 
+struct Scope
+{
+	Scope* upper_scope;
+
+	std::vector<Statement> statements;
+	std::vector<CheckVariable> check_variables;
+
+	Scope() = delete;
+};
+
 struct Conditional
 {
 	std::shared_ptr<Expression> condition;
-	std::vector<Statement> body;
+	Scope body;
 
 	bool is_else() const;
 };
@@ -140,7 +208,15 @@ struct FunctionDef
 	std::string name;
 	std::vector<std::string> parameters;
 
-	std::vector<Statement> body;
+	Scope body;
+
+	// a note about return_types:
+	//
+	// function return types have to be deduced when they are defined; this
+	// can be done by seeing the return types of the functions, or, if it's a
+	// recursive function, then the expressions in which the function is used
+	// in can also be used to determine the return value of the function
+
 	std::vector<VariableType> return_types;
 };
 
@@ -158,7 +234,7 @@ struct Return
 struct WhileLoop
 {
 	std::shared_ptr<Expression> condition;
-	std::vector<Statement> body;
+	Scope body;
 };
 
 struct ForLoop
@@ -166,7 +242,7 @@ struct ForLoop
 	std::string iterator_name;
 	std::shared_ptr<Expression> range;
 
-	std::vector<Statement> body;
+	Scope body;
 };
 
 struct Element

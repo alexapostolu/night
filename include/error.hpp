@@ -27,14 +27,20 @@ class BackError
 public:
 	BackError(const std::string& _file, const int _line, const std::string& _msg);
 
-	// for better error messages
 	/*
 	BackError(
+		const std::string& type,
+
 		const std::string& _file,
 		const int _line,
+
+		const int _start,
+		const int _end,
 		
 		const std::string& _desc,
-		const std::string& _note
+		const std::string& _note,
+
+		const std::string& _link = {}
 	);
 	*/
 
@@ -42,10 +48,7 @@ public:
 
 private:
 	std::string file;
-	int line;
-
-	// for better error messages
-	// const std::string note;
+	const int line;
 };
 
 #ifndef _DEBUG
@@ -54,8 +57,9 @@ private:
 								  << "github.com/dynamicsquid/night\n";														  \
                         exit(1)
 #else
+	#include <cassert>
+
 	// makes it easier for debugging purposes as it shows where exactly the
 	// error is thrown
-	#include <cassert>
 	#define BackError(file, line, msg) BackError(__FILE__, __LINE__, std::to_string(line) + ' ' + msg)
 #endif
