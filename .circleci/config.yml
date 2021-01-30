@@ -22,7 +22,7 @@ jobs:
           command: 'choco install mingw'
       - run:
           name: Compiling Code
-          command: 'g++ -std=c++17 -Wall -Werror -o night src/main.cpp'
+          command: 'g++ -std=c++17 -Wall -Werror -o night src/*.cpp src/front-end/*.cpp src/back-end/*.cpp'
       - run:
           name: Testing Code
           command: './night tests/test.night'
@@ -40,7 +40,7 @@ jobs:
           command: 'sudo apt-get update && sudo apt-get install -y gcc g++'
       - run:
           name: Compiling Code
-          command: 'g++ -std=c++17 -Wall -Werror -Wno-switch -o night src/night.cpp'
+          command: 'g++ -std=c++17 -Wall -Werror -o night src/main.cpp'
       - run:
           name: Testing Code
           command: './night tests/test.night'
