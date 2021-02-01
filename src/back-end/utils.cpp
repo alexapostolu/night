@@ -98,3 +98,20 @@ CheckVariable* night::get_variable(Scope& scope, const std::string& var_name)
 
 	return nullptr;
 }
+
+bool night::find_type(const std::vector<VariableType>& container, const VariableType& type)
+{
+	for (const VariableType& var_type : container)
+	{
+		if (var_type == type)
+			return true;
+	}
+
+	return false;
+}
+
+bool night::find_num_types(const std::vector<VariableType>& container)
+{
+	return find_type(container, VariableType::INT) ||
+		   find_type(container, VariableType::FLOAT);
+}

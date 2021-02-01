@@ -52,7 +52,7 @@ Interpreter::Interpreter(NightScope& current_scope, const std::vector<Statement>
 						throw BackError(file, line, "variable '" + night_variable->name + "' is of type number; it can only be assigned to numbers when using assignment operator '+='");
 
 					if (night_variable->value.type == VariableType::INT)
-						std::get<int>(night_variable->value.data) += assign_expr.get_num();
+						std::get<int>(night_variable->value.data) += (int)assign_expr.get_num();
 					else
 						std::get<float>(night_variable->value.data) += assign_expr.get_num();
 				}
@@ -70,7 +70,7 @@ Interpreter::Interpreter(NightScope& current_scope, const std::vector<Statement>
 					throw BackError(file, line, "assignment '-=' can only be used on numbers");
 
 				if (night_variable->value.type == VariableType::INT)
-					std::get<int>(night_variable->value.data) -= assign_expr.get_num();
+					std::get<int>(night_variable->value.data) -= (int)assign_expr.get_num();
 				else
 					std::get<float>(night_variable->value.data) -= assign_expr.get_num();
 
@@ -83,7 +83,7 @@ Interpreter::Interpreter(NightScope& current_scope, const std::vector<Statement>
 					throw BackError(file, line, "assignment '-=' can only be used on numbers");
 
 				if (night_variable->value.type == VariableType::INT)
-					std::get<int>(night_variable->value.data) *= assign_expr.get_num();
+					std::get<int>(night_variable->value.data) *= (int)assign_expr.get_num();
 				else
 					std::get<float>(night_variable->value.data) *= assign_expr.get_num();
 
@@ -92,13 +92,13 @@ Interpreter::Interpreter(NightScope& current_scope, const std::vector<Statement>
 			case '/': {
 				if (!night_variable->value.is_num())
 					throw BackError(file, line, "assignment '/=' can only be used on numbers");
-				if (!assign_expr.type.is_num())
+				if (!assign_expr.is_num())
 					throw BackError(file, line, "assignment '/=' can only be used on numbers");
 
 				if (night_variable->value.type == VariableType::INT)
-					std::get<int>(night_variable->value.data) *= assign_expr.get_num();
+					std::get<int>(night_variable->value.data) /= (int)assign_expr.get_num();
 				else
-					std::get<float>(night_variable->value.data) *= assign_expr.get_num();
+					std::get<float>(night_variable->value.data) /= assign_expr.get_num();
 
 				break;
 			}
@@ -336,9 +336,9 @@ NightData Interpreter::EvaluateExpression(NightScope& current_scope, const std::
 		const NightData value1 = EvaluateExpression(current_scope, node->left);
 		const NightData value2 = EvaluateExpression(current_scope, node->right);
 
-		if (!value1.type.is_num() && value1.type != VariableType::STR)
+		if (!value1.is_num() && value1.type != VariableType::STR)
 			throw BackError(file, line, "operator '+' can only be used on numbers or strings");
-		if (!value2.type.is_num() && value2.type != VariableType::STR)
+		if (!value2.is_num() && value2.type != VariableType::STR)
 			throw BackError(file, line, "operator '+' can only be used on numbers or strings");
 
 		if (value1.type == VariableType::STR || value2.type == VariableType::STR)
@@ -350,7 +350,7 @@ NightData Interpreter::EvaluateExpression(NightScope& current_scope, const std::
 		if (value1.type == VariableType::INT && value2.type == VariableType::INT)
 		{
 			return NightData{ VariableType::INT,
-				(int)value1.get_num() + (int)value2.get_num() };
+				std::get<int>(value1.data) + std::get<int>(value2.data) };
 		}
 		else
 		{
@@ -363,7 +363,7 @@ NightData Interpreter::EvaluateExpression(NightScope& current_scope, const std::
 		if (node->left == nullptr)
 		{
 			const NightData value = EvaluateExpression(current_scope, node->right);
-			if (!value.type.is_num())
+			if (!value.is_num())
 				throw BackError(file, line, "unary operator '-' can only be used on numbers");
 
 			return value.type == VariableType::INT
@@ -374,13 +374,13 @@ NightData Interpreter::EvaluateExpression(NightScope& current_scope, const std::
 		const NightData value1 = EvaluateExpression(current_scope, node->left);
 		const NightData value2 = EvaluateExpression(current_scope, node->right);
 
-		if (!value1.type.is_num() || !value2.type.is_num())
+		if (!value1.is_num() || !value2.is_num())
 			throw BackError(file, line, "binary operator '-' can only be used on numbers");
 
 		if (value1.type == VariableType::INT && value2.type == VariableType::INT)
 		{
 			return NightData{ VariableType::INT,
-				std::get<int>(value1.data) - std::get<int>(value1.data) };
+				std::get<int>(value1.data) - std::get<int>(value2.data) };
 		}
 		else
 		{
@@ -393,18 +393,18 @@ NightData Interpreter::EvaluateExpression(NightScope& current_scope, const std::
 		const NightData value1 = EvaluateExpression(current_scope, node->left);
 		const NightData value2 = EvaluateExpression(current_scope, node->right);
 
-		if (!value1.type.is_num() || !value2.type.is_num())
+		if (!value1.is_num() || !value2.is_num())
 			throw BackError(file, line, "binary operator '*' can only be used on numbers");
 
 		if (value1.type == VariableType::INT && value2.type == VariableType::INT)
 		{
 			return NightData{ VariableType::INT,
-				std::get<int>(value1.data) * std::get<int>(value1.data) };
+				std::get<int>(value1.data) * std::get<int>(value2.data) };
 		}
 		else
 		{
 			return NightData{ VariableType::FLOAT,
-				value1.get_num() * value1.get_num() };
+				value1.get_num() * value2.get_num() };
 		}
 	}
 	if (node->data == "/")
@@ -412,18 +412,18 @@ NightData Interpreter::EvaluateExpression(NightScope& current_scope, const std::
 		const NightData value1 = EvaluateExpression(current_scope, node->left);
 		const NightData value2 = EvaluateExpression(current_scope, node->right);
 
-		if (!value1.type.is_num() || !value2.type.is_num())
+		if (!value1.is_num() || !value2.is_num())
 			throw BackError(file, line, "binary operator '/' can only be used on numbers");
 
 		if (value1.type == VariableType::INT && value2.type == VariableType::INT)
 		{
 			return NightData{ VariableType::INT,
-				std::get<int>(value1.data) / std::get<int>(value1.data) };
+				std::get<int>(value1.data) / std::get<int>(value2.data) };
 		}
 		else
 		{
 			return NightData{ VariableType::FLOAT,
-				value1.get_num() / value1.get_num() };
+				value1.get_num() / value2.get_num() };
 		}
 	}
 	if (node->data == "%")
@@ -442,7 +442,7 @@ NightData Interpreter::EvaluateExpression(NightScope& current_scope, const std::
 		const NightData value1 = EvaluateExpression(current_scope, node->left);
 		const NightData value2 = EvaluateExpression(current_scope, node->right);
 
-		if (!value1.type.is_num() || !value2.type.is_num())
+		if (!value1.is_num() || !value2.is_num())
 			throw BackError(file, line, "binary operator '>' can only be used on numbers");
 
 		return NightData{ VariableType::BOOL, value1.get_num() > value2.get_num() };
@@ -452,7 +452,7 @@ NightData Interpreter::EvaluateExpression(NightScope& current_scope, const std::
 		const NightData value1 = EvaluateExpression(current_scope, node->left);
 		const NightData value2 = EvaluateExpression(current_scope, node->right);
 
-		if (!value1.type.is_num() || !value2.type.is_num())
+		if (!value1.is_num() || !value2.is_num())
 			throw BackError(file, line, "binary operator '<' can only be used on numbers");
 
 		return NightData{ VariableType::BOOL, value1.get_num() < value2.get_num() };
@@ -462,7 +462,7 @@ NightData Interpreter::EvaluateExpression(NightScope& current_scope, const std::
 		const NightData value1 = EvaluateExpression(current_scope, node->left);
 		const NightData value2 = EvaluateExpression(current_scope, node->right);
 
-		if (!value1.type.is_num() || !value2.type.is_num())
+		if (!value1.is_num() || !value2.is_num())
 			throw BackError(file, line, "binary operator '>=' can only be used on numbers");
 
 		return NightData{ VariableType::BOOL, value1.get_num() >= value2.get_num() };
@@ -472,7 +472,7 @@ NightData Interpreter::EvaluateExpression(NightScope& current_scope, const std::
 		const NightData value1 = EvaluateExpression(current_scope, node->left);
 		const NightData value2 = EvaluateExpression(current_scope, node->right);
 
-		if (!value1.type.is_num() || !value2.type.is_num())
+		if (!value1.is_num() || !value2.is_num())
 			throw BackError(file, line, "binary operator '<=' can only be used on numbers");
 
 		return NightData{ VariableType::BOOL, value1.get_num() <= value2.get_num() };
@@ -506,7 +506,7 @@ NightData Interpreter::EvaluateExpression(NightScope& current_scope, const std::
 			throw BackError(file, line, "binary operator '&&' can only be used on booleans");
 
 		return NightData{ VariableType::BOOL,
-			std::get<bool>(value1.data) || std::get<bool>(value2.data) };
+			std::get<bool>(value1.data) && std::get<bool>(value2.data) };
 	}
 	if (node->data == "==")
 	{
@@ -548,7 +548,7 @@ NightData Interpreter::EvaluateExpression(NightScope& current_scope, const std::
 
 		if (array.type == VariableType::STR)
 		{
-			if (index < 0 || index >= std::get<std::string>(array.data).length())
+			if (index < 0 || index >= (int)std::get<std::string>(array.data).length())
 				throw BackError(file, line, "string subscript out of range");
 
 			return NightData{ VariableType::STR,
@@ -556,7 +556,7 @@ NightData Interpreter::EvaluateExpression(NightScope& current_scope, const std::
 		}
 		else
 		{
-			if (index < 0 || index >= array.extras.size())
+			if (index < 0 || index >= (int)array.extras.size())
 				throw BackError(file, line, "array subscript is out of range");
 
 			return array.extras[(std::size_t)index];

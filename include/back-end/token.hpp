@@ -90,11 +90,8 @@ struct VariableType
 	VariableType(const Type& _type, const std::string& _name)
 		: type(_type), class_name(_name) {}
 
-	// wtf is this??
-	// do I need?????
-	//
-	//
-	//
+	std::string to_str() const;
+
 	bool operator==(const Type& _type) const;
 	bool operator!=(const Type& _type) const;
 

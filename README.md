@@ -17,7 +17,7 @@ What makes Night different from other dynamically typed languages is its compile
 
 Night comes in two parts, the interpreter (this repo) and [Dusk](https://github.com/firefish111/dusk) (the package manager). You can find easy installation and setup, as well as a tutorial, for both on the [Night website](https://night-website.dynamicsquid.repl.co/index.html).
 
-And if you wish, you can build Night from source as well.
+And if you like, you can build Night from source as well.
 
 ### Building from Source
 
@@ -104,8 +104,7 @@ def add(x, y)
 
 if (false)
 {
-    add(2, 3, 7) # error! too many parameters in function call
-    a = 5 # error! variable 'a' has not been defined yet
+    set flag = true && add(2, 3) # error! type mismatch
 }
 ```
 

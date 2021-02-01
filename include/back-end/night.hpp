@@ -53,26 +53,9 @@ struct NightScope
 {
 	NightScope* upper_scope;
 	std::vector<NightVariable> night_variables;
-
-	NightScope() = delete;
 };
 
 // displays standard output
 void NightPrint(const NightData& value);
 
-bool compare_array(const NightData& arr1, const NightData& arr2)
-{
-	if (arr1.extras.size() != arr2.extras.size())
-		return false;
-
-	for (std::size_t a = 0; a < arr1.extras.size(); ++a)
-	{
-		if (arr1.extras[a].type != arr2.extras[a].type)
-			return false;
-		if (arr1.extras[a].type == VariableType::ARRAY && !compare_array(arr1.extras[a], arr2.extras[a]))
-			return false;
-
-	}
-
-	return true;
-}
+bool compare_array(const NightData& arr1, const NightData& arr2);

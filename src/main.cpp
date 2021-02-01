@@ -11,10 +11,10 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 	catch (const Error& e) {
-		std::cout << e.what() << '\n';
+		std::cout << e.what();
 	}
 	catch (const std::exception& e) {
-		std::cout << "Uh oh! We've come across an unexpected error:\n\n\t" << e.what() << "\n\n"
+		std::cout << "Uh oh! We've come across an unexpected error:\n\n    " << e.what() << "\n\n"
 				  << "Please submit an issue on the GitHub page:\ngithub.com/dynamicsquid/night\n";
 	}
 

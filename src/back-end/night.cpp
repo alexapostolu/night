@@ -30,6 +30,7 @@ std::string NightData::to_str() const
         return std::get<std::string>(data);
     default:
         assert(false);
+        return {};
     }
 }
 
@@ -55,4 +56,20 @@ void NightPrint(const NightData& value)
     }
 
     std::cout.flush();
+}
+
+bool compare_array(const NightData& arr1, const NightData& arr2)
+{
+    if (arr1.extras.size() != arr2.extras.size())
+        return false;
+
+    for (std::size_t a = 0; a < arr1.extras.size(); ++a)
+    {
+        if (arr1.extras[a].type != arr2.extras[a].type)
+            return false;
+        if (arr1.extras[a].type == VariableType::ARRAY && !compare_array(arr1.extras[a], arr2.extras[a]))
+            return false;
+    }
+
+    return true;
 }

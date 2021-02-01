@@ -17,7 +17,7 @@ Parser::Parser(Scope& current_scope, const std::vector<Token>& _tokens)
 	if (tokens.size() >= 1 && tokens[0].type == TokenType::SET)
 	{
 		if (tokens.size() == 1 || tokens[1].type != TokenType::VAR)
-			throw BackError(file, line, "expected variable name after keyword 'set'");
+			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "expected variable name after 'set' keyword", "variable initializations are required to be in this format: 'set {variable name} = {expression}'");
 		if (tokens.size() == 2 || tokens[2].type != TokenType::ASSIGN)
 			throw BackError(file, line, "expected assignment symbol '=' after variable name");
 		if (tokens.size() == 3)
@@ -55,10 +55,10 @@ Parser::Parser(Scope& current_scope, const std::vector<Token>& _tokens)
 
 		if (!check_variable->types.empty())
 		{
-			if (tokens[1].data == "+=" && !night::find_type(check_variable->types, VariableType::INT, VariableType::FLOAT) &&
+			if (tokens[1].data == "+=" && !night::find_num_types(check_variable->types) &&
 				!night::find_type(check_variable->types, VariableType::STR))
 				throw BackError(file, line, "variable '" + check_variable->name + "' does not contain type 'num' or 'str'; assignment '+=' requires variables to contain type 'num' or 'str'");
-			if (tokens[1].data != "=" && tokens[1].data != "+=" && !night::find_type(check_variable->types, VariableType::INT, VariableType::FLOAT))
+			if (tokens[1].data != "=" && tokens[1].data != "+=" && !night::find_num_types(check_variable->types))
 				throw BackError(file, line, "variable '" + check_variable->name + "' does not contain type 'num'; assignment '" + tokens[1].data + "' requires variables to contain type 'num'");
 		}
 
@@ -67,10 +67,10 @@ Parser::Parser(Scope& current_scope, const std::vector<Token>& _tokens)
 			current_scope, 2, tokens.size(), expression_types
 		);
 
-		if (tokens[1].data != "=" && tokens[1].data != "+=" && !night::find_type(expression_types, VariableType::INT, VariableType::FLOAT) &&
+		if (tokens[1].data != "=" && tokens[1].data != "+=" && !night::find_num_types(expression_types) &&
 			!night::find_type(expression_types, VariableType::STR))
 			throw BackError(file, line, "expression does not contain type 'num' or 'str'; assignment '+=' requires expressions to contain type 'num' or 'str'");
-		if (tokens[1].data != "=" && tokens[1].data == "+=" && !night::find_type(expression_types, VariableType::INT, VariableType::FLOAT))
+		if (tokens[1].data != "=" && tokens[1].data == "+=" && !night::find_num_types(expression_types))
 			throw BackError(file, line, "expression does not contain type 'num'; assignment '" + tokens[1].data + "' requires expressions to contain type 'num'");
 
 		check_variable->types.insert(check_variable->types.end(),
@@ -238,58 +238,78 @@ Parser::Parser(Scope& current_scope, const std::vector<Token>& _tokens)
 	}
 	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VAR && tokens[1].type == TokenType::OPEN_BRACKET)
 	{
-		if (tokens.size() == 2 || (tokens.size() == 3 && tokens[2].type != TokenType::CLOSE_BRACKET))
-			throw BackError(file, line, "missing closing bracket");
-
-		const CheckFunction* check_function = night::get_container(check_functions, tokens[0].data);
-		if (check_function == nullptr)
-			throw BackError(file, line, "function " + tokens[0].data + "' is not defined");
-
-		// function parameters
+		// extracting types and expressions for arguments
 
 		std::vector<std::vector<VariableType> >   argument_types;
 		std::vector<std::shared_ptr<Expression> > argument_expressions;
 
-		if (tokens[2].type != TokenType::CLOSE_BRACKET)
+		int open_bracket_index = 0;
+		std::size_t a = 1;
+		for (std::size_t start = 2; a < tokens.size(); ++a)
 		{
-			for (std::size_t start = 2, a = 2, openBracketIndex = 0; a < tokens.size(); ++a)
+			if (tokens[a].type == TokenType::OPEN_BRACKET)
+				open_bracket_index++;
+			else if (tokens[a].type == TokenType::CLOSE_BRACKET)
+				open_bracket_index--;
+
+			if ((tokens[a].type == TokenType::COMMA && open_bracket_index == 1) ||
+				(tokens[a].type == TokenType::CLOSE_BRACKET && open_bracket_index == 0))
 			{
-				if (tokens[a].type == TokenType::OPEN_BRACKET)
-					openBracketIndex++;
-				else if (tokens[a].type == TokenType::CLOSE_BRACKET)
-					openBracketIndex--;
+				if (a == 2 && tokens[a].type == TokenType::CLOSE_BRACKET)
+					break;
 
-				if ((tokens[a].type == TokenType::COMMA && openBracketIndex == 0) ||
-					(tokens[a].type == TokenType::CLOSE_BRACKET && openBracketIndex == -1))
-				{
-					if (tokens[a].type == TokenType::CLOSE_BRACKET && a < tokens.size() - 1)
-						throw BackError(file, line, "unexpected tokens after function call; each statement must be on it's own line");
+				argument_types.push_back(std::vector<VariableType>());
+				argument_expressions.push_back(
+					ParseTokenExpression(current_scope, start, a, argument_types.back())
+				);
 
-					std::vector<VariableType> get_argument_types;
+				start = a + 1;
 
-					argument_expressions.push_back(
-						ParseTokenExpression(current_scope, start, a, get_argument_types)
-					);
-
-					argument_types.push_back(get_argument_types);
-
-					start = a + 1;
-					continue;
-				}
+				if (tokens[a].type == TokenType::CLOSE_BRACKET)
+					break;
 			}
 		}
 
-		// error checking arguments with function parameters
+		if (open_bracket_index < 0)
+			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "missing opening bracket in function call", std::to_string(open_bracket_index) + " closing bracket(s) do(es) not have an associated opening bracket");
+		if (open_bracket_index > 0)
+			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "missing closing bracket in function call", std::to_string(open_bracket_index) + " opening bracket(s) do(es) not have an associated closing bracket");
+	
+		if (a < tokens.size() - 1)
+			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "unexpected token(s) after statement function call", "each statement is required to be on its own line");
+
+		// fetching check function
+
+		const CheckFunction* check_function = night::get_container(check_functions, tokens[0].data);
+		if (check_function == nullptr)
+			throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "function '" + tokens[0].data + "' is undefined", "functions are required to be defined before they are called");
+
+		// definition and type checking arguments with parameters
 
 		if (argument_types.size() != check_function->parameters.size())
-			throw BackError(file, line, "function '" + tokens[0].data + "' is called with '" + std::to_string(argument_types.size()) + "' arguments but is defined with '" + std::to_string(check_function->parameters.size()) + "' parameters");
+			throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "function '" + tokens[0].data + "' does not have the correct number of arguments", "the function was defined with '" + std::to_string(check_function->parameters.size()) + "' parameter(s), but is called with '" + std::to_string(argument_types.size()) + "' argument(s)");
 
-		for (std::size_t a = 0; a < check_function->parameters.size(); ++a)
+		for (std::size_t a = 0; a < argument_types.size(); ++a)
 		{
-			for (const VariableType& parameterType : argument_types[a])
+			bool match = false;
+			for (std::size_t b = 0; b < check_function->parameters[a].size() && !match; ++b)
 			{
-				if (!night::find_type(check_function->parameters[a], parameterType))
-					throw BackError(file, line, "argument number '" + std::to_string(a + 1) + "' for function call '" + tokens[0].data + "' cannot be used because of a type mismatch");
+				if (night::find_type(argument_types[a], check_function->parameters[a][b]))
+					match = true;
+			}
+
+			if (!match)
+			{
+				std::string required_types = "the argument can only be of type(s): ";
+				for (int b = 0; b < (int)check_function->parameters[a].size() - 1; ++b)
+					required_types += "'" + check_function->parameters[a][b].to_str() + "', ";
+
+				if (check_function->parameters[a].size() > 1)
+					required_types += "and ";
+
+				required_types += "'" + check_function->parameters[a].back().to_str() + "'";
+
+				throw CompileError(__FILE__, __LINE__, CompileError::type_mismatch, file, line, "argument number '" + std::to_string(a + 1) + "' for function call '" + tokens[0].data + "' is not the required type", required_types);
 			}
 		}
 
@@ -366,6 +386,7 @@ Parser::Parser(Scope& current_scope, const std::vector<Token>& _tokens)
 		const std::vector<Value> range_values = TokensToValues(std::vector<Token>(tokens.begin() + 4, tokens.begin() + closeBracketIndex));
 		const std::shared_ptr<Expression> range_expr = ValuesToExpression(range_values);
 
+		// also makes sure range is type array or string
 		const std::vector<VariableType> range_types = TypeCheckExpression(current_scope, range_expr, "", {}, true);
 
 		current_scope.check_variables.push_back(CheckVariable{ tokens[2].data, range_types });
@@ -413,7 +434,7 @@ Parser::Parser(Scope& current_scope, const std::vector<Token>& _tokens)
 			current_scope, 2, assignmentIndex - 1, elemType
 		);
 
-		if (!night::find_type(elemType, VariableType::INT, VariableType::FLOAT))
+		if (!night::find_num_types(elemType))
 			throw BackError(file, line, "index for array '" + tokens[0].data + "' is required to be of type 'int'");
 
 		// extract expression
@@ -525,8 +546,6 @@ std::vector<Value> Parser::TokensToValues(const std::vector<Token>& tokens)
 
 						if (tokens[a].type == TokenType::CLOSE_BRACKET)
 							break;
-
-						continue;
 					}
 				}
 
@@ -809,10 +828,14 @@ std::vector<VariableType> Parser::TypeCheckExpression(Scope& current_scope, cons
 				// should return each individual element types, but that can't be
 				// deduced from check_variable, so returning all_types for now
 				//
-				return all_types;
+
+				std::vector<VariableType> iterator_types(all_types);
+				iterator_types.push_back(VariableType::CLASS);
+
+				return iterator_types;
 			}
 
-			if (check_variable->types.empty())
+			if (check_variable->types.empty()) // is a parameter
 				check_variable->types = required_types;
 
 			return check_variable->types;
@@ -851,7 +874,7 @@ std::vector<VariableType> Parser::TypeCheckExpression(Scope& current_scope, cons
 			{
 				check_function->return_types = required_types;
 			}
-			else
+			else if (!required_types.empty())
 			{
 				bool found_type = false;
 				for (std::size_t a = 0; a < required_types.size() && !found_type; ++a)
@@ -871,8 +894,10 @@ std::vector<VariableType> Parser::TypeCheckExpression(Scope& current_scope, cons
 		{
 		case ValueType::BOOL:
 			return { VariableType::BOOL };
-		case ValueType::NUM:
-			return { VariableType::NUM };
+		case ValueType::INT:
+			return { VariableType::INT };
+		case ValueType::FLOAT:
+			return { VariableType::FLOAT };
 		case ValueType::STR:
 			return { VariableType::STR };
 		default:
@@ -884,12 +909,14 @@ std::vector<VariableType> Parser::TypeCheckExpression(Scope& current_scope, cons
 
 	if (node->data == "+")
 	{
-		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::NUM, VariableType::STR });
-		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::NUM, VariableType::STR });
+		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::INT, VariableType::FLOAT, VariableType::STR });
+		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::INT, VariableType::FLOAT, VariableType::STR });
 
 		std::vector<VariableType> add_types;
-		if (night::find_type(left, VariableType::NUM) && night::find_type(right, VariableType::NUM))
-			add_types.push_back(VariableType::NUM);
+		if (night::find_type(left, VariableType::INT) && night::find_type(right, VariableType::INT))
+			add_types.push_back(VariableType::INT);
+		if (night::find_type(left, VariableType::FLOAT) && night::find_type(right, VariableType::FLOAT))
+			add_types.push_back(VariableType::FLOAT);
 		if (night::find_type(left, VariableType::STR) || night::find_type(right, VariableType::STR))
 			add_types.push_back(VariableType::STR);
 
@@ -903,90 +930,93 @@ std::vector<VariableType> Parser::TypeCheckExpression(Scope& current_scope, cons
 		// unary operator (negative)
 		if (node->left == nullptr)
 		{
-			const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::NUM });
+			const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::INT, VariableType::FLOAT });
 
-			if (!night::find_type(right, VariableType::NUM))
+			if (!night::find_num_types(right))
 				throw BackError(file, line, "unary operator '" + node->data + "' requires to be used on a type of 'num'");
 
-			return { VariableType::NUM };
+			return { VariableType::INT, VariableType::FLOAT };
 		}
 
 		// binary operator (minus)
 
-		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::NUM });
-		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::NUM });
+		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::INT, VariableType::FLOAT });
+		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::INT, VariableType::FLOAT });
 
-		if (!night::find_type(left, VariableType::NUM) || !night::find_type(right, VariableType::NUM))
+		if (!night::find_num_types(left) || !night::find_num_types(right))
 			throw BackError(file, line, "binary operator '" + node->data + "' can only be used on two numbers");
 		
-		return { VariableType::NUM };
+		return { VariableType::INT, VariableType::FLOAT };
 	}
 	if (node->data == "*")
 	{
-		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::NUM });
-		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::NUM });
 
-		if (!night::find_type(left, VariableType::NUM) || !night::find_type(right, VariableType::NUM))
+		const std::vector<VariableType> left  = TypeCheckExpression(
+			current_scope, node->left,  node->data, { VariableType::INT, VariableType::FLOAT });
+		const std::vector<VariableType> right = TypeCheckExpression(
+			current_scope, node->right, node->data, { VariableType::INT, VariableType::FLOAT });
+
+		if (!night::find_num_types(left) || !night::find_num_types(right))
 			throw BackError(file, line, "binary operator '" + node->data + "' can only be used on two numbers");
 		
-		return { VariableType::NUM };
+		return { VariableType::INT, VariableType::FLOAT };
 	}
 	if (node->data == "/")
 	{
-		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::NUM });
-		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::NUM });
+		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::INT, VariableType::FLOAT });
+		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::INT, VariableType::FLOAT });
 
-		if (!night::find_type(left, VariableType::NUM) || !night::find_type(right, VariableType::NUM))
+		if (!night::find_num_types(left) || !night::find_num_types(right))
 			throw BackError(file, line, "binary operator '" + node->data + "' can only be used on two numbers");
 		
-		return { VariableType::NUM };
+		return { VariableType::INT, VariableType::FLOAT };
 	}
 	if (node->data == "%")
 	{
-		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::NUM });
-		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::NUM });
+		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::INT });
+		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::INT });
 
-		if (!night::find_type(left, VariableType::NUM) || !night::find_type(right, VariableType::NUM))
-			throw BackError(file, line, "binary operator '" + node->data + "' can only be used on two numbers");
+		if (!night::find_num_types(left) || !night::find_num_types(right))
+			throw BackError(file, line, "binary operator '" + node->data + "' can only be used on two integers");
 
-		return { VariableType::NUM };
+		return { VariableType::INT };
 	}
 	if (node->data == ">")
 	{
-		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left, node->data, { VariableType::NUM });
-		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::NUM });
+		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left, node->data, { VariableType::INT, VariableType::FLOAT });
+		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::INT, VariableType::FLOAT });
 
-		if (!night::find_type(left, VariableType::NUM) || !night::find_type(right, VariableType::NUM))
+		if (!night::find_num_types(left) || !night::find_num_types(right))
 			throw BackError(file, line, "binary operator '" + node->data + "' can only be used on two values of type 'num'");
 
 		return { VariableType::BOOL };
 	}
 	if (node->data == "<")
 	{
-		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::NUM });
-		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::NUM });
+		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::INT, VariableType::FLOAT });
+		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::INT, VariableType::FLOAT });
 
-		if (!night::find_type(left, VariableType::NUM) || !night::find_type(right, VariableType::NUM))
+		if (!night::find_num_types(left) || !night::find_num_types(right))
 			throw BackError(file, line, "binary operator '" + node->data + "' can only be used on two values of type 'num'");
 
 		return { VariableType::BOOL };
 	}
 	if (node->data == ">=")
 	{
-		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::NUM });
-		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::NUM });
+		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::INT, VariableType::FLOAT });
+		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::INT, VariableType::FLOAT });
 
-		if (!night::find_type(left, VariableType::NUM) || !night::find_type(right, VariableType::NUM))
+		if (!night::find_num_types(left) || !night::find_num_types(right))
 			throw BackError(file, line, "binary operator '" + node->data + "' can only be used on two values of type 'bool'");
 
 		return { VariableType::BOOL };
 	}
 	if (node->data == "<=")
 	{
-		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::NUM });
-		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::NUM });
+		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::INT, VariableType::FLOAT });
+		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::INT, VariableType::FLOAT });
 
-		if (!night::find_type(left, VariableType::NUM) || !night::find_type(right, VariableType::NUM))
+		if (!night::find_num_types(left) || !night::find_num_types(right))
 			throw BackError(file, line, "binary operator '" + node->data + "' can only be used on two values of type 'bool'");
 
 		return { VariableType::BOOL };
@@ -1051,11 +1081,11 @@ std::vector<VariableType> Parser::TypeCheckExpression(Scope& current_scope, cons
 		// get individual array elements
 		bool giae = false;
 		const std::vector<VariableType> array_types = TypeCheckExpression(current_scope, node->right,     node->data, { VariableType::ARRAY }, &giae);
-		const std::vector<VariableType> index_types = TypeCheckExpression(current_scope, node->extras[0], node->data, { VariableType::NUM });
+		const std::vector<VariableType> index_types = TypeCheckExpression(current_scope, node->extras[0], node->data, { VariableType::INT });
 
 		if (!giae)
 			throw BackError(file, line, "operator '" + node->data + "' requires to be used on a string or array");
-		if (!night::find_type(index_types, VariableType::NUM))
+		if (!night::find_num_types(index_types))
 			throw BackError(file, line, "operator '" + node->data + "' requires subscript to be type 'num'");
  
 		return array_types;
@@ -1171,7 +1201,7 @@ bool Parser::in_function = false;
 std::vector<VariableType> Parser::return_types;
 
 const std::vector<VariableType> Parser::all_types{
-	VariableType::BOOL, VariableType::NUM,
+	VariableType::BOOL, VariableType::INT, VariableType::FLOAT,
 	VariableType::STR, VariableType::ARRAY
 };
 
@@ -1184,18 +1214,18 @@ std::vector<CheckClass>    Parser::check_classes{
 		"array",
 		std::vector<CheckVariable>(),
 		std::vector<CheckFunction>{
-			{ "len",  {},                                                 std::vector<VariableType>{ VariableType::NUM } },
+			{ "len",  {},                                                 std::vector<VariableType>{ VariableType::INT } },
 			{ "push", { { VariableType::ARRAY } },                        std::vector<VariableType>()			         },
-			{ "push", { { VariableType::NUM }, { VariableType::ARRAY } }, std::vector<VariableType>()					 },
+			{ "push", { { VariableType::INT }, { VariableType::ARRAY } }, std::vector<VariableType>()					 },
 			{ "pop",  {},                                                 std::vector<VariableType>()					 },
-			{ "pop",  { { VariableType::NUM } },                          std::vector<VariableType>()					 }
+			{ "pop",  { { VariableType::INT } },                          std::vector<VariableType>()					 }
 		}
 	},
 	CheckClass{
 		"string",
 		std::vector<CheckVariable>(),
 		std::vector<CheckFunction>{
-			{ "len",  {}, std::vector<VariableType>{ VariableType::NUM } }
+			{ "len",  {}, std::vector<VariableType>{ VariableType::INT } }
 		}
 	}
 };

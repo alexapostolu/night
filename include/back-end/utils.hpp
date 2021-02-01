@@ -1,9 +1,10 @@
 #pragma once
 
 #include "token.hpp"
-#include "../error.hpp"
 #include "night.hpp"
+#include "../error.hpp"
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -32,21 +33,8 @@ void AdvanceToCloseBracket(const std::vector<Unit>& units,
 
 namespace night {
 
-// finds object in array using its name attribute
-// returns object's address if found, otherwise returns NULL
-template <typename T>
-T* get_container(std::vector<T>& container, const std::string& name)
-{
-	for (T& object : container)
-	{
-		if (name == object.name)
-			return &object;
-	}
-
-	return nullptr;
-}
-
-// finds element in array
+// finds object in array using its 'name' attribute,
+// if found, returns 'true', otherwise returns 'false'
 template <typename T>
 bool find_container(const std::vector<T>& container, const std::string& name)
 {
@@ -59,44 +47,48 @@ bool find_container(const std::vector<T>& container, const std::string& name)
 	return false;
 }
 
+// finds object in array using its 'name' attribute,
+// if found, returns its address, otherwise returns 'nullptr'
+template <typename T>
+T* get_container(std::vector<T>& container, const std::string& name)
+{
+	for (T& object : container)
+	{
+		if (name == object.name)
+			return &object;
+	}
+
+	return nullptr;
+}
+
 bool find_variable(
 	const Scope& scope,
 	const std::string& name
 );
 
-// since the implementation is the same, make this into a template?
-const CheckVariable* get_variable(
-	const Scope& scope,
-	const std::string& var_name
-);
-
-// do I need dis?
-//
-//
-//
-//
-//
-//
 CheckVariable* get_variable(
 	Scope& scope,
 	const std::string& var_name
 );
 
-template <typename Type, typename... Types>
-bool find_type(const std::vector<VariableType>& container, Type type, Types... types)
-{
-	for (const VariableType& var_type : container)
-	{
-		if (var_type == type && type == VariableType::CLASS && var_type.class_name == type.class_name)
-			return true;
-	}
+const CheckVariable* get_variable(
+	const Scope& scope,
+	const std::string& var_name
+);
 
-	return find_type(container, types);
-}
+bool find_type(
+	const std::vector<VariableType>& container,
+	const VariableType& type
+);
 
-bool find_type(const std::vector<VariableType>& container) { return false; }
+bool find_num_types(
+	const std::vector<VariableType>& container
+);
 
-NightVariable* get_variable(NightScope& scope, const std::string& var_name);
+NightVariable* get_variable(
+	NightScope& scope,
+	const std::string& var_name
+);
 
 } // namespace night
 
