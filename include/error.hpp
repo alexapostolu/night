@@ -1,12 +1,26 @@
 #pragma once
 
 #include <iostream>
+#include <stdexcept>
 #include <string>
+
+#ifndef _DEBUG
+	#undef  assert
+	#define assert(con) std::cout << "Uh oh! Something unexpected has happened! Please submit an issue on the GitHub page:\n" \
+								  << "github.com/dynamicsquid/night\n";														  \
+                        exit(1)
+#else
+	#include <cassert>
+#endif
 
 class Error
 {
 public:
 	virtual std::string what() const = 0;
+
+	static std::string UnexpectedError(
+		const std::exception& e
+	);
 
 protected:
 	std::string msg;
@@ -35,6 +49,7 @@ public:
 
 public:
 	static const std::string invalid_syntax;
+	static const std::string invalid_grammar;
 	static const std::string definition_error;
 	static const std::string type_mismatch;
 
@@ -52,37 +67,41 @@ private:
 	std::string link;
 };
 
-class FrontError
+class RuntimeError
 	: public Error
 {
 public:
-	FrontError(const std::string& _msg);
+	RuntimeError(
+		const std::string& debug_file,
+		const int debug_line,
+
+		const std::string& type,
+
+		const std::string& _file,
+		const int _line,
+
+		const std::string& _desc,
+		const std::string& _note,
+
+		const std::string& _link = {}
+	);
 
 	std::string what() const;
-};
 
-class BackError
-	: public Error
-{
 public:
-	BackError(const std::string& _file, const int _line, const std::string& _msg);
-
-	std::string what() const;
+	static const std::string invalid_expression;
+	static const std::string type_mismatch;
 
 private:
+	std::string type;
+
 	std::string file;
-	const int line;
+	int line;
+
+	std::string code_line;
+
+	std::string desc;
+	std::string note;
+
+	std::string link;
 };
-
-#ifndef _DEBUG
-	#undef  assert
-	#define assert(con) std::cout << "Uh oh! Something unexpected has happened! Please submit an issue on the GitHub page:\n" \
-								  << "github.com/dynamicsquid/night\n";														  \
-                        exit(1)
-#else
-	#include <cassert>
-
-	// makes it easier for debugging purposes as it shows where exactly the
-	// error is thrown
-	#define BackError(file, line, msg) BackError(__FILE__, __LINE__, std::to_string(line) + ' ' + msg)
-#endif

@@ -31,66 +31,15 @@ std::vector<std::vector<Token> > SplitCode(const std::vector<Token>& tokens)
 	return code;
 }
 
-bool night::find_variable(const Scope& scope, const std::string& name)
+NightVariable* night::get_variable(const std::shared_ptr<NightScope>& scope, const std::string& variable_name)
 {
-	const Scope* current_scope = &scope;
-	while (current_scope != nullptr)
-	{
-		for (const CheckVariable& variable : current_scope->check_variables)
-		{
-			if (name == variable.name)
-				return true;
-		}
-
-		current_scope = current_scope->upper_scope;
-	}
-
-	return false;
-}
-
-NightVariable* night::get_variable(NightScope& scope, const std::string& var_name)
-{
-	NightScope* current_scope = &scope;
+	NightScope* current_scope = scope.get();
 	while (current_scope != nullptr)
 	{
 		for (NightVariable& night_var : current_scope->night_variables)
 		{
-			if (var_name == night_var.name)
+			if (variable_name == night_var.name)
 				return &night_var;
-		}
-
-		current_scope = current_scope->upper_scope;
-	}
-
-	return nullptr;
-}
-
-const CheckVariable* night::get_variable(const Scope& scope, const std::string& var_name)
-{
-	const Scope* current_scope = &scope;
-	while (current_scope != nullptr)
-	{
-		for (const CheckVariable& check_var : current_scope->check_variables)
-		{
-			if (var_name == check_var.name)
-				return &check_var;
-		}
-
-		current_scope = current_scope->upper_scope;
-	}
-
-	return nullptr;
-}
-
-CheckVariable* night::get_variable(Scope& scope, const std::string& var_name)
-{
-	Scope* current_scope = &scope;
-	while (current_scope != nullptr)
-	{
-		for (CheckVariable& check_var : current_scope->check_variables)
-		{
-			if (var_name == check_var.name)
-				return &check_var;
 		}
 
 		current_scope = current_scope->upper_scope;
@@ -114,4 +63,18 @@ bool night::find_num_types(const std::vector<VariableType>& container)
 {
 	return find_type(container, VariableType::INT) ||
 		   find_type(container, VariableType::FLOAT);
+}
+
+std::string get_var_types_as_str(const std::vector<VariableType>& var_types)
+{
+	std::string str_types = "";
+	for (int a = 0; a < var_types.size() - 1; ++a)
+		str_types += "'" + var_types[a].to_str() + "', ";
+
+	if (var_types.size() > 1)
+		str_types += "and ";
+
+	str_types += "'" + var_types.back().to_str() + "'";
+
+	return str_types;
 }

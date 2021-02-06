@@ -49,7 +49,7 @@ Interpreter::Interpreter(NightScope& current_scope, const std::vector<Statement>
 				else if (night_variable->value.is_num())
 				{
 					if (!assign_expr.is_num())
-						throw BackError(file, line, "variable '" + night_variable->name + "' is of type number; it can only be assigned to numbers when using assignment operator '+='");
+						throw RuntimeError(__FILE__, __LINE__, RuntimeError::type_mismatch, file, line, "expression can not be used with the operator '+='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, if the variable is type 'int' or 'float', then the operator '+=' can only assign expressions of type 'int' or 'float'");
 
 					if (night_variable->value.type == VariableType::INT)
 						std::get<int>(night_variable->value.data) += (int)assign_expr.get_num();
@@ -58,16 +58,16 @@ Interpreter::Interpreter(NightScope& current_scope, const std::vector<Statement>
 				}
 				else
 				{
-					throw BackError(file, line, "assignment '+=' can only be used on numbers or strings");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::type_mismatch, file, line, "variable '" + night_variable->name + "' can not be assigned using the assignment operator '+='", "the variable contains type '" + night_variable->value.type.to_str() + "'; however, the operator '+=' can only be used on variables of type 'int', 'float', or 'string'");
 				}
 
 				break;
 			}
 			case '-': {
 				if (!night_variable->value.is_num())
-					throw BackError(file, line, "assignment '-=' can only be used on numbers");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::type_mismatch, file, line, "variable '" + night_variable->name + "' can not be assigned using the assignment operator '-='", "the variable contains type '" + night_variable->value.type.to_str() + "'; however, the operator '-=' can only be used on variables of type 'int' or 'float'");
 				if (!assign_expr.is_num())
-					throw BackError(file, line, "assignment '-=' can only be used on numbers");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::type_mismatch, file, line, "expression can not be used with the operator '-='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '-=' can only assign expressions of type 'int' or 'float'");
 
 				if (night_variable->value.type == VariableType::INT)
 					std::get<int>(night_variable->value.data) -= (int)assign_expr.get_num();
@@ -78,9 +78,9 @@ Interpreter::Interpreter(NightScope& current_scope, const std::vector<Statement>
 			}
 			case '*': {
 				if (!night_variable->value.is_num())
-					throw BackError(file, line, "assignment '-=' can only be used on numbers");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::type_mismatch, file, line, "variable '" + night_variable->name + "' can not be assigned using the assignment operator '*='", "the variable contains type '" + night_variable->value.type.to_str() + "'; however, the operator '*=' can only be used on variables of type 'int' or 'float'");
 				if (!assign_expr.is_num())
-					throw BackError(file, line, "assignment '-=' can only be used on numbers");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::type_mismatch, file, line, "expression can not be used with the operator '*='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '*=' can only assign expressions of type 'int' or 'float'");
 
 				if (night_variable->value.type == VariableType::INT)
 					std::get<int>(night_variable->value.data) *= (int)assign_expr.get_num();
@@ -91,9 +91,9 @@ Interpreter::Interpreter(NightScope& current_scope, const std::vector<Statement>
 			}
 			case '/': {
 				if (!night_variable->value.is_num())
-					throw BackError(file, line, "assignment '/=' can only be used on numbers");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::type_mismatch, file, line, "variable '" + night_variable->name + "' can not be assigned using the assignment operator '/='", "the operator can only be used on variables of type 'int' or float'");
 				if (!assign_expr.is_num())
-					throw BackError(file, line, "assignment '/=' can only be used on numbers");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::type_mismatch, file, line, "expression can not be used with the operator '/='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '/=' can only assign expressions of type 'int' or 'float'");
 
 				if (night_variable->value.type == VariableType::INT)
 					std::get<int>(night_variable->value.data) /= (int)assign_expr.get_num();
@@ -124,7 +124,7 @@ Interpreter::Interpreter(NightScope& current_scope, const std::vector<Statement>
 			{
 				if (conditional.condition == nullptr || std::get<bool>(EvaluateExpression(current_scope, conditional.condition).data))
 				{
-					Interpreter interpret(current_scope, conditional.body.statements, return_value);
+					Interpreter(current_scope, conditional.body.statements, return_value);
 					break;
 				}
 			}

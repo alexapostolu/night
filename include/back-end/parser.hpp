@@ -10,7 +10,7 @@ class Parser
 {
 public:
 	Parser(
-		Scope& scope,
+		const std::shared_ptr<Scope>& scope,
 		const std::vector<Token>& _tokens
 	);
 
@@ -42,7 +42,7 @@ private:
 
 	// type and usage checks an expression
 	std::vector<VariableType> TypeCheckExpression(
-		Scope& current_scope,
+		const std::shared_ptr<Scope>& current_scope,
 
 		const std::shared_ptr<Expression>& node,
 
@@ -53,7 +53,7 @@ private:
 		// in for loops, the types of the iterator is the types of all the
 		// elements combined, so instead of returning ARRAY, this will return
 		// all the types
-		bool is_for_loop_range = false
+		bool is_for_loop_range* = nullptr
 	);
 
 	// turns a value into an expression node
@@ -63,27 +63,12 @@ private:
 		const std::shared_ptr<Expression>& right
 	);
 
-	std::shared_ptr<Expression> ParseTokenExpression(
-		Scope& current_scope,
-
-		const std::size_t start,
-		const std::size_t end,
-
-		std::vector<VariableType>& types
-	);
-
-	std::shared_ptr<Expression> ExtractCondition(
-		Scope& current_scope,
-
-		std::size_t& close_bracket_index,
-		const std::string& statement_type
-	);
-
-	Scope ExtractBody(
-		Scope& upper_scope,
-
-		const std::size_t close_bracket_index,
-		const std::string& statement_type
+private:
+	// searches current scope for variable, if not found, moves to upper scope;
+	// once found, returns its address, or nullptr otherwise
+	CheckVariable* get_variable(
+		const std::shared_ptr<Scope>& scope,
+		const std::string& variable_name
 	);
 
 private:
@@ -91,9 +76,6 @@ private:
 	const int line;
 
 	const std::vector<Token> tokens;
-
-	static bool in_function;
-	static std::vector<VariableType> return_types;
 
 	static const std::vector<VariableType> all_types;
 

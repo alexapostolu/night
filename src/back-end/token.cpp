@@ -41,7 +41,9 @@ bool VariableType::operator!=(const VariableType& _type) const
 	return type != _type.type;
 }
 
-bool Conditional::is_else() const
+/*
+bool CheckFunction::operator==(const std::string& _name) const
 {
-	return condition == nullptr;
+	return name == _name;
 }
+*/

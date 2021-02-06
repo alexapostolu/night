@@ -31,21 +31,28 @@ void AdvanceToCloseBracket(const std::vector<Unit>& units,
 	}
 }
 
-namespace night {
-
-// finds object in array using its 'name' attribute,
-// if found, returns 'true', otherwise returns 'false'
-template <typename T>
-bool find_container(const std::vector<T>& container, const std::string& name)
+// start iterator at bracket position, advances to close bracket positions
+template <typename Unit, typename UnitType, typename Iterator>
+void advance_to_close_bracket(const std::vector<Unit>& units,
+	const UnitType& open_bracket, const UnitType& close_bracket, const Iterator& index)
 {
-	for (const T& object : container)
+	int open_bracket_count = 0;
+	for (auto it = index; it != units.end(); ++it)
 	{
-		if (name == object.name)
-			return true;
+		if (units[index].type == open_bracket)
+		{
+			open_bracket_count++;
+		}
+		else if (units[index].type == close_bracket)
+		{
+			open_bracket_count--;
+			if (open_bracket_count == 0)
+				return;
+		}
 	}
-
-	return false;
 }
+
+namespace night {
 
 // finds object in array using its 'name' attribute,
 // if found, returns its address, otherwise returns 'nullptr'
@@ -61,19 +68,11 @@ T* get_container(std::vector<T>& container, const std::string& name)
 	return nullptr;
 }
 
-bool find_variable(
-	const Scope& scope,
-	const std::string& name
-);
-
-CheckVariable* get_variable(
-	Scope& scope,
-	const std::string& var_name
-);
-
-const CheckVariable* get_variable(
-	const Scope& scope,
-	const std::string& var_name
+// searches current scope for variable, if not found, moves to upper scope;
+// once found, returns its address, or nullptr otherwise
+NightVariable* get_variable(
+	const std::shared_ptr<NightScope>& scope,
+	const std::string& variable_name
 );
 
 bool find_type(
@@ -85,14 +84,13 @@ bool find_num_types(
 	const std::vector<VariableType>& container
 );
 
-NightVariable* get_variable(
-	NightScope& scope,
-	const std::string& var_name
-);
-
 } // namespace night
 
 // splits a 1D array of tokens into a 2d array based on individual statements
 std::vector<std::vector<Token> > SplitCode(
 	const std::vector<Token>& tokens
+);
+
+std::string get_var_types_as_str(
+	const std::vector<VariableType>& types
 );

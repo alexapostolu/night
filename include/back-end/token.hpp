@@ -56,7 +56,6 @@ enum class ValueType
 	OPEN_BRACKET, CLOSE_BRACKET
 };
 
-// move this to parser if it isn't used anywhere else
 struct Value
 {
 	ValueType type;
@@ -99,6 +98,21 @@ struct VariableType
 	bool operator!=(const VariableType& _type) const;
 };
 
+struct Expression
+{
+	const std::string file;
+	const int line;
+
+	ValueType type;
+
+	std::string data;
+
+	std::vector<std::shared_ptr<Expression> > extras;
+
+	std::shared_ptr<Expression> left;
+	std::shared_ptr<Expression> right;
+};
+
 struct CheckVariable
 {
 	// a note about parameters:
@@ -119,6 +133,18 @@ struct CheckVariable
 
 	std::string name;
 	std::vector<VariableType> types;
+
+	// a note about 'is_array':
+	//
+	// if a variable is an array, it won't contain an array type, instead, it
+	// will contain all the types of its elements
+	//
+	// this is useful in determining the types of for loop ranges
+	//
+	// and to signal that a variable is an array, the variable 'is_array' is
+	// used
+
+	bool is_array;
 };
 
 struct CheckFunction
@@ -126,18 +152,11 @@ struct CheckFunction
 	std::string name;
 	std::vector<std::vector<VariableType> > parameters;
 
-	// a note about 'return_values':
-	//
-	// if std::optional doesn't contain a value, then the function is waiting
-	// to be assigned return types (perhaps it's a recursive call)
-	//
-	// if std::optional does contain a value, but the vector is empty, then
-	// it is a void function
-
 	std::vector<VariableType> return_types;
 
 	bool is_void;
-	bool is_empty() const { return !is_void && return_types.empty(); };
+
+	//bool operator==(const std::string& _name) const;
 };
 
 struct CheckClass
@@ -148,19 +167,12 @@ struct CheckClass
 	std::vector<CheckFunction> methods;
 };
 
-struct Expression
+struct Scope
 {
-	const std::string file;
-	const int line;
+	std::shared_ptr<Scope> upper_scope;
 
-	ValueType type;
-
-	std::string data;
-
-	std::vector<std::shared_ptr<Expression> > extras;
-
-	std::shared_ptr<Expression> left;
-	std::shared_ptr<Expression> right;
+	std::vector<Statement> statements;
+	std::vector<CheckVariable> check_variables;
 };
 
 struct Variable
@@ -171,28 +183,23 @@ struct Variable
 
 struct Assignment
 {
-	char assign_type;
+	enum {
+		ASSIGN,
+		PLUS,
+		MINUS,
+		TIMES,
+		DIVIDE,
+		MOD
+	} assign_type;
 
-	std::string name;
-	std::shared_ptr<Expression> value;
-};
-
-struct Scope
-{
-	Scope* upper_scope;
-
-	std::vector<Statement> statements;
-	std::vector<CheckVariable> check_variables;
-
-	Scope() = delete;
+	std::string variable_name;
+	std::shared_ptr<Expression> assign_expr;
 };
 
 struct Conditional
 {
 	std::shared_ptr<Expression> condition;
-	Scope body;
-
-	bool is_else() const;
+	std::shared_ptr<Scope> body;
 };
 
 struct IfStatement
@@ -205,7 +212,7 @@ struct FunctionDef
 	std::string name;
 	std::vector<std::string> parameters;
 
-	Scope body;
+	std::shared_ptr<Scope> body;
 
 	// a note about return_types:
 	//
@@ -231,7 +238,7 @@ struct Return
 struct WhileLoop
 {
 	std::shared_ptr<Expression> condition;
-	Scope body;
+	std::shared_ptr<Scope> body;
 };
 
 struct ForLoop
@@ -239,7 +246,7 @@ struct ForLoop
 	std::string iterator_name;
 	std::shared_ptr<Expression> range;
 
-	Scope body;
+	std::shared_ptr<Scope> body;
 };
 
 struct Element
