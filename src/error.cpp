@@ -154,6 +154,7 @@ std::string CompileError::what() const
 }
 
 const std::string RuntimeError::invalid_expression = "invalid expression";
+const std::string RuntimeError::out_of_range = "out of range";
 const std::string RuntimeError::type_mismatch = "type mismatch";
 
 RuntimeError::RuntimeError(const std::string& debug_file, const int debug_line, const std::string& _type,

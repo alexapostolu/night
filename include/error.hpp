@@ -26,6 +26,12 @@ protected:
 	std::string msg;
 };
 
+class FrontEndError
+{
+public:
+	std::string what() const;
+};
+
 class CompileError
 	: public Error
 {
@@ -90,6 +96,7 @@ public:
 
 public:
 	static const std::string invalid_expression;
+	static const std::string out_of_range;
 	static const std::string type_mismatch;
 
 private:

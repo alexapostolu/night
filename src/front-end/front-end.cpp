@@ -10,28 +10,28 @@
 #include <string>
 #include <vector>
 
-void FrontEnd(const int argc, char* argv[])
+void FrontEnd(const int argc, const char* argv[])
 {
 	if (argc != 2)
-		throw FrontError("invalid command line arguments; only pass in the file name as an argument");
+		throw FrontEndError("invalid command line arguments; only pass in the file name as an argument");
 
 	const std::vector<std::vector<Token> > code = SplitCode(OpenFile(argv[1]));
-	Scope global{ nullptr };
+	std::shared_ptr<Scope> global_scope = std::make_shared<Scope>(Scope{ nullptr });
 	for (const std::vector<Token>& tokens : code)
 	{
 		assert(!tokens.empty() && "tokens shouldn't be empty");
-		Parser parse(global, tokens);
+		Parser parse(global_scope, tokens);
 	}
 
 	NightScope night_global{ nullptr };
-	Interpreter interpret(night_global, global.statements);
+	Interpreter(night_global, global_scope->statements);
 }
 
 std::vector<Token> OpenFile(const std::string& file)
 {
 	std::ifstream source_file(file);
 	if (!source_file.is_open())
-		throw FrontError("file '" + file + "' could not be opened");
+		throw FrontEndError("file '" + file + "' could not be opened");
 
 	std::vector<Token> tokens;
 	std::string file_line;

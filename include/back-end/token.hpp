@@ -172,7 +172,7 @@ struct Scope
 	std::shared_ptr<Scope> upper_scope;
 
 	std::vector<Statement> statements;
-	std::vector<CheckVariable> check_variables;
+	std::vector<CheckVariable> check_variables; 
 };
 
 struct Variable
@@ -259,7 +259,7 @@ struct Element
 struct MethodCall
 {
 	std::string name;
-	std::shared_ptr<Expression> method_call;
+	std::shared_ptr<Expression> assign_expr;
 };
 
 enum class StatementType

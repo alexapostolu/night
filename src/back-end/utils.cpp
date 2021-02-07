@@ -1,6 +1,5 @@
 #include "../../include/back-end/utils.hpp"
 #include "../../include/back-end/token.hpp"
-#include "../../include/back-end/night.hpp"
 
 #include <vector>
 
@@ -31,24 +30,7 @@ std::vector<std::vector<Token> > SplitCode(const std::vector<Token>& tokens)
 	return code;
 }
 
-NightVariable* night::get_variable(const std::shared_ptr<NightScope>& scope, const std::string& variable_name)
-{
-	NightScope* current_scope = scope.get();
-	while (current_scope != nullptr)
-	{
-		for (NightVariable& night_var : current_scope->night_variables)
-		{
-			if (variable_name == night_var.name)
-				return &night_var;
-		}
-
-		current_scope = current_scope->upper_scope;
-	}
-
-	return nullptr;
-}
-
-bool night::find_type(const std::vector<VariableType>& container, const VariableType& type)
+bool find_type(const std::vector<VariableType>& container, const VariableType& type)
 {
 	for (const VariableType& var_type : container)
 	{
@@ -59,7 +41,7 @@ bool night::find_type(const std::vector<VariableType>& container, const Variable
 	return false;
 }
 
-bool night::find_num_types(const std::vector<VariableType>& container)
+bool find_num_types(const std::vector<VariableType>& container)
 {
 	return find_type(container, VariableType::INT) ||
 		   find_type(container, VariableType::FLOAT);

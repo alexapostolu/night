@@ -29,12 +29,6 @@ struct NightData
 	float get_num() const;
 };
 
-struct NightVariable
-{
-	std::string name;
-	NightData value;
-};
-
 struct NightFunction
 {
 	std::string name;
@@ -42,17 +36,10 @@ struct NightFunction
 	std::vector<Statement> body;
 };
 
-struct NightClass
-{
-	std::string name;
-	std::vector<NightVariable> variables;
-	std::vector<NightVariable> methods;
-};
-
 struct NightScope
 {
-	NightScope* upper_scope;
-	std::vector<NightVariable> night_variables;
+	const std::shared_ptr<NightScope> upper_scope;
+	std::unordered_map<std::string, NightData> night_variables;
 };
 
 // displays standard output

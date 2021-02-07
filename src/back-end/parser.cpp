@@ -12,10 +12,13 @@
 
 /* methods */
 
-Parser::Parser(const std::shared_ptr<Scope>& current_scope, const std::vector<Token>& _tokens)
-	: file(_tokens[0].file), line(_tokens[0].line), tokens(_tokens)
+Parser::Parser(
+	const std::shared_ptr<Scope>& current_scope,
+	const std::vector<Token>& _tokens
+)
+	: file(_tokens[0].file), line(_tokens[0].line) , tokens(_tokens)
 {
-	if (tokens.size() >= 1 && tokens[0].type == TokenType::SET)
+	if (tokens[0].type == TokenType::SET)
 	{
 		if (tokens.size() == 1 || tokens[1].type != TokenType::VAR)
 			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "expected variable name after 'set' keyword", "variable initializations are required to be in this format: 'set {variable name} = {expression}'");
@@ -25,9 +28,9 @@ Parser::Parser(const std::shared_ptr<Scope>& current_scope, const std::vector<To
 			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "expected expression after assignment operator '='", "variable initializations are required to be in this format: 'set {variable name} = {expression}'");
 		if (!get_variable(current_scope, tokens[1].data))
 			throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "variable '" + tokens[1].data + "' has already been defined", "variables can only be defined once, regardless of their scope");
-		if (!night::get_container(check_functions, tokens[1].data))
+		if (!get_container(check_functions, tokens[1].data))
 			throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "variable '" + tokens[1].data + "' has the same name as a function", "variable and function names are required to be unique");
-		if (!night::get_container(check_classes, tokens[1].data))
+		if (!get_container(check_classes, tokens[1].data))
 			throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "variable '" + tokens[1].data + "' has the same name as a class", "variable and class names are required to be unique");
 
 		// extracting expression
@@ -65,10 +68,10 @@ Parser::Parser(const std::shared_ptr<Scope>& current_scope, const std::vector<To
 
 		if (!check_variable->types.empty())
 		{
-			if (tokens[1].data == "+=" && !night::find_num_types(check_variable->types) &&
-				!night::find_type(check_variable->types, VariableType::STR))
+			if (tokens[1].data == "+=" && !find_num_types(check_variable->types) &&
+				!find_type(check_variable->types, VariableType::STR))
 				throw CompileError(__FILE__, __LINE__, CompileError::type_mismatch, file, line, "variable '" + check_variable->name + "' can not be used with assignment operator '+='", "variable does not contain type 'int', 'float', or 'string'");
-			if (tokens[1].data != "=" && tokens[1].data != "+=" && !night::find_num_types(check_variable->types))
+			if (tokens[1].data != "=" && tokens[1].data != "+=" && !find_num_types(check_variable->types))
 				throw CompileError(__FILE__, __LINE__, CompileError::type_mismatch, file, line, "variable '" + check_variable->name + "' can not be used with assignment operator '" + tokens[1].data + "'", "variable does not contain type 'int' or 'float'");
 		}
 
@@ -81,10 +84,10 @@ Parser::Parser(const std::shared_ptr<Scope>& current_scope, const std::vector<To
 		const std::shared_ptr<Expression> expression = ValuesToExpression(values);
 		const std::vector<VariableType> expression_types = TypeCheckExpression(current_scope, expression);
 
-		if (tokens[1].data == "+=" && !night::find_num_types(expression_types))
+		if (tokens[1].data == "+=" && !find_num_types(expression_types))
 			throw CompileError(__FILE__, __LINE__, CompileError::type_mismatch, file, line, "expression can not be assigned using the assignment operator '+='", "the assignment operator can only assign expressions of type 'int', 'float', or 'string'");
-		if (tokens[1].data != "=" && tokens[1].data != "+=" && !night::find_num_types(expression_types) &&
-			!night::find_type(expression_types, VariableType::STR))
+		if (tokens[1].data != "=" && tokens[1].data != "+=" && !find_num_types(expression_types) &&
+			!find_type(expression_types, VariableType::STR))
 			throw CompileError(__FILE__, __LINE__, CompileError::type_mismatch, file, line, "expression can not be assigned using the assignment operator '" + tokens[1].data + "'", "the assignment operator can only assign expressions of type 'int' or 'float'");
 
 		// determining assignment type
@@ -125,7 +128,86 @@ Parser::Parser(const std::shared_ptr<Scope>& current_scope, const std::vector<To
 			Assignment{ assignment.assign_type, tokens[0].data, expression },
 		});
 	}
-	else if (tokens.size() >= 1 && tokens[0].type == TokenType::IF)
+	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VAR && tokens[1].type == TokenType::OPEN_SQUARE)
+	{
+		// definition checking variable
+
+		CheckVariable* check_variable = get_variable(current_scope, tokens[0].data);
+		if (check_variable == nullptr)
+			throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "variable '" + tokens[1].data + "' is undefined", "variables have to be defined before they are used");
+
+		// type checking variable
+
+		if (!check_variable->is_array && find_type(check_variable->types, VariableType::STR))
+			throw CompileError(__FILE__, __LINE__, CompileError::type_mismatch, file, line, "subscript operator '[]' can only be used on variables of type 'string' or 'array'", "variable '" + check_variable->name + "' currently has type(s): " + get_var_types_as_str(check_variable->types));
+
+		// extracting and evaluating element
+
+		auto assignment_index = std::find_if(tokens.cbegin(), tokens.cend(),
+			[](const Token& token) { return token.type == TokenType::ASSIGN; });
+
+		if (assignment_index == tokens.end())
+			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "expected assignment operator in element assignment", "element assignments must be in this form: 'variable[index] = expression'");
+		if (std::next(assignment_index, -1)->type != TokenType::CLOSE_SQUARE)
+			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "missing closing square bracket for element assignment", "element assignments must be in this form: 'variable[index] = expression'");
+
+		const std::vector<Value> values = TokensToValues(
+			std::vector<Token>(tokens.begin() + 2, std::next(assignment_index, -1))
+		);
+
+		const std::shared_ptr<Expression> element_expr = ValuesToExpression(values);
+		const std::vector<VariableType> element_types = TypeCheckExpression(current_scope, element_expr);
+
+		if (!find_num_types(element_types))
+			throw CompileError(__FILE__, __LINE__, CompileError::type_mismatch, file, line, "index for array '" + tokens[0].data + "' is required to be of type 'int'", "index currently contains type(s): " + get_var_types_as_str(element_types));
+
+		// extracting expression
+
+		const std::vector<Value> values = TokensToValues(
+			std::vector<Token>(std::next(assignment_index, 1), tokens.end())
+		);
+
+		const std::shared_ptr<Expression> assign_expr = ValuesToExpression(values);
+		const std::vector<VariableType> assign_types = TypeCheckExpression(current_scope, assign_expr);
+
+		check_variable->types.insert(check_variable->types.end(),
+			assign_types.begin(), assign_types.end());
+
+		if (!check_variable->is_array && (assign_expr->type != ValueType::STR || assign_expr->data.length() >= 1))
+			throw CompileError(__FILE__, __LINE__, CompileError::type_mismatch, file, line, "a string element can only be assigned to a string of length 1", "individual characters can only be assigned to other individual characters");
+
+		// pushing statement
+
+		current_scope->statements.push_back(Statement{
+			file, line,
+			StatementType::ELEMENT,
+			Element{ tokens[0].data, element_expr, assign_expr }
+		});
+	}
+	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VAR && tokens[1].type == TokenType::OPERATOR)
+	{
+		if (tokens[1].data != ".")
+			throw BackError(file, line, "invalid syntax");
+		if (tokens.size() == 2)
+			throw BackError(file, line, "expected method name after dot operator");
+
+		const std::vector<Value> values = TokensToValues(
+			std::vector<Token>(tokens.begin(), tokens.end())
+		);
+
+		const std::shared_ptr<Expression> object_expr = ValuesToExpression(values);
+		const std::vector<VariableType> object_types = TypeCheckExpression(current_scope, object_expr);
+
+		// pushing statement
+
+		current_scope->statements.push_back(Statement{
+			file, line,
+			StatementType::METHOD_CALL,
+			MethodCall{ tokens[0].data, object_expr }
+		});
+	}
+
+	else if (tokens[0].type == TokenType::IF)
 	{
 		if (tokens.size() == 1 || tokens[1].type != TokenType::OPEN_BRACKET)
 			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "expected an opening bracket after 'if' keyword", "if statements are required to be in this format: 'if ( {bool expression} ) {statement}'");
@@ -135,7 +217,7 @@ Parser::Parser(const std::shared_ptr<Scope>& current_scope, const std::vector<To
 		// extracting and type checking condition
 
 		auto close_bracket_it = std::next(tokens.begin(), 1);
-		advance_to_close_bracket(tokens, TokenType::OPEN_BRACKET, TokenType::CLOSE_BRACKET, close_bracket_it);
+		advance_to_close_bracket(tokens, close_bracket_it);
 
 		if (close_bracket_it == tokens.end())
 			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "missing closing bracket for if statement", "if statements are required to be in this format: 'if ( {bool expression} ) {statement}'");
@@ -147,7 +229,7 @@ Parser::Parser(const std::shared_ptr<Scope>& current_scope, const std::vector<To
 		const std::shared_ptr<Expression> condition_expr = ValuesToExpression(values);
 		const std::vector<VariableType> condition_types = TypeCheckExpression(current_scope, condition_expr);
 
-		if (!night::find_type(condition_types, VariableType::BOOL))
+		if (!find_type(condition_types, VariableType::BOOL))
 			throw CompileError(__FILE__, __LINE__, CompileError::type_mismatch, file, line, "if statement condition is required to be of type 'bool'", "the condition currently has type(s): " + get_var_types_as_str(condition_types));
 
 		// extracting body
@@ -181,7 +263,7 @@ Parser::Parser(const std::shared_ptr<Scope>& current_scope, const std::vector<To
 		// extracting and type checking condition
 
 		auto close_bracket_it = std::next(tokens.begin(), 2);
-		advance_to_close_bracket(tokens, TokenType::OPEN_BRACKET, TokenType::CLOSE_BRACKET, close_bracket_it);
+		advance_to_close_bracket(tokens, close_bracket_it);
 
 		if (close_bracket_it == tokens.end())
 			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "missing closing bracket for else if statement", "else if statements are required to be in this format: 'else if ( {bool expression} ) {statement}'");
@@ -193,7 +275,7 @@ Parser::Parser(const std::shared_ptr<Scope>& current_scope, const std::vector<To
 		const std::shared_ptr<Expression> condition_expr = ValuesToExpression(values);
 		const std::vector<VariableType> condition_types = TypeCheckExpression(current_scope, condition_expr);
 
-		if (!night::find_type(condition_types, VariableType::BOOL))
+		if (!find_type(condition_types, VariableType::BOOL))
 			throw CompileError(__FILE__, __LINE__, CompileError::type_mismatch, file, line, "else if statement condition is required to be of type 'bool'", "the condition currently has type(s): " + get_var_types_as_str(condition_types));
 
 		// extracting body
@@ -212,7 +294,7 @@ Parser::Parser(const std::shared_ptr<Scope>& current_scope, const std::vector<To
 		std::get<IfStatement>(current_scope->statements.back().stmt).chains.push_back(
 			Conditional{ condition_expr, body } );
 	}
-	else if (tokens.size() >= 1 && tokens[0].type == TokenType::ELSE)
+	else if (tokens[0].type == TokenType::ELSE)
 	{
 		if (current_scope->statements.empty() || current_scope->statements.back().type != StatementType::IF_STATEMENT)
 			throw CompileError(__FILE__, __LINE__, CompileError::invalid_grammar, file, line, "else statement does not precede an if or else if statement", "else statements must come after an if or an else if statement");
@@ -235,13 +317,14 @@ Parser::Parser(const std::shared_ptr<Scope>& current_scope, const std::vector<To
 			Conditional{ nullptr, body }
 		);
 	}
-	else if (tokens.size() >= 1 && tokens[0].type == TokenType::DEF)
+	
+	else if (tokens[0].type == TokenType::DEF)
 	{
 		if (tokens.size() == 1 || tokens[1].type != TokenType::VAR)
 			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "expected function name after 'def' keyword", "function definitions are required to be in this format: 'def {function name} ( {parameters} ) {}'");
 		if (!get_variable(current_scope, tokens[1].data))
 			throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "function '" + tokens[1].data + "' can not have the same name as a variable", "function and variable names are required to be unique");
-		if (!night::get_container(check_functions, tokens[1].data))
+		if (!get_container(check_functions, tokens[1].data))
 			throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "function '" + tokens[1].data + "' has already been define", "functions can only be defined once");
 		if (!get_variable(current_scope, tokens[1].data))
 			throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "function '" + tokens[1].data + "' can not have the same name as a class", "function and class names are required to be unique");
@@ -264,9 +347,9 @@ Parser::Parser(const std::shared_ptr<Scope>& current_scope, const std::vector<To
 
 			if (!get_variable(function_scope, tokens[close_bracket_index].data))
 				throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "function parameter can not have the same name as another variable", "function parameters are required to be unique");
-			if (!night::get_container(check_functions, tokens[close_bracket_index].data))
+			if (!get_container(check_functions, tokens[close_bracket_index].data))
 				throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "function parameter can not have the same name as a function", "function parameter names are required to be unique");
-			if (!night::get_container(check_classes, tokens[close_bracket_index].data))
+			if (!get_container(check_classes, tokens[close_bracket_index].data))
 				throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "function parameter can not have the same name as a class", "function parameter names are required to be unique");
 
 			parameter_names.push_back(tokens[close_bracket_index].data);
@@ -386,7 +469,7 @@ Parser::Parser(const std::shared_ptr<Scope>& current_scope, const std::vector<To
 			bool match = false;
 			for (std::size_t b = 0; b < check_function->parameters[a].size() && !match; ++b)
 			{
-				if (night::find_type(argument_types[a], check_function->parameters[a][b]))
+				if (find_type(argument_types[a], check_function->parameters[a][b]))
 					match = true;
 			}
 
@@ -404,7 +487,7 @@ Parser::Parser(const std::shared_ptr<Scope>& current_scope, const std::vector<To
 			FunctionCall{ tokens[0].data, argument_expressions }
 		});
 	}
-	else if (tokens.size() >= 1 && tokens[0].type == TokenType::RETURN)
+	else if (tokens[0].type == TokenType::RETURN)
 	{
 		// a note on the function scope:
 		//
@@ -443,7 +526,8 @@ Parser::Parser(const std::shared_ptr<Scope>& current_scope, const std::vector<To
 			Return{ return_expr }
 		});
 	}
-	else if (tokens.size() >= 1 && tokens[0].type == TokenType::WHILE)
+	
+	else if (tokens[0].type == TokenType::WHILE)
 	{
 		if (tokens.size() == 1 || tokens[1].type != TokenType::OPEN_BRACKET)
 			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "expected an opening bracket after 'while' keyword", "while loop statements are required to be in this format: 'while ( {bool expression} ) {statement}'");
@@ -451,7 +535,7 @@ Parser::Parser(const std::shared_ptr<Scope>& current_scope, const std::vector<To
 		// extracting and type checking condition
 
 		auto close_bracket_index = std::next(tokens.begin(), 2);
-		advance_to_close_bracket(tokens, TokenType::OPEN_BRACKET, TokenType::CLOSE_BRACKET, close_bracket_index);
+		advance_to_close_bracket(tokens, close_bracket_index);
 
 		if (close_bracket_index == tokens.end())
 			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "missing closing bracket for while loop condition", "while loop statements are required to be in this format: 'while ( {bool expression} ) {statement}'");
@@ -463,12 +547,12 @@ Parser::Parser(const std::shared_ptr<Scope>& current_scope, const std::vector<To
 		const std::shared_ptr<Expression> condition_expr = ValuesToExpression(values);
 		const std::vector<VariableType> condition_types = TypeCheckExpression(current_scope, condition_expr);
 
-		if (!night::find_type(condition_types, VariableType::BOOL))
+		if (!find_type(condition_types, VariableType::BOOL))
 			throw CompileError(__FILE__, __LINE__, CompileError::type_mismatch, file, line, "while loop condition can not be used", "while loop condition contains type(s): " + get_var_types_as_str(condition_types) + "; however, while loop conditions are required to contain type 'bool'");
 
 		// extracting body
 
-		const std::vector<std::vector<Token> > tokens_split = tokens[close_bracket_index + 1].type == TokenType::OPEN_CURLY
+		const std::vector<std::vector<Token> > tokens_split = std::next(close_bracket_index, 1)->type == TokenType::OPEN_CURLY
 			? SplitCode(std::vector<Token>(std::next(close_bracket_index, 2), tokens.end() - 1))
 			: SplitCode(std::vector<Token>(std::next(close_bracket_index, 1), tokens.end()));
 
@@ -484,7 +568,7 @@ Parser::Parser(const std::shared_ptr<Scope>& current_scope, const std::vector<To
 			WhileLoop{ condition_expr, scope_body }
 		});
 	}
-	else if (tokens.size() >= 1 && tokens[0].type == TokenType::FOR)
+	else if (tokens[0].type == TokenType::FOR)
 	{
 		if (tokens.size() == 1 || tokens[1].type != TokenType::OPEN_BRACKET)
 			throw BackError(file, line, "expected open bracket after 'for' keyword");
@@ -494,40 +578,38 @@ Parser::Parser(const std::shared_ptr<Scope>& current_scope, const std::vector<To
 			throw BackError(file, line, "expected colon after iterator name");
 		if (tokens.size() == 4)
 			throw BackError(file, line, "expected array after colon");
-
-		if (night::find_variable(current_scope, tokens[2].data))
+		if (!get_variable(current_scope, tokens[2].data))
 			throw BackError(file, line, "variable '" + tokens[2].data + "' is already defined");
 
 		// evaluating iterator and range
 
-		std::size_t closeBracketIndex = 4;
-		AdvanceToCloseBracket(tokens, TokenType::OPEN_BRACKET, TokenType::CLOSE_BRACKET, closeBracketIndex);
+		auto close_bracket_index = std::next(tokens.begin(), 1);
+		advance_to_close_bracket(tokens, close_bracket_index);
 
-		if (closeBracketIndex >= tokens.size())
-			throw BackError(file, line, "closing bracket is missing in for loop condition");
+		if (close_bracket_index == tokens.end())
+			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "missing closing bracket in for loop", "for loops must be in this format: 'for (condition) {}'");
 
-		const std::vector<Value> range_values = TokensToValues(std::vector<Token>(tokens.begin() + 4, tokens.begin() + closeBracketIndex));
+		const std::vector<Value> range_values = TokensToValues(std::vector<Token>(tokens.begin() + 4, close_bracket_index));
 		const std::shared_ptr<Expression> range_expr = ValuesToExpression(range_values);
 
 		// also makes sure range is type array or string
-		const std::vector<VariableType> range_types = TypeCheckExpression(current_scope, range_expr, "", {}, true);
+		bool is_array = false;
+		const std::vector<VariableType> range_types = TypeCheckExpression(current_scope, range_expr, "", {}, &is_array);
 
-		if (!night::find_type(range_types, VariableType::STR) && !night::find_type(range_types, VariableType::ARRAY))
+		if (!is_array && !find_type(range_types, VariableType::STR))
 			throw CompileError(__FILE__, __LINE__, CompileError::type_mismatch, file, line, "for loop range is required to be of type 'array'", "range currently has type(s): " + get_var_types_as_str(range_types));
-
-		current_scope->check_variables.push_back(CheckVariable{ tokens[2].data, range_types });
 
 		// extracting scope and constructing statement
 
-		const std::vector<std::vector<Token> > split_tokens = tokens[closeBracketIndex + 1].type == TokenType::OPEN_CURLY
-			? SplitCode(std::vector<Token>(tokens.begin() + closeBracketIndex + 2, tokens.end() - 1))
-			: SplitCode(std::vector<Token>(tokens.begin() + closeBracketIndex + 1, tokens.end()));
+		const std::vector<std::vector<Token> > split_tokens = std::next(close_bracket_index, 1)->type == TokenType::OPEN_CURLY
+			? SplitCode(std::vector<Token>(std::next(close_bracket_index, 2), tokens.end() - 1))
+			: SplitCode(std::vector<Token>(std::next(close_bracket_index, 1), tokens.end()));
 
 		std::shared_ptr<Scope> body = std::make_shared<Scope>(Scope{ current_scope });
-		for (const std::vector<Token>& split_token : split_tokens)
-			Parser parse(body, split_token);
+		body->check_variables.push_back(CheckVariable{ tokens[2].data, range_types }); // iterator
 
-		current_scope->check_variables.pop_back(); // remove the iterator variable
+		for (const std::vector<Token>& split_token : split_tokens)
+			Parser(body, split_token);
 
 		current_scope->statements.push_back(Statement{
 			file, line,
@@ -535,88 +617,18 @@ Parser::Parser(const std::shared_ptr<Scope>& current_scope, const std::vector<To
 			ForLoop{ tokens[2].data, range_expr, body }
 		});
 	}
-	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VAR && tokens[1].type == TokenType::OPEN_SQUARE)
-	{
-		// definition checking variable
-
-		CheckVariable* check_variable = get_variable(current_scope, tokens[0].data);
-		if (check_variable == nullptr)
-			throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "variable '" + tokens[1].data + "' is undefined", "variables have to be defined before they are used");
-
-		// type checking variable
-
-		if (!check_variable->is_array && night::find_type(check_variable->types, VariableType::STR))
-			throw CompileError(__FILE__, __LINE__, CompileError::type_mismatch, file, line, "subscript operator '[]' can only be used on variables of type 'string' or 'array'", "variable '" + check_variable->name + "' currently has type(s): " + get_var_types_as_str(check_variable->types));
-
-		// extracting and evaluating element
-
-		auto assignment_index = std::find_if(tokens.cbegin(), tokens.cend(),
-			[](const Token& token) { return token.type == TokenType::ASSIGN; });
-
-		if (assignment_index == tokens.end())
-			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "expected assignment operator in element assignment", "element assignments must be in this form: 'variable[index] = expression'");
-		if (std::next(assignment_index, -1)->type != TokenType::CLOSE_SQUARE)
-			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "missing closing square bracket for element assignment", "element assignments must be in this form: 'variable[index] = expression'");
-
-		const std::vector<Value> values = TokensToValues(
-			std::vector<Token>(tokens.begin() + 2, std::next(assignment_index, -1))
-		);
-
-		const std::shared_ptr<Expression> element_expr = ValuesToExpression(values);
-		const std::vector<VariableType> element_types = TypeCheckExpression(current_scope, element_expr);
-
-		if (!night::find_num_types(element_types))
-			throw CompileError(__FILE__, __LINE__, CompileError::type_mismatch, file, line, "index for array '" + tokens[0].data + "' is required to be of type 'int'", "index currently contains type(s): " + get_var_types_as_str(element_types));
-
-		// extracting expression
-
-		const std::vector<Value> values = TokensToValues(
-			std::vector<Token>(std::next(assignment_index, 1), tokens.end())
-		);
-
-		const std::shared_ptr<Expression> assign_expr = ValuesToExpression(values);
-		const std::vector<VariableType> assign_types = TypeCheckExpression(current_scope, assign_expr);
-
-		check_variable->types.insert(check_variable->types.end(),
-			assign_types.begin(), assign_types.end());
-
-		if (!check_variable->is_array && (assign_expr->type != ValueType::STR || assign_expr->data.length() >= 1))
-			throw CompileError(__FILE__, __LINE__, CompileError::type_mismatch, file, line, "a string element can only be assigned to a string of length 1", "individual characters can only be assigned to other individual characters");
-
-		// pushing statement
-
-		current_scope->statements.push_back(Statement{
-			file, line,
-			StatementType::ELEMENT,
-			Element{ tokens[0].data, element_expr, assign_expr }
-		});
-	}
-	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VAR && tokens[1].type == TokenType::OPERATOR)
-	{
-		if (tokens[1].data != ".")
-			throw BackError(file, line, "invalid syntax");
-		if (tokens.size() == 2)
-			throw BackError(file, line, "expected method name after dot operator");
-
-		std::vector<VariableType> temp;
-		const std::shared_ptr<Expression> object = ParseTokenExpression(current_scope, 0, tokens.size(), temp);
-
-		current_scope.statements.push_back(Statement{
-			file, line,
-			StatementType::METHOD_CALL,
-			MethodCall{ tokens[0].data, object }
-		});
-	}
+	
 	else
 	{
-		throw BackError(file, line, "invalid syntax");
+		throw CompileError(__FILE__, __LINE__, CompileError::invalid_grammar, file, line, "grammar is invalid", "read documentation :)");
 	}
 }
 
-CheckVariable* Parser::get_variable(const std::shared_ptr<Scope>& scope, const std::string& variable_name)
-{
-	Scope* current_scope = scope.get();
-	while (current_scope != nullptr)
+CheckVariable* Parser::get_variable(
+	const std::shared_ptr<Scope>& scope,
+	const std::string& variable_name
+) {
+	for (Scope* current_scope = scope.get(); current_scope != nullptr;)
 	{
 		for (CheckVariable& check_var : current_scope->check_variables)
 		{
@@ -648,15 +660,16 @@ std::vector<Value> Parser::TokensToValues(const std::vector<Token>& tokens)
 			while (a < tokens.size() - 1 && tokens[a + 1].type == TokenType::OPEN_SQUARE)
 			{
 				a += 2;
-				const std::size_t start = a;
 
-				AdvanceToCloseBracket(tokens, TokenType::OPEN_SQUARE, TokenType::CLOSE_SQUARE, a);
+				auto start = std::next(tokens.begin(), a);
+				advance_to_close_bracket(tokens, start);
+
 				if (a >= tokens.size())
 					throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "closing square bracket missing for subscript operator", "subscript operator needs squaries");
 
 				values.push_back({ ValueType::OPERATOR, "[]" });
 				values.back().extras.push_back(TokensToValues(
-					std::vector<Token>(std::begin(tokens) + start, std::begin(tokens) + a)
+					std::vector<Token>(start, tokens.end() + a)
 				));
 			}
 		}
@@ -690,7 +703,7 @@ std::vector<Value> Parser::TokensToValues(const std::vector<Token>& tokens)
 						(tokens[a].type == TokenType::CLOSE_BRACKET && open_bracket_count == -1)))
 					{
 						value_call.extras.push_back(
-							TokensToValues(std::vector<Token>(std::begin(tokens) + start, std::begin(tokens) + a))
+							TokensToValues(std::vector<Token>(tokens.begin() + start, tokens.begin() + a))
 						);
 
 						start = a + 1;
@@ -740,7 +753,7 @@ std::vector<Value> Parser::TokensToValues(const std::vector<Token>& tokens)
 					(tokens[a].type == TokenType::CLOSE_SQUARE && open_square_count == -1)))
 				{
 					const std::vector<Value> temp_values = TokensToValues(
-						std::vector<Token>(std::begin(tokens) + start, std::begin(tokens) + a)
+						std::vector<Token>(tokens.begin() + start, tokens.begin() + a)
 					);
 
 					value_array.extras.push_back(temp_values);
@@ -801,26 +814,28 @@ std::vector<Value> Parser::TokensToValues(const std::vector<Token>& tokens)
 	return values;
 }
 
-std::shared_ptr<Expression> Parser::new_expression(const Value& value, const std::shared_ptr<Expression>& left,
-	const std::shared_ptr<Expression>& right)
-{
+std::shared_ptr<Expression> Parser::new_expression(
+	const Value& value,
+	const std::shared_ptr<Expression>& left,
+	const std::shared_ptr<Expression>& right
+) {
 	std::shared_ptr<Expression> expression = std::make_shared<Expression>(Expression{
 		file, line,
-		value.type,
-		value.data,
+		value.type, value.data,
 		{},
-		left,
-		right
+		left, right
 	});
 
+	expression->extras.reserve(value.extras.size());
 	for (const std::vector<Value>& values : value.extras)
 		expression->extras.push_back(ValuesToExpression(values));
 
 	return expression;
 }
 
-std::shared_ptr<Expression> Parser::GetNextGroup(const std::vector<Value>& values, std::size_t& index)
-{
+std::shared_ptr<Expression> Parser::GetNextGroup(
+	const std::vector<Value>& values, std::size_t& index
+) {
 	const bool isFrontUnary = values[index].type == ValueType::OPERATOR && (values[index].data == "!" || values[index].data == "-");
 	if (isFrontUnary)
 		index++;
@@ -836,14 +851,11 @@ std::shared_ptr<Expression> Parser::GetNextGroup(const std::vector<Value>& value
 			open_bracket_count++;
 		else if (values[index].type == ValueType::CLOSE_BRACKET)
 			open_bracket_count--;
-		
-		if (open_bracket_count != 0)
-			continue;
 
-		if (values[index].type == ValueType::OPERATOR)
+		if (open_bracket_count == 0 && values[index].type == ValueType::OPERATOR)
 			break;
 
-		if (values[index].type == ValueType::CLOSE_BRACKET)// || values[index].type != ValueType::OPERATOR)
+		if (open_bracket_count == 0 && values[index].type == ValueType::CLOSE_BRACKET)
 		{
 			index++;
 			break;
@@ -865,9 +877,12 @@ std::shared_ptr<Expression> Parser::GetNextGroup(const std::vector<Value>& value
 		: group_expression;
 }
 
-int Parser::GetOperatorPrecedence(const ValueType& type, const std::string& value)
-{
-	static const std::vector<std::unordered_set<std::string> > operators{
+int Parser::GetOperatorPrecedence(
+	const ValueType& type, const std::string& value
+) {
+	assert(type == ValueType::OPERATOR);
+
+	const std::vector<std::unordered_set<std::string> > operators{
 		{ "[]", "." },
 		{ "!" },
 		{ "*", "/", "%" },
@@ -877,20 +892,19 @@ int Parser::GetOperatorPrecedence(const ValueType& type, const std::string& valu
 		{ "||", "&&" }
 	};
 
-	assert(type == ValueType::OPERATOR && "value must be operator to have operator precedence smh");
-
 	for (std::size_t a = 0; a < operators.size(); ++a)
 	{
-		if (operators[a].find(value) != std::end(operators[a]))
-			return a;
+		if (operators[a].find(value) != operators[a].end())
+			return (int)a;
 	}
 
 	assert(false && "operator missing");
-	return 0;
+	return {};
 }
 
-std::shared_ptr<Expression> Parser::ValuesToExpression(const std::vector<Value>& values)
-{
+std::shared_ptr<Expression> Parser::ValuesToExpression(
+	const std::vector<Value>& values
+) {
 	assert(!values.empty() && "values shouldn't be empty");
 
 	std::size_t a = 0;
@@ -918,25 +932,29 @@ std::shared_ptr<Expression> Parser::ValuesToExpression(const std::vector<Value>&
 
 		// create nodes
 
-		const std::size_t opIndex = a++;
+		const std::size_t op_index = a++;
 
 		const std::shared_ptr<Expression> nextValue = GetNextGroup(values, a);
-		const std::shared_ptr<Expression> opNode = new_expression(values[opIndex], curr, nextValue);
+		const std::shared_ptr<Expression> op_node = new_expression(values[op_index], curr, nextValue);
 
 		protect = nextValue.get();
 
 		if (curr == root)
-			root = opNode;
+			root = op_node;
 		else
-			prev->right = opNode;
+			prev->right = op_node;
 	}
 
 	return root;
 }
 
-std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scope>& current_scope, const std::shared_ptr<Expression>& node,
-	const std::string& op_name, const std::vector<VariableType>& required_types, bool* is_for_loop_range)
-{
+std::vector<VariableType> Parser::TypeCheckExpression(
+	const std::shared_ptr<Scope>& current_scope, 
+	const std::shared_ptr<Expression>& node,
+	const std::string& op_name,
+	const std::vector<VariableType>& required_types,
+	bool* is_for_loop_range
+) {
 	assert(node != nullptr && "node cannot be NULL");
 
 	// if node->left and node->right is NULL, then node must be a value
@@ -985,10 +1003,11 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 		}
 		if (node->type == ValueType::CALL)
 		{
-			CheckFunction* check_function = night::get_container(check_functions, node->data);
-			if (check_function == nullptr)
-				throw BackError(file, line, "function '" + node->data + "' is not defined");
+			auto check_function = std::find_if(check_functions.begin(), check_functions.end(),
+				[&](const CheckFunction& func) { return func.name == node->data; });
 
+			if (check_function == check_functions.end())
+				throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "function '" + node->data + "' is undefined", "functions have to be defined before they are used");
 			if (check_function->is_void)
 				throw BackError(file, line, "function '" + node->data + "' doesn't return a value; functions used in expressions must return a value");
 			if (node->extras.size() != check_function->parameters.size())
@@ -1007,7 +1026,7 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 
 				for (const VariableType& argumentType : argumentTypes)
 				{
-					if (!night::find_type(check_function->parameters[a], argumentType))
+					if (!find_type(check_function->parameters[a], argumentType))
 						throw BackError(file, line, "argument number '" + std::to_string(a + 1) + "' for function call '" + check_function->name + "' cannot be used because of a type mismatch");
 				}
 			}
@@ -1022,7 +1041,7 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 				bool found_type = false;
 				for (std::size_t a = 0; a < required_types.size() && !found_type; ++a)
 				{
-					if (night::find_type(check_function->return_types, required_types[a]))
+					if (find_type(check_function->return_types, required_types[a]))
 						found_type = true;
 				}
 
@@ -1044,7 +1063,7 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 		case ValueType::STR:
 			return { VariableType::STR };
 		default:
-			throw BackError(file, line, "unexpected token '" + node->data + "' in expression");
+			assert(false);
 		}
 	}
 
@@ -1052,15 +1071,17 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 
 	if (node->data == "+")
 	{
-		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::INT, VariableType::FLOAT, VariableType::STR });
-		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::INT, VariableType::FLOAT, VariableType::STR });
+		const std::vector<VariableType> left =
+			TypeCheckExpression(current_scope, node->left, node->data, { VariableType::INT, VariableType::FLOAT, VariableType::STR });
+		const std::vector<VariableType> right =
+			TypeCheckExpression(current_scope, node->right, node->data, { VariableType::INT, VariableType::FLOAT, VariableType::STR });
 
 		std::vector<VariableType> add_types;
-		if (night::find_type(left, VariableType::INT) && night::find_type(right, VariableType::INT))
+		if (find_type(left, VariableType::INT) && find_type(right, VariableType::INT))
 			add_types.push_back(VariableType::INT);
-		if (night::find_type(left, VariableType::FLOAT) && night::find_type(right, VariableType::FLOAT))
+		if (find_type(left, VariableType::FLOAT) && find_type(right, VariableType::FLOAT))
 			add_types.push_back(VariableType::FLOAT);
-		if (night::find_type(left, VariableType::STR) || night::find_type(right, VariableType::STR))
+		if (find_type(left, VariableType::STR) || find_type(right, VariableType::STR))
 			add_types.push_back(VariableType::STR);
 
 		if (add_types.empty())
@@ -1075,7 +1096,7 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 		{
 			const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::INT, VariableType::FLOAT });
 
-			if (!night::find_num_types(right))
+			if (!find_num_types(right))
 				throw BackError(file, line, "unary operator '" + node->data + "' requires to be used on a type of 'num'");
 
 			return { VariableType::INT, VariableType::FLOAT };
@@ -1086,20 +1107,19 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::INT, VariableType::FLOAT });
 		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::INT, VariableType::FLOAT });
 
-		if (!night::find_num_types(left) || !night::find_num_types(right))
+		if (!find_num_types(left) || !find_num_types(right))
 			throw BackError(file, line, "binary operator '" + node->data + "' can only be used on two numbers");
 		
 		return { VariableType::INT, VariableType::FLOAT };
 	}
 	if (node->data == "*")
 	{
-
-		const std::vector<VariableType> left  = TypeCheckExpression(
-			current_scope, node->left,  node->data, { VariableType::INT, VariableType::FLOAT });
+		const std::vector<VariableType> left = TypeCheckExpression(
+			current_scope, node->left, node->data, { VariableType::INT, VariableType::FLOAT });
 		const std::vector<VariableType> right = TypeCheckExpression(
 			current_scope, node->right, node->data, { VariableType::INT, VariableType::FLOAT });
 
-		if (!night::find_num_types(left) || !night::find_num_types(right))
+		if (!find_num_types(left) || !find_num_types(right))
 			throw BackError(file, line, "binary operator '" + node->data + "' can only be used on two numbers");
 		
 		return { VariableType::INT, VariableType::FLOAT };
@@ -1109,7 +1129,7 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::INT, VariableType::FLOAT });
 		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::INT, VariableType::FLOAT });
 
-		if (!night::find_num_types(left) || !night::find_num_types(right))
+		if (!find_num_types(left) || !find_num_types(right))
 			throw BackError(file, line, "binary operator '" + node->data + "' can only be used on two numbers");
 		
 		return { VariableType::INT, VariableType::FLOAT };
@@ -1119,7 +1139,7 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::INT });
 		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::INT });
 
-		if (!night::find_num_types(left) || !night::find_num_types(right))
+		if (!find_num_types(left) || !find_num_types(right))
 			throw BackError(file, line, "binary operator '" + node->data + "' can only be used on two integers");
 
 		return { VariableType::INT };
@@ -1129,7 +1149,7 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left, node->data, { VariableType::INT, VariableType::FLOAT });
 		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::INT, VariableType::FLOAT });
 
-		if (!night::find_num_types(left) || !night::find_num_types(right))
+		if (!find_num_types(left) || !find_num_types(right))
 			throw BackError(file, line, "binary operator '" + node->data + "' can only be used on two values of type 'num'");
 
 		return { VariableType::BOOL };
@@ -1139,7 +1159,7 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::INT, VariableType::FLOAT });
 		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::INT, VariableType::FLOAT });
 
-		if (!night::find_num_types(left) || !night::find_num_types(right))
+		if (!find_num_types(left) || !find_num_types(right))
 			throw BackError(file, line, "binary operator '" + node->data + "' can only be used on two values of type 'num'");
 
 		return { VariableType::BOOL };
@@ -1149,7 +1169,7 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::INT, VariableType::FLOAT });
 		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::INT, VariableType::FLOAT });
 
-		if (!night::find_num_types(left) || !night::find_num_types(right))
+		if (!find_num_types(left) || !find_num_types(right))
 			throw BackError(file, line, "binary operator '" + node->data + "' can only be used on two values of type 'bool'");
 
 		return { VariableType::BOOL };
@@ -1159,7 +1179,7 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::INT, VariableType::FLOAT });
 		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::INT, VariableType::FLOAT });
 
-		if (!night::find_num_types(left) || !night::find_num_types(right))
+		if (!find_num_types(left) || !find_num_types(right))
 			throw BackError(file, line, "binary operator '" + node->data + "' can only be used on two values of type 'bool'");
 
 		return { VariableType::BOOL };
@@ -1168,7 +1188,7 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 	{
 		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::BOOL });
 
-		if (!night::find_type(right, VariableType::BOOL))
+		if (!find_type(right, VariableType::BOOL))
 			throw BackError(file, line, "unary operator '" + node->data + "' can only be used on a value of type 'bool'");
 
 		return { VariableType::BOOL };
@@ -1178,7 +1198,7 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::BOOL });
 		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::BOOL });
 
-		if (!night::find_type(left, VariableType::BOOL) || !night::find_type(right, VariableType::BOOL))
+		if (!find_type(left, VariableType::BOOL) || !find_type(right, VariableType::BOOL))
 			throw BackError(file, line, "binary operator '" + node->data + "' can only be used on two values of type 'bool'");
 
 		return { VariableType::BOOL };
@@ -1188,7 +1208,7 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 		const std::vector<VariableType> left  = TypeCheckExpression(current_scope, node->left,  node->data, { VariableType::BOOL });
 		const std::vector<VariableType> right = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::BOOL });
 
-		if (!night::find_type(left, VariableType::BOOL) || !night::find_type(right, VariableType::BOOL))
+		if (!find_type(left, VariableType::BOOL) || !find_type(right, VariableType::BOOL))
 			throw BackError(file, line, "binary operator '" + node->data + "' can only be used on two values of type 'bool'");
 
 		return { VariableType::BOOL };
@@ -1200,7 +1220,7 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 
 		for (const VariableType& type : left)
 		{
-			if (!night::find_type(right, type))
+			if (!find_type(right, type))
 				throw BackError(file, line, "binary operator '" + node->data + "' requires two values of the same type");
 		}
 
@@ -1213,7 +1233,7 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 
 		for (const VariableType& type : left)
 		{
-			if (!night::find_type(right, type))
+			if (!find_type(right, type))
 				throw BackError(file, line, "binary operator '" + node->data + "' requires two values of the same type");
 		}
 
@@ -1228,7 +1248,7 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 
 		if (!giae)
 			throw BackError(file, line, "operator '" + node->data + "' requires to be used on a string or array");
-		if (!night::find_num_types(index_types))
+		if (!find_num_types(index_types))
 			throw BackError(file, line, "operator '" + node->data + "' requires subscript to be type 'num'");
  
 		return array_types;
@@ -1239,13 +1259,11 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 
 		// the required_types argument is faulty; check to see what methods are present, then send them through to the function
 		// so if object is a string, then only send VariableType::STR through
-		const std::vector<VariableType> object_types = TypeCheckExpression(
-			current_scope, node->left, node->data,
-			{ VariableType::STR, VariableType::ARRAY, VariableType::CLASS }
-		);
+		const std::vector<VariableType> object_types = TypeCheckExpression(current_scope, node->left, node->data,
+			{ VariableType::STR, VariableType::ARRAY, VariableType::CLASS });
 
-		if (!night::find_type(object_types, VariableType::ARRAY) && !night::find_type(object_types, VariableType::STR) &&
-			!night::find_type(object_types, VariableType::CLASS))
+		if (!find_type(object_types, VariableType::ARRAY) && !find_type(object_types, VariableType::STR) &&
+			!find_type(object_types, VariableType::CLASS))
 			throw BackError(file, line, "variable '" + node->left->data + "' is used with methods; only objects can be used with methods");
 
 		// find return type of method, and convert arr and str to classes
@@ -1257,7 +1275,7 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 			else if (object_type == VariableType::STR)
 				check_objects.push_back(&check_classes[1]);
 			else if (object_type == VariableType::CLASS)
-				check_objects.push_back(night::get_container(check_classes, object_type.class_name));
+				check_objects.push_back(get_container(check_classes, object_type.class_name));
 		}
 
 		// test:
@@ -1274,7 +1292,9 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 			{
 				if (method.name == node->right->data)
 				{
-					rtn_types.insert(rtn_types.end(), method.return_types.begin(), method.return_types.end());
+					rtn_types.insert(rtn_types.end(),
+						method.return_types.begin(), method.return_types.end());
+
 					break;
 				}
 			}
@@ -1287,19 +1307,24 @@ std::vector<VariableType> Parser::TypeCheckExpression(const std::shared_ptr<Scop
 	return {};
 }
 
-std::shared_ptr<Expression> Parser::ParseTokenExpression(const Scope& current_scope, const std::size_t start,
-	const std::size_t end, std::vector<VariableType>& types)
-{
-	const std::vector<Value> values = TokensToValues(
-		std::vector<Token>(tokens.begin() + start, tokens.begin() + end)
-	);
-
-	const std::shared_ptr<Expression> expression = ValuesToExpression(values);
-	const std::vector<VariableType> expr_types = TypeCheckExpression(current_scope, expression);
-
-	types.insert(types.end(), expr_types.begin(), expr_types.end());
-
-	return expression;
+void Parser::advance_to_close_bracket(
+	const std::vector<Token>& units,
+	std::vector<Token>::const_iterator& index
+) {
+	int open_bracket_count = 0;
+	for (; index != units.end(); ++index)
+	{
+		if (index->type == TokenType::OPEN_BRACKET)
+		{
+			open_bracket_count++;
+		}
+		else if (index->type == TokenType::CLOSE_BRACKET)
+		{
+			open_bracket_count--;
+			if (open_bracket_count == 0)
+				return;
+		}
+	}
 }
 
 /* private variables */

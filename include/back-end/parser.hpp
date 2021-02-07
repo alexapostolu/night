@@ -53,7 +53,9 @@ private:
 		// in for loops, the types of the iterator is the types of all the
 		// elements combined, so instead of returning ARRAY, this will return
 		// all the types
-		bool is_for_loop_range* = nullptr
+		//
+		// also for subscript operators
+		bool* is_for_loop_range = nullptr
 	);
 
 	// turns a value into an expression node
@@ -69,6 +71,28 @@ private:
 	CheckVariable* get_variable(
 		const std::shared_ptr<Scope>& scope,
 		const std::string& variable_name
+	);
+
+	// finds object in array using its 'name' attribute,
+	// if found, returns its address, otherwise returns 'nullptr'
+	template <typename T>
+	T* get_container(
+		std::vector<T>& container,
+		const std::string& name
+	) {
+		for (T& object : container)
+		{
+			if (name == object.name)
+				return &object;
+		}
+
+		return nullptr;
+	}
+
+	// start iterator at bracket position, advances to close bracket position
+	void advance_to_close_bracket(
+		const std::vector<Token>& units,
+		std::vector<Token>::const_iterator& index
 	);
 
 private:
