@@ -22,7 +22,7 @@ jobs:
           command: 'choco install mingw'
       - run:
           name: Compile Code
-          command: 'cl /EHsc src/*.cpp src/front-end/*.cpp src/back-end/*.cpp'
+          command: 'CL /EHsc src/*.cpp src/front-end/*.cpp src/back-end/*.cpp'
       - run:
           name: Compiling Code
           command: 'g++ -o night -std=c++17 -Wall -Werror src/*.cpp src/front-end/*.cpp src/back-end/*.cpp'
