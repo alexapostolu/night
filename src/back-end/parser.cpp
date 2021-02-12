@@ -21,12 +21,12 @@ Parser::Parser(
 	if (tokens[0].type == TokenType::SET)
 	{
 		if (tokens.size() == 1 || tokens[1].type != TokenType::VAR)
-			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "expected variable name after 'set' keyword", "variable initializations are required to be in this format: 'set {variable name} = {expression}'");
+			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "expected variable name after 'set' keyword", "variable initializations are required to be in this format: 'set variable_name = expression'");
 		if (tokens.size() == 2 || tokens[2].type != TokenType::ASSIGN)
-			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "expected assignment operator '=' after variable name", "variable initializations are required to be in this format: 'set {variable name} = {expression}'");
+			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "expected assignment operator '=' after variable name", "variable initializations are required to be in this format: 'set variable_name = expression'");
 		if (tokens.size() == 3)
-			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "expected expression after assignment operator '='", "variable initializations are required to be in this format: 'set {variable name} = {expression}'");
-		if (!get_variable(current_scope, tokens[1].data))
+			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "expected expression after assignment operator '='", "variable initializations are required to be in this format: 'set variable_name = expression'");
+		if (find_variable(current_scope, tokens[1].data))
 			throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "variable '" + tokens[1].data + "' has already been defined", "variables can only be defined once, regardless of their scope");
 		if (!get_container(check_functions, tokens[1].data))
 			throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "variable '" + tokens[1].data + "' has the same name as a function", "variable and function names are required to be unique");
@@ -50,8 +50,7 @@ Parser::Parser(
 			CheckVariable{ tokens[1].data, expression_types, is_array });
 
 		current_scope->statements.push_back(Statement{
-			file, line,
-			StatementType::VARIABLE,
+			file, line, StatementType::VARIABLE,
 			Variable{ tokens[1].data, expression }
 		});
 	}
@@ -143,8 +142,8 @@ Parser::Parser(
 
 		// extracting and evaluating element
 
-		auto assignment_index = std::find_if(tokens.cbegin(), tokens.cend(),
-			[](const Token& token) { return token.type == TokenType::ASSIGN; });
+		auto assignment_index = std::find(tokens.cbegin(),
+			tokens.cend(), TokenType::ASSIGN );
 
 		if (assignment_index == tokens.end())
 			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "expected assignment operator in element assignment", "element assignments must be in this form: 'variable[index] = expression'");
@@ -179,8 +178,7 @@ Parser::Parser(
 		// pushing statement
 
 		current_scope->statements.push_back(Statement{
-			file, line,
-			StatementType::ELEMENT,
+			file, line, StatementType::ELEMENT,
 			Element{ tokens[0].data, element_expr, assign_expr }
 		});
 	}
@@ -239,7 +237,7 @@ Parser::Parser(
 			? SplitCode(std::vector<Token>(std::next(close_bracket_it, 2), tokens.end() - 1))
 			: SplitCode(std::vector<Token>(std::next(close_bracket_it, 1), tokens.end()));
 
-		std::shared_ptr<Scope> body = std::make_shared<Scope>(Scope{ current_scope });
+		std::shared_ptr<Scope> body = std::make_shared<Scope>(current_scope);
 		for (const std::vector<Token>& split_token : split_tokens)
 			Parser parse(body, split_token);
 
@@ -285,7 +283,7 @@ Parser::Parser(
 			? SplitCode(std::vector<Token>(std::next(close_bracket_it, 2), tokens.end() - 1))
 			: SplitCode(std::vector<Token>(std::next(close_bracket_it, 1), tokens.end()));
 
-		std::shared_ptr<Scope> body = std::make_shared<Scope>(Scope{ current_scope });
+		std::shared_ptr<Scope> body = std::make_shared<Scope>(current_scope);
 		for (const std::vector<Token>& split_token : split_tokens)
 			Parser(body, split_token);
 
@@ -307,7 +305,7 @@ Parser::Parser(
 			? SplitCode(std::vector<Token>(tokens.begin() + 2, tokens.end() - 1))
 			: SplitCode(std::vector<Token>(tokens.begin() + 1, tokens.end()));
 
-		std::shared_ptr<Scope> body = std::make_shared<Scope>(Scope{ current_scope });
+		std::shared_ptr<Scope> body = std::make_shared<Scope>(current_scope);
 		for (const std::vector<Token>& split_token : split_tokens)
 			Parser parse(body, split_token);
 
@@ -322,11 +320,11 @@ Parser::Parser(
 	{
 		if (tokens.size() == 1 || tokens[1].type != TokenType::VAR)
 			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "expected function name after 'def' keyword", "function definitions are required to be in this format: 'def {function name} ( {parameters} ) {}'");
-		if (!get_variable(current_scope, tokens[1].data))
+		if (find_variable(current_scope, tokens[1].data))
 			throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "function '" + tokens[1].data + "' can not have the same name as a variable", "function and variable names are required to be unique");
 		if (!get_container(check_functions, tokens[1].data))
 			throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "function '" + tokens[1].data + "' has already been define", "functions can only be defined once");
-		if (!get_variable(current_scope, tokens[1].data))
+		if (find_variable(current_scope, tokens[1].data))
 			throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "function '" + tokens[1].data + "' can not have the same name as a class", "function and class names are required to be unique");
 		if (current_scope->upper_scope != nullptr)
 			throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "function '" + tokens[1].data + "' can not be defined inside of a local scope", "functions have to be defined in the global scope");
@@ -335,7 +333,7 @@ Parser::Parser(
 
 		// function parameters
 
-		std::shared_ptr<Scope> function_scope = std::make_shared<Scope>(Scope{ current_scope });
+		std::shared_ptr<Scope> function_scope = std::make_shared<Scope>(current_scope);
 
 		std::vector<std::string> parameter_names;
 
@@ -345,7 +343,7 @@ Parser::Parser(
 			if (tokens[close_bracket_index].type != TokenType::VAR)
 				CompileError(__FILE__, __LINE__, CompileError::invalid_grammar, file, line, "expected variable names as function parameters", "function parameters are required to be variables separated by spaces");
 
-			if (!get_variable(function_scope, tokens[close_bracket_index].data))
+			if (find_variable(function_scope, tokens[close_bracket_index].data))
 				throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "function parameter can not have the same name as another variable", "function parameters are required to be unique");
 			if (!get_container(check_functions, tokens[close_bracket_index].data))
 				throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "function parameter can not have the same name as a function", "function parameter names are required to be unique");
@@ -377,8 +375,7 @@ Parser::Parser(
 		check_function->parameters.resize(parameter_names.size());
 
 		current_scope->statements.push_back(Statement{
-			file, line,
-			StatementType::FUNCTION_DEF,
+			file, line, StatementType::FUNCTION_DEF,
 			FunctionDef{ tokens[1].data, parameter_names }
 		});
 
@@ -390,7 +387,7 @@ Parser::Parser(
 			? SplitCode(std::vector<Token>(tokens.begin() + close_bracket_index + 2, tokens.end() - 1))
 			: SplitCode(std::vector<Token>(tokens.begin() + close_bracket_index + 1, tokens.end()));
 
-		std::shared_ptr<Scope> body = std::make_shared<Scope>(Scope{ current_scope });
+		std::shared_ptr<Scope> body = std::make_shared<Scope>(current_scope);
 		for (const std::vector<Token>& split_token : split_tokens)
 			Parser(body, split_token);
 
@@ -453,8 +450,8 @@ Parser::Parser(
 
 		// fetching check function
 
-		auto check_function = std::find_if(check_functions.cbegin(), check_functions.cend(),
-			[&](const CheckFunction& check_func) { return check_func.name == tokens[0].data; });
+		auto check_function = std::find(check_functions.cbegin(),
+			check_functions.cend(), tokens[0].data);
 
 		if (check_function == check_functions.end())
 			throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "function '" + tokens[0].data + "' is undefined", "functions are required to be defined before they are called");
@@ -482,8 +479,7 @@ Parser::Parser(
 		// pushing statement
 
 		current_scope->statements.push_back(Statement{
-			file, line,
-			StatementType::FUNCTION_CALL,
+			file, line, StatementType::FUNCTION_CALL,
 			FunctionCall{ tokens[0].data, argument_expressions }
 		});
 	}
@@ -521,8 +517,7 @@ Parser::Parser(
 			return_expr_types.begin(), return_expr_types.end() );
 
 		current_scope->statements.push_back(Statement{
-			file, line,
-			StatementType::RETURN,
+			file, line, StatementType::RETURN,
 			Return{ return_expr }
 		});
 	}
@@ -556,7 +551,7 @@ Parser::Parser(
 			? SplitCode(std::vector<Token>(std::next(close_bracket_index, 2), tokens.end() - 1))
 			: SplitCode(std::vector<Token>(std::next(close_bracket_index, 1), tokens.end()));
 
-		std::shared_ptr<Scope> scope_body = std::make_shared<Scope>(Scope{ current_scope });
+		std::shared_ptr<Scope> scope_body = std::make_shared<Scope>(current_scope);
 		for (const std::vector<Token>& token_split : tokens_split)
 			Parser(scope_body, token_split);
 
@@ -571,14 +566,14 @@ Parser::Parser(
 	else if (tokens[0].type == TokenType::FOR)
 	{
 		if (tokens.size() == 1 || tokens[1].type != TokenType::OPEN_BRACKET)
-			throw BackError(file, line, "expected open bracket after 'for' keyword");
+			throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "expected opening bracket after 'for' keyword", "for loops must be in this format: 'for (condition) {}'");
 		if (tokens.size() == 2 || tokens[2].type != TokenType::VAR)
 			throw BackError(file, line, "expected iterator name after open bracket");
 		if (tokens.size() == 3 || tokens[3].type != TokenType::COLON)
 			throw BackError(file, line, "expected colon after iterator name");
 		if (tokens.size() == 4)
 			throw BackError(file, line, "expected array after colon");
-		if (!get_variable(current_scope, tokens[2].data))
+		if (find_variable(current_scope, tokens[2].data))
 			throw BackError(file, line, "variable '" + tokens[2].data + "' is already defined");
 
 		// evaluating iterator and range
@@ -605,7 +600,7 @@ Parser::Parser(
 			? SplitCode(std::vector<Token>(std::next(close_bracket_index, 2), tokens.end() - 1))
 			: SplitCode(std::vector<Token>(std::next(close_bracket_index, 1), tokens.end()));
 
-		std::shared_ptr<Scope> body = std::make_shared<Scope>(Scope{ current_scope });
+		std::shared_ptr<Scope> body = std::make_shared<Scope>(current_scope);
 		body->check_variables.push_back(CheckVariable{ tokens[2].data, range_types }); // iterator
 
 		for (const std::vector<Token>& split_token : split_tokens)
@@ -640,6 +635,19 @@ CheckVariable* Parser::get_variable(
 	}
 
 	return nullptr;
+}
+
+bool Parser::find_variable(
+	const std::shared_ptr<Scope>& scope,
+	const std::string& variable_name
+) {
+	for (const CheckVariable& check_var : scope->check_variables)
+	{
+		if (check_var.name == variable_name)
+			return true;
+	}
+
+	return false;
 }
 
 std::vector<Value> Parser::TokensToValues(const std::vector<Token>& tokens)
@@ -981,8 +989,8 @@ std::vector<VariableType> Parser::TypeCheckExpression(
 			CheckVariable* check_variable = get_variable(current_scope, node->data);
 			if (check_variable == nullptr)
 			{
-				auto check_object = std::find_if(check_classes.cbegin(), check_classes.cend(),
-					[&](const CheckClass& check_class) { return check_class.name == node->data; });
+				auto check_object = std::find(check_classes.cbegin(),
+					check_classes.cend(), node->data );
 
 				if (check_object == check_classes.end())
 					throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "variable '" + node->data + "' is undefined", "variables have to be defined before they are used");
@@ -1003,8 +1011,8 @@ std::vector<VariableType> Parser::TypeCheckExpression(
 		}
 		if (node->type == ValueType::CALL)
 		{
-			auto check_function = std::find_if(check_functions.begin(), check_functions.end(),
-				[&](const CheckFunction& func) { return func.name == node->data; });
+			auto check_function = std::find(check_functions.begin(),
+				check_functions.end(), node->data );
 
 			if (check_function == check_functions.end())
 				throw CompileError(__FILE__, __LINE__, CompileError::definition_error, file, line, "function '" + node->data + "' is undefined", "functions have to be defined before they are used");
@@ -1079,7 +1087,8 @@ std::vector<VariableType> Parser::TypeCheckExpression(
 		std::vector<VariableType> add_types;
 		if (find_type(left, VariableType::INT) && find_type(right, VariableType::INT))
 			add_types.push_back(VariableType::INT);
-		if (find_type(left, VariableType::FLOAT) && find_type(right, VariableType::FLOAT))
+		if ((find_type(left, VariableType::FLOAT) && find_num_types(right)) ||
+			(find_type(right, VariableType::FLOAT) && find_num_types(right)))
 			add_types.push_back(VariableType::FLOAT);
 		if (find_type(left, VariableType::STR) || find_type(right, VariableType::STR))
 			add_types.push_back(VariableType::STR);

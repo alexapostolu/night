@@ -73,6 +73,14 @@ private:
 		const std::string& variable_name
 	);
 
+	// searches current scope for variable
+	//
+	// remember, variables with same name can exits, but in different scopes
+	bool find_variable(
+		const std::shared_ptr<Scope>& scope,
+		const std::string& variable_name
+	);
+
 	// finds object in array using its 'name' attribute,
 	// if found, returns its address, otherwise returns 'nullptr'
 	template <typename T>

@@ -41,9 +41,22 @@ bool VariableType::operator!=(const VariableType& _type) const
 	return type != _type.type;
 }
 
-/*
 bool CheckFunction::operator==(const std::string& _name) const
 {
 	return name == _name;
 }
-*/
+
+bool CheckClass::operator==(const std::string& _name) const
+{
+	return name == _name;
+}
+
+bool Token::operator==(const TokenType& _type) const
+{
+	return type == _type;
+}
+
+bool CheckVariable::operator==(const std::string& _name) const
+{
+	return name == _name;
+}

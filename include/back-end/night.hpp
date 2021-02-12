@@ -5,6 +5,7 @@
 #include <variant>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 struct NightData
 {
@@ -34,12 +35,16 @@ struct NightFunction
 	std::string name;
 	std::vector<std::string> params;
 	std::vector<Statement> body;
+
+	bool operator==(const std::string& _name) const;
 };
 
 struct NightScope
 {
 	const std::shared_ptr<NightScope> upper_scope;
 	std::unordered_map<std::string, NightData> night_variables;
+
+	NightScope(const std::shared_ptr<NightScope>& _upper_scope);
 };
 
 // displays standard output

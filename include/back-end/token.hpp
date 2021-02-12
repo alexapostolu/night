@@ -42,6 +42,8 @@ struct Token
 
 	TokenType type;
 	std::string data;
+
+	bool operator==(const TokenType& _type) const;
 };
 
 enum class ValueType
@@ -145,6 +147,8 @@ struct CheckVariable
 	// used
 
 	bool is_array;
+
+	bool operator==(const std::string& _name) const;
 };
 
 struct CheckFunction
@@ -156,7 +160,7 @@ struct CheckFunction
 
 	bool is_void;
 
-	//bool operator==(const std::string& _name) const;
+	bool operator==(const std::string& _name) const;
 };
 
 struct CheckClass
@@ -165,6 +169,8 @@ struct CheckClass
 
 	std::vector<CheckVariable> variables;
 	std::vector<CheckFunction> methods;
+
+	bool operator==(const std::string& _name) const;
 };
 
 struct Scope

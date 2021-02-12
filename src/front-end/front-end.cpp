@@ -15,15 +15,23 @@ void FrontEnd(const int argc, const char* argv[])
 	if (argc != 2)
 		throw FrontEndError("invalid command line arguments; only pass in the file name as an argument");
 
+	if (std::string(argv[1]) == "--version")
+	{
+		std::cout << "night v1.0.0";
+		return;
+	}
+
 	const std::vector<std::vector<Token> > code = SplitCode(OpenFile(argv[1]));
-	std::shared_ptr<Scope> global_scope = std::make_shared<Scope>(Scope{ nullptr });
+	const std::shared_ptr<Scope> global_scope = std::make_shared<Scope>(nullptr);
 	for (const std::vector<Token>& tokens : code)
 	{
 		assert(!tokens.empty() && "tokens shouldn't be empty");
-		Parser parse(global_scope, tokens);
+		Parser(global_scope, tokens);
 	}
 
-	NightScope night_global{ nullptr };
+	std::shared_ptr<NightScope> night_global =
+		std::make_shared<NightScope>(nullptr);
+
 	Interpreter(night_global, global_scope->statements);
 }
 
