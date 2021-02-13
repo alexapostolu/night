@@ -11,7 +11,7 @@ class Parser
 public:
 	Parser(
 		const std::shared_ptr<Scope>& scope,
-		const std::vector<Token>& _tokens
+		const std::vector<Token>& tokens
 	);
 
 private:
@@ -68,34 +68,10 @@ private:
 private:
 	// searches current scope for variable, if not found, moves to upper scope;
 	// once found, returns its address, or nullptr otherwise
-	CheckVariable* get_variable(
+	std::unordered_map<std::string, CheckVariable>::iterator get_variable(
 		const std::shared_ptr<Scope>& scope,
 		const std::string& variable_name
 	);
-
-	// searches current scope for variable
-	//
-	// remember, variables with same name can exits, but in different scopes
-	bool find_variable(
-		const std::shared_ptr<Scope>& scope,
-		const std::string& variable_name
-	);
-
-	// finds object in array using its 'name' attribute,
-	// if found, returns its address, otherwise returns 'nullptr'
-	template <typename T>
-	T* get_container(
-		std::vector<T>& container,
-		const std::string& name
-	) {
-		for (T& object : container)
-		{
-			if (name == object.name)
-				return &object;
-		}
-
-		return nullptr;
-	}
 
 	// start iterator at bracket position, advances to close bracket position
 	void advance_to_close_bracket(
@@ -107,10 +83,8 @@ private:
 	const std::string file;
 	const int line;
 
-	const std::vector<Token> tokens;
-
 	static const std::vector<VariableType> all_types;
 
-	static std::vector<CheckFunction> check_functions;
-	static std::vector<CheckClass>    check_classes;
+	static std::unordered_map<std::string, CheckFunction> check_functions;
+	static std::unordered_map<std::string, CheckClass> check_classes;
 };

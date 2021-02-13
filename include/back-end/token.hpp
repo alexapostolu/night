@@ -4,6 +4,7 @@
 #include <variant>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 enum class TokenType
 {
@@ -133,7 +134,7 @@ struct CheckVariable
 	//
 	// once a parameter has types, it then behaves like a normal variable
 
-	std::string name;
+	//std::string name;
 	std::vector<VariableType> types;
 
 	// a note about 'is_array':
@@ -153,7 +154,7 @@ struct CheckVariable
 
 struct CheckFunction
 {
-	std::string name;
+	//std::string name;
 	std::vector<std::vector<VariableType> > parameters;
 
 	std::vector<VariableType> return_types;
@@ -165,10 +166,10 @@ struct CheckFunction
 
 struct CheckClass
 {
-	std::string name;
+	//std::string name;
 
 	std::vector<CheckVariable> variables;
-	std::vector<CheckFunction> methods;
+	std::unordered_map<std::string, CheckFunction> methods;
 
 	bool operator==(const std::string& _name) const;
 };
@@ -178,7 +179,8 @@ struct Scope
 	std::shared_ptr<Scope> upper_scope;
 
 	std::vector<Statement> statements;
-	std::vector<CheckVariable> check_variables; 
+	//std::vector<CheckVariable> check_variables; 
+	std::unordered_map<std::string, CheckVariable> variables;
 };
 
 struct Variable
@@ -258,7 +260,7 @@ struct ForLoop
 struct Element
 {
 	std::string name;
-	std::shared_ptr<Expression> index;
+	std::vector<std::shared_ptr<Expression> > index;
 	std::shared_ptr<Expression> assign;
 };
 
