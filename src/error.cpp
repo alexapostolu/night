@@ -14,10 +14,10 @@ std::string Error::UnexpectedError(const std::exception& e)
 		   "Please submit an issue on the GitHub page:\ngithub.com/dynamicsquid/night\n";
 }
 
-const std::string CompileError::invalid_syntax = "invalid syntax";
-const std::string CompileError::invalid_grammar = "invalid grammar";
-const std::string CompileError::definition_error = "definition error";
-const std::string CompileError::type_mismatch = "type mismatch";
+const std::string CompileError::invalid_syntax     = "invalid syntax";
+const std::string CompileError::invalid_grammar    = "invalid grammar";
+const std::string CompileError::invalid_definition = "invalid definition";
+const std::string CompileError::invalid_type       = "invalid type";
 
 CompileError::CompileError(const std::string& debug_file, const int debug_line, const std::string& _type,
 	const std::string& _file, const int _line, const std::string& _desc, const std::string& _note,
@@ -155,7 +155,7 @@ std::string CompileError::what() const
 
 const std::string RuntimeError::invalid_expression = "invalid expression";
 const std::string RuntimeError::out_of_range = "out of range";
-const std::string RuntimeError::type_mismatch = "type mismatch";
+const std::string RuntimeError::invalid_type = "type mismatch";
 
 RuntimeError::RuntimeError(const std::string& debug_file, const int debug_line, const std::string& _type,
 	const std::string& _file, const int _line, const std::string& _desc, const std::string& _note,

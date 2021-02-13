@@ -56,8 +56,8 @@ public:
 public:
 	static const std::string invalid_syntax;
 	static const std::string invalid_grammar;
-	static const std::string definition_error;
-	static const std::string type_mismatch;
+	static const std::string invalid_definition;
+	static const std::string invalid_type;
 
 private:
 	std::string type;
@@ -97,7 +97,7 @@ public:
 public:
 	static const std::string invalid_expression;
 	static const std::string out_of_range;
-	static const std::string type_mismatch;
+	static const std::string invalid_type;
 
 private:
 	std::string type;

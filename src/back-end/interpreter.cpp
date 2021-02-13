@@ -55,7 +55,7 @@ Interpreter::Interpreter(
 				else if (night_variable->second.is_num())
 				{
 					if (!assign_expr.is_num())
-						throw RuntimeError(__FILE__, __LINE__, RuntimeError::type_mismatch, file, line, "expression can not be used with the operator '+='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, if the variable is type 'int' or 'float', then the operator '+=' can only assign expressions of type 'int' or 'float'");
+						throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "expression can not be used with the operator '+='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, if the variable is type 'int' or 'float', then the operator '+=' can only assign expressions of type 'int' or 'float'");
 
 					if (night_variable->second.type == VariableType::INT)
 						std::get<int>(night_variable->second.data) += (int)assign_expr.get_num();
@@ -64,16 +64,16 @@ Interpreter::Interpreter(
 				}
 				else
 				{
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::type_mismatch, file, line, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '+='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '+=' can only be used on variables of type 'int', 'float', or 'string'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '+='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '+=' can only be used on variables of type 'int', 'float', or 'string'");
 				}
 
 				break;
 			}
 			case Assignment::MINUS: {
 				if (!night_variable->second.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::type_mismatch, file, line, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '-='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '-=' can only be used on variables of type 'int' or 'float'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '-='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '-=' can only be used on variables of type 'int' or 'float'");
 				if (!assign_expr.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::type_mismatch, file, line, "expression can not be used with the operator '-='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '-=' can only assign expressions of type 'int' or 'float'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "expression can not be used with the operator '-='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '-=' can only assign expressions of type 'int' or 'float'");
 
 				if (night_variable->second.type == VariableType::INT)
 					std::get<int>(night_variable->second.data) -= (int)assign_expr.get_num();
@@ -84,9 +84,9 @@ Interpreter::Interpreter(
 			}
 			case Assignment::TIMES: {
 				if (!night_variable->second.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::type_mismatch, file, line, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '*='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '*=' can only be used on variables of type 'int' or 'float'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '*='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '*=' can only be used on variables of type 'int' or 'float'");
 				if (!assign_expr.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::type_mismatch, file, line, "expression can not be used with the operator '*='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '*=' can only assign expressions of type 'int' or 'float'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "expression can not be used with the operator '*='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '*=' can only assign expressions of type 'int' or 'float'");
 
 				if (night_variable->second.type == VariableType::INT)
 					std::get<int>(night_variable->second.data) *= (int)assign_expr.get_num();
@@ -97,9 +97,9 @@ Interpreter::Interpreter(
 			}
 			case Assignment::DIVIDE: {
 				if (!night_variable->second.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::type_mismatch, file, line, "variable '" + night_variable->first+ "' can not be assigned using the assignment operator '/='", "the operator can only be used on variables of type 'int' or float'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "variable '" + night_variable->first+ "' can not be assigned using the assignment operator '/='", "the operator can only be used on variables of type 'int' or float'");
 				if (!assign_expr.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::type_mismatch, file, line, "expression can not be used with the operator '/='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '/=' can only assign expressions of type 'int' or 'float'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "expression can not be used with the operator '/='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '/=' can only assign expressions of type 'int' or 'float'");
 
 				if (night_variable->second.type == VariableType::INT)
 					std::get<int>(night_variable->second.data) /= (int)assign_expr.get_num();
@@ -131,7 +131,7 @@ Interpreter::Interpreter(
 					EvaluateExpression(current_scope, conditional.condition);
 
 				if (condition_expr.type != VariableType::STR)
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::type_mismatch, file, line, "if statement expression does not evaluate to the type 'bool'", "conditions must evaluate to the type 'bool'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "if statement expression does not evaluate to the type 'bool'", "conditions must evaluate to the type 'bool'");
 
 				if (conditional.condition == nullptr || std::get<bool>(condition_expr.data))
 				{
@@ -165,7 +165,7 @@ Interpreter::Interpreter(
 				const NightData data = EvaluateExpression(current_scope, function_call->arguments[0]);
 
 				if (data.type == VariableType::CLASS)
-					throw BackError(file, line, "function 'print' cannot accept a class argument");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "function 'print' cannot accept a class argument", "it can only accept basic types");
 
 				NightPrint(data);
 
@@ -252,10 +252,16 @@ Interpreter::Interpreter(
 			assert(night_variable != current_scope->night_variables.end());
 
 			const NightData index_data =
-				EvaluateExpression(current_scope, element_stmt->index);
+				EvaluateExpression(current_scope, element_stmt->index[0]);
+			
+			// multidimensional arrays!!!!
+			//
+			//
+			//
+			//
 
 			if (index_data.type != VariableType::INT)
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::type_mismatch, file, line, "subscript index does not evaluate to type 'int'", "subscript index currently is of type '" + index_data.type.to_str() + "'");
+				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "subscript index does not evaluate to type 'int'", "subscript index currently is of type '" + index_data.type.to_str() + "'");
 
 			const int index = std::get<int>(index_data.data);
 
@@ -268,9 +274,9 @@ Interpreter::Interpreter(
 					EvaluateExpression(current_scope, element_stmt->assign);
 
 				if (assign_data.type != VariableType::STR)
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::type_mismatch, file, line, "string elements can only be assigned to other strings of length 1", "expression currently is type '" + assign_data.type.to_str() + "'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "string elements can only be assigned to other strings of length 1", "expression currently is type '" + assign_data.type.to_str() + "'");
 				if (std::get<std::string>(assign_data.data).length() != 1)
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::type_mismatch, file, line, "string elements can only be assigned to other strings of length 1", "expression currently has length '" + std::to_string(std::get<std::string>(assign_data.data).length()) + "'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "string elements can only be assigned to other strings of length 1", "expression currently has length '" + std::to_string(std::get<std::string>(assign_data.data).length()) + "'");
 
 				std::get<std::string>(night_variable->second.data)[index] =
 					std::get<std::string>(assign_data.data)[0];
@@ -591,13 +597,13 @@ NightData Interpreter::EvaluateExpression(
 	}
 	if (node->data == "[]")
 	{
-		const NightData array = EvaluateExpression(current_scope, node->right);
 		const NightData data_index = EvaluateExpression(current_scope, node->extras[0]);
-
 		if (data_index.type != VariableType::INT)
 			throw BackError(file, line, "array index is required to be an integer");
 
 		const int index = std::get<int>(data_index.data);
+		
+		const NightData array = EvaluateExpression(current_scope, node->right);
 
 		if (array.type == VariableType::STR)
 		{
