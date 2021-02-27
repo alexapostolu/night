@@ -1,10 +1,10 @@
 A timeline of both past and future versions.
 
-## Version 2 Advanced Night
+## Version 2 - Advanced Night
 
 Networking...
 
-## Version 1 Basic Night
+## Version 1 - Basic Night
 
 A complete rewrite focused on making the langauge dynamically typed, and adding useful syntax like array slicing, in addition to adding core features like classes and file handling.
 - `v1.0` will mainly focus on making the language safe and scalable
@@ -54,7 +54,7 @@ There's also compile time checks to see if variables and functions exist, if fun
 
 And we're also back to using C++'s STL instead my own. And the entire parser and interpreter system is reworked. We now have an actual parser that constructs an AST and all that stuff.
 
-## Version 0 Beta
+## Version 0 - Beta Night
 
 This version was me learning how to make a language :)
 
