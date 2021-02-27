@@ -1,6 +1,10 @@
 A timeline of both past and future versions.
 
-## Version 1
+## Version 2 Advanced Night
+
+Networking...
+
+## Version 1 Basic Night
 
 A complete rewrite focused on making the langauge dynamically typed, and adding useful syntax like array slicing, in addition to adding core features like classes and file handling.
 - `v1.0` will mainly focus on making the language safe and scalable
@@ -36,7 +40,7 @@ Types and expression as first class citizens.
 
 The implementation is now way more stable and scalable, allowing for faster and safer updates.
 
-### v1.0.1 Feature Boost
+### v1.1.0 Feature Boost
 
 Feature boost! We now have casts, pass by reference, and default parameters!
 
