@@ -15,7 +15,7 @@ What makes Night different from other dynamically typed languages is its compile
 
 ### Getting Started with Night
 
-Night comes in two parts, the interpreter (this repo) and [Dusk](https://github.com/firefish111/dusk) (the package manager). You can find easy installation and setup, as well as a tutorial, for both on the [Night website](https://night-website.dynamicsquid.repl.co/index.html).
+Night comes in two parts, the interpreter (this repo) and [Dusk](https://github.com/firefish111/dusk) (the package manager). You can find easy installation and setup, as well as a tutorial, for both on the [Night website](https://github.com/DynamicSquid/night).
 
 And if you like, you can build Night from source as well.
 
