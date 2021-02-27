@@ -1,6 +1,7 @@
 matrix:
   include:
     - os: linux
+      sudo: required
       language:
         - cpp
       compiler:
