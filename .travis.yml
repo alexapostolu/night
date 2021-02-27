@@ -1,0 +1,12 @@
+matrix:
+  include:
+    - os: linux
+      env:
+        - MATRIX_EVAL="cmake ."
+
+    - os: windows
+      env:
+        - MATRIX_EVAL="cmake ."
+
+before_install:
+    - eval "${MATRIX_EVAL}"
