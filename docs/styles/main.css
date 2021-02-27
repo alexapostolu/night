@@ -1,8 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+
 canvas {
 	position: absolute;
 	top: 0px;
 	left: 0px;
 	z-index: -2;
+}
+
+body {
+	background-color: black;
 }
 
 #title img {
@@ -14,7 +20,7 @@ canvas {
 }
 
 #title h1 {
-	color: white;
+	color: #eee;
 
 	text-align: center;
 
@@ -37,7 +43,7 @@ canvas {
 }
 
 #title #tag {
-	background-color: white;
+	background-color: #eee;
 	color: gray;
 	
 	margin: auto;
@@ -60,6 +66,8 @@ canvas {
 
 #title #actions {
 	display: flex;
+
+	color: #eee;
 	
 	margin-top: 50px;
 	margin-left: 12%;
@@ -68,7 +76,7 @@ canvas {
 }
 
 #title #actions a {
-	color: black;
+	color: #eee;
 	text-decoration: none;
 }
 
@@ -95,34 +103,6 @@ canvas {
 }
 
 #title .action h2:hover {
-	background-color: black;
-	color: white;
-}
-
-body .gist .gist-file {
-	margin-top: 30px;
-	margin-bottom: 30px;
-
-    width: 100%;
-}
-
-body .gist .blob-num {
-  display: none;
-}
-
-body .gist .blob-code {
-	background-color: white;
+	background-color: #eee;
 	color: black;
-}
-
-body .gist .gist-meta {
-    display: none;
-}
-
-body .gist .gist-data {
-    border-bottom: none;
-}
-
-body .gist ::selection {
-    background: rgb(150, 150, 150);
 }

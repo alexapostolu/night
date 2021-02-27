@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro&display=swap');
+
+#main .code {
+	background-color: black;
+
+	color: rgb(129, 129, 129);
+
+    margin-bottom: 60px;
+
+	border: solid;
+	border-color: #eee;
+
+	padding: 20px;
+
+	font-family: 'Source Code Pro', monospace;
+
+	box-shadow: 10px 10px rgb(170, 170, 170);
+}
+
+#main .code .com {
+	color: rgb(2, 185, 2);
+}
+
+#main .code .key {
+	color: rgb(0, 140, 255);
+}
+
+#main .code .func {
+	color: rgb(214, 175, 1);
+}
+
+#main .code .param {
+	color:rgb(190, 190, 190);
+}
+
+#main .code .meth {
+	color:rgb(174, 0, 255);
+}
+
+#main .code .var {
+	color:#eee;
+}
+
+#main .code .type {
+	color:rgb(0, 204, 255);
+}
+
+#main .code .str {
+    color: rgb(255, 136, 0);
+}

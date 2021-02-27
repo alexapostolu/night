@@ -31,9 +31,8 @@ class Star {
 function setup() {
   	createCanvas(windowWidth - 17, 500);
 
-	for (let a = 0; a < 50; ++a) {
+	for (let a = 0; a < 50; ++a)
 		stars.push(new Star());
-	}
 }
 
 function draw() {

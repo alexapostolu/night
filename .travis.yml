@@ -12,13 +12,7 @@ matrix:
       script:
         - export CXX=g++-7
         - cmake .
-        - ./night tests/test.night
-    - os: windows
-      dist: trusty
-      language: cpp
-      script:
-        - cmake .
-        - night tests/test.night
+        - ./night tests/test.night]
 
 before_install:
     - eval "${MATRIX_EVAL}"
