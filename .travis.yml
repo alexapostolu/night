@@ -12,6 +12,7 @@ matrix:
       script:
         - export CXX=g++-7
         - cmake .
+        - make
         - ./night tests/test.night]
 
 before_install:
