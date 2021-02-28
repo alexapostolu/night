@@ -10,6 +10,9 @@ int main(int argc, char* argv[])
 		FrontEnd(argc, argv);
 		return 0;
 	}
+	catch (const FrontEndError& e) {
+		std::cout << e.what();
+	}
 	catch (const Error& e) {
 		std::cout << e.what();
 	}

@@ -11,7 +11,7 @@ std::string VariableType::to_str() const
 	case VariableType::FLOAT:
 		return "float";
 	case VariableType::STR:
-		return "string";
+		return "str";
 	case VariableType::ARRAY:
 		return "array";
 	case VariableType::CLASS:

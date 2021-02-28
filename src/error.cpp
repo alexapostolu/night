@@ -102,6 +102,5 @@ FrontEndError::FrontEndError(const std::string& _msg)
 
 std::string FrontEndError::what() const
 {
-	
 	return "";
 }

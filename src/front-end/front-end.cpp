@@ -50,7 +50,7 @@ std::vector<Token> OpenFile(const std::string& file)
 		{
 			if (file_tokens.size() == 1 || file_tokens[1].type != TokenType::STR)
 				throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "expected file name after '" + file_tokens[0].data + "' statement");
-			if (file_tokens.size() > 2)
+			if (file_tokens.size() > 3) // EOF
 				throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "'" + file_tokens[0].data + "' must be on its own line");
 
 			if (file_tokens[0].data == "import" && file_tokens[1].data == "python")
@@ -61,8 +61,8 @@ std::vector<Token> OpenFile(const std::string& file)
 				(file_tokens[1].data + ".night")
 			);
 
-			file_tokens.erase(file_tokens.begin(), file_tokens.begin() + 2);
-			file_tokens.insert(file_tokens.end(), import_tokens.begin(), import_tokens.end());
+			file_tokens.erase(file_tokens.begin(), file_tokens.begin() + 3); // EOF
+			file_tokens.insert(file_tokens.begin(), import_tokens.begin(), import_tokens.end());
 		}
 
 		tokens.insert(tokens.end(), file_tokens.begin(), file_tokens.end());

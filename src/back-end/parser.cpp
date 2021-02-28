@@ -340,7 +340,7 @@ Parser::Parser(
 		if (current_scope->variables.find(tokens[1].data) != current_scope->variables.end())
 			throw CompileError(__FILE__, __LINE__, CompileError::invalid_definition, file, line, "function '" + tokens[1].data + "' can not have the same name as a variable", "function and variable names are required to be unique");
 		if (check_functions.find(tokens[1].data) != check_functions.end())
-			throw CompileError(__FILE__, __LINE__, CompileError::invalid_definition, file, line, "function '" + tokens[1].data + "' has already been define", "functions can only be defined once");
+			throw CompileError(__FILE__, __LINE__, CompileError::invalid_definition, file, line, "function '" + tokens[1].data + "' has already been defined", "functions can only be defined once");
 		if (check_classes.find(tokens[1].data) != check_classes.end())
 			throw CompileError(__FILE__, __LINE__, CompileError::invalid_definition, file, line, "function '" + tokens[1].data + "' can not have the same name as a class", "function and class names are required to be unique");
 		if (current_scope->upper_scope != nullptr)
@@ -981,7 +981,7 @@ VariableTypeContainer Parser::TypeCheckExpression(
 	const std::shared_ptr<Expression>& node,
 	const std::string& op_name,
 	const VariableTypeContainer& required_types,
-	bool* is_for_loop_range
+	bool* get_element_types
 ) {
 	assert(node != nullptr);
 
@@ -990,10 +990,10 @@ VariableTypeContainer Parser::TypeCheckExpression(
 	{
 		if (node->type == ValueType::ARRAY)
 		{
-			if (is_for_loop_range == nullptr)
+			if (get_element_types == nullptr)
 				return { VariableType::ARRAY };
 
-			*is_for_loop_range = true;
+			*get_element_types = true;
 
 			VariableTypeContainer element_types;
 			for (const std::shared_ptr<Expression>& element : node->extras)
@@ -1015,9 +1015,21 @@ VariableTypeContainer Parser::TypeCheckExpression(
 				return { { VariableType::CLASS, node->data } };
 			}
 
-			if (is_for_loop_range != nullptr)
+			// variable has to be an array
+			if (get_element_types != nullptr)
 			{
-				*is_for_loop_range = true;
+				if (check_variable->second.is_param())
+				{
+					check_variable->second.types = all_types;
+					check_variable->second.set_array(true);
+
+					*get_element_types = true;
+				}
+				else if (check_variable->second.is_array())
+				{
+					*get_element_types = true;
+				}
+
 				return check_variable->second.types;
 			}
 
@@ -1140,14 +1152,14 @@ VariableTypeContainer Parser::TypeCheckExpression(
 	}
 	if (node->data == "[]")
 	{
-		// get individual array elements
-		bool giae = false;
-		const VariableTypeContainer array_types = TypeCheckExpression(current_scope, node->right, node->data, { VariableType::ARRAY }, &giae);
-		const VariableTypeContainer index_types = TypeCheckExpression(current_scope, node->extras[0], node->data, { VariableType::INT });
-
-		if (!giae)
+		bool get_element_types = false;
+		const VariableTypeContainer array_types =
+			TypeCheckExpression(current_scope, node->right, node->data, { VariableType::ARRAY }, &get_element_types);
+		if (!get_element_types && array_types.find(VariableType::STR) == array_types.end())
 			throw CompileError(__FILE__, __LINE__, CompileError::invalid_type, file, line, "operator '[]' can only be used on types 'str' or 'arr'", "expression currently has " + get_var_types_as_str(array_types));
-		if (!find_num_types(index_types))
+
+		const VariableTypeContainer index_types = TypeCheckExpression(current_scope, node->extras[0], node->data, { VariableType::INT });
+		if (index_types.find(VariableType::INT) == index_types.end())
 			throw CompileError(__FILE__, __LINE__, CompileError::invalid_type, file, line, "index for subscript operator can only have type 'int'", "index has " + get_var_types_as_str(array_types));
  
 		return array_types;

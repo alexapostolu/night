@@ -62,7 +62,7 @@ private:
 		// all the types
 		//
 		// also for subscript operators
-		bool* is_for_loop_range = nullptr
+		bool* get_element_types = nullptr
 	);
 
 	// searches current scope for variable, if not found, moves to upper scope;

@@ -266,7 +266,7 @@ public:
 
 public:
 	bool is_array() const;
-	bool is_param() const;
+	bool is_param() const; // also used in for loop ranges;
 
 	bool find_type(const VariableType& var_type) const;
 
