@@ -36,7 +36,7 @@ void FindKeyword(const std::string& file, const int line, std::vector<Token>& to
 	else if (std::regex_match(token, std::regex("[a-zA-Z_][a-zA-Z_0-9]*")))
 		tokens.push_back(Token{ file, line, TokenType::VAR, token });
 	else
-		throw BackError(file, line, "unknown token '" + token + "'");
+		throw CompileError(__FILE__, __LINE__, CompileError::invalid_grammar, file, line, "unknown token '" + token + "'");
 
 	token = "";
 }
@@ -151,7 +151,7 @@ std::vector<Token> Lexer(const std::string& file, const int line, const std::str
 				}
 			}
 
-			throw BackError(file, line, std::string("unknown symbol '") + fileLine[a] + "'");
+			throw CompileError(__FILE__, __LINE__, CompileError::invalid_grammar, file, line, std::string("unknown symbol '") + fileLine[a] + "'");
 		}
 
 		token += fileLine[a];

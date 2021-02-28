@@ -22,13 +22,13 @@ private:
 		const std::shared_ptr<Expression>& node // raw pointer?
 	);
 
-	std::unordered_map<std::string, NightData>::iterator get_variable(
+	std::pair<const std::string, NightData>* get_variable(
 		std::shared_ptr<NightScope>& scope,
 		const std::string& variable_name
 	);
 
 private:
-	static std::vector<NightFunction> night_functions;
+	static NightFunctionContainer night_functions;
 
 	// exit function if a return statement is encountered
 	static bool exit_function;

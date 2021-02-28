@@ -78,8 +78,3 @@ NightScope::NightScope(const std::shared_ptr<NightScope>& _upper_scope)
     : upper_scope(_upper_scope)
 {
 }
-
-bool NightFunction::operator==(const std::string& _name) const
-{
-    return name == _name;
-}

@@ -30,31 +30,26 @@ std::vector<std::vector<Token> > SplitCode(const std::vector<Token>& tokens)
 	return code;
 }
 
-bool find_type(const std::vector<VariableType>& container, const VariableType& type)
+bool find_num_types(const VariableTypeContainer& container)
 {
-	for (const VariableType& var_type : container)
-	{
-		if (var_type == type)
-			return true;
-	}
-
-	return false;
+	return container.find(VariableType::INT) != container.end() ||
+		container.find(VariableType::FLOAT) != container.end();
 }
 
-bool find_num_types(const std::vector<VariableType>& container)
+std::string get_var_types_as_str(const VariableTypeContainer& var_types_set)
 {
-	return find_type(container, VariableType::INT) ||
-		   find_type(container, VariableType::FLOAT);
-}
+	assert(!var_types_set.empty());
 
-std::string get_var_types_as_str(const std::vector<VariableType>& var_types)
-{
+	std::vector<VariableType> var_types(
+		var_types_set.begin(), var_types_set.end());
+
 	std::string str_types = "";
-	for (int a = 0; a < var_types.size() - 1; ++a)
+	for (int a = 0; a < (int)var_types.size() - 1; ++a)
 		str_types += "'" + var_types[a].to_str() + "', ";
 
-	if (var_types.size() > 1)
-		str_types += "and ";
+	str_types = var_types.size() > 1
+		? "types: " + str_types + "and "
+		: "type: " + str_types;
 
 	str_types += "'" + var_types.back().to_str() + "'";
 

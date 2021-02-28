@@ -26,6 +26,13 @@ private:
 		const std::string& value
 	);
 
+	// turns a value into an expression node
+	std::shared_ptr<Expression> new_expression(
+		const Value& value,
+		const std::shared_ptr<Expression>& left,
+		const std::shared_ptr<Expression>& right
+	);
+
 	// gets next group of values
 	// a "group" is a value including its unary operators
 	//
@@ -41,14 +48,14 @@ private:
 	);
 
 	// type and usage checks an expression
-	std::vector<VariableType> TypeCheckExpression(
+	VariableTypeContainer TypeCheckExpression(
 		const std::shared_ptr<Scope>& current_scope,
 
 		const std::shared_ptr<Expression>& node,
 
 		// for parameters, since they don't have types at first
 		const std::string& op_name = {},
-		const std::vector<VariableType>& required_types = {},
+		const VariableTypeContainer& required_types = {},
 
 		// in for loops, the types of the iterator is the types of all the
 		// elements combined, so instead of returning ARRAY, this will return
@@ -58,19 +65,11 @@ private:
 		bool* is_for_loop_range = nullptr
 	);
 
-	// turns a value into an expression node
-	std::shared_ptr<Expression> new_expression(
-		const Value& value,
-		const std::shared_ptr<Expression>& left,
-		const std::shared_ptr<Expression>& right
-	);
-
-private:
 	// searches current scope for variable, if not found, moves to upper scope;
 	// once found, returns its address, or nullptr otherwise
-	std::unordered_map<std::string, CheckVariable>::iterator get_variable(
+	std::pair<const std::string, CheckVariable>* get_variable(
 		const std::shared_ptr<Scope>& scope,
-		const std::string& variable_name
+		const std::string& var_name
 	);
 
 	// start iterator at bracket position, advances to close bracket position
@@ -83,7 +82,7 @@ private:
 	const std::string file;
 	const int line;
 
-	static const std::vector<VariableType> all_types;
+	static const VariableTypeContainer all_types;
 
 	static std::unordered_map<std::string, CheckFunction> check_functions;
 	static std::unordered_map<std::string, CheckClass> check_classes;

@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-void FrontEnd(const int argc, const char* argv[])
+void FrontEnd(int argc, char* argv[])
 {
 	if (argc != 2)
 		throw FrontEndError("invalid command line arguments; only pass in the file name as an argument");
@@ -22,7 +22,7 @@ void FrontEnd(const int argc, const char* argv[])
 	}
 
 	const std::vector<std::vector<Token> > code = SplitCode(OpenFile(argv[1]));
-	const std::shared_ptr<Scope> global_scope = std::make_shared<Scope>(nullptr);
+	const std::shared_ptr<Scope> global_scope = std::make_shared<Scope>(Scope{ nullptr });
 	for (const std::vector<Token>& tokens : code)
 	{
 		assert(!tokens.empty() && "tokens shouldn't be empty");
@@ -49,9 +49,12 @@ std::vector<Token> OpenFile(const std::string& file)
 		if (file_tokens.size() >= 1 && file_tokens[0].type == TokenType::IMPORT)
 		{
 			if (file_tokens.size() == 1 || file_tokens[1].type != TokenType::STR)
-				throw BackError(file, line, "expected file name after '" + file_tokens[0].data + "' statement");
+				throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "expected file name after '" + file_tokens[0].data + "' statement");
 			if (file_tokens.size() > 2)
-				throw BackError(file, line, file_tokens[0].data + " statement must be on it's own line");
+				throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "'" + file_tokens[0].data + "' must be on its own line");
+
+			if (file_tokens[0].data == "import" && file_tokens[1].data == "python")
+				throw FrontEndError("module 'python' could not be imported; only good languages are allowed here");
 
 			const std::vector<Token> import_tokens = OpenFile(
 				(file_tokens[0].data == "import" ? "../../../pkgs/" : "") +

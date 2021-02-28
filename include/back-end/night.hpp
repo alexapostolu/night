@@ -30,19 +30,20 @@ struct NightData
 	float get_num() const;
 };
 
+using NightVariableContainer = std::unordered_map<std::string, NightData>;
+
 struct NightFunction
 {
-	std::string name;
 	std::vector<std::string> params;
 	std::vector<Statement> body;
-
-	bool operator==(const std::string& _name) const;
 };
+
+using NightFunctionContainer = std::unordered_map<std::string, NightFunction>;
 
 struct NightScope
 {
 	const std::shared_ptr<NightScope> upper_scope;
-	std::unordered_map<std::string, NightData> night_variables;
+	NightVariableContainer variables;
 
 	NightScope(const std::shared_ptr<NightScope>& _upper_scope);
 };

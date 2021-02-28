@@ -8,7 +8,7 @@
 
 // entry point - calls on the back end as well
 void FrontEnd(
-	const int argc,
+	int argc,
 	char* argv[]
 );
 
