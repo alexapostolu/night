@@ -50,7 +50,7 @@ std::string Error::what() const
 
 	output << WHITE << note << '\n';
 	if (link != "")
-		output << WHITE << "\nfor more information, please visit:\n" << CYAN << "https://github.io/night/" << link << '\n';
+		output << WHITE << "\nfor more information, please visit:\n" << CYAN << "https://dynamicsquid.github.io/night/" << link << '\n';
 
 	output << RESET;
 	return output.str();
