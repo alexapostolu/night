@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-void FrontEnd(int argc, char* argv[])
+void FrontEnd(int argc, char** argv)
 {
 	if (argc != 2)
 		throw FrontEndError("invalid command line arguments; only pass in the file name as an argument");
