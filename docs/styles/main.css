@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Work+Sans&display=swap');
 
 canvas {
 	position: absolute;
@@ -11,98 +12,25 @@ body {
 	background-color: black;
 }
 
-#title img {
-	display: block;
-
-	margin-top: 100px;
-	margin-left: auto;
-	margin-right: auto;
-}
-
-#title h1 {
-	color: #eee;
-
-	text-align: center;
-
-	font-size: 50px;
-	font-family: 'Montserrat';
-}
-
-#title hr {
-	background-color: gray;
-	
-	position: relative;
-	z-index: -1;
-	
-	border: solid;
-	border-color: gray;
-	border-width: 3px;
-	border-radius: 5px;
-	
-	top: 88px;
-}
-
-#title #tag {
-	background-color: #eee;
-	color: gray;
-	
-	margin: auto;
-	margin-top: 68px;
-	
-	border: solid;
-	border-color: black;
-	border-radius: 10px;
-	
-	padding-top: 5px;
-	padding-bottom: 5px;
-	
-	text-align: center;
-	font-family: 'Anonymous Pro';
-}
-
-#title #tag b {
-	color: black;
-}
-
-#title #actions {
-	display: flex;
-
-	color: #eee;
-	
-	margin-top: 50px;
+#main {	
 	margin-left: 12%;
 	margin-right: 12%;
-	margin-bottom: 50px;
 }
 
-#title #actions a {
-	color: #eee;
-	text-decoration: none;
+#main hr {
+	background-color: gray;
 }
 
-#title #actions h2 {
-	margin-top: 0px;
-	margin-bottom: 0px;
-	margin-left: 20%;
-	margin-right: 20%;
+#main .heading {
+	color: rgb(231, 231, 231);
 	
-	border: solid;
-	border-radius: 25px;
-	
-	padding-top: 8%;
-	padding-bottom: 8%;
-	
-	text-align: center;
-	font-family: 'Montserrat';
-
-	transition-duration: 0.6s;
+	margin-top: 40px;
+	font-family: 'Roboto', sans-serif;
 }
 
-#title .action {
-    flex: 1;
-}
+#main .desc {
+	color: rgb(156, 156, 156);
 
-#title .action h2:hover {
-	background-color: #eee;
-	color: black;
+	font-size: 17px;
+	font-family: 'Work Sans';
 }

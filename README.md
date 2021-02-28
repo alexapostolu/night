@@ -8,18 +8,18 @@ Night is an interpreted dynamically typed language built around safety. It being
 
 What makes Night different from other dynamically typed languages is its compile time checks. Whereas a language like Python does not provide type checking and many other declaration checks, Night fills this gap, eliminating hidden runtime bugs and providing safer code.
 
-* [Getting Started](#getting-started-with-night)
-* [About](#about-night)
+* [Getting Started](#getting-started)
+* [Contributing](#contributing)
 
 ---
 
-### Getting Started with Night
+### Getting Started
 
 Night comes in two parts, the interpreter (this repo) and [Dusk](https://github.com/firefish111/dusk) (the package manager). You can find easy installation and setup, as well as a tutorial, for both on the [Night website](https://github.com/DynamicSquid/night).
 
 And if you like, you can build Night from source as well.
 
-### Building from Source
+## Building from Source
 
 1. Install *g++* (version 7.1+) or *clang++* (version 5+)
 
@@ -57,7 +57,7 @@ make
 
 And that's it! To build Dusk from source, follow the tutorial on the [Dusk repo](https://github.com/firefish111/dusk).
 
-### Running Night
+## Running Night
 
 To run Night, first navigate to the directory in which you cloned this repo. Then create a `*.night` file where you'll write your actual code. Then just pass it in as a command line argument:
 
@@ -69,43 +69,6 @@ And you're done!
 
 ---
 
-### About Night
+### Contributing
 
-Night is an imperative dynamically typed language with light syntax.
-
-Here is a little sample of Night:
-
-```py
-# fibonacci sequence using recursion
-def fib(num)
-{
-    if (num <= 1)
-        return num
-
-    return fib(num - 1) + fib(num - 2)
-}
-
-# array of two values, and appending a third
-set fib_nums = [ fib(5), fib(6) ]
-fib_nums = fib_nums.push(fib(7))
-
-# printing out the values of the array
-for (num : fib_nums)
-    print(num + ' ')
-```
-
-Night avoids most runtime errors by checking types and declarations early on in the compile stage, something many other dynamically typed languages don't do.
-
-```py
-def add(x, y)
-{
-    return x + y
-}
-
-if (false)
-{
-    set flag = true && add(2, 3) # error! type mismatch
-}
-```
-
-More information regarding the syntax can be found on the [Night website](http://night.dynamicsquid.repl.co/).
+Contributions are always welcome! Reporting bugs you find, refactoring spaghetti, and writing tutorials on the website are just a few of the ways you can contribute.
