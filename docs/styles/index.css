@@ -31,12 +31,16 @@
 }
 
 
-#footnote {
+.footnote {
 	background-color: grey;
+	
+	margin-left: 10%;
+	margin-right: 10%;
 }
 
-#footnote p {
+.footnote p {
 	color: rgb(168, 0, 168);
+
 
 	font-size: 17px;
 	font-family: 'Work Sans';
