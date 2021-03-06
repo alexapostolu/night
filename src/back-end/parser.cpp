@@ -294,8 +294,7 @@ Parser::Parser(
 
 		// extracting body
 
-		close_bracket_it++;
-		const std::vector<std::vector<Token> > split_tokens = close_bracket_it->type == TokenType::OPEN_CURLY
+		const std::vector<std::vector<Token> > split_tokens = std::next(close_bracket_it, 1)->type == TokenType::OPEN_CURLY
 			? SplitCode(std::vector<Token>(std::next(close_bracket_it, 2), tokens.end() - 1))
 			: SplitCode(std::vector<Token>(std::next(close_bracket_it, 1), tokens.end()));
 
@@ -568,12 +567,12 @@ Parser::Parser(
 
 		// extracting body
 
-		const std::vector<std::vector<Token> > tokens_split = std::next(close_bracket_it, 1)->type == TokenType::OPEN_CURLY
+		const std::vector<std::vector<Token> > split_tokens = std::next(close_bracket_it, 1)->type == TokenType::OPEN_CURLY
 			? SplitCode(std::vector<Token>(std::next(close_bracket_it, 2), tokens.end() - 1))
 			: SplitCode(std::vector<Token>(std::next(close_bracket_it, 1), tokens.end()));
 
 		std::shared_ptr<Scope> scope_body = std::make_shared<Scope>(current_scope);
-		for (const std::vector<Token>& token_split : tokens_split)
+		for (const std::vector<Token>& token_split : split_tokens)
 			Parser(scope_body, token_split);
 
 		// pushing statement
@@ -618,8 +617,7 @@ Parser::Parser(
 			? SplitCode(std::vector<Token>(std::next(close_bracket_it, 2), tokens.end() - 1))
 			: SplitCode(std::vector<Token>(std::next(close_bracket_it, 1), tokens.end()));
 
-		std::shared_ptr<Scope> for_scope =
-			std::make_shared<Scope>(current_scope);
+		std::shared_ptr<Scope> for_scope = std::make_shared<Scope>(current_scope);
 
 		for_scope->variables[tokens[2].data] = CheckVariable(range_types, false);
 
@@ -1428,7 +1426,9 @@ const VariableTypeContainer Parser::all_types{
 
 std::unordered_map<std::string, CheckFunction> Parser::check_functions{
 	{ "print", CheckFunction{ { { all_types } }, VariableTypeContainer()                    } },
-	{ "input", CheckFunction{ {},                VariableTypeContainer{ VariableType::STR } } }
+	{ "input", CheckFunction{ {},                VariableTypeContainer{ VariableType::STR } } },
+	{ "int",   CheckFunction{ { { VariableType::INT, VariableType::FLOAT, VariableType::STR } }, VariableTypeContainer{ VariableType::INT } } },
+	{ "float", CheckFunction{ { { VariableType::INT, VariableType::FLOAT, VariableType::STR } }, VariableTypeContainer{ VariableType::FLOAT } } }
 };
 std::unordered_map<std::string, CheckClass>    Parser::check_classes{
 	{ "array", CheckClass{

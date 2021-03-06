@@ -8,6 +8,15 @@
 #include <map>
 #include <unordered_map>
 
+void ReplaceEscape(std::string& token, const std::string& str, const char ch)
+{
+	for (std::size_t newline = token.find(str); newline != std::string::npos; newline = token.find(str, newline + 1))
+	{
+		token[newline] = ch;
+		token.erase(newline + 1, 1);
+	}
+}
+
 void FindKeyword(const std::string& file, const int line, std::vector<Token>& tokens, std::string& token)
 {
 	if (token.empty())
@@ -41,7 +50,7 @@ void FindKeyword(const std::string& file, const int line, std::vector<Token>& to
 	token = "";
 }
 
-std::vector<Token> Lexer(const std::string& file, const int line, const std::string& fileLine)
+std::vector<Token> Lexer(const std::string& file, const int line, const std::string& file_line)
 {
 	const std::unordered_map<char, std::vector<std::pair<char, TokenType> > > symbols{
 		{ '+', { { '=', TokenType::ASSIGN }, { '\0', TokenType::OPERATOR } } },
@@ -74,87 +83,88 @@ std::vector<Token> Lexer(const std::string& file, const int line, const std::str
 
 	std::vector<Token> tokens;
 	std::string token = "";
-	char inString = ' ';
-	for (std::size_t a = 0; a < fileLine.length(); ++a)
+	char in_string = ' ';
+	for (std::size_t a = 0; a < file_line.length(); ++a)
 	{
 		// scan strings
 
-		if ((fileLine[a] == '\'' || fileLine[a] == '"') && inString == ' ')
+		if ((file_line[a] == '\'' || file_line[a] == '"') && in_string == ' ')
 		{
 			FindKeyword(file, line, tokens, token);
 
-			inString = fileLine[a];
+			in_string = file_line[a];
 			continue;
 		}
-		else if (fileLine[a] != inString && inString != ' ')
+		else if (file_line[a] != in_string && in_string != ' ')
 		{
-			token += fileLine[a];
+			token += file_line[a];
 			continue;
 		}
-		else if (fileLine[a] == inString && inString != ' ')
+		else if (file_line[a] == in_string && in_string != ' ')
 		{
 			// check string for escape characters
-			std::size_t newline = token.find("\\n");
-			while (newline != std::string::npos)
-			{
-				token[newline] = '\n';
-				token.erase(newline + 1);
 
-				newline = token.find("\\n", newline + 1);
-			}
+			ReplaceEscape(token, "\\a", '\a');
+			ReplaceEscape(token, "\\b", '\b');
+			ReplaceEscape(token, "\\f", '\f');
+			ReplaceEscape(token, "\\n", '\n');
+			ReplaceEscape(token, "\\r", '\r');
+			ReplaceEscape(token, "\\t", '\t');
+			ReplaceEscape(token, "\\v", '\v');
 
 			tokens.push_back(Token{ file, line, TokenType::STR, token });
 			token = "";
 
-			inString = ' ';
+			in_string = ' ';
 			continue;
 		}
 
 		// ignore comments and whitespace
 
-		if (fileLine[a] == '#')
+		if (file_line[a] == '#')
 			break;
 
-		if (fileLine[a] == ' ' || fileLine[a] == '\t')
+		if (file_line[a] == ' ' || file_line[a] == '\t')
 		{
 			FindKeyword(file, line, tokens, token);
 			continue;
 		}
 
+		// distinguish between dot operator and decimals
+
+		if (file_line[a] == '.' && !token.empty() && token.back() - '0' >= 0 && token.back() - '0' <= 9)
+		{
+			token += file_line[a];
+			continue;
+		}
+
 		// find symbols
 
-		auto symbol = symbols.find(fileLine[a]);
-		if (symbol != symbols.end())
+		if (auto symbol = symbols.find(file_line[a]); symbol != symbols.end())
 		{
-			if (symbol->first == '.' && !token.empty() && token.back() - '0' >= 0 && token.back() - '0' <= 9)
-			{
-				token += fileLine[a];
-				continue;
-			}
-
 			FindKeyword(file, line, tokens, token);
 
 			for (const auto& match : symbol->second)
 			{
-				if (match.first != '\0' && a < fileLine.length() - 1 && fileLine[a + 1] == match.first)
+				if (match.first != '\0' && a < file_line.length() - 1 && file_line[a + 1] == match.first)
 				{
-					tokens.push_back(Token{ file, line, match.second, std::string(1, fileLine[a]) + match.first });
+					tokens.push_back(Token{ file, line, match.second, std::string(1, file_line[a]) + match.first });
 
 					a++;
 					goto CONTINUE_NEXT;
 				}
 				else if (match.first == '\0')
 				{
-					tokens.push_back(Token{ file, line, match.second, std::string(1, fileLine[a]) });
+					tokens.push_back(Token{ file, line, match.second, std::string(1, file_line[a]) });
 
 					goto CONTINUE_NEXT;
 				}
 			}
 
-			throw CompileError(__FILE__, __LINE__, CompileError::invalid_grammar, file, line, std::string("unknown symbol '") + fileLine[a] + "'");
+			throw CompileError(__FILE__, __LINE__, CompileError::invalid_grammar, file, line, std::string("unknown symbol '") + file_line[a] + "'");
 		}
 
-		token += fileLine[a];
+		token += file_line[a];
 
 		CONTINUE_NEXT:;
 	}

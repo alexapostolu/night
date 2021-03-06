@@ -5,6 +5,7 @@
 #include "../../include/error.hpp"
 
 #include <iostream>
+#include <stdexcept>
 #include <memory>
 #include <cmath>
 #include <string>
@@ -366,6 +367,44 @@ NightData Interpreter::EvaluateExpression(
 				getline(std::cin, user_input);
 
 				return NightData{ VariableType::STR, user_input };
+			}
+			if (node->data == "int")
+			{
+				const NightData param = EvaluateExpression(current_scope, node->extras[0]);
+				if (param.type == VariableType::INT)
+				{
+					return param;
+				}
+				if (param.type == VariableType::FLOAT)
+				{
+					return NightData{ VariableType::INT, (int)std::get<float>(param.data) };
+				}
+				if (param.type == VariableType::STR)
+				{
+					try {
+						return NightData{ VariableType::INT, std::stoi(std::get<std::string>(param.data)) };
+					}
+					catch (const std::invalid_argument&) {
+						throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "value '" + node->extras[0]->data + "' can not be converted into type int");
+					}
+				}
+			}
+			if (node->data == "float")
+			{
+				const NightData param = EvaluateExpression(current_scope, node->extras[0]);
+				if (param.type == VariableType::INT || param.type == VariableType::FLOAT)
+				{
+					return NightData{ VariableType::FLOAT, param.get_num() };
+				}
+				if (param.type == VariableType::STR)
+				{
+					try {
+						return NightData{ VariableType::FLOAT, std::stof(std::get<std::string>(param.data)) };
+					}
+					catch (const std::invalid_argument&) {
+						throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "value '" + node->extras[0]->data + "' can not be converted into type float");
+					}
+				}
 			}
 
 			auto night_function = night_functions.find(node->data);

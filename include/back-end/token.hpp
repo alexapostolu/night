@@ -108,7 +108,7 @@ struct HashVariableType
 
 using VariableTypeContainer = std::unordered_set<VariableType, HashVariableType>;
 
-struct CheckVariable
+class CheckVariable
 {
 public:
 	CheckVariable();

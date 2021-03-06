@@ -22,16 +22,15 @@ void FrontEnd(int argc, char** argv)
 	}
 
 	const std::vector<std::vector<Token> > code = SplitCode(OpenFile(argv[1]));
-	const std::shared_ptr<Scope> global_scope = std::make_shared<Scope>(Scope{ nullptr });
+	const std::shared_ptr<Scope> global_scope = std::make_shared<Scope>(nullptr);
+
 	for (const std::vector<Token>& tokens : code)
 	{
-		assert(!tokens.empty() && "tokens shouldn't be empty");
+		assert(!tokens.empty());
 		Parser(global_scope, tokens);
 	}
 
-	std::shared_ptr<NightScope> night_global =
-		std::make_shared<NightScope>(nullptr);
-
+	std::shared_ptr<NightScope> night_global = std::make_shared<NightScope>(nullptr);
 	Interpreter(night_global, global_scope->statements);
 }
 
