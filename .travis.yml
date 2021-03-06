@@ -10,7 +10,7 @@ matrix:
         - export CXX=/usr/bin/g++-7
       script:
         - cmake .
-        - make
+        - cmake --build .
 
 before_install:
     - eval "${MATRIX_EVAL}"
