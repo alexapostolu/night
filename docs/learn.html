@@ -35,6 +35,85 @@
 			<p class="desc">The tutorial for Night is still in progress. View the GitHub page to see how you
 				can contribute!</p>
 
+				<h1>Tutorial</h1>
+
+			<p>This tutorial offers a complete overview of the language Night. This is perfect for any beginners or anyone coding with Night for the first time. For a more in depth look at individual syntax and additional notes, check out the <a href="reference.html">Reference page</a> instead.</p>
+
+			<ol>
+				<li><a href="#hello-world">Hello World!</a></li>
+				<li><a href="#variables">Variables</a></li>
+				<li><a href="#input">User Input</a></li>
+				<li><a href="#expressions">Expressions</a></li>
+				<li><a href="#conditionals">Conditionals</a></li>
+				<li><a href="#functions">Functions</a></li>
+				<li><a href="#loops">Loops</a></li>
+				<li><a href="#arrays">Arrays</a></li>
+			</ol>
+
+			<hr>
+
+			<h2 id="hello-world">Hello World!</h2>
+
+			<p>For basic output to the console, you can use the <code>print()</code> function. It takes a single parameter of any type, and displays it to the console. Singleline comments are also supported.</p>
+
+			<script src="https://gist.github.com/DynamicSquid/98827bcefb0917821a9965d5639342c1.js"></script>
+
+			<p>Keep in mind that the <code>print()</code> function is buffered, and will only print right before taking in user input or the program's termination.</p>
+
+			<h2 id="variables">Variables</h2>
+
+			<p>To initialize a variable, you can use one of five types: <code>bit</code> (boolean), <code>syb</code> (character), <code>int</code> (integer), <code>dec</code> (float), or <code>str</code> (string).</p>
+
+			<script src="https://gist.github.com/DynamicSquid/63f4b7c50fc4ce54a4ee0ea2a8cd2a6f.js"></script>
+
+			<p>Variable declaration and assignment are also as expected. However, variable declaration will initialize the variable with a default value depending on its type.</p>
+
+			<script src="https://gist.github.com/DynamicSquid/4e3926e271b904a314ec83248a4d7fb9.js"></script>
+
+      <h2 id="input">User Input</h2>
+
+			<p>User input in Night takes the form of the function <code>input()</code>. The function will automatically deduct the type of the user input and return it.</p>
+
+			<script src="https://gist.github.com/DynamicSquid/ffbd57371766905b51bc4cc18275030f.js"></script>
+
+			<h2 id="expressions">Expressions</h2>
+
+			<p>Common boolean, arithmetric, and string expressions are supported. They can be used whenever a value is expected. Operator precedence can be found in the reference guide.</p>
+
+			<script src="https://gist.github.com/DynamicSquid/81a81911bc3f4aec7fa5cd00dc94f82d.js"></script>
+
+			<p>Some implicit conversions are also supported. Type <code>int</code> and type <code>dec</code> can be used interchangeably, and any type can concatenate into type <code>str</code>.</p>
+			
+			<script src="https://gist.github.com/DynamicSquid/44be9da318f9f851716e0787c46c9cfa.js"></script>
+
+			<h2 id="conditionals">Conditionals</h2>
+
+			<p>Conditionals in Night take use of curly brackets to group code together.</p>
+
+			<script src="https://gist.github.com/DynamicSquid/75ae0edbc43f62d116686ab013b37f8b.js"></script>
+
+			<h2 id="functions">Functions</h2>
+
+			<p>Functions in Night support all five types, along with a <code>null</code> (void) type. Regular type functions must have a return value, while <code>null</code> type functions do not need a return value.</p>
+
+			<script src="https://gist.github.com/DynamicSquid/e5d8523f997bf29ea1447009de84c629.js"></script>
+
+			<p>Note that functions have to be defined before they are used.</p>
+
+			<h2 id="loops">Loops</h2>
+
+			<p>There are two types of loops in Night, the <code>while</code> and <code>for</code> loop. The <code>while</code> loop will only run if its condition evaluates to <code>true</code>, and the <code>for</code> loop will only run a prespecified amount of times.</p>
+
+			<script src="https://gist.github.com/DynamicSquid/1d1f571a1e3b4cdb5d39a3197bf6ea8d.js"></script>
+
+			<p>Unlike the <code>while</code> loop, the <code>for</code> loop's condition is static and cannot change once it's set.</p>
+
+			<h2 id="arrays">Arrays</h2>
+
+			<p>To initialize an array, use square brackets after the variable type, and contain your elements using square brackets as well. You can also specify the amount of elements in your array by putting a value inside the square brackets. If an array is not initialized with any or enough elements, then the appropriate default value will be set. Arrays can only contain one type of value.</p>
+
+			<script src="https://gist.github.com/DynamicSquid/5739894815463d00dec6b60c26936937.js"></script
+
 			<h2 class="heading">Reference</h2>
 
 			<p class="desc">The reference for Night is still in progress. View the GitHub page to see how you
