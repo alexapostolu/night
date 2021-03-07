@@ -1,6 +1,6 @@
 let clr = 0, inc = 1;
 
-let stars = []
+let stars = [];
 
 class Star {
 	constructor() {
@@ -37,6 +37,8 @@ function setup() {
 
 function draw() {
 	// background
+
+	clear();
 
 	noStroke();
 	for (let a = 0; a < height / 5; ++a) {
