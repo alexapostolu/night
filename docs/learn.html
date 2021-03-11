@@ -1,20 +1,20 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8">
+		<head>
+				<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Night - Learn</title>
+				<title>Night - Learn</title>
 		<link rel="icon" type="image/png" href="media/night-logo-black.png"/>
 		<link rel="stylesheet" type="text/css" href="styles/main.css"/>
 		<link rel="stylesheet" type="text/css" href="styles/title.css"/>
 		<link rel="stylesheet" type="text/css" href="styles/code.css"/>
 		<link rel="stylesheet" type="text/css" href="styles/learn.css"/>
-    </head>
-    <body>
+		</head>
+		<body>
 		<div id="title">
 			<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.3/p5.min.js"></script>
 			<script src="scripts/index.js"></script>
-			
+
 			<img src="media/night-logo-black.png" height="180">
 			<h1>Learn</h1>
 
@@ -22,9 +22,10 @@
 			<p id="tag"><b>Navigating</b> through the <b>Night</b></p>
 
 			<div id="actions">
-				<div class="action"><a href="install.html"><h2>Install</h2></a></div>
-				<div class="action"><a href="index.html"><h2>Home</h2></a></div>
-				<div class="action"><h2>Extras</h2></div>
+				<div class="action"><a href="index.html"><p class="desc"><b>Home</p></b></a></div>
+				<div class="action"><a href="install.html"><p class="desc"><b>Install</p></b></a></div>
+				<div class="action"><a href="learn.html"><p class="desc current-page"><b>Learn</p></b></a></div>
+				<div class="action"><a href="extras.html"><p class="desc"><b>Extras</p></b></a></div>
 			</div>
 		</div>
 
@@ -32,12 +33,11 @@
 			<hr>
 			<h2 class="heading">Tutorial</h2>
 
-			<p class="desc">The tutorial for Night is still in progress. View the GitHub page to see how you
-				can contribute!</p>
+			<p class="desc">The tutorial for Night is still in progress. The tutorial may also be unsuitable for total beginners. View the GitHub page to see how you can contribute!</p>
 
-				<h1>Tutorial</h1>
+			<!-- <h1>Tutorial</h1>
 
-			<p>This tutorial offers a complete overview of the language Night. This is perfect for any beginners or anyone coding with Night for the first time. For a more in depth look at individual syntax and additional notes, check out the <a href="reference.html">Reference page</a> instead.</p>
+			<p class="desc">This tutorial offers a complete overview of the language Night. This is perfect for any beginners or anyone coding with Night for the first time. For a more in depth look at individual syntax and additional notes, check out the <a href="reference.html">Reference page</a> instead.</p> -->
 
 			<ol>
 				<li><a href="#hello-world">Hello World!</a></li>
@@ -52,72 +52,98 @@
 
 			<hr>
 
-			<h2 id="hello-world">Hello World!</h2>
+			<h2 id="hello-world" class="heading" class="heading">Hello World!</h2>
 
-			<p>For basic output to the console, you can use the <code>print()</code> function. It takes a single parameter of any type, and displays it to the console. Singleline comments are also supported.</p>
+			<p class="desc">For basic output to the console, you can use the <code>print()</code> function. It takes a single parameter, and displays it to the console. Singleline comments are also supported.</p>
 
-			<script src="https://gist.github.com/DynamicSquid/98827bcefb0917821a9965d5639342c1.js"></script>
+			<p class="code">
+				<span class="func">print</span>(<span class="str">"Hello World!\n"</span>)
+				<br><br>
+				<span class="com"># this is a comment</span>
+				<br><br>
+				<span class="func">print</span>(<span class="str">"Enjoy the tutorial!"</span>)
+			</p>
 
-			<p>Keep in mind that the <code>print()</code> function is buffered, and will only print right before taking in user input or the program's termination.</p>
+			<h2 id="variables" class="heading">Variables</h2>
 
-			<h2 id="variables">Variables</h2>
+			<p class="desc">To initialize a variable, you use the keyword <code>set</code>. Note that, just like most interpreted language, Night's variables does not have the value type strongly declared. Instead, it changes the type to the currently assigned value, like this:</p>
 
-			<p>To initialize a variable, you can use one of five types: <code>bit</code> (boolean), <code>syb</code> (character), <code>int</code> (integer), <code>dec</code> (float), or <code>str</code> (string).</p>
+			<p class="code">
+				<span class="key">set</span> <span class="var">int</span> = 12
+				<br><br>
+				<span class="key">set</span> <span class="var">float</span> = 12.5
+				<br><br>
+				<span class="key">set</span> <span class="var">str</span> = <span class="str">"12stuff"</span>
+				<br><br>
+				<span class="com"># must be confirmed if this exist at all</span>
+				<br>
+				<span class="key">set</span> <span class="var">char</span> = <span class="str">'t'</span>
+				<br><br>
+				<span class="key">set</span> <span class="var">array</span> = [ 1, 2 ]
+				<br><br>
+				<span class="var">array</span> = 22
+			</p>
 
-			<script src="https://gist.github.com/DynamicSquid/63f4b7c50fc4ce54a4ee0ea2a8cd2a6f.js"></script>
+			<p class="desc">Notice that the <code>array</code>  variable value type can be changed. Although as a matter of fact, this is actually a bad practice, but possible nonetheless.</p>
 
-			<p>Variable declaration and assignment are also as expected. However, variable declaration will initialize the variable with a default value depending on its type.</p>
+			<h2 id="input" class="heading">User Input</h2>
 
-			<script src="https://gist.github.com/DynamicSquid/4e3926e271b904a314ec83248a4d7fb9.js"></script>
+			<p class="desc">User input in Night takes the form of the function <code>input()</code>.</p>
 
-      <h2 id="input">User Input</h2>
+			<p class="code">
+				<span class="key">print</span>(<span class="str">"What is your age? "</span>)<br>
+				<span class="key">set</span> <span class="var">age</span> = <span class="key">input</span>()
+			</p>
 
-			<p>User input in Night takes the form of the function <code>input()</code>. The function will automatically deduct the type of the user input and return it.</p>
+			<h2 id="expressions" class="heading">Expressions</h2>
 
-			<script src="https://gist.github.com/DynamicSquid/ffbd57371766905b51bc4cc18275030f.js"></script>
+			<p class="desc">Common boolean, arithmetric, and string expressions are supported. They can be used whenever a value is expected.
+			<!-- Operator precedence can be found in the reference guide. -->
+			</p>
 
-			<h2 id="expressions">Expressions</h2>
+			<p class="desc">Some implicit conversions are also supported. Type <code>int</code> and type <code>float</code> can be used interchangeably, and any type can concatenate into type <code>str</code>.</p>
 
-			<p>Common boolean, arithmetric, and string expressions are supported. They can be used whenever a value is expected. Operator precedence can be found in the reference guide.</p>
+			<h2 id="conditionals" class="heading">Conditionals</h2>
 
-			<script src="https://gist.github.com/DynamicSquid/81a81911bc3f4aec7fa5cd00dc94f82d.js"></script>
+			<p class="desc">Conditionals in Night take use of curly brackets to group code together.</p>
 
-			<p>Some implicit conversions are also supported. Type <code>int</code> and type <code>dec</code> can be used interchangeably, and any type can concatenate into type <code>str</code>.</p>
-			
-			<script src="https://gist.github.com/DynamicSquid/44be9da318f9f851716e0787c46c9cfa.js"></script>
+			<p class="code">
+			<span class="key">set</span> <span class="var">animal</span> = <span class="str">"squid"</span>
+			<br><br>
+			<span class="key">if</span> (<span class="var">animal</span> == <span class="str">"squid"</span>)
+			<br>{<br>
+			&emsp;<span class="key">print</span>(<span class="str">"Hi squid friend!"</span>)
+			<br>}
+			</p>
 
-			<h2 id="conditionals">Conditionals</h2>
+			<h2 id="functions" class="heading">Functions</h2>
 
-			<p>Conditionals in Night take use of curly brackets to group code together.</p>
+			<p class="desc">Functions in Night support return value of all six types, along with a <code>null</code> (void) type. <code>null</code> type functions just means that the functions don't have a return value.</p>
 
-			<script src="https://gist.github.com/DynamicSquid/75ae0edbc43f62d116686ab013b37f8b.js"></script>
+			<p class="code">
+				<span class="key">def</span> <span class="func">add</span>(<span class="param">a</span>, <span class="param">b</span>)
+				<br>{<br>
+				&emsp;<span class="key">print</span>(<span class="str">'Adding two numbers: '</span> + <span class="param">a</span> + <span class="str">' and '</span> + <span class="param">b</span> + <span class="str">'\n'</span>)
+				<br>
+				&emsp;<span class="key">return</span> <span class="param">a</span> + <span class="param">b</span>
+				<br>}<br><br>
+				<span class="key">print</span>(<span class="func">add</span>(2, 3))
+			</p>
 
-			<h2 id="functions">Functions</h2>
+			<p class="desc">Note that functions have to be defined before they are used.</p>
 
-			<p>Functions in Night support all five types, along with a <code>null</code> (void) type. Regular type functions must have a return value, while <code>null</code> type functions do not need a return value.</p>
+			<h2 id="loops" class="heading">Loops</h2>
 
-			<script src="https://gist.github.com/DynamicSquid/e5d8523f997bf29ea1447009de84c629.js"></script>
+			<p class="desc">There are two types of loops in Night, the <code>while</code> and <code>for</code> loop. The <code>while</code> loop will only run if its condition evaluates to <code>true</code>, and the <code>for</code> loop will only run a prespecified amount of times.</p>
 
-			<p>Note that functions have to be defined before they are used.</p>
+			<h2 id="arrays" class="heading">Arrays</h2>
 
-			<h2 id="loops">Loops</h2>
-
-			<p>There are two types of loops in Night, the <code>while</code> and <code>for</code> loop. The <code>while</code> loop will only run if its condition evaluates to <code>true</code>, and the <code>for</code> loop will only run a prespecified amount of times.</p>
-
-			<script src="https://gist.github.com/DynamicSquid/1d1f571a1e3b4cdb5d39a3197bf6ea8d.js"></script>
-
-			<p>Unlike the <code>while</code> loop, the <code>for</code> loop's condition is static and cannot change once it's set.</p>
-
-			<h2 id="arrays">Arrays</h2>
-
-			<p>To initialize an array, use square brackets after the variable type, and contain your elements using square brackets as well. You can also specify the amount of elements in your array by putting a value inside the square brackets. If an array is not initialized with any or enough elements, then the appropriate default value will be set. Arrays can only contain one type of value.</p>
-
-			<script src="https://gist.github.com/DynamicSquid/5739894815463d00dec6b60c26936937.js"></script
+			<p class="desc">To initialize an array, assign a variable to the array literal, basically elements with value in a square bracket container. Arrays could possibly contain one more than type of value.</p>
 
 			<h2 class="heading">Reference</h2>
 
-			<p class="desc">The reference for Night is still in progress. View the GitHub page to see how you
-				can contribute!</p>
+			<p class="desc">The reference for Night is still in progress. But here it <a href="reference.html">is</a>! Also, view the GitHub page to see how you can contribute!</p>
+
 		</div>
-    </body>
+		</body>
 </html>
