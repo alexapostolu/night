@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code&display=swap');
 
 #main .code {
 	background-color: black;
@@ -12,7 +12,7 @@
 
 	padding: 20px;
 
-	font-family: 'Source Code Pro', monospace;
+	font-family: 'Fira Code', monospace;;
 
 	box-shadow: 10px 10px rgb(170, 170, 170);
 }

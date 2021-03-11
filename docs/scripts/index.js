@@ -6,11 +6,12 @@ class Star {
 	constructor() {
 		this.x = random(0, width);
 		this.y = random(0, height);
-		this.brightness = random(0, 255);
+		this.brightness = random(255, 255);
 		this.inc = random(3, 5);
 	}
 
 	display() {
+
 		fill(255, 255, 255, this.brightness);
 		noStroke();
 	  	circle(this.x, this.y, 1);
@@ -38,15 +39,19 @@ function setup() {
 function draw() {
 	// background
 
+	//removing this causes the lines and stars to never disappear nor fade away, but makes things look cool if not annoying
 	clear();
 
 	noStroke();
-	for (let a = 0; a < height / 5; ++a) {
-		for (let b = 0; b < width / 5; ++b) {
-			fill((150 + clr) - dist(b, a, 0, 0));
-			rect(b * 5, a * 5, 5, 5);
-		}
-	}
+
+	//this dipsh*t causes the most lag out of all
+
+	// for (let a = 0; a < height / 5; ++a) {
+	// 	for (let b = 0; b < width / 5; ++b) {
+	// 		fill((150 + clr) - dist(b, a, 0, 0));
+	// 		rect(b * 5, a * 5, 5, 5);
+	// 	}
+	// }
 
 	if (clr >= 60 || clr <= -40)
 		inc *= -1;

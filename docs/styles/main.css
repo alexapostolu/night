@@ -12,7 +12,7 @@ body {
 	background-color: black;
 }
 
-#main {	
+#main {
 	margin-left: 12%;
 	margin-right: 12%;
 }
@@ -23,7 +23,7 @@ body {
 
 #main .heading {
 	color: rgb(231, 231, 231);
-	
+
 	margin-top: 40px;
 	font-family: 'Roboto', sans-serif;
 }
@@ -33,4 +33,20 @@ body {
 
 	font-size: 17px;
 	font-family: 'Work Sans';
+}
+
+#main a:link, li{
+  color: #eee;
+  text-decoration: none;
+  font-family: 'Work Sans', sans-serif;
+}
+
+#main a:visited{
+  color: rgb(129, 129, 129);
+  text-decoration: none;
+  font-family: 'Work Sans', sans-serif;
+}
+
+#main a:hover {
+    text-decoration: underline;
 }

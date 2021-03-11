@@ -2,8 +2,26 @@ class Node {
 	constructor() {
 		this.x = random(0, width);
 		this.y = random(0, height);
-		fill(255);
-		circle(this.x, this.y, 2);
+		this.brightness = random(255, 255);
+		this.inc = random(3, 5);
+	}
+
+	display() {
+
+		fill(255, 255, 255, this.brightness);
+		noStroke();
+	  	circle(this.x, this.y, 1);
+
+		this.brightness += this.inc;
+
+		if (this.brightness >= 255) {
+			this.inc *= -1;
+		}
+		else if (this.brightness <= 0) {
+			this.inc *= -1;
+			this.x = random(0, width);
+			this.y = random(0, height);
+		}
 	}
 }
 
@@ -19,9 +37,7 @@ function setup() {
 }
 
 function draw() {
-}
-
-function mousePressed() {
+	clear();
 	let node1 = nodes[0], node2 = nodes[1], node3 = nodes[2];
 	for (let a = 2; a < nodes.length; ++a) {
 		if (dist(nodes[a].x, nodes[a].y, mouseX, mouseY) < dist(node1.x, node1.y, mouseX, mouseY)) {
@@ -40,4 +56,8 @@ function mousePressed() {
 
 	fill(255);
 	triangle(node1.x, node1.y, node2.x, node2.y, node3.x, node3.y);
+
+	for (let i = 0; i < nodes.length; i++) {
+		nodes[i].display()
+	}
 }
