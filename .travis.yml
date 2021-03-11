@@ -7,7 +7,7 @@ matrix:
         - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
         - sudo apt-get update -q
         - sudo apt-get install -y g++-7
-        - export CXX="/usr/bin/g++-7"
+        - export CXX=/usr/bin/g++-7
       script:
         - cmake .
         - cmake --build .
