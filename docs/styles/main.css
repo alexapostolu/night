@@ -21,11 +21,28 @@ body {
 	background-color: gray;
 }
 
-#main .heading {
+#main h2 {
 	color: rgb(231, 231, 231);
 	
 	margin-top: 40px;
 	font-family: 'Roboto', sans-serif;
+}
+
+#main a {
+    color: #eee;
+    text-decoration: none;
+}
+
+#main a:hover {
+    text-decoration: underline;
+}
+
+#main a:active {
+    color: rgb(0, 195, 255);
+}
+
+#main a:visited {
+	color: #eee;
 }
 
 #main .desc {

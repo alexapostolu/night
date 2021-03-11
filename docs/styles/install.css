@@ -2,30 +2,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Work+Sans&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Anonymous+Pro&display=swap');
 
-#main h1 {
-    color: black;
-
-    text-align: center;
-
-    font-size: 50px;
-    font-family: 'Montserrat';
-}
-
-#main hr {
-    background-color: gray;
-    
-    margin-top: 50px;
-    margin-bottom: 50px;
-}
-
-#main h2 {
-    color: black;
-
-    margin-top: 50px;
-
-    font-family: 'Montserrat';
-}
-
 #main h3 {
     color: gray;
 
@@ -35,20 +11,7 @@
     font-family: 'Work Sans';
 }
 
-#main a {
-    color: #eee;
-    text-decoration: none;
-}
-
-#main a:hover {
-    text-decoration: underline;
-}
-
-#main a:active {
-    color: rgb(0, 100, 255);
-}
-
-#main p .desc, #main ul li {
+#main ul li {
 	color: gray;
 
 	font-size: 17px;
