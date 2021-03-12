@@ -135,6 +135,18 @@
 				a variable is used with the multiplication operator, then the type integer and float is added
 				to the variable. This allows for accurate type safety while also maintaining a dynamically
 				typed system.</p>
+
+			<p class="code">
+				set var = 's' # 'var' contains type: 'str'
+				var = true    # 'var' contains type: 'str', 'bool'
+
+				def mult(x)
+				{
+					return x
+				}
+
+				print(mult(var) * 5) # 'var' contains type; 'str', 'bool', 'int', 'float'
+			</p>
 		</div>
     </body>
 </html>
