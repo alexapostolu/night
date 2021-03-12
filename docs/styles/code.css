@@ -41,10 +41,10 @@
 	color:#eee;
 }
 
-#main .code .type {
+#main .code .bool {
 	color:rgb(0, 204, 255);
 }
 
 #main .code .str {
-    color: rgb(255, 81, 0);
+    color: rgb(255, 136, 0);
 }

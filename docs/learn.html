@@ -24,7 +24,7 @@
 			<div id="actions">
 				<div class="action"><a href="install.html"><h2>Install</h2></a></div>
 				<div class="action"><a href="index.html"><h2>Home</h2></a></div>
-				<div class="action"><h2>Extras</h2></div>
+				<div class="action"><a href="extras.html"><h2>Extras</h2></a></div>
 			</div>
 		</div>
 
@@ -35,11 +35,11 @@
 			<p class="desc">The tutorial for Night is still in progress. View the GitHub page to see how you
 				can contribute!</p>
 
-				<h1>Tutorial</h1>
+			<p class="desc">This tutorial offers a complete overview of the language Night. This is perfect for any beginners or anyone coding with Night for the first time. For a more in depth look at individual syntax and additional notes, check out the <a href="reference.html">Reference page</a> instead.</p>
 
-			<p>This tutorial offers a complete overview of the language Night. This is perfect for any beginners or anyone coding with Night for the first time. For a more in depth look at individual syntax and additional notes, check out the <a href="reference.html">Reference page</a> instead.</p>
+			<p class="desc">Basic:</p>
 
-			<ol>
+			<ol class="desc">
 				<li><a href="#hello-world">Hello World!</a></li>
 				<li><a href="#variables">Variables</a></li>
 				<li><a href="#input">User Input</a></li>
@@ -50,74 +50,103 @@
 				<li><a href="#arrays">Arrays</a></li>
 			</ol>
 
+			<p class="desc">Advanced:</p>
+
+			<ol class="desc">
+				<li><a href="#type-checking">Type Checking</a></li>
+			</ol>
+
 			<hr>
 
 			<h2 id="hello-world">Hello World!</h2>
 
-			<p>For basic output to the console, you can use the <code>print()</code> function. It takes a single parameter of any type, and displays it to the console. Singleline comments are also supported.</p>
+			<p class="desc">For basic output to the console, you can use the <code>print()</code> function. It takes a single parameter of any type, and displays it to the console. Singleline comments are also supported.</p>
 
-			<script src="https://gist.github.com/DynamicSquid/98827bcefb0917821a9965d5639342c1.js"></script>
+			<p class="code">
+				<span class="func">print</span>(<class class="str">'Hello World!\n'</class>)<br><br>
+				<span class="func">print</span>(<class class="str">"You can also use double quotations\n"</class>)<br><br>
 
-			<p>Keep in mind that the <code>print()</code> function is buffered, and will only print right before taking in user input or the program's termination.</p>
+				<span class="com"># this is a comment</span>
+			</p>
 
 			<h2 id="variables">Variables</h2>
 
-			<p>To initialize a variable, you can use one of five types: <code>bit</code> (boolean), <code>syb</code> (character), <code>int</code> (integer), <code>dec</code> (float), or <code>str</code> (string).</p>
+			<p class="desc">Night is dynamically typed, meaning you don't have to worry about the types of a variable.</p>
 
-			<script src="https://gist.github.com/DynamicSquid/63f4b7c50fc4ce54a4ee0ea2a8cd2a6f.js"></script>
+			<p class="code">
+				<span class="key">set</span> <span class="var">boolean</span> = true<br><br>
 
-			<p>Variable declaration and assignment are also as expected. However, variable declaration will initialize the variable with a default value depending on its type.</p>
+				<span class="key">set</span> <span class="var">integer</span> = 10<br><br>
 
-			<script src="https://gist.github.com/DynamicSquid/4e3926e271b904a314ec83248a4d7fb9.js"></script>
+				<span class="key">set</span> <span class="var">float</span> = 3.14<br><br>
 
-      <h2 id="input">User Input</h2>
+				<span class="key">set</span> <span class="var">name</span> = <span class="str">'squid'</span><br>
+				<span class="var">name</span> = <span class="str">'dynamic '</span> + name
+			</p>
 
-			<p>User input in Night takes the form of the function <code>input()</code>. The function will automatically deduct the type of the user input and return it.</p>
+      		<h2 id="input">User Input</h2>
+
+			<p class="desc">User input in Night takes the form of the function <code>input()</code>. The function will automatically deduct the type of the user input and return it.</p>
 
 			<script src="https://gist.github.com/DynamicSquid/ffbd57371766905b51bc4cc18275030f.js"></script>
 
 			<h2 id="expressions">Expressions</h2>
 
-			<p>Common boolean, arithmetric, and string expressions are supported. They can be used whenever a value is expected. Operator precedence can be found in the reference guide.</p>
+			<p class="desc">Common boolean, arithmetric, and string expressions are supported. They can be used whenever a value is expected. Operator precedence can be found in the reference guide.</p>
 
 			<script src="https://gist.github.com/DynamicSquid/81a81911bc3f4aec7fa5cd00dc94f82d.js"></script>
 
-			<p>Some implicit conversions are also supported. Type <code>int</code> and type <code>dec</code> can be used interchangeably, and any type can concatenate into type <code>str</code>.</p>
+			<p class="desc">Some implicit conversions are also supported. Type <code>int</code> and type <code>dec</code> can be used interchangeably, and any type can concatenate into type <code>str</code>.</p>
 			
 			<script src="https://gist.github.com/DynamicSquid/44be9da318f9f851716e0787c46c9cfa.js"></script>
 
 			<h2 id="conditionals">Conditionals</h2>
 
-			<p>Conditionals in Night take use of curly brackets to group code together.</p>
+			<p class="desc">Conditionals in Night take use of curly brackets to group code together.</p>
 
 			<script src="https://gist.github.com/DynamicSquid/75ae0edbc43f62d116686ab013b37f8b.js"></script>
 
 			<h2 id="functions">Functions</h2>
 
-			<p>Functions in Night support all five types, along with a <code>null</code> (void) type. Regular type functions must have a return value, while <code>null</code> type functions do not need a return value.</p>
+			<p class="desc">Functions in Night support all five types, along with a <code>null</code> (void) type. Regular type functions must have a return value, while <code>null</code> type functions do not need a return value.</p>
 
 			<script src="https://gist.github.com/DynamicSquid/e5d8523f997bf29ea1447009de84c629.js"></script>
 
-			<p>Note that functions have to be defined before they are used.</p>
+			<p class="desc">Note that functions have to be defined before they are used.</p>
 
 			<h2 id="loops">Loops</h2>
 
-			<p>There are two types of loops in Night, the <code>while</code> and <code>for</code> loop. The <code>while</code> loop will only run if its condition evaluates to <code>true</code>, and the <code>for</code> loop will only run a prespecified amount of times.</p>
+			<p class="desc">There are two types of loops in Night, the <code>while</code> and <code>for</code> loop. The <code>while</code> loop will only run if its condition evaluates to <code>true</code>, and the <code>for</code> loop will only run a prespecified amount of times.</p>
 
 			<script src="https://gist.github.com/DynamicSquid/1d1f571a1e3b4cdb5d39a3197bf6ea8d.js"></script>
 
-			<p>Unlike the <code>while</code> loop, the <code>for</code> loop's condition is static and cannot change once it's set.</p>
+			<p class="desc">Unlike the <code>while</code> loop, the <code>for</code> loop's condition is static and cannot change once it's set.</p>
 
 			<h2 id="arrays">Arrays</h2>
 
 			<p>To initialize an array, use square brackets after the variable type, and contain your elements using square brackets as well. You can also specify the amount of elements in your array by putting a value inside the square brackets. If an array is not initialized with any or enough elements, then the appropriate default value will be set. Arrays can only contain one type of value.</p>
 
-			<script src="https://gist.github.com/DynamicSquid/5739894815463d00dec6b60c26936937.js"></script
+			<script src="https://gist.github.com/DynamicSquid/5739894815463d00dec6b60c26936937.js"></script>
 
-			<h2 class="heading">Reference</h2>
+			<h2 id="type-checking">Type Checking</h2>
 
-			<p class="desc">The reference for Night is still in progress. View the GitHub page to see how you
-				can contribute!</p>
+			<p class="desc">What differs Night from other dynamically typed languages is its type safety.<br><br>
+				Each variable stores an array of types. Using it in expressions can add types to the list. For example if
+				a variable is used with the multiplication operator, then the type integer and float is added
+				to the variable. This allows for accurate type safety while also maintaining a dynamically
+				typed system.</p>
+
+			<p class="code">
+				set var = 's' # 'var' contains type: 'str'
+				var = true    # 'var' contains type: 'str', 'bool'
+
+				def mult(x)
+				{
+					return x
+				}
+
+				print(mult(var) * 5) # 'var' contains type; 'str', 'bool', 'int', 'float'
+			</p>
 		</div>
     </body>
 </html>

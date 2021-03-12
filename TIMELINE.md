@@ -6,7 +6,7 @@ Networking...
 
 ## Version 1 - Basic Night
 
-A complete rewrite focused on making the langauge dynamically typed, and adding useful syntax like array slicing, in addition to adding core features like classes and file handling.
+A complete rewrite focused on making the language dynamically typed, and adding useful syntax like array slicing, in addition to adding core features like classes and file handling.
 - `v1.0` will mainly focus on making the language safe and scalable
 - `v1.1` will be focused around encapsulation
 - `v1.2` will be adding utilities like file and error handling
@@ -60,7 +60,7 @@ This version was me learning how to make a language :)
 
 ### v0.2.3-beta
 
-Added compatability with the standard library and the package manager.
+Added compatibility with the standard library and the package manager.
 
 ### v0.2.2-beta
 
@@ -106,4 +106,4 @@ The first version of Night! (the code is so bad plz don't look at it)
 
 It supported 5 basic types, bools, chars, ints, floats, and strings. It also supported variables, expressions, conditionals, and functions, along with a `print` keyword.
 
-Not bad for the first verison actually, considering that I didn't even know the difference between an interpreted and compiled language :/
+Not bad for the first version actually, considering that I didn't even know the difference between an interpreted and compiled language :/
