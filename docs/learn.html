@@ -86,9 +86,14 @@
 
       		<h2 id="input">User Input</h2>
 
-			<p class="desc">User input in Night takes the form of the function <code>input()</code>. The function will automatically deduct the type of the user input and return it.</p>
+			<p class="desc">User input in Night takes the form of the function <code>input()</code>. The function will return the user input in the form of a string. You can use the following casts to convert between types: <code>int</code>, <code>float</code>, or <code>str</code></p>
 
-			<script src="https://gist.github.com/DynamicSquid/ffbd57371766905b51bc4cc18275030f.js"></script>
+			<p class="code">
+				<span class="func">print</span>(<span class="str">'What is your name? '</span>)<br>
+				<span class="key">set</span> <span class="var">name</span> = <span class="func">input()</span><br><br>
+
+				<span class="key">set</span> <span class="var">age</span> = <span class="func">int(<span class="func">input()</span>)</span>
+			</p>
 
 			<h2 id="expressions">Expressions</h2>
 
@@ -137,15 +142,14 @@
 				typed system.</p>
 
 			<p class="code">
-				set var = 's' # 'var' contains type: 'str'
-				var = true    # 'var' contains type: 'str', 'bool'
+				<span class="key">set</span> <span class="var">var</span> = <span class="str">'s'</span> <span class="com"># 'var' contains type: 'str'</span><br>
+				<span class="var">var</span> = <span class="bool">true</span>   <span class="com"> # 'var' contains type: 'str', 'bool'</span><br><br>
 
-				def mult(x)
-				{
-					return x
-				}
+				<span class="func">def</span> <span class="func">mult</span>(<span class="param">x</span>) {<br>
+				&emsp;&emsp;<span class="key">return</span> <span class=="param">x</span><br>
+				}<br><br>
 
-				print(mult(var) * 5) # 'var' contains type; 'str', 'bool', 'int', 'float'
+				<span class="func">print</span>(<span class="func">mult</span>(<span class="var">var</span>) * 5) <span class="com"># 'var' contains type; 'str', 'bool', 'int', 'float'</span>
 			</p>
 		</div>
     </body>
