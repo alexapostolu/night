@@ -11,6 +11,7 @@ matrix:
       script:
         - cmake .
         - cmake --build .
+        - night tests/test.night
 
 before_install:
     - eval "${MATRIX_EVAL}"
