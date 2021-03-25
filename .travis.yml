@@ -12,7 +12,7 @@ matrix:
         - cmake .
         - cmake --build .
         - ./night --version
-        - ./night tests/test.night
+        - ls
 
 before_install:
     - eval "${MATRIX_EVAL}"

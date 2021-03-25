@@ -50,7 +50,7 @@ Interpreter::Interpreter(
 				break;
 			}
 			case Assignment::PLUS: {
-				if (night_variable->second.type == VariableType::STR)
+				if (night_variable->second.type == VariableType::STRING)
 				{
 					std::get<std::string>(night_variable->second.data) += assign_expr.to_str();
 				}
@@ -244,7 +244,7 @@ Interpreter::Interpreter(
 			const ForLoop* const for_loop = &std::get<ForLoop>(statement.stmt);
 
 			const NightData range = EvaluateExpression(current_scope, for_loop->range);
-			if (range.type == VariableType::STR)
+			if (range.type == VariableType::STRING)
 			{
 				for (char range_value : std::get<std::string>(range.data))
 				{
@@ -252,7 +252,7 @@ Interpreter::Interpreter(
 						std::make_shared<NightScope>(current_scope);
 
 					for_loop_scope->variables[for_loop->iterator_name] =
-						NightData{ VariableType::STR, std::string(1, range_value) };
+						NightData{ VariableType::STRING, std::string(1, range_value) };
 
 					Interpreter(for_loop_scope, for_loop->body->statements);
 				}
@@ -295,12 +295,12 @@ Interpreter::Interpreter(
 			if (index < 0 || index >= night_variable->second.extras.size())
 				throw RuntimeError(__FILE__, __LINE__, RuntimeError::out_of_range, file, line, "subscript index is out of range", "array has a size of '" + std::to_string(night_variable->second.extras.size()));
 
-			if (night_variable->second.type == VariableType::STR)
+			if (night_variable->second.type == VariableType::STRING)
 			{
 				const NightData assign_data =
 					EvaluateExpression(current_scope, element_stmt->assign);
 
-				if (assign_data.type != VariableType::STR)
+				if (assign_data.type != VariableType::STRING)
 					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "string elements can only be assigned to other strings of length 1", "expression currently is type '" + assign_data.type.to_str() + "'");
 				if (std::get<std::string>(assign_data.data).length() != 1)
 					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "string elements can only be assigned to other strings of length 1", "expression currently has length '" + std::to_string(std::get<std::string>(assign_data.data).length()) + "'");
@@ -366,7 +366,7 @@ NightData Interpreter::EvaluateExpression(
 				std::string user_input;
 				getline(std::cin, user_input);
 
-				return NightData{ VariableType::STR, user_input };
+				return NightData{ VariableType::STRING, user_input };
 			}
 			if (node->data == "int")
 			{
@@ -379,7 +379,7 @@ NightData Interpreter::EvaluateExpression(
 				{
 					return NightData{ VariableType::INT, (int)std::get<float>(param.data) };
 				}
-				if (param.type == VariableType::STR)
+				if (param.type == VariableType::STRING)
 				{
 					try {
 						return NightData{ VariableType::INT, std::stoi(std::get<std::string>(param.data)) };
@@ -396,7 +396,7 @@ NightData Interpreter::EvaluateExpression(
 				{
 					return NightData{ VariableType::FLOAT, param.get_num() };
 				}
-				if (param.type == VariableType::STR)
+				if (param.type == VariableType::STRING)
 				{
 					try {
 						return NightData{ VariableType::FLOAT, std::stof(std::get<std::string>(param.data)) };
@@ -405,6 +405,19 @@ NightData Interpreter::EvaluateExpression(
 						throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "value '" + node->extras[0]->data + "' can not be converted into type float");
 					}
 				}
+			}
+			if (node->data == "range")
+			{
+				assert(node->extras.size() == 1);
+
+				const NightData param = EvaluateExpression(current_scope, node->extras[0]);
+				assert(param.type == VariableType::INT);
+
+				NightData result{ VariableType::ARRAY };
+				for (int a = 0; a < std::get<int>(param.data); ++a)
+					result.extras[a] = NightData{ VariableType::INT, a };
+
+				return result;
 			}
 
 			auto night_function = night_functions.find(node->data);
@@ -426,7 +439,7 @@ NightData Interpreter::EvaluateExpression(
 			Interpreter(function_scope, night_function->second.body, return_value_ptr); 
 
 			if (return_value_ptr == nullptr)
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "");
+				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "void functions can not be used in expressions");
 
 			exit_function = false;
 			return return_value;
@@ -441,7 +454,7 @@ NightData Interpreter::EvaluateExpression(
 		case ValueType::FLOAT:
 			return NightData{ VariableType::FLOAT, std::stof(node->data) };
 		case ValueType::STR:
-			return NightData{ VariableType::STR, node->data };
+			return NightData{ VariableType::STRING, node->data };
 		default:
 			assert(false);
 		}
@@ -502,12 +515,12 @@ NightData Interpreter::EvaluateExpression(
 		const int index = std::get<int>(data_index.data);
 		
 		const NightData array = EvaluateExpression(current_scope, node->right);
-		if (array.type == VariableType::STR)
+		if (array.type == VariableType::STRING)
 		{
 			if (index < 0 || index >= (int)std::get<std::string>(array.data).length())
 				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_expression, file, line, "index for subscript operator is out of range", "index is value '" + std::to_string(index) + "' but string length is value '" + std::to_string(std::get<std::string>(array.data).length()) + "'");
 
-			return NightData{ VariableType::STR,
+			return NightData{ VariableType::STRING,
 				std::string(1, std::get<std::string>(array.data)[(std::size_t)index]) };
 		}
 		else if (array.type == VariableType::ARRAY)
@@ -532,14 +545,14 @@ NightData Interpreter::EvaluateExpression(
 		const NightData value1 = EvaluateExpression(current_scope, node->left);
 		const NightData value2 = EvaluateExpression(current_scope, node->right);
 
-		if (!value1.is_num() && value1.type != VariableType::STR && value2.type != VariableType::STR)
+		if (!value1.is_num() && value1.type != VariableType::STRING && value2.type != VariableType::STRING)
 			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '+' can only be used on types 'int', 'float', or 'str'", "left hand value of operator '+' has type '" + value1.type.to_str() + "'");
-		if (!value2.is_num() && value2.type != VariableType::STR && value1.type != VariableType::STR)
+		if (!value2.is_num() && value2.type != VariableType::STRING && value1.type != VariableType::STRING)
 			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '+' can only be used on types 'int', 'float', or 'str'", "right hand value of operator '+' has type '" + value2.type.to_str() + "'");
 
-		if (value1.type == VariableType::STR || value2.type == VariableType::STR)
+		if (value1.type == VariableType::STRING || value2.type == VariableType::STRING)
 		{
-			return NightData{ VariableType::STR,
+			return NightData{ VariableType::STRING,
 				value1.to_str() + value2.to_str() };
 		}
 
@@ -768,7 +781,7 @@ NightData Interpreter::EvaluateExpression(
 
 			assert(false && "method exists in Parser, but not Interpreter");
 		}
-		if (object.type == VariableType::STR)
+		if (object.type == VariableType::STRING)
 		{
 			if (method.data == "len")
 			{

@@ -2,16 +2,8 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <cassert>
 #include <string>
-
-#ifndef _DEBUG
-	#undef  assert
-	#define assert(con) std::cout << "Uh oh! Something unexpected has happened! Please submit an issue on the GitHub page:\n" \
-								  << "github.com/dynamicsquid/night\n";														  \
-                        exit(1)
-#else
-	#include <cassert>
-#endif
 
 class Error
 {

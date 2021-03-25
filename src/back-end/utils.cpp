@@ -6,26 +6,27 @@
 std::vector<std::vector<Token> > SplitCode(const std::vector<Token>& tokens)
 {
 	std::vector<std::vector<Token> > code;
+
 	int open_curly_count = 0;
-	for (std::size_t a = 0, open_curly_count = 0; a < tokens.size(); ++a)
+	for (auto it = tokens.begin(); it != tokens.end(); ++it)
 	{
-		if (a == 0)
+		if (it == tokens.begin())
 			code.push_back(std::vector<Token>());
 
-		if (tokens[a].type == TokenType::EOL && open_curly_count == 0)
+		if (it->type == TokenType::EOL && open_curly_count == 0)
 		{
-			if (a < tokens.size() - 1)
+			if (std::next(it, 1) != tokens.end())
 				code.push_back(std::vector<Token>());
 
 			continue;
 		}
 
-		if (tokens[a].type == TokenType::OPEN_CURLY)
+		if (it->type == TokenType::OPEN_CURLY)
 			open_curly_count++;
-		else if (tokens[a].type == TokenType::CLOSE_CURLY)
+		else if (it->type == TokenType::CLOSE_CURLY)
 			open_curly_count--;
 
-		code.back().push_back(tokens[a]);
+		code.back().push_back(*it);
 	}
 
 	return code;
@@ -34,15 +35,14 @@ std::vector<std::vector<Token> > SplitCode(const std::vector<Token>& tokens)
 bool find_num_types(const VariableTypeContainer& container)
 {
 	return container.find(VariableType::INT) != container.end() ||
-		container.find(VariableType::FLOAT) != container.end();
+		   container.find(VariableType::FLOAT) != container.end();
 }
 
 std::string get_var_types_as_str(const VariableTypeContainer& var_types_set)
 {
 	assert(!var_types_set.empty());
 
-	std::vector<VariableType> var_types(
-		var_types_set.begin(), var_types_set.end());
+	std::vector<VariableType> var_types(var_types_set.begin(), var_types_set.end());
 
 	std::string str_types = "";
 	for (int a = 0; a < (int)var_types.size() - 1; ++a)

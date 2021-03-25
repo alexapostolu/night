@@ -84,6 +84,6 @@ private:
 
 	static const VariableTypeContainer all_types;
 
-	static std::unordered_map<std::string, CheckFunction> check_functions;
-	static std::unordered_map<std::string, CheckClass> check_classes;
+	static CheckFunctionContainer check_functions;
+	static CheckClassContainer check_classes;
 };

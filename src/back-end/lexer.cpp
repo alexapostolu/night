@@ -10,10 +10,13 @@
 
 void ReplaceEscape(std::string& token, const std::string& str, const char ch)
 {
-	for (std::size_t newline = token.find(str); newline != std::string::npos; newline = token.find(str, newline + 1))
+	std::size_t escape = token.find(str);
+	while (escape != std::string::npos)
 	{
-		token[newline] = ch;
-		token.erase(newline + 1, 1);
+		token[escape] = ch;
+		token.erase(escape + 1, 1);
+
+		escape = token.find(str, escape + 1);
 	}
 }
 

@@ -1,4 +1,9 @@
 #include "../../include/back-end/token.hpp"
+#include "../../include/error.hpp"
+
+VariableType::VariableType(
+	const Type& _type, const std::string& _name
+) : type(_type), class_name(_name) {}
 
 std::string VariableType::to_str() const
 {
@@ -10,15 +15,16 @@ std::string VariableType::to_str() const
 		return "int";
 	case VariableType::FLOAT:
 		return "float";
-	case VariableType::STR:
+	case VariableType::STRING:
 		return "str";
 	case VariableType::ARRAY:
 		return "array";
 	case VariableType::CLASS:
 		return class_name;
+	default:
+		assert(false);
+		return {};
 	}
-
-	return {};
 }
 
 bool VariableType::operator==(const VariableType& _type) const
@@ -36,31 +42,40 @@ bool Token::operator==(const TokenType& _type) const
 	return type == _type;
 }
 
-CheckVariable::CheckVariable()
-	: flag_array(false) {}
+Scope::Scope(const std::shared_ptr<Scope>& _upper_scope)
+	: upper_scope(_upper_scope) {}
 
 CheckVariable::CheckVariable(const VariableTypeContainer& _types, const bool _flag_array)
-	: types(_types), flag_array(_flag_array) {}
+	: types(_types), is_array(_flag_array) {}
 
 bool CheckVariable::find_type(const VariableType& var_type) const
 {
 	return types.find(var_type) != types.end();
 }
 
-bool CheckVariable::is_array() const
-{
-	return flag_array;
-}
-
 bool CheckVariable::is_param() const
 {
-	return !flag_array && types.empty();
+	return !is_array && types.empty();
 }
 
-void CheckVariable::set_array(bool flag)
-{
-	flag_array = flag;
+std::pair<const std::string, CheckFunction> make_check_function(
+	const std::string& name,
+	const std::vector<VariableTypeContainer>& params = {},
+	const VariableTypeContainer& rtn_types = {}
+) {
+	return {
+		name,
+		CheckFunction{ params, rtn_types, rtn_types.empty() }
+	};
 }
 
-Scope::Scope(const std::shared_ptr<Scope>& _upper_scope)
-	: upper_scope(_upper_scope) {}
+std::pair<const std::string, CheckClass> make_check_class(
+	const std::string& name,
+	const CheckVariableContainer& vars = {},
+	const CheckFunctionContainer& methods = {}
+) {
+	return {
+		name,
+		CheckClass{ vars, methods }
+	};
+}
