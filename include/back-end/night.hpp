@@ -40,13 +40,7 @@ struct NightFunction
 
 using NightFunctionContainer = std::unordered_map<std::string, NightFunction>;
 
-struct NightScope
-{
-	const std::shared_ptr<NightScope> upper_scope;
-	NightVariableContainer variables;
 
-	NightScope(const std::shared_ptr<NightScope>& _upper_scope);
-};
 
 // displays standard output
 void NightPrint(const NightData& value);

@@ -26,7 +26,7 @@ std::string NightData::to_str() const
         return std::to_string(std::get<int>(data));
     case VariableType::FLOAT:
         return std::to_string(std::get<float>(data));
-    case VariableType::STR:
+    case VariableType::STRING:
         return std::get<std::string>(data);
     default:
         assert(false);
@@ -74,7 +74,3 @@ bool compare_array(const NightData& arr1, const NightData& arr2)
     return true;
 }
 
-NightScope::NightScope(const std::shared_ptr<NightScope>& _upper_scope)
-    : upper_scope(_upper_scope)
-{
-}

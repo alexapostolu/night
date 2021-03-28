@@ -1,4 +1,5 @@
 #include "../../include/back-end/token.hpp"
+#include "../../include/back-end/utils.hpp"
 #include "../../include/error.hpp"
 
 VariableType::VariableType(
@@ -60,8 +61,8 @@ bool CheckVariable::is_param() const
 
 std::pair<const std::string, CheckFunction> make_check_function(
 	const std::string& name,
-	const std::vector<VariableTypeContainer>& params = {},
-	const VariableTypeContainer& rtn_types = {}
+	const std::vector<VariableTypeContainer>& params,
+	const VariableTypeContainer& rtn_types
 ) {
 	return {
 		name,
@@ -71,8 +72,8 @@ std::pair<const std::string, CheckFunction> make_check_function(
 
 std::pair<const std::string, CheckClass> make_check_class(
 	const std::string& name,
-	const CheckVariableContainer& vars = {},
-	const CheckFunctionContainer& methods = {}
+	const CheckVariableContainer& vars,
+	const CheckFunctionContainer& methods
 ) {
 	return {
 		name,

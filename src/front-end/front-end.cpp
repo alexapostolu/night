@@ -30,8 +30,7 @@ void FrontEnd(int argc, char** argv)
 		Parser(global_scope, tokens);
 	}
 
-	std::shared_ptr<NightScope> night_global = std::make_shared<NightScope>(nullptr);
-	Interpreter(night_global, global_scope->statements);
+	Interpreter interpreter(global_scope->statements);
 }
 
 std::vector<Token> OpenFile(const std::string& file)
@@ -42,15 +41,15 @@ std::vector<Token> OpenFile(const std::string& file)
 
 	std::vector<Token> tokens;
 	std::string file_line;
-	for (int line = 1; getline(source_file, file_line); ++line)
+	for (Location loc{ file, 1 }; getline(source_file, file_line); ++loc.line)
 	{
-		std::vector<Token> file_tokens = Lexer(file, line, file_line);
+		std::vector<Token> file_tokens = Lexer(loc, file_line);
 		if (file_tokens.size() >= 1 && file_tokens[0].type == TokenType::IMPORT)
 		{
-			if (file_tokens.size() == 1 || file_tokens[1].type != TokenType::STR)
-				throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "expected file name after '" + file_tokens[0].data + "' statement");
+			if (file_tokens.size() == 1 || file_tokens[1].type != TokenType::STRING)
+				throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, loc, "expected file name after '" + file_tokens[0].data + "' statement");
 			if (file_tokens.size() > 3) // EOF
-				throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, file, line, "'" + file_tokens[0].data + "' must be on its own line");
+				throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, loc, "'" + file_tokens[0].data + "' must be on its own line");
 
 			if (file_tokens[0].data == "import" && file_tokens[1].data == "python")
 				throw FrontEndError("module 'python' could not be imported; only good languages are allowed here");

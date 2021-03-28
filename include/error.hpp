@@ -5,6 +5,12 @@
 #include <cassert>
 #include <string>
 
+struct Location
+{
+	std::string file;
+	int line, col;
+};
+
 class Error
 {
 public:
@@ -14,8 +20,7 @@ public:
 
 		const std::string& type,
 
-		const std::string& _file,
-		const int _line,
+		const Location& _loc,
 
 		const std::string& _desc,
 
@@ -33,8 +38,7 @@ protected:
 
 	std::string type;
 
-	std::string file;
-	int line;
+	Location loc;
 
 	std::string code_line;
 
@@ -76,8 +80,7 @@ public:
 
 		const std::string& type,
 
-		const std::string& _file,
-		const int _line,
+		const Location& _loc,
 
 		const std::string& _desc,
 
@@ -102,8 +105,7 @@ public:
 
 		const std::string& type,
 
-		const std::string& _file,
-		const int _line,
+		const Location& _loc,
 
 		const std::string& _desc,
 

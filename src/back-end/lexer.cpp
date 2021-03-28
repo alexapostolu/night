@@ -20,7 +20,7 @@ void ReplaceEscape(std::string& token, const std::string& str, const char ch)
 	}
 }
 
-void FindKeyword(const std::string& file, const int line, std::vector<Token>& tokens, std::string& token)
+void FindKeyword(const Location& loc, std::vector<Token>& tokens, std::string& token)
 {
 	if (token.empty())
 		return;
@@ -40,20 +40,20 @@ void FindKeyword(const std::string& file, const int line, std::vector<Token>& to
 	};
 
 	if (const auto find_keyword = keywords.find(token); find_keyword != keywords.end())
-		tokens.push_back(Token{ file, line, find_keyword->second, token });
+		tokens.push_back(Token{ loc, find_keyword->second, token });
 	else if (std::regex_match(token, std::regex("[0-9]+")))
-		tokens.push_back(Token{ file, line, TokenType::INT, token });
+		tokens.push_back(Token{ loc, TokenType::INT, token });
 	else if (std::regex_match(token, std::regex("([0-9]+)(\\.[0-9]+)?")))
-		tokens.push_back(Token{ file, line, TokenType::FLOAT, token });
+		tokens.push_back(Token{ loc, TokenType::FLOAT, token });
 	else if (std::regex_match(token, std::regex("[a-zA-Z_][a-zA-Z_0-9]*")))
-		tokens.push_back(Token{ file, line, TokenType::VAR, token });
+		tokens.push_back(Token{ loc, TokenType::VAR, token });
 	else
-		throw CompileError(__FILE__, __LINE__, CompileError::invalid_grammar, file, line, "unknown token '" + token + "'");
+		throw CompileError(__FILE__, __LINE__, CompileError::invalid_grammar, loc, "unknown token '" + token + "'");
 
 	token = "";
 }
 
-std::vector<Token> Lexer(const std::string& file, const int line, const std::string& file_line)
+std::vector<Token> Lexer(const Location& loc, const std::string& file_line)
 {
 	const std::unordered_map<char, std::vector<std::pair<char, TokenType> > > symbols{
 		{ '+', { { '=', TokenType::ASSIGN }, { '\0', TokenType::OPERATOR } } },
@@ -93,7 +93,7 @@ std::vector<Token> Lexer(const std::string& file, const int line, const std::str
 
 		if ((file_line[a] == '\'' || file_line[a] == '"') && in_string == ' ')
 		{
-			FindKeyword(file, line, tokens, token);
+			FindKeyword(loc, tokens, token);
 
 			in_string = file_line[a];
 			continue;
@@ -115,7 +115,7 @@ std::vector<Token> Lexer(const std::string& file, const int line, const std::str
 			ReplaceEscape(token, "\\t", '\t');
 			ReplaceEscape(token, "\\v", '\v');
 
-			tokens.push_back(Token{ file, line, TokenType::STR, token });
+			tokens.push_back(Token{ loc, TokenType::STRING, token });
 			token = "";
 
 			in_string = ' ';
@@ -129,7 +129,7 @@ std::vector<Token> Lexer(const std::string& file, const int line, const std::str
 
 		if (file_line[a] == ' ' || file_line[a] == '\t')
 		{
-			FindKeyword(file, line, tokens, token);
+			FindKeyword(loc, tokens, token);
 			continue;
 		}
 
@@ -145,26 +145,26 @@ std::vector<Token> Lexer(const std::string& file, const int line, const std::str
 
 		if (auto symbol = symbols.find(file_line[a]); symbol != symbols.end())
 		{
-			FindKeyword(file, line, tokens, token);
+			FindKeyword(loc, tokens, token);
 
 			for (const auto& match : symbol->second)
 			{
 				if (match.first != '\0' && a < file_line.length() - 1 && file_line[a + 1] == match.first)
 				{
-					tokens.push_back(Token{ file, line, match.second, std::string(1, file_line[a]) + match.first });
+					tokens.push_back(Token{ loc, match.second, std::string(1, file_line[a]) + match.first });
 
 					a++;
 					goto CONTINUE_NEXT;
 				}
 				else if (match.first == '\0')
 				{
-					tokens.push_back(Token{ file, line, match.second, std::string(1, file_line[a]) });
+					tokens.push_back(Token{ loc, match.second, std::string(1, file_line[a]) });
 
 					goto CONTINUE_NEXT;
 				}
 			}
 
-			throw CompileError(__FILE__, __LINE__, CompileError::invalid_grammar, file, line, std::string("unknown symbol '") + file_line[a] + "'");
+			throw CompileError(__FILE__, __LINE__, CompileError::invalid_grammar, loc, std::string("unknown symbol '") + file_line[a] + "'");
 		}
 
 		token += file_line[a];
@@ -172,15 +172,18 @@ std::vector<Token> Lexer(const std::string& file, const int line, const std::str
 		CONTINUE_NEXT:;
 	}
 
-	FindKeyword(file, line, tokens, token);
+	FindKeyword(loc, tokens, token);
 
 	// allows curly brackets to be optional on single statements
+	///*
 	if (!tokens.empty() &&
-		tokens[0].type != TokenType::IF && tokens[0].type != TokenType::ELSE &&
-		(tokens[0].type != TokenType::ELSE || tokens[1].type != TokenType::IF) &&
-		tokens[0].type != TokenType::WHILE && tokens[0].type != TokenType::FOR &&
+		tokens[0].type != TokenType::IF && tokens[0].type != TokenType::ELSE ||
+		tokens[0].type != TokenType::WHILE && tokens[0].type != TokenType::FOR ||
 		tokens.back().type != TokenType::OPEN_CURLY && tokens[0].type != TokenType::DEF)
-		tokens.push_back(Token{ file, line, TokenType::EOL, "EOF" });
+		tokens.push_back(Token{ loc, TokenType::EOL, "EOF" });
+	//*/
+	//if (!tokens.empty())
+		//tokens.push_back(Token{ loc, TokenType::EOL, "EOL" });
 
 	return tokens;
 }

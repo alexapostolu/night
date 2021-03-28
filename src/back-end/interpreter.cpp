@@ -11,7 +11,14 @@
 #include <string>
 #include <vector>
 
-Interpreter::Interpreter(
+Interpreter::Interpreter(const std::vector<Statement>& _stmts)
+	: exit_function(false)
+{
+	std::shared_ptr<NightScope> global_scope = std::make_shared<NightScope>(nullptr);
+	Interpret(global_scope, _stmts);
+}
+
+void Interpreter::Interpret(
 	std::shared_ptr<NightScope>& current_scope,
 	const std::vector<Statement>& statements,
 	NightData* return_value
@@ -21,8 +28,7 @@ Interpreter::Interpreter(
 		if (exit_function)
 			break;
 
-		const std::string file = statement.file;
-		const int		  line = statement.line;
+		const Location loc = statement.loc;
 
 		switch (statement.type)
 		{
@@ -30,7 +36,7 @@ Interpreter::Interpreter(
 			const Variable* const variable_stmt = &std::get<Variable>(statement.stmt);
 
 			current_scope->variables[variable_stmt->name] = NightData{
-				EvaluateExpression(current_scope, variable_stmt->value) };
+				evaluate_expression(current_scope, variable_stmt->value) };
 
 			break;
 		}
@@ -41,7 +47,7 @@ Interpreter::Interpreter(
 			assert(night_variable != nullptr);
 
 			const NightData assign_expr =
-				EvaluateExpression(current_scope, assignment->assign_expr);
+				evaluate_expression(current_scope, assignment->assign_expr);
 
 			switch (assignment->assign_type)
 			{
@@ -57,7 +63,7 @@ Interpreter::Interpreter(
 				else if (night_variable->second.is_num())
 				{
 					if (!assign_expr.is_num())
-						throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "expression can not be used with the operator '+='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, if the variable is type 'int' or 'float', then the operator '+=' can only assign expressions of type 'int' or 'float'");
+						throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "expression can not be used with the operator '+='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, if the variable is type 'int' or 'float', then the operator '+=' can only assign expressions of type 'int' or 'float'");
 
 					if (night_variable->second.type == VariableType::INT)
 						std::get<int>(night_variable->second.data) += (int)assign_expr.get_num();
@@ -66,16 +72,16 @@ Interpreter::Interpreter(
 				}
 				else
 				{
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '+='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '+=' can only be used on variables of type 'int', 'float', or 'string'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '+='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '+=' can only be used on variables of type 'int', 'float', or 'string'");
 				}
 
 				break;
 			}
 			case Assignment::MINUS: {
 				if (!night_variable->second.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '-='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '-=' can only be used on variables of type 'int' or 'float'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '-='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '-=' can only be used on variables of type 'int' or 'float'");
 				if (!assign_expr.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "expression can not be used with the operator '-='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '-=' can only assign expressions of type 'int' or 'float'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "expression can not be used with the operator '-='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '-=' can only assign expressions of type 'int' or 'float'");
 
 				if (night_variable->second.type == VariableType::INT)
 					std::get<int>(night_variable->second.data) -= (int)assign_expr.get_num();
@@ -86,9 +92,9 @@ Interpreter::Interpreter(
 			}
 			case Assignment::TIMES: {
 				if (!night_variable->second.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '*='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '*=' can only be used on variables of type 'int' or 'float'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '*='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '*=' can only be used on variables of type 'int' or 'float'");
 				if (!assign_expr.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "expression can not be used with the operator '*='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '*=' can only assign expressions of type 'int' or 'float'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "expression can not be used with the operator '*='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '*=' can only assign expressions of type 'int' or 'float'");
 
 				if (night_variable->second.type == VariableType::INT)
 					std::get<int>(night_variable->second.data) *= (int)assign_expr.get_num();
@@ -99,9 +105,9 @@ Interpreter::Interpreter(
 			}
 			case Assignment::DIVIDE: {
 				if (!night_variable->second.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "variable '" + night_variable->first+ "' can not be assigned using the assignment operator '/='", "the operator can only be used on variables of type 'int' or float'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "variable '" + night_variable->first+ "' can not be assigned using the assignment operator '/='", "the operator can only be used on variables of type 'int' or float'");
 				if (!assign_expr.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "expression can not be used with the operator '/='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '/=' can only assign expressions of type 'int' or 'float'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "expression can not be used with the operator '/='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '/=' can only assign expressions of type 'int' or 'float'");
 
 				if (night_variable->second.type == VariableType::INT)
 					std::get<int>(night_variable->second.data) /= (int)assign_expr.get_num();
@@ -112,9 +118,9 @@ Interpreter::Interpreter(
 			}
 			case Assignment::MOD: {
 				if (!night_variable->second.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '%='", "the operator can only be used on variables of type 'int' or float'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '%='", "the operator can only be used on variables of type 'int' or float'");
 				if (!assign_expr.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "expression can not be used with the operator '%='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '%=' can only assign expressions of type 'int' or 'float'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "expression can not be used with the operator '%='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '%=' can only assign expressions of type 'int' or 'float'");
 
 				if (night_variable->second.type == VariableType::INT)
 					std::get<int>(night_variable->second.data) /= (int)assign_expr.get_num();
@@ -137,23 +143,23 @@ Interpreter::Interpreter(
 					std::shared_ptr<NightScope> if_stmt_scope =
 						std::make_shared<NightScope>(current_scope);
 
-					Interpreter(if_stmt_scope, conditional.body->statements, return_value);
+					Interpret(if_stmt_scope, conditional.body->statements, return_value);
 
 					break;
 				}
 
 				const NightData condition_expr =
-					EvaluateExpression(current_scope, conditional.condition);
+					evaluate_expression(current_scope, conditional.condition);
 
 				if (condition_expr.type != VariableType::BOOL)
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "if statement expression does not evaluate to the type 'bool'", "conditions must evaluate to the type 'bool'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "if statement expression does not evaluate to the type 'bool'", "conditions must evaluate to the type 'bool'");
 
 				if (std::get<bool>(condition_expr.data))
 				{
 					std::shared_ptr<NightScope> if_stmt_scope =
 						std::make_shared<NightScope>(current_scope);
 
-					Interpreter(if_stmt_scope, conditional.body->statements, return_value);
+					Interpret(if_stmt_scope, conditional.body->statements, return_value);
 
 					break;
 				}
@@ -175,12 +181,26 @@ Interpreter::Interpreter(
 
 			if (function_call->name == "print")
 			{
-				const NightData data = EvaluateExpression(current_scope, function_call->arguments[0]);
+				const NightData data = evaluate_expression(current_scope, function_call->arguments[0]);
 
 				if (data.type == VariableType::CLASS)
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "argument 1 of function 'print' can only accept basic types", "argument 1 currently is type '" + data.type.to_str() + "'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "argument 1 of function 'print' can only accept basic types", "argument 1 currently is type '" + data.type.to_str() + "'");
 
 				NightPrint(data);
+
+				break;
+			}
+			if (function_call->name == "input")
+			{
+				std::string user_input;
+				getline(std::cin, user_input);
+
+				break;
+			}
+			if (function_call->name == "system")
+			{
+				const NightData arg = evaluate_expression(current_scope, function_call->arguments[0]);
+				system(std::get<std::string>(arg.data).c_str());
 
 				break;
 			}
@@ -195,11 +215,11 @@ Interpreter::Interpreter(
 			for (std::size_t a = 0; a < night_function->second.params.size(); ++a)
 			{
 				function_scope->variables[night_function->second.params[a]] =
-					EvaluateExpression(current_scope, function_call->arguments[a]);
+					evaluate_expression(current_scope, function_call->arguments[a]);
 			}
 
 			NightData dummy_return_value;
-			Interpreter(function_scope, night_function->second.body, &dummy_return_value);
+			Interpret(function_scope, night_function->second.body, &dummy_return_value);
 
 			exit_function = false;
 			break;
@@ -210,7 +230,7 @@ Interpreter::Interpreter(
 			assert(return_value != nullptr);
 
 			if (return_stmt->expression != nullptr)
-				*return_value = EvaluateExpression(current_scope, return_stmt->expression);
+				*return_value = evaluate_expression(current_scope, return_stmt->expression);
 			else
 				return_value = nullptr;
 
@@ -224,10 +244,10 @@ Interpreter::Interpreter(
 			while (true)
 			{
 				const NightData condition =
-					EvaluateExpression(current_scope, while_loop->condition);
+					evaluate_expression(current_scope, while_loop->condition);
 
 				if (condition.type != VariableType::BOOL)
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "while loop condition does not evaluate to type 'bool'", "condition is currently type '" + condition.type.to_str() + "'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "while loop condition does not evaluate to type 'bool'", "condition is currently type '" + condition.type.to_str() + "'");
 
 				if (!std::get<bool>(condition.data))
 					break;
@@ -235,7 +255,7 @@ Interpreter::Interpreter(
 				std::shared_ptr<NightScope> while_loop_scope =
 					std::make_shared<NightScope>(current_scope);
 
-				Interpreter(while_loop_scope, while_loop->body->statements);
+				Interpret(while_loop_scope, while_loop->body->statements);
 			}
 
 			break;
@@ -243,7 +263,7 @@ Interpreter::Interpreter(
 		case StatementType::FOR_LOOP: {
 			const ForLoop* const for_loop = &std::get<ForLoop>(statement.stmt);
 
-			const NightData range = EvaluateExpression(current_scope, for_loop->range);
+			const NightData range = evaluate_expression(current_scope, for_loop->range);
 			if (range.type == VariableType::STRING)
 			{
 				for (char range_value : std::get<std::string>(range.data))
@@ -254,7 +274,7 @@ Interpreter::Interpreter(
 					for_loop_scope->variables[for_loop->iterator_name] =
 						NightData{ VariableType::STRING, std::string(1, range_value) };
 
-					Interpreter(for_loop_scope, for_loop->body->statements);
+					Interpret(for_loop_scope, for_loop->body->statements);
 				}
 			}
 			else
@@ -266,7 +286,7 @@ Interpreter::Interpreter(
 
 					for_loop_scope->variables[for_loop->iterator_name] = range_value;
 
-					Interpreter(for_loop_scope, for_loop->body->statements);
+					Interpret(for_loop_scope, for_loop->body->statements);
 				}
 			}
 
@@ -279,7 +299,7 @@ Interpreter::Interpreter(
 			assert(night_variable != nullptr);
 
 			const NightData index_data =
-				EvaluateExpression(current_scope, element_stmt->index[0]);
+				evaluate_expression(current_scope, element_stmt->index[0]);
 			
 			// multidimensional arrays!!!!
 			//
@@ -288,22 +308,22 @@ Interpreter::Interpreter(
 			//
 
 			if (index_data.type != VariableType::INT)
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "subscript index does not evaluate to type 'int'", "subscript index currently is of type '" + index_data.type.to_str() + "'");
+				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "subscript index does not evaluate to type 'int'", "subscript index currently is of type '" + index_data.type.to_str() + "'");
 
 			const long long index = std::get<int>(index_data.data);
 
 			if (index < 0 || index >= night_variable->second.extras.size())
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::out_of_range, file, line, "subscript index is out of range", "array has a size of '" + std::to_string(night_variable->second.extras.size()));
+				throw RuntimeError(__FILE__, __LINE__, RuntimeError::out_of_range, loc, "subscript index is out of range", "array has a size of '" + std::to_string(night_variable->second.extras.size()));
 
 			if (night_variable->second.type == VariableType::STRING)
 			{
 				const NightData assign_data =
-					EvaluateExpression(current_scope, element_stmt->assign);
+					evaluate_expression(current_scope, element_stmt->assign);
 
 				if (assign_data.type != VariableType::STRING)
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "string elements can only be assigned to other strings of length 1", "expression currently is type '" + assign_data.type.to_str() + "'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "string elements can only be assigned to other strings of length 1", "expression currently is type '" + assign_data.type.to_str() + "'");
 				if (std::get<std::string>(assign_data.data).length() != 1)
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "string elements can only be assigned to other strings of length 1", "expression currently has length '" + std::to_string(std::get<std::string>(assign_data.data).length()) + "'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "string elements can only be assigned to other strings of length 1", "expression currently has length '" + std::to_string(std::get<std::string>(assign_data.data).length()) + "'");
 
 				std::get<std::string>(night_variable->second.data)[(std::size_t)index] =
 					std::get<std::string>(assign_data.data)[0];
@@ -311,7 +331,7 @@ Interpreter::Interpreter(
 			else
 			{
 				night_variable->second.extras[(std::size_t)index] =
-					EvaluateExpression(current_scope, element_stmt->assign);
+					evaluate_expression(current_scope, element_stmt->assign);
 			}
 
 			break;
@@ -322,7 +342,7 @@ Interpreter::Interpreter(
 			auto* const night_variable = get_variable(current_scope, method_call->name);
 			assert(night_variable != nullptr);
 
-			night_variable->second = EvaluateExpression(current_scope, method_call->assign_expr);
+			night_variable->second = evaluate_expression(current_scope, method_call->assign_expr);
 
 			break;
 		}
@@ -330,37 +350,33 @@ Interpreter::Interpreter(
 	}
 }
 
-NightData Interpreter::EvaluateExpression(
+NightData Interpreter::evaluate_expression(
 	std::shared_ptr<NightScope>& current_scope,
 	const std::shared_ptr<Expression>& node)
 {
-	assert(node != nullptr);
-
-	const std::string file = node->file;
-	const int         line = node->line;
+	const Location loc = node->loc;
 
 	// if left and right node are NULL, then node must be a value
 	if (node->left == nullptr && node->right == nullptr)
 	{
-		if (node->type == ValueType::ARRAY)
+		switch (node->type)
 		{
+		case ValueType::ARRAY: {
 			NightData night_data{ VariableType::ARRAY };
 
 			night_data.extras.reserve(node->extras.size());
 			for (const std::shared_ptr<Expression>& element : node->extras)
-				night_data.extras.push_back(EvaluateExpression(current_scope, element));
+				night_data.extras.push_back(evaluate_expression(current_scope, element));
 
 			return night_data;
 		}
-		if (node->type == ValueType::VARIABLE)
-		{
+		case ValueType::VARIABLE: {
 			auto* const night_variable = get_variable(current_scope, node->data);
 			assert(night_variable != nullptr);
 
 			return night_variable->second;
 		}
-		if (node->type == ValueType::CALL)
-		{
+		case ValueType::CALL: {
 			if (node->data == "input")
 			{
 				std::string user_input;
@@ -370,7 +386,7 @@ NightData Interpreter::EvaluateExpression(
 			}
 			if (node->data == "int")
 			{
-				const NightData param = EvaluateExpression(current_scope, node->extras[0]);
+				const NightData param = evaluate_expression(current_scope, node->extras[0]);
 				if (param.type == VariableType::INT)
 				{
 					return param;
@@ -385,13 +401,13 @@ NightData Interpreter::EvaluateExpression(
 						return NightData{ VariableType::INT, std::stoi(std::get<std::string>(param.data)) };
 					}
 					catch (const std::invalid_argument&) {
-						throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "value '" + node->extras[0]->data + "' can not be converted into type int");
+						throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "value '" + node->extras[0]->data + "' can not be converted into type int");
 					}
 				}
 			}
 			if (node->data == "float")
 			{
-				const NightData param = EvaluateExpression(current_scope, node->extras[0]);
+				const NightData param = evaluate_expression(current_scope, node->extras[0]);
 				if (param.type == VariableType::INT || param.type == VariableType::FLOAT)
 				{
 					return NightData{ VariableType::FLOAT, param.get_num() };
@@ -402,7 +418,7 @@ NightData Interpreter::EvaluateExpression(
 						return NightData{ VariableType::FLOAT, std::stof(std::get<std::string>(param.data)) };
 					}
 					catch (const std::invalid_argument&) {
-						throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "value '" + node->extras[0]->data + "' can not be converted into type float");
+						throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "value '" + node->extras[0]->data + "' can not be converted into type float");
 					}
 				}
 			}
@@ -410,7 +426,7 @@ NightData Interpreter::EvaluateExpression(
 			{
 				assert(node->extras.size() == 1);
 
-				const NightData param = EvaluateExpression(current_scope, node->extras[0]);
+				const NightData param = evaluate_expression(current_scope, node->extras[0]);
 				assert(param.type == VariableType::INT);
 
 				NightData result{ VariableType::ARRAY };
@@ -431,32 +447,34 @@ NightData Interpreter::EvaluateExpression(
 			for (std::size_t a = 0; a < night_function->second.params.size(); ++a)
 			{
 				function_scope->variables[night_function->second.params[a]] =
-					EvaluateExpression(current_scope, node->extras[a]);
+					evaluate_expression(current_scope, node->extras[a]);
 			}
 
 			NightData return_value;
 			NightData* return_value_ptr = &return_value;
-			Interpreter(function_scope, night_function->second.body, return_value_ptr); 
+			Interpret(function_scope, night_function->second.body, return_value_ptr);
 
 			if (return_value_ptr == nullptr)
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "void functions can not be used in expressions");
+				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "function '" + night_function->first + "' does not return a value", "functions used in expressions must return a value");
 
 			exit_function = false;
 			return return_value;
 		}
-
-		switch (node->type)
-		{
-		case ValueType::BOOL:
+		case ValueType::BOOL: {
 			return NightData{ VariableType::BOOL, node->data == "true" };
-		case ValueType::INT:
+		}
+		case ValueType::INT: {
 			return NightData{ VariableType::INT, std::stoi(node->data) };
-		case ValueType::FLOAT:
+		}
+		case ValueType::FLOAT: {
 			return NightData{ VariableType::FLOAT, std::stof(node->data) };
-		case ValueType::STR:
+		}
+		case ValueType::STRING: {
 			return NightData{ VariableType::STRING, node->data };
-		default:
+		}
+		default: {
 			assert(false);
+		}
 		}
 	}
 
@@ -469,22 +487,22 @@ NightData Interpreter::EvaluateExpression(
 	{
 		if (node->left == nullptr)
 		{
-			const NightData value = EvaluateExpression(current_scope, node->right);
+			const NightData value = evaluate_expression(current_scope, node->right);
 			if (!value.is_num())
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_expression, file, line, "unary operator '-' can only be used on types 'int' or 'float'", "left have value of operator '-' is currently type '" + value.type.to_str() + "'");
+				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_expression, loc, "unary operator '-' can only be used on types 'int' or 'float'", "left have value of operator '-' is currently type '" + value.type.to_str() + "'");
 
 			return value.type == VariableType::INT
 				? NightData{ value.type, -std::get<int>(value.data) }
 				: NightData{ value.type, -std::get<float>(value.data) };
 		}
 
-		const NightData value1 = EvaluateExpression(current_scope, node->left);
-		const NightData value2 = EvaluateExpression(current_scope, node->right);
+		const NightData value1 = evaluate_expression(current_scope, node->left);
+		const NightData value2 = evaluate_expression(current_scope, node->right);
 
 		if (!value1.is_num())
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "binary operator '-' can only be used on types 'int' or 'float'", "left hand value of operator '-' is currently type '" + value2.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "binary operator '-' can only be used on types 'int' or 'float'", "left hand value of operator '-' is currently type '" + value2.type.to_str() + "'");
 		if (!value2.is_num())
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "binary operator '-' can only be used on types 'int' or 'float'", "right hand value of operator '-' is currently type '" + value2.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "binary operator '-' can only be used on types 'int' or 'float'", "right hand value of operator '-' is currently type '" + value2.type.to_str() + "'");
 
 		if (value1.type == VariableType::INT && value2.type == VariableType::INT)
 		{
@@ -499,26 +517,26 @@ NightData Interpreter::EvaluateExpression(
 	}
 	if (node->data == "!")
 	{
-		const NightData value = EvaluateExpression(current_scope, node->right);
+		const NightData value = evaluate_expression(current_scope, node->right);
 
 		if (value.type != VariableType::BOOL)
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '!' can only be used on type 'bool'", "operator  '!' is currently used on type '" + value.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '!' can only be used on type 'bool'", "operator  '!' is currently used on type '" + value.type.to_str() + "'");
 
 		return NightData{ VariableType::BOOL, !std::get<bool>(value.data) };
 	}
 	if (node->data == "[]")
 	{
-		const NightData data_index = EvaluateExpression(current_scope, node->extras[0]);
+		const NightData data_index = evaluate_expression(current_scope, node->extras[0]);
 		if (data_index.type != VariableType::INT)
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_expression, file, line, "index for subscript operator must be type 'int'", "index is currently type '" + data_index.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_expression, loc, "index for subscript operator must be type 'int'", "index is currently type '" + data_index.to_str() + "'");
 
 		const int index = std::get<int>(data_index.data);
 		
-		const NightData array = EvaluateExpression(current_scope, node->right);
+		const NightData array = evaluate_expression(current_scope, node->right);
 		if (array.type == VariableType::STRING)
 		{
 			if (index < 0 || index >= (int)std::get<std::string>(array.data).length())
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_expression, file, line, "index for subscript operator is out of range", "index is value '" + std::to_string(index) + "' but string length is value '" + std::to_string(std::get<std::string>(array.data).length()) + "'");
+				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_expression, loc, "index for subscript operator is out of range", "index is value '" + std::to_string(index) + "' but string length is value '" + std::to_string(std::get<std::string>(array.data).length()) + "'");
 
 			return NightData{ VariableType::STRING,
 				std::string(1, std::get<std::string>(array.data)[(std::size_t)index]) };
@@ -526,13 +544,13 @@ NightData Interpreter::EvaluateExpression(
 		else if (array.type == VariableType::ARRAY)
 		{
 			if (index < 0 || index >= (int)array.extras.size())
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_expression, file, line, "index for subscript operator is out of range", "index is value '" + std::to_string(index) + "' but array length is value '" + std::to_string(array.extras.size()) + "'");
+				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_expression, loc, "index for subscript operator is out of range", "index is value '" + std::to_string(index) + "' but array length is value '" + std::to_string(array.extras.size()) + "'");
 
 			return array.extras[(std::size_t)index];
 		}
 		else
 		{
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "subscript operator can only be used on types 'str' or 'arr'", "subscript operator is currently used on type '" + array.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "subscript operator can only be used on types 'str' or 'arr'", "subscript operator is currently used on type '" + array.type.to_str() + "'");
 		}
 	}
 
@@ -542,13 +560,13 @@ NightData Interpreter::EvaluateExpression(
 
 	if (node->data == "+")
 	{
-		const NightData value1 = EvaluateExpression(current_scope, node->left);
-		const NightData value2 = EvaluateExpression(current_scope, node->right);
+		const NightData value1 = evaluate_expression(current_scope, node->left);
+		const NightData value2 = evaluate_expression(current_scope, node->right);
 
 		if (!value1.is_num() && value1.type != VariableType::STRING && value2.type != VariableType::STRING)
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '+' can only be used on types 'int', 'float', or 'str'", "left hand value of operator '+' has type '" + value1.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '+' can only be used on types 'int', 'float', or 'str'", "left hand value of operator '+' has type '" + value1.type.to_str() + "'");
 		if (!value2.is_num() && value2.type != VariableType::STRING && value1.type != VariableType::STRING)
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '+' can only be used on types 'int', 'float', or 'str'", "right hand value of operator '+' has type '" + value2.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '+' can only be used on types 'int', 'float', or 'str'", "right hand value of operator '+' has type '" + value2.type.to_str() + "'");
 
 		if (value1.type == VariableType::STRING || value2.type == VariableType::STRING)
 		{
@@ -569,13 +587,13 @@ NightData Interpreter::EvaluateExpression(
 	}
 	if (node->data == "*")
 	{
-		const NightData value1 = EvaluateExpression(current_scope, node->left);
-		const NightData value2 = EvaluateExpression(current_scope, node->right);
+		const NightData value1 = evaluate_expression(current_scope, node->left);
+		const NightData value2 = evaluate_expression(current_scope, node->right);
 
 		if (!value1.is_num())
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '*' can only be used on types 'int' or 'float'", "left hand value of operator '*' has type '" + value1.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '*' can only be used on types 'int' or 'float'", "left hand value of operator '*' has type '" + value1.type.to_str() + "'");
 		if (!value2.is_num())
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '*' can only be used on types 'int' or 'float'", "right hand value of operator '*' has type '" + value2.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '*' can only be used on types 'int' or 'float'", "right hand value of operator '*' has type '" + value2.type.to_str() + "'");
 
 		if (value1.type == VariableType::INT && value2.type == VariableType::INT)
 		{
@@ -590,16 +608,16 @@ NightData Interpreter::EvaluateExpression(
 	}
 	if (node->data == "/")
 	{
-		const NightData value1 = EvaluateExpression(current_scope, node->left);
-		const NightData value2 = EvaluateExpression(current_scope, node->right);
+		const NightData value1 = evaluate_expression(current_scope, node->left);
+		const NightData value2 = evaluate_expression(current_scope, node->right);
 
 		if (!value1.is_num())
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '/' can only be used on types 'int' or 'float'", "left hand value of operator '/' has type '" + value1.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '/' can only be used on types 'int' or 'float'", "left hand value of operator '/' has type '" + value1.type.to_str() + "'");
 		if (!value2.is_num())
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '/' can only be used on types 'int' or 'float'", "right hand value of operator '/' has type '" + value2.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '/' can only be used on types 'int' or 'float'", "right hand value of operator '/' has type '" + value2.type.to_str() + "'");
 
 		if (std::get<int>(value2.data) == 0)
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_expression, file, line, "division by 0 is not allowed");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_expression, loc, "division by 0 is not allowed");
 
 		if (value1.type == VariableType::INT && value2.type == VariableType::INT)
 		{
@@ -614,13 +632,13 @@ NightData Interpreter::EvaluateExpression(
 	}
 	if (node->data == "%")
 	{
-		const NightData value1 = EvaluateExpression(current_scope, node->left);
-		const NightData value2 = EvaluateExpression(current_scope, node->right);
+		const NightData value1 = evaluate_expression(current_scope, node->left);
+		const NightData value2 = evaluate_expression(current_scope, node->right);
 
 		if (!value1.is_num())
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '%' can only be used on types 'int' or 'float'", "left hand value of operator '%' has type '" + value1.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '%' can only be used on types 'int' or 'float'", "left hand value of operator '%' has type '" + value1.type.to_str() + "'");
 		if (!value2.is_num())
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '%' can only be used on types 'int' or 'float'", "right hand value of operator '%' has type '" + value2.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '%' can only be used on types 'int' or 'float'", "right hand value of operator '%' has type '" + value2.type.to_str() + "'");
 
 		if (value1.type == VariableType::INT && value2.type == VariableType::INT)
 		{
@@ -635,86 +653,86 @@ NightData Interpreter::EvaluateExpression(
 	}
 	if (node->data == ">")
 	{
-		const NightData value1 = EvaluateExpression(current_scope, node->left);
-		const NightData value2 = EvaluateExpression(current_scope, node->right);
+		const NightData value1 = evaluate_expression(current_scope, node->left);
+		const NightData value2 = evaluate_expression(current_scope, node->right);
 
 		if (!value1.is_num())
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '>' can only be used on types 'int' or 'float'", "left hand value of operator '>' has type '" + value1.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '>' can only be used on types 'int' or 'float'", "left hand value of operator '>' has type '" + value1.type.to_str() + "'");
 		if (!value2.is_num())
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '>' can only be used on types 'int' or 'float'", "right hand value of operator '>' has type '" + value2.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '>' can only be used on types 'int' or 'float'", "right hand value of operator '>' has type '" + value2.type.to_str() + "'");
 
 		return NightData{ VariableType::BOOL,
 			value1.get_num() > value2.get_num() };
 	}
 	if (node->data == "<")
 	{
-		const NightData value1 = EvaluateExpression(current_scope, node->left);
-		const NightData value2 = EvaluateExpression(current_scope, node->right);
+		const NightData value1 = evaluate_expression(current_scope, node->left);
+		const NightData value2 = evaluate_expression(current_scope, node->right);
 
 		if (!value1.is_num())
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '<' can only be used on types 'int' or 'float'", "left hand value of operator '<' has type '" + value1.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '<' can only be used on types 'int' or 'float'", "left hand value of operator '<' has type '" + value1.type.to_str() + "'");
 		if (!value2.is_num())
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '<' can only be used on types 'int' or 'float'", "right hand value of operator '<' has type '" + value2.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '<' can only be used on types 'int' or 'float'", "right hand value of operator '<' has type '" + value2.type.to_str() + "'");
 
 		return NightData{ VariableType::BOOL, value1.get_num() < value2.get_num() };
 	}
 	if (node->data == ">=")
 	{
-		const NightData value1 = EvaluateExpression(current_scope, node->left);
-		const NightData value2 = EvaluateExpression(current_scope, node->right);
+		const NightData value1 = evaluate_expression(current_scope, node->left);
+		const NightData value2 = evaluate_expression(current_scope, node->right);
 
 		if (!value1.is_num())
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '>=' can only be used on types 'int' or 'float'", "left hand value of operator '>=' has type '" + value1.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '>=' can only be used on types 'int' or 'float'", "left hand value of operator '>=' has type '" + value1.type.to_str() + "'");
 		if (!value2.is_num())
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '>=' can only be used on types 'int' or 'float'", "right hand value of operator '>=' has type '" + value2.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '>=' can only be used on types 'int' or 'float'", "right hand value of operator '>=' has type '" + value2.type.to_str() + "'");
 
 		return NightData{ VariableType::BOOL, value1.get_num() >= value2.get_num() };
 	}
 	if (node->data == "<=")
 	{
-		const NightData value1 = EvaluateExpression(current_scope, node->left);
+		const NightData value1 = evaluate_expression(current_scope, node->left);
 		if (!value1.is_num())
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '<=' can only be used on types 'int' or 'float'", "left hand value of operator '<=' has type '" + value1.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '<=' can only be used on types 'int' or 'float'", "left hand value of operator '<=' has type '" + value1.type.to_str() + "'");
 
-		const NightData value2 = EvaluateExpression(current_scope, node->right);
+		const NightData value2 = evaluate_expression(current_scope, node->right);
 		if (!value2.is_num())
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '<=' can only be used on types 'int' or 'float'", "right hand value of operator '<=' has type '" + value2.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '<=' can only be used on types 'int' or 'float'", "right hand value of operator '<=' has type '" + value2.type.to_str() + "'");
 
 		return NightData{ VariableType::BOOL, value1.get_num() <= value2.get_num() };
 	}
 	if (node->data == "||")
 	{
-		const NightData value1 = EvaluateExpression(current_scope, node->left);
+		const NightData value1 = evaluate_expression(current_scope, node->left);
 		if (value1.type != VariableType::BOOL)
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '||' can only be used on type 'bool'", "left hand value of operator '||' has type '" + value1.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '||' can only be used on type 'bool'", "left hand value of operator '||' has type '" + value1.type.to_str() + "'");
 
-		const NightData value2 = EvaluateExpression(current_scope, node->right);
+		const NightData value2 = evaluate_expression(current_scope, node->right);
 		if (value2.type != VariableType::BOOL)
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '||' can only be used on type 'bool'", "right hand value of operator '||' has type '" + value2.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '||' can only be used on type 'bool'", "right hand value of operator '||' has type '" + value2.type.to_str() + "'");
 
 		return NightData{ VariableType::BOOL,
 			std::get<bool>(value1.data) || std::get<bool>(value2.data) };
 	}
 	if (node->data == "&&")
 	{
-		const NightData value1 = EvaluateExpression(current_scope, node->left);
-		const NightData value2 = EvaluateExpression(current_scope, node->right);
+		const NightData value1 = evaluate_expression(current_scope, node->left);
+		const NightData value2 = evaluate_expression(current_scope, node->right);
 
 		if (value1.type != VariableType::BOOL)
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '&&' can only be used on type 'bool'", "left hand value of operator '||' has type '" + value1.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '&&' can only be used on type 'bool'", "left hand value of operator '||' has type '" + value1.type.to_str() + "'");
 		if (value2.type != VariableType::BOOL)
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "operator '*' can only be used on type 'bool'", "right hand value of operator '||' has type '" + value2.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '*' can only be used on type 'bool'", "right hand value of operator '||' has type '" + value2.type.to_str() + "'");
 
 		return NightData{ VariableType::BOOL,
 			std::get<bool>(value1.data) && std::get<bool>(value2.data) };
 	}
 	if (node->data == "==")
 	{
-		const NightData value1 = EvaluateExpression(current_scope, node->left);
-		const NightData value2 = EvaluateExpression(current_scope, node->right);
+		const NightData value1 = evaluate_expression(current_scope, node->left);
+		const NightData value2 = evaluate_expression(current_scope, node->right);
 
 		if (value1.type != value2.type)
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_expression, file, line, "operator '==' can only be used on values with the same type", "left hand value has type '" + value1.type.to_str() + "' but right hand value has type '" + value2.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_expression, loc, "operator '==' can only be used on values with the same type", "left hand value has type '" + value1.type.to_str() + "' but right hand value has type '" + value2.type.to_str() + "'");
 
 		return value1.type == VariableType::ARRAY
 			? NightData{ VariableType::BOOL, compare_array(value1, value2) }
@@ -722,11 +740,11 @@ NightData Interpreter::EvaluateExpression(
 	}
 	if (node->data == "!=")
 	{
-		const NightData value1 = EvaluateExpression(current_scope, node->left);
-		const NightData value2 = EvaluateExpression(current_scope, node->right);
+		const NightData value1 = evaluate_expression(current_scope, node->left);
+		const NightData value2 = evaluate_expression(current_scope, node->right);
 
 		if (value1.type != value2.type)
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_expression, file, line, "operator '==' can only be used on values with the same type", "left hand value currently is type '" + value1.type.to_str() + "' but right hand value currently is type '" + value2.type.to_str() + "'");
+			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_expression, loc, "operator '==' can only be used on values with the same type", "left hand value currently is type '" + value1.type.to_str() + "' but right hand value currently is type '" + value2.type.to_str() + "'");
 
 		return value1.type == VariableType::ARRAY
 			? NightData{ VariableType::BOOL, !compare_array(value1, value2) }
@@ -734,7 +752,7 @@ NightData Interpreter::EvaluateExpression(
 	}
 	if (node->data == ".")
 	{
-		NightData object = EvaluateExpression(current_scope, node->left);
+		NightData object = evaluate_expression(current_scope, node->left);
 
 		const Expression method = *(node->right);
 
@@ -746,18 +764,18 @@ NightData Interpreter::EvaluateExpression(
 			}
 			if (method.data == "push" && method.extras.size() == 1)
 			{
-				const NightData value = EvaluateExpression(current_scope, method.extras[0]);
+				const NightData value = evaluate_expression(current_scope, method.extras[0]);
 				object.extras.push_back(value);
 
 				return object;
 			}
 			if (method.data == "push" && method.extras.size() == 2)
 			{
-				const NightData index = EvaluateExpression(current_scope, method.extras[0]);
-				const NightData value = EvaluateExpression(current_scope, method.extras[1]);
+				const NightData index = evaluate_expression(current_scope, method.extras[0]);
+				const NightData value = evaluate_expression(current_scope, method.extras[1]);
 
 				if (index.type != VariableType::INT)
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_expression, file, line, "argument number '1' in function call '" + method.data + "' can only be type 'int'", "argument number '1' is currently type '" + index.to_str() + "'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_expression, loc, "argument number '1' in function call '" + method.data + "' can only be type 'int'", "argument number '1' is currently type '" + index.to_str() + "'");
 
 				object.extras.insert(object.extras.begin() + std::get<int>(index.data), value);
 				return object;
@@ -769,9 +787,9 @@ NightData Interpreter::EvaluateExpression(
 			}
 			if (method.data == "pop" && !method.extras.empty())
 			{
-				const NightData index = EvaluateExpression(current_scope, method.extras[0]);
+				const NightData index = evaluate_expression(current_scope, method.extras[0]);
 				if (index.type != VariableType::INT)
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, file, line, "index type is required to be type 'int'", 
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "index type is required to be type 'int'", 
 						"index is currently type '" + index.type.to_str() + "'");
 
 				object.extras.erase(object.extras.begin() + std::get<int>(index.data));
@@ -802,10 +820,6 @@ NightData Interpreter::EvaluateExpression(
 	return {};
 }
 
-NightFunctionContainer Interpreter::night_functions;
-
-bool Interpreter::exit_function = false;
-
 std::pair<const std::string, NightData>* Interpreter::get_variable(
 	std::shared_ptr<NightScope>& current_scope,
 	const std::string& variable_name
@@ -824,3 +838,6 @@ std::pair<const std::string, NightData>* Interpreter::get_variable(
 
 	return nullptr;
 }
+
+Interpreter::NightScope::NightScope(const std::shared_ptr<NightScope>& _upper_scope)
+	: upper_scope(_upper_scope) {}

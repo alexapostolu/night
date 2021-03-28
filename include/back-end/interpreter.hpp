@@ -11,13 +11,19 @@ class Interpreter
 {
 public:
 	Interpreter(
-		std::shared_ptr<NightScope>& current_scope,
-		const std::vector<Statement>& statements,
-		NightData* return_value = nullptr
+		const std::vector<Statement>& _stmts
 	);
 
 private:
-	NightData EvaluateExpression(
+	struct NightScope;
+
+	void Interpret(
+		std::shared_ptr<NightScope>& current_scope,
+		const std::vector<Statement>& _stmts,
+		NightData* return_value = nullptr
+	);
+
+	NightData evaluate_expression(
 		std::shared_ptr<NightScope>& current_scope,
 		const std::shared_ptr<Expression>& node // raw pointer?
 	);
@@ -28,8 +34,17 @@ private:
 	);
 
 private:
-	static NightFunctionContainer night_functions;
+	struct NightScope
+	{
+		const std::shared_ptr<NightScope> upper_scope;
+		NightVariableContainer variables;
+
+		NightScope(const std::shared_ptr<NightScope>& _upper_scope);
+	};
+
+private:
+	NightFunctionContainer night_functions;
 
 	// exit function if a return statement is encountered
-	static bool exit_function;
+	bool exit_function;
 };

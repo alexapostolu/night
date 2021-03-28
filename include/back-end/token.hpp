@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../error.hpp"
+
 #include <memory>
 #include <functional>
 #include <variant>
@@ -8,7 +10,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-struct VariableType;
 struct CheckVariable;
 struct CheckFunction;
 struct CheckClass;
@@ -29,7 +30,7 @@ enum class TokenType
 
 	COLON, COMMA,
 
-	BOOL, INT, FLOAT, STR,
+	BOOL, INT, FLOAT, STRING,
 
 	VAR,
 
@@ -49,8 +50,7 @@ enum class TokenType
 
 struct Token
 {
-	std::string file;
-	int line;
+	Location loc;
 
 	TokenType type;
 	std::string data;
@@ -60,8 +60,8 @@ struct Token
 
 enum class ValueType
 {
-	BOOL, INT, FLOAT, STR,
-	ARRAY,
+	BOOL, INT, FLOAT,
+	STRING, ARRAY,
 
 	VARIABLE, CALL,
 
@@ -95,7 +95,10 @@ struct VariableType
 	// if it's an object, then this variable stores the name of the class
 	std::string class_name;
 
-	VariableType(const Type& _type = {}, const std::string& _name = {});
+	VariableType(
+		const Type& _type = {},
+		const std::string& _name = {}
+	);
 
 	std::string to_str() const;
 
@@ -117,18 +120,17 @@ struct Statement;
 
 struct Expression
 {
-	const std::string file;
-	const int line;
+	const Location loc;
 
 	ValueType type;
-
 	std::string data;
 
 	std::vector<std::shared_ptr<Expression> > extras;
 
-	std::shared_ptr<Expression> left;
-	std::shared_ptr<Expression> right;
+	std::shared_ptr<Expression> left, right;
 };
+
+// struct ExpressionNode;
 
 struct Scope
 {
@@ -235,8 +237,7 @@ enum class StatementType
 
 struct Statement
 {
-	const std::string file;
-	const int line;
+	const Location loc;
 
 	const StatementType type;
 

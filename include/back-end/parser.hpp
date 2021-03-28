@@ -48,7 +48,7 @@ private:
 	);
 
 	// type and usage checks an expression
-	VariableTypeContainer TypeCheckExpression(
+	VariableTypeContainer type_check_expr(
 		const std::shared_ptr<Scope>& current_scope,
 
 		const std::shared_ptr<Expression>& node,
@@ -79,8 +79,7 @@ private:
 	);
 
 private:
-	const std::string file;
-	const int line;
+	const Location loc;
 
 	static const VariableTypeContainer all_types;
 

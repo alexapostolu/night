@@ -5,18 +5,21 @@
 #include <string>
 #include <vector>
 
+void ReplaceEscape(
+	std::string& token,
+	const std::string& str,
+	const char ch
+);
+
 // matches token with keyword
 void FindKeyword(
-	const std::string& file,
-	const int          line,
+	const Location& loc,
 
 	std::vector<Token>& tokens,
 	std::string& token
 );
 
 std::vector<Token> Lexer(
-	const std::string& file,
-	const int          line,
-
+	const Location& loc,
 	const std::string& file_ine
 );

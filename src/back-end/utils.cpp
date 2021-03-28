@@ -5,6 +5,67 @@
 
 std::vector<std::vector<Token> > SplitCode(const std::vector<Token>& tokens)
 {
+	/*
+	std::vector<std::vector<Token> > code(1);
+	
+	int open_curly_count = 0;
+	bool omit_curly_brackets = false;
+
+	for (auto it = tokens.begin(); it != tokens.end(); ++it)
+	{
+		switch (it->type)
+		{
+		case TokenType::IF:
+			code.back().push_back(*it);
+
+			omit_curly_brackets = true;
+			break;
+		case TokenType::ELSE:
+			code.back().push_back(*it);
+
+			omit_curly_brackets = true;
+			break;
+		case TokenType::WHILE:
+			code.back().push_back(*it);
+
+			omit_curly_brackets = true;
+			break;
+		case TokenType::FOR:
+			code.back().push_back(*it);
+
+			omit_curly_brackets = true;
+			break;
+		case TokenType::OPEN_CURLY:
+			code.back().push_back(*it);
+
+			open_curly_count++;
+
+			if (omit_curly_brackets)
+				omit_curly_brackets = false;
+
+			break;
+		case TokenType::CLOSE_CURLY:
+			code.back().push_back(*it);
+
+			open_curly_count--;
+			break;
+		case TokenType::EOL:
+			if (omit_curly_brackets)
+				omit_curly_brackets = false;
+			else if (open_curly_count == 0 && std::next(it, 1) != tokens.end())
+				code.push_back(std::vector<Token>());
+			else if (open_curly_count != 0 && std::next(it, -1)->type != TokenType::OPEN_CURLY) // lexer asserts that tokens.size() > 1
+				code.back().push_back(Token{ "", 0, TokenType::EOL, "EOL" });
+
+			break;
+		default:
+			code.back().push_back(*it);
+		}
+	}
+
+	return code[0].empty() ? std::vector<std::vector<Token> >() : code;
+	*/
+
 	std::vector<std::vector<Token> > code;
 
 	int open_curly_count = 0;
