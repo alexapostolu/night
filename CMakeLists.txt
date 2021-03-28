@@ -1,3 +1,8 @@
+# mkdir build
+# cd build
+# cmake -G "MinGW Makefiles" ../
+# cmake --build .
+
 cmake_minimum_required(VERSION 3.0)
 
 project(night)

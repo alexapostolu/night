@@ -10,11 +10,9 @@
 #include <unordered_map>
 #include <unordered_set>
 
-struct CheckVariable;
 struct CheckFunction;
 struct CheckClass;
 
-using CheckVariableContainer = std::unordered_map<std::string, CheckVariable>;
 using CheckFunctionContainer = std::unordered_map<std::string, CheckFunction>;
 using CheckClassContainer    = std::unordered_map<std::string, CheckClass>;
 
@@ -131,6 +129,53 @@ struct Expression
 };
 
 // struct ExpressionNode;
+
+
+struct CheckVariable
+{
+	CheckVariable(
+		const VariableTypeContainer& _types = {},
+		const bool _is_array = false
+	);
+
+	bool is_param() const; // also used in for loop ranges;
+	bool find_type(const VariableType& var_type) const;
+
+	// a note about parameters:
+	/*
+	// to perform type checking, parameters' types must be evaluated when the
+	// function is defined
+	//
+	// they are stored in the same container as normal variables, so the only
+	// difference is that they don't have a type
+	//
+	// they can be differentiated from normal variables using the method:
+	// 'needs_types()'
+	//
+	// their types are giving to them through the expressions they encounter,
+	// for example 'param || true' would mean 'param' is a boolean
+	//
+	// if a parameter still doesn't have a type at the end of the function,
+	// then it is given all the types
+	//
+	// once a parameter has types, it then behaves like a normal variable
+	*/
+	VariableTypeContainer types;
+	// a note about arrays:
+	/*
+	// if a variable is an array it won't contain the array type, instead it
+	// will contain all the types of its elements
+	//
+	// this is used in determining the types of for loop ranges and in
+	// subscript operators
+	//
+	// to signal that a variable is an array, the variable 'is_array' is used
+	*/
+	bool is_array;
+};
+
+using CheckVariableContainer = std::unordered_map<std::string, CheckVariable>;
+
 
 struct Scope
 {
@@ -255,50 +300,6 @@ struct Statement
 	> stmt;
 };
 
-
-
-struct CheckVariable
-{
-	CheckVariable(
-		const VariableTypeContainer& _types = {},
-		const bool _is_array = false
-	);
-
-	bool is_param() const; // also used in for loop ranges;
-	bool find_type(const VariableType& var_type) const;
-
-	// a note about parameters:
-	/*
-	// to perform type checking, parameters' types must be evaluated when the
-	// function is defined
-	//
-	// they are stored in the same container as normal variables, so the only
-	// difference is that they don't have a type
-	//
-	// they can be differentiated from normal variables using the method:
-	// 'needs_types()'
-	//
-	// their types are giving to them through the expressions they encounter,
-	// for example 'param || true' would mean 'param' is a boolean
-	//
-	// if a parameter still doesn't have a type at the end of the function,
-	// then it is given all the types
-	//
-	// once a parameter has types, it then behaves like a normal variable
-	*/
-	VariableTypeContainer types;
-	// a note about arrays:
-	/*
-	// if a variable is an array it won't contain the array type, instead it
-	// will contain all the types of its elements
-	//
-	// this is used in determining the types of for loop ranges and in
-	// subscript operators
-	//
-	// to signal that a variable is an array, the variable 'is_array' is used
-	*/
-	bool is_array;
-};
 
 struct CheckFunction
 {
