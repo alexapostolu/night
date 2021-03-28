@@ -4,12 +4,9 @@
 
 # Night
 
-Night is an interpreted dynamically typed language built around safety. It being gradually typed, combined with a robust and safe type system, makes Night a simple yet powerful language.
+Night is an interpreted dynamically typed language built around safety.
 
-What makes Night different from other dynamically typed languages is its compile time checks. Whereas a language like Python does not provide type checking and many other declaration checks, Night fills this gap, eliminating hidden runtime bugs and providing safer code.
-
-* [Getting Started](#getting-started)
-* [Contributing](#contributing)
+What makes Night different from other dynamically typed languages are its compile time checks. Whereas a language like Python does not provide type checking and many other declaration checks, Night fills this gap, eliminating hidden runtime bugs and providing safer usage.
 
 ---
 
@@ -21,9 +18,14 @@ And if you like, you can build Night from source as well.
 
 ## Building from Source
 
-1. Install *g++* (version 7.1+) or *clang++* (version 5+)
+Currently, Night is supported in Windows and Linux.
 
-2. Clone this repository
+1. Install Dependancies
+
+`g++` (version 7+)
+`cmake` (version 3+)
+
+2. Clone Repository
 
 If you would like to clone Night and Dusk (recommend), be sure to fetch it's submodule:
 
@@ -41,31 +43,18 @@ cd night
 
 3. Compile Night
 
-With *g++* or *clang* (make sure it supports C++17!):
-
 ```
-g++ -std=c++17 -o night src/main.cpp
-
-clang++ -std=c++17 -o night src/main.cpp
+cmake -G "MinGW Makefiles" ../
+cmake --build .
 ```
 
-Or if you have GNU Make:
+4. Run Night
 
 ```
-make
+night source.night
 ```
 
-And that's it! To build Dusk from source, follow the tutorial on the [Dusk repo](https://github.com/firefish111/dusk).
-
-## Running Night
-
-To run Night, first navigate to the directory in which you cloned this repo. Then create a `*.night` file where you'll write your actual code. Then just pass it in as a command line argument:
-
-```
-night *.night
-```
-
-And you're done!
+And you're done! View the [webiste](https://github.com/DynamicSquid/night) for more information on the `night` executable
 
 ---
 
