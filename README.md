@@ -43,8 +43,17 @@ cd night
 
 3. Compile Night
 
+Windows:
+
 ```
-cmake -G "MinGW Makefiles" ../
+cmake -G "MinGW Makefiles" .
+cmake --build .
+```
+
+Linux:
+
+```
+cmake -G "Unix Makefiles" .
 cmake --build .
 ```
 
