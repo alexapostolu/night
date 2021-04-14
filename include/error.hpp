@@ -1,53 +1,64 @@
 #pragma once
 
+#include "../include/back-end/utils.hpp"
+
 #include <iostream>
 #include <stdexcept>
 #include <cassert>
 #include <string>
+#include <vector>
 
-struct Location
-{
-	std::string file;
-	int line, col;
+#define NIGHT_COMPILE_ERROR(msg, fix, link) night::error(Location{ __FILE__, __LINE__ }, ErrorType::COMPILE, loc, msg, fix, link)
+#define NIGHT_RUNTIME_ERROR(msg, fix, link) night::error(Location{ __FILE__, __LINE__ }, ErrorType::RUNTIME, loc, msg, fix, link)
+
+enum class ErrorType {
+	PREPROCESSOR,
+	COMPILE,
+	RUNTIME
 };
 
-class Error
+enum class Learn {
+	LEARN, // you really screwed up the syntax if you get linked to this
+	VARIABLES,
+	ARRAYS,
+	CONDITIONALS,
+	LOOPS,
+	FUNCTIONS,
+	TYPE_CHECKING
+};
+
+namespace night {
+
+class error
 {
 public:
-	Error(
-		const std::string& debug_file,
-		const int debug_line,
+	error(
+		const Location& debug_loc,
 
-		const std::string& type,
-
+		const ErrorType& _type,
 		const Location& _loc,
 
-		const std::string& _desc,
+		const std::string& _msg,
 
-		const std::string& _note = {},
-		const std::string& _link = {}
+		const std::string& _fix,
+		const Learn& _link
 	);
 
 public:
 	std::string what() const;
 
-	static std::string UnexpectedError(const std::exception& e);
-
-protected:
-	std::string error_type;
-
+private:
 	std::string type;
 
 	Location loc;
+	std::string line;
 
-	std::string code_line;
+	std::string msg;
 
-	std::string desc;
-	std::string note;
-
+	std::string fix;
 	std::string link;
 
-protected:
+private:
 	const std::string RESET = "\033[0m";
 	const std::string RED = "\033[0;31m";
 	const std::string YELLOW = "\033[0;33m";
@@ -61,60 +72,4 @@ protected:
 	const std::string bu_WHITE = "\033[0;1;4;37m";
 };
 
-class FrontEndError
-{
-public:
-	FrontEndError(const std::string& _msg);
-
-public:
-	std::string what() const;
-};
-
-class CompileError
-	: public Error
-{
-public:
-	CompileError(
-		const std::string& debug_file,
-		const int debug_line,
-
-		const std::string& type,
-
-		const Location& _loc,
-
-		const std::string& _desc,
-
-		const std::string& _note = {},
-		const std::string& _link = {}
-	);
-
-public:
-	static const std::string invalid_syntax;
-	static const std::string invalid_grammar;
-	static const std::string invalid_definition;
-	static const std::string invalid_type;
-};
-
-class RuntimeError
-	: public Error
-{
-public:
-	RuntimeError(
-		const std::string& debug_file,
-		const int debug_line,
-
-		const std::string& type,
-
-		const Location& _loc,
-
-		const std::string& _desc,
-
-		const std::string& _note = {},
-		const std::string& _link = {}
-	);
-
-public:
-	static const std::string invalid_expression;
-	static const std::string out_of_range;
-	static const std::string invalid_type;
-};
+} // namespace night

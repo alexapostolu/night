@@ -43,7 +43,7 @@ private:
 	};
 
 private:
-	NightFunctionContainer night_functions;
+	static NightFunctionContainer night_functions;
 
 	// exit function if a return statement is encountered
 	bool exit_function;

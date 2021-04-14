@@ -10,14 +10,12 @@ int main(int argc, char* argv[])
 		FrontEnd(argc, argv);
 		return 0;
 	}
-	catch (const FrontEndError& e) {
-		std::cout << e.what();
-	}
-	catch (const Error& e) {
+	catch (const night::error& e) {
 		std::cout << e.what();
 	}
 	catch (const std::exception& e) {
-		std::cout << Error::UnexpectedError(e);
+		std::cout << std::string("Uh oh! We've come across an unexpected error:\n\n    ") + e.what() +
+			"\n\nPlease submit an issue on the GitHub page:\nhttps://github.com/dynamicsquid/night\n";
 	}
 
 	return 1;

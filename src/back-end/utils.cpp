@@ -3,7 +3,7 @@
 
 #include <vector>
 
-std::vector<std::vector<Token> > SplitCode(const std::vector<Token>& tokens)
+std::vector<std::vector<Token> > SplitCode(const std::vector<Token>& _tokens)
 {
 	/*
 	std::vector<std::vector<Token> > code(1);
@@ -66,6 +66,14 @@ std::vector<std::vector<Token> > SplitCode(const std::vector<Token>& tokens)
 	return code[0].empty() ? std::vector<std::vector<Token> >() : code;
 	*/
 
+	const bool skip_curly_braces = !_tokens.empty() &&
+		_tokens[0].type == TokenType::OPEN_CURLY &&
+		_tokens.back().type == TokenType::CLOSE_CURLY;
+
+	const std::vector<Token> tokens(
+		_tokens.begin() + skip_curly_braces,
+		_tokens.end() - skip_curly_braces);
+
 	std::vector<std::vector<Token> > code;
 
 	int open_curly_count = 0;
@@ -95,17 +103,19 @@ std::vector<std::vector<Token> > SplitCode(const std::vector<Token>& tokens)
 
 bool find_num_types(const VariableTypeContainer& container)
 {
-	return container.find(VariableType::INT) != container.end() ||
-		   container.find(VariableType::FLOAT) != container.end();
+	return container.contains(VariableType::INT) &&
+		container.contains(VariableType::FLOAT);
 }
 
 std::string get_var_types_as_str(const VariableTypeContainer& var_types_set)
 {
 	assert(!var_types_set.empty());
 
-	std::vector<VariableType> var_types(var_types_set.begin(), var_types_set.end());
+	std::vector<VariableType> var_types(
+		var_types_set.begin(), var_types_set.end());
 
 	std::string str_types = "";
+
 	for (int a = 0; a < (int)var_types.size() - 1; ++a)
 		str_types += "'" + var_types[a].to_str() + "', ";
 

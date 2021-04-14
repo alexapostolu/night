@@ -10,9 +10,11 @@
 #include <unordered_map>
 #include <unordered_set>
 
+struct CheckVariable;
 struct CheckFunction;
 struct CheckClass;
 
+using CheckVariableContainer = std::unordered_map<std::string, CheckVariable>;
 using CheckFunctionContainer = std::unordered_map<std::string, CheckFunction>;
 using CheckClassContainer    = std::unordered_map<std::string, CheckClass>;
 
@@ -30,7 +32,7 @@ enum class TokenType
 
 	BOOL, INT, FLOAT, STRING,
 
-	VAR,
+	VARIABLE,
 
 	SET,
 
@@ -52,6 +54,7 @@ struct Token
 
 	TokenType type;
 	std::string data;
+
 
 	bool operator==(const TokenType& _type) const;
 };
@@ -90,15 +93,49 @@ struct VariableType
 		CLASS
 	} type;
 
-	// if it's an object, then this variable stores the name of the class
-	std::string class_name;
+private:
+	// std::variant?
+	// and getter methods like get_class_name() and get_elem_types()
+	std::variant<
+		// note about array types:
+		/*
+		// if this type is an array, it will also contain all the types of the
+		// elements as well
+		//
+		// this is used in determining the types of for loop iterators
+		//
+			arr = [ true, 7 ]   # 'arr' has type:  'array'
+			for (x : arr) {}	# 'x'   has types: 'bool', 'int'
+		//
+		// it is also used in determining the value of a subscript operator
+		//
+			arr = [ true, 7 ]   # 'arr' has type:  'array'
+			x = arr[0]			# 'x'   has types: 'bool', 'int'
+		//
+		*/
+		std::unordered_set<VariableType, HashVariableType>,
 
+		// if this is an object, then this variable stores the name of the class
+		std::string
+	> special;
+
+public:
 	VariableType(
-		const Type& _type = {},
-		const std::string& _name = {}
+		const Type& _type = {}
 	);
 
+	VariableType(
+		const std::unordered_set<VariableType, HashVariableType>& _elem_types
+	);
+
+	VariableType(
+		const std::string& _class_name
+	);
+
+	~VariableType();
+
 	std::string to_str() const;
+	std::unordered_set<VariableType, HashVariableType>& get_elem_types() const;
 
 	bool operator==(const VariableType& _type) const;
 	bool operator!=(const VariableType& _type) const;
@@ -106,10 +143,7 @@ struct VariableType
 
 struct HashVariableType
 {
-	std::size_t operator()(const VariableType& _type) const
-	{
-		return std::hash<int>()(_type.type);
-	}
+	std::size_t operator()(const VariableType& _type) const;
 };
 
 using VariableTypeContainer = std::unordered_set<VariableType, HashVariableType>;
@@ -129,53 +163,6 @@ struct Expression
 };
 
 // struct ExpressionNode;
-
-
-struct CheckVariable
-{
-	CheckVariable(
-		const VariableTypeContainer& _types = {},
-		const bool _is_array = false
-	);
-
-	bool is_param() const; // also used in for loop ranges;
-	bool find_type(const VariableType& var_type) const;
-
-	// a note about parameters:
-	/*
-	// to perform type checking, parameters' types must be evaluated when the
-	// function is defined
-	//
-	// they are stored in the same container as normal variables, so the only
-	// difference is that they don't have a type
-	//
-	// they can be differentiated from normal variables using the method:
-	// 'needs_types()'
-	//
-	// their types are giving to them through the expressions they encounter,
-	// for example 'param || true' would mean 'param' is a boolean
-	//
-	// if a parameter still doesn't have a type at the end of the function,
-	// then it is given all the types
-	//
-	// once a parameter has types, it then behaves like a normal variable
-	*/
-	VariableTypeContainer types;
-	// a note about arrays:
-	/*
-	// if a variable is an array it won't contain the array type, instead it
-	// will contain all the types of its elements
-	//
-	// this is used in determining the types of for loop ranges and in
-	// subscript operators
-	//
-	// to signal that a variable is an array, the variable 'is_array' is used
-	*/
-	bool is_array;
-};
-
-using CheckVariableContainer = std::unordered_map<std::string, CheckVariable>;
-
 
 struct Scope
 {
@@ -301,6 +288,35 @@ struct Statement
 };
 
 
+
+struct CheckVariable
+{
+	CheckVariable(
+		const VariableTypeContainer& _types = {}
+	);
+
+	// a note about parameters:
+	/*
+	// to perform type checking, parameters' types must be evaluated when the
+	// function is defined
+	//
+	// they are stored in the same container as normal variables, so the only
+	// difference is that they don't have a type
+	//
+	// they can be differentiated from normal variables using the method:
+	// 'needs_types()'
+	//
+	// their types are giving to them through the expressions they encounter,
+	// for example 'param || true' would mean 'param' is a boolean
+	//
+	// if a parameter still doesn't have a type at the end of the function,
+	// then it is given all the types
+	//
+	// once a parameter has types, it then behaves like a normal variable
+	*/
+	VariableTypeContainer types;
+};
+
 struct CheckFunction
 {
 	std::vector<VariableTypeContainer> parameters;
@@ -311,8 +327,8 @@ struct CheckFunction
 	//
 	// this is done by examining the return statement(s) of the function
 	//
-	// if no return types can be deduced, then the function is given all the
-	// types
+	// if no return types can be deduced, then the return type is treated as
+	// whatever type is required for it to be
 	*/
 	VariableTypeContainer return_types;
 

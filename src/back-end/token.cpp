@@ -2,9 +2,19 @@
 #include "../../include/back-end/utils.hpp"
 #include "../../include/error.hpp"
 
-VariableType::VariableType(
-	const Type& _type, const std::string& _name
-) : type(_type), class_name(_name) {}
+VariableType::VariableType(const Type& _type)
+	: type(_type) {}
+
+VariableType::VariableType(const std::unordered_set<VariableType, HashVariableType>& _elem_types)
+	: type(VariableType::ARRAY), special(_elem_types)
+{
+
+}
+
+VariableType::VariableType(const std::string& _class_name)
+	: type(CLASS), special(_class_name) {}
+
+VariableType::~VariableType() {}
 
 std::string VariableType::to_str() const
 {
@@ -19,13 +29,19 @@ std::string VariableType::to_str() const
 	case VariableType::STRING:
 		return "str";
 	case VariableType::ARRAY:
-		return "array";
+		return "arr";
 	case VariableType::CLASS:
 		return class_name;
 	default:
 		assert(false);
 		return {};
 	}
+}
+
+std::unordered_set<VariableType, HashVariableType>& VariableType::get_elem_types()
+{
+	assert(type == VariableType::ARRAY);
+	return std::get<std::unordered_set<VariableType, HashVariableType> >(special);
 }
 
 bool VariableType::operator==(const VariableType& _type) const
@@ -38,6 +54,11 @@ bool VariableType::operator!=(const VariableType& _type) const
 	return type != _type.type;
 }
 
+std::size_t HashVariableType::operator()(const VariableType& _type) const
+{
+	return std::hash<int>()(_type.type);
+}
+
 bool Token::operator==(const TokenType& _type) const
 {
 	return type == _type;
@@ -46,17 +67,12 @@ bool Token::operator==(const TokenType& _type) const
 Scope::Scope(const std::shared_ptr<Scope>& _upper_scope)
 	: upper_scope(_upper_scope) {}
 
-CheckVariable::CheckVariable(const VariableTypeContainer& _types, const bool _flag_array)
-	: types(_types), is_array(_flag_array) {}
+CheckVariable::CheckVariable(const VariableTypeContainer& _types)
+	: types(_types) {}
 
 bool CheckVariable::find_type(const VariableType& var_type) const
 {
 	return types.find(var_type) != types.end();
-}
-
-bool CheckVariable::is_param() const
-{
-	return !is_array && types.empty();
 }
 
 std::pair<const std::string, CheckFunction> make_check_function(

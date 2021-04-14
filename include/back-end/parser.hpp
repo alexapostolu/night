@@ -48,21 +48,16 @@ private:
 	);
 
 	// type and usage checks an expression
+	//
+	// if no type can be determined for a variable in an expression, then it
+	// is skipped
 	VariableTypeContainer type_check_expr(
 		const std::shared_ptr<Scope>& current_scope,
 
 		const std::shared_ptr<Expression>& node,
 
 		// for parameters, since they don't have types at first
-		const std::string& op_name = {},
-		const VariableTypeContainer& required_types = {},
-
-		// in for loops, the types of the iterator is the types of all the
-		// elements combined, so instead of returning ARRAY, this will return
-		// all the types
-		//
-		// also for subscript operators
-		bool* get_element_types = nullptr
+		const VariableTypeContainer& required_types = {}
 	);
 
 	// searches current scope for variable, if not found, moves to upper scope;
@@ -77,6 +72,47 @@ private:
 		const std::vector<Token>& units,
 		std::vector<Token>::const_iterator& index
 	);
+
+	// a note about 'is_reachable()':
+	/*
+	// 'is_reachable()' is used to determine whether a function parameter's
+	// types should be modified by an expression
+	//
+	// the types of a parameter is determined by the expressions in which it
+	// is used in
+	//
+	// however, expressions in a function's "local" scope are not counted as
+	// those expressions may never be encountered
+	//
+		def func(x) {
+			if (false)
+				print(x / 3)
+
+			return x
+		}
+	//
+	// in the example, 'x' may never encounter the division operator, so
+	// adding type 'int' to 'x' could cause some false errors
+	//
+		set b = true;
+		func(b)        # error! 'b' must contain type: 'int'
+	//
+	// for this reason, only expressions in a function's "global" scope can
+	// affect the types of a parameter
+	//
+		def func(x) {
+			print(x && true) # 'x' contains type: 'bool'
+
+			if (false)
+				print(x / 3) # does not affect types of 'x'
+
+			return x;
+		}
+	//
+	// in a future update, variables' types will be specific to their scope,
+	// making type checking way more effective
+	*/
+	bool is_reachable(const std::shared_ptr<Scope>& scope) const;
 
 private:
 	const Location loc;

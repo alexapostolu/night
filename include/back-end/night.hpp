@@ -7,6 +7,11 @@
 #include <vector>
 #include <unordered_map>
 
+struct IntType
+{
+	int value;
+};
+
 struct NightData
 {
 	VariableType type;

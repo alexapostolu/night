@@ -177,8 +177,8 @@ std::vector<Token> Lexer(const Location& loc, const std::string& file_line)
 	// allows curly brackets to be optional on single statements
 	///*
 	if (!tokens.empty() &&
-		tokens[0].type != TokenType::IF && tokens[0].type != TokenType::ELSE ||
-		tokens[0].type != TokenType::WHILE && tokens[0].type != TokenType::FOR ||
+		tokens[0].type != TokenType::IF && tokens[0].type != TokenType::ELSE &&
+		tokens[0].type != TokenType::WHILE && tokens[0].type != TokenType::FOR &&
 		tokens.back().type != TokenType::OPEN_CURLY && tokens[0].type != TokenType::DEF)
 		tokens.push_back(Token{ loc, TokenType::EOL, "EOF" });
 	//*/

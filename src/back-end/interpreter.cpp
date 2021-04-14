@@ -152,7 +152,7 @@ void Interpreter::Interpret(
 					evaluate_expression(current_scope, conditional.condition);
 
 				if (condition_expr.type != VariableType::BOOL)
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "if statement expression does not evaluate to the type 'bool'", "conditions must evaluate to the type 'bool'");
+					throw NIGHT_RUNTIME_ERROR("if statement condition is not type: 'bool'", "condition currently is type: '" + condition_expr.type.to_str() + "'", Learn::CONDITIONALS);
 
 				if (std::get<bool>(condition_expr.data))
 				{
@@ -181,10 +181,11 @@ void Interpreter::Interpret(
 
 			if (function_call->name == "print")
 			{
-				const NightData data = evaluate_expression(current_scope, function_call->arguments[0]);
+				const NightData data = evaluate_expression(
+					current_scope, function_call->arguments[0]);
 
 				if (data.type == VariableType::CLASS)
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "argument 1 of function 'print' can only accept basic types", "argument 1 currently is type '" + data.type.to_str() + "'");
+					throw NIGHT_RUNTIME_ERROR("argument 1 of function 'print' can only accept basic types", "argument 1 currently is type: '" + data.type.class_name + "'");
 
 				NightPrint(data);
 
@@ -424,14 +425,21 @@ NightData Interpreter::evaluate_expression(
 			}
 			if (node->data == "range")
 			{
-				assert(node->extras.size() == 1);
+				assert(node->extras.size() == 2);
 
-				const NightData param = evaluate_expression(current_scope, node->extras[0]);
-				assert(param.type == VariableType::INT);
+				const NightData start = evaluate_expression(current_scope, node->extras[0]);
+				if (start.type != VariableType::INT)
+					throw NIGHT_RUNTIME_ERROR("argument 1 in function must be type 'int'", "range ");
+				assert(start.type == VariableType::INT);
+
+				const NightData end = evaluate_expression(current_scope, node->extras[1]);
+				assert(end.type == VariableType::INT);
 
 				NightData result{ VariableType::ARRAY };
-				for (int a = 0; a < std::get<int>(param.data); ++a)
-					result.extras[a] = NightData{ VariableType::INT, a };
+				result.extras.reserve(std::get<int>(end.data) - std::get<int>(start.data) + 1);
+
+				for (int a = std::get<int>(start.data); a <= std::get<int>(end.data); ++a)
+					result.extras.push_back(NightData{ VariableType::INT, a });
 
 				return result;
 			}
@@ -455,7 +463,7 @@ NightData Interpreter::evaluate_expression(
 			Interpret(function_scope, night_function->second.body, return_value_ptr);
 
 			if (return_value_ptr == nullptr)
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "function '" + night_function->first + "' does not return a value", "functions used in expressions must return a value");
+				throw NIGHT_RUNTIME_ERROR("function '" + night_function->first + "' does not return a value", "functions used in expressions must return a value", Learn::FUNCTIONS);
 
 			exit_function = false;
 			return return_value;
@@ -564,9 +572,9 @@ NightData Interpreter::evaluate_expression(
 		const NightData value2 = evaluate_expression(current_scope, node->right);
 
 		if (!value1.is_num() && value1.type != VariableType::STRING && value2.type != VariableType::STRING)
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '+' can only be used on types 'int', 'float', or 'str'", "left hand value of operator '+' has type '" + value1.type.to_str() + "'");
+			throw NIGHT_COMPILE_ERROR("operator '+' can only be used on types 'int', 'float', or 'str'", "left hand value of operator '+' currently is type '" + value1.type.to_str() + "'", Learn::LEARN);
 		if (!value2.is_num() && value2.type != VariableType::STRING && value1.type != VariableType::STRING)
-			throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "operator '+' can only be used on types 'int', 'float', or 'str'", "right hand value of operator '+' has type '" + value2.type.to_str() + "'");
+			throw NIGHT_COMPILE_ERROR("operator '+' can only be used on types 'int', 'float', or 'str'", "right hand value of operator '+' currently is type '" + value2.type.to_str() + "'", Learn::LEARN);
 
 		if (value1.type == VariableType::STRING || value2.type == VariableType::STRING)
 		{
