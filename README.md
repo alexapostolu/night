@@ -71,7 +71,7 @@ Linux:
 ./night source.night
 ```
 
-And you're done! View the [webiste](https://github.com/DynamicSquid/night) for more information on the `night` executable
+And you're done!
 
 ---
 
