@@ -12,25 +12,28 @@
 
 void FrontEnd(int argc, char** argv)
 {
-	if (argc != 2)
+	if (argc != 2) {
 		throw FrontEndError("invalid command line arguments; only pass in the file name as an argument");
+	}
 
 	if (std::string(argv[1]) == "--version")
 	{
-		std::cout << "night v1.0.0";
+		std::cout << "night v0.0.0";
 		return;
 	}
 
-	const std::vector<std::vector<Token> > code = SplitCode(OpenFile(argv[1]));
-	const std::shared_ptr<Scope> global_scope = std::make_shared<Scope>(nullptr);
+	Lexer lexer = lexer_create(argv[1], true);
+	
+	std::shared_ptr<Scope> global_scope = std::make_shared<Scope>(nullptr);
 
-	for (const std::vector<Token>& tokens : code)
-	{
-		assert(!tokens.empty());
-		Parser(global_scope, tokens);
-	}
+	bool stmt_parsed = true;
+	while (stmt_parsed)
+		stmt_parsed = parse_statement(lexer, global_scope);
 
-	Interpreter interpreter(global_scope->statements);
+	// Optimizer optimizer = optimizer_create()
+
+	for (auto stmt : global_scope->statements)
+		interpret_statement(global_scope, stmt);
 }
 
 std::vector<Token> OpenFile(const std::string& file)

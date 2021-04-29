@@ -7,16 +7,8 @@
 #include <vector>
 #include <unordered_map>
 
-class Interpreter
+struct Interpreter
 {
-public:
-	Interpreter(
-		const std::vector<Statement>& _stmts
-	);
-
-private:
-	struct NightScope;
-
 	void Interpret(
 		std::shared_ptr<NightScope>& current_scope,
 		const std::vector<Statement>& _stmts,
@@ -33,18 +25,14 @@ private:
 		const std::string& variable_name
 	);
 
-private:
-	struct NightScope
-	{
-		const std::shared_ptr<NightScope> upper_scope;
-		NightVariableContainer variables;
-
-		NightScope(const std::shared_ptr<NightScope>& _upper_scope);
-	};
-
-private:
 	static NightFunctionContainer night_functions;
 
 	// exit function if a return statement is encountered
 	bool exit_function;
 };
+
+void interpret_statement(
+	const std::shared_ptr<Scope>& curr_scope,
+	const Statement& stmt//,
+	// return_value?
+);

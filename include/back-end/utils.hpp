@@ -15,8 +15,8 @@ std::vector<std::vector<Token> > SplitCode(
 	const std::vector<Token>& tokens
 );
 
-std::string get_var_types_as_str(
-	const VariableTypeContainer& types
+std::string get_types_as_str(
+	const ValueContainer& types
 );
 
 struct Location

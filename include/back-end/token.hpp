@@ -18,6 +18,14 @@ using CheckVariableContainer = std::unordered_map<std::string, CheckVariable>;
 using CheckFunctionContainer = std::unordered_map<std::string, CheckFunction>;
 using CheckClassContainer    = std::unordered_map<std::string, CheckClass>;
 
+struct ExprValue;
+struct ExprNode;
+
+using TypeContainer = std::vector<ExprValue>;
+using ExprContainer = std::vector<std::shared_ptr<ExprNode> >;
+
+
+
 enum class TokenType
 {
 	OPERATOR,
@@ -28,7 +36,7 @@ enum class TokenType
 
 	ASSIGN,
 
-	COLON, COMMA,
+	COLON, COMMA, DOT,
 
 	BOOL, INT, FLOAT, STRING,
 
@@ -54,247 +62,232 @@ struct Token
 
 	TokenType type;
 	std::string data;
-
-
-	bool operator==(const TokenType& _type) const;
 };
+
+struct Stmt;
 
 enum class ValueType
 {
-	BOOL, INT, FLOAT,
-	STRING, ARRAY,
-
-	VARIABLE, CALL,
-
-	OPERATOR,
-
-	OPEN_BRACKET, CLOSE_BRACKET
+	BOOL,
+	INT, FLOAT,
+	ARR, STR,
 };
 
-struct Value
+struct ExprNode;
+
+struct ExprValue
 {
 	ValueType type;
-	std::string data;
 
-	// arrays are classified as one value, so their elements are stored
-	// in 'extras'; same for function calls, as 'extras' stores their
-	// arguments
-	std::vector<std::vector<Value> > extras;
-};
-
-struct VariableType
-{
-	enum Type {
-		BOOL,
-		INT,
-		FLOAT,
-		STRING,
-		ARRAY,
-		CLASS
-	} type;
-
-private:
-	// std::variant?
-	// and getter methods like get_class_name() and get_elem_types()
 	std::variant<
-		// note about array types:
-		/*
-		// if this type is an array, it will also contain all the types of the
-		// elements as well
-		//
-		// this is used in determining the types of for loop iterators
-		//
-			arr = [ true, 7 ]   # 'arr' has type:  'array'
-			for (x : arr) {}	# 'x'   has types: 'bool', 'int'
-		//
-		// it is also used in determining the value of a subscript operator
-		//
-			arr = [ true, 7 ]   # 'arr' has type:  'array'
-			x = arr[0]			# 'x'   has types: 'bool', 'int'
-		//
-		*/
-		std::unordered_set<VariableType, HashVariableType>,
-
-		// if this is an object, then this variable stores the name of the class
+		bool,
+		int, float,
 		std::string
-	> special;
+	> data;
 
-public:
-	VariableType(
-		const Type& _type = {}
-	);
-
-	VariableType(
-		const std::unordered_set<VariableType, HashVariableType>& _elem_types
-	);
-
-	VariableType(
-		const std::string& _class_name
-	);
-
-	~VariableType();
-
-	std::string to_str() const;
-	std::unordered_set<VariableType, HashVariableType>& get_elem_types() const;
-
-	bool operator==(const VariableType& _type) const;
-	bool operator!=(const VariableType& _type) const;
+	std::vector<std::shared_ptr<ExprNode> > elem_types;
+	// std::string class_name;
 };
 
-struct HashVariableType
+namespace night {
+
+bool contains(const TypeContainer& container, const ValueType& type)
 {
-	std::size_t operator()(const VariableType& _type) const;
+	for (auto const& data : container)
+	{
+		if (data.type == type)
+			return true;
+	}
+
+	return false;
+}
+
+template <typename... ValueTypes>
+bool contains(const TypeContainer& container, const ValueType& val, const ValueTypes&... vals)
+{
+	for (auto const& data : container)
+	{
+		if (data.type == val)
+			return contains(container, vals...);
+	}
+
+	return false;
+}
+
+const ExprValue* find(const TypeContainer& container, const ValueType& type)
+{
+	for (std::size_t i = 0; i < container.size(); ++i)
+	{
+		if (container[i].type == type)
+			return &container[i];
+	}
+
+	return nullptr;
+}
+
 };
 
-using VariableTypeContainer = std::unordered_set<VariableType, HashVariableType>;
+struct ExprVar
+{
+	std::string name;
+};
 
-struct Statement;
+struct ExprNode;
 
-struct Expression
+struct ExprCall
+{
+	std::string name;
+	std::vector<std::vector<ExprNode> > params;
+};
+
+enum UnaryOPType
+{
+	NEGATIVE,
+	NOT,
+	SUBSCRIPT
+};
+
+struct ExprUnaryOP
+{
+	UnaryOPType const type;
+	std::string const data;
+	std::shared_ptr<ExprNode> value;
+};
+
+enum BinaryOPType
+{
+	PLUS, MINUS, TIMES, DIVIDE, MOD,
+	GREATER, GREATER_EQ, SMALLER, SMALLER_EQ,
+	AND, OR, EQUAL, NOT_EQUAL,
+	DOT
+};
+
+struct ExprBinaryOP
+{
+	BinaryOPType const type;
+	std::string const data;
+	std::shared_ptr<ExprNode> left, right;
+};
+
+struct ExprNode
 {
 	const Location loc;
 
-	ValueType type;
-	std::string data;
+	enum {
+		VALUE, VAR, CALL,
+		UNARY_OP, BINARY_OP
+	} type;
 
-	std::vector<std::shared_ptr<Expression> > extras;
-
-	std::shared_ptr<Expression> left, right;
+	std::variant<
+		ExprValue,
+		ExprVar,
+		ExprCall,
+		ExprUnaryOP,
+		ExprBinaryOP
+	> data;
 };
 
-// struct ExpressionNode;
+
 
 struct Scope
 {
 	const std::shared_ptr<Scope> upper_scope;
 
-	std::vector<Statement> statements;
+	std::vector<Stmt> stmts;
 
-	CheckVariableContainer variables;
+	CheckVariableContainer vars;
 
 	Scope(const std::shared_ptr<Scope>& _upper_scope);
 };
 
-struct Variable
+struct StmtAssign
 {
-	std::string name;
-	std::shared_ptr<Expression> value;
-};
-
-struct Assignment
-{
-	enum {
+	enum Type {
 		ASSIGN,
 		PLUS,
 		MINUS,
 		TIMES,
 		DIVIDE,
 		MOD
-	} assign_type;
+	} const type;
 
-	std::string variable_name;
-	std::shared_ptr<Expression> assign_expr;
+	CheckVariable& check_var;
+	std::vector<ExprNode> indicies;
+	std::shared_ptr<ExprNode> assign_expr;
+};
+
+struct StmtMethod
+{
+	std::shared_ptr<ExprNode> assign_expr;
 };
 
 struct Conditional
 {
-	std::shared_ptr<Expression> condition;
+	std::shared_ptr<ExprNode> condition;
 	std::shared_ptr<Scope> body;
 };
 
-struct IfStatement
+struct StmtIf
 {
 	std::vector<Conditional> chains;
 };
 
-struct FunctionDef
+struct StmtFuncCall
 {
-	std::string name;
-	std::vector<std::string> parameters;
+	//std::string const name;
+	CheckFunction& call;
+	std::vector<std::shared_ptr<ExprNode> > args;
+};
+
+struct StmtReturn
+{
+	std::shared_ptr<ExprNode> expr;
+};
+
+struct StmtWhile
+{
+	std::shared_ptr<ExprNode> condition;
+	std::shared_ptr<Scope> body;
+};
+
+struct StmtFor
+{
+	std::string const it_name;
+	std::shared_ptr<ExprNode> range;
 
 	std::shared_ptr<Scope> body;
 };
 
-struct FunctionCall
+enum class StmtType
 {
-	std::string name;
-	std::vector<std::shared_ptr<Expression> > arguments;
-};
-
-struct Return
-{
-	std::shared_ptr<Expression> expression;
-};
-
-struct WhileLoop
-{
-	std::shared_ptr<Expression> condition;
-	std::shared_ptr<Scope> body;
-};
-
-struct ForLoop
-{
-	std::string iterator_name;
-	std::shared_ptr<Expression> range;
-
-	std::shared_ptr<Scope> body;
-};
-
-struct Element
-{
-	std::string name;
-	std::vector<std::shared_ptr<Expression> > index;
-	std::shared_ptr<Expression> assign;
-};
-
-struct MethodCall
-{
-	std::string name;
-	std::shared_ptr<Expression> assign_expr;
-};
-
-enum class StatementType
-{
-	VARIABLE,
-	ASSIGNMENT,
-	IF_STATEMENT,
-	FUNCTION_DEF,
-	FUNCTION_CALL,
+	ASSIGN,
+	METHOD,
+	IF,
+	FUNC_CALL,
 	RETURN,
-	WHILE_LOOP,
-	FOR_LOOP,
-	ELEMENT,
-	METHOD_CALL
+	WHILE,
+	FOR
 };
 
-struct Statement
+struct Stmt
 {
-	const Location loc;
+	Location const loc;
 
-	const StatementType type;
+	StmtType const type;
 
 	std::variant<
-		Variable,
-		Assignment,
-		IfStatement,
-		FunctionDef,
-		FunctionCall,
-		Return,
-		WhileLoop,
-		ForLoop,
-		Element,
-		MethodCall
-	> stmt;
+		StmtAssign,
+		StmtMethod,
+		StmtIf,
+		StmtFuncCall,
+		StmtReturn,
+		StmtWhile,
+		StmtFor
+	> data;
 };
-
-
 
 struct CheckVariable
 {
-	CheckVariable(
-		const VariableTypeContainer& _types = {}
-	);
-
 	// a note about parameters:
 	/*
 	// to perform type checking, parameters' types must be evaluated when the
@@ -314,12 +307,16 @@ struct CheckVariable
 	//
 	// once a parameter has types, it then behaves like a normal variable
 	*/
-	VariableTypeContainer types;
+	TypeContainer types;
+
+	NightData value;
 };
 
 struct CheckFunction
 {
-	std::vector<VariableTypeContainer> parameters;
+	std::vector<TypeContainer> params;
+
+	std::shared_ptr<Scope> body;
 
 	// a note about return types:
 	/*
@@ -330,27 +327,27 @@ struct CheckFunction
 	// if no return types can be deduced, then the return type is treated as
 	// whatever type is required for it to be
 	*/
-	VariableTypeContainer return_types;
+	TypeContainer rtn_types;
 
 	bool is_void;
 };
 
-// constructor for CheckFunction
-std::pair<const std::string, CheckFunction> make_check_function(
-	const std::string& name,
-	const std::vector<VariableTypeContainer>& params = {},
-	const VariableTypeContainer& rtn_types = {}
-);
-
 struct CheckClass
 {
-	CheckVariableContainer variables;
+	CheckVariableContainer vars;
 	CheckFunctionContainer methods;
 };
 
-// constructor for CheckClass
-std::pair<const std::string, CheckClass> make_check_class(
-	const std::string& name,
-	const CheckVariableContainer& vars = {},
-	const CheckFunctionContainer& methods = {}
+std::pair<std::string const, CheckFunction> make_check_function(
+	std::string const& name,
+
+	std::vector<TypeContainer> const& params = {},
+	TypeContainer			   const& rtn_types = {}
+);
+
+std::pair<std::string const, CheckClass> make_check_class(
+	std::string const& name,
+
+	CheckVariableContainer const& vars,
+	CheckFunctionContainer const& methods
 );

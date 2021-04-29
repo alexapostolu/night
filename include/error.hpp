@@ -8,26 +8,34 @@
 #include <string>
 #include <vector>
 
-#define NIGHT_COMPILE_ERROR(msg, fix, link) night::error(Location{ __FILE__, __LINE__ }, ErrorType::COMPILE, loc, msg, fix, link)
-#define NIGHT_RUNTIME_ERROR(msg, fix, link) night::error(Location{ __FILE__, __LINE__ }, ErrorType::RUNTIME, loc, msg, fix, link)
+#define NIGHT_PREPROCESS_ERROR(msg, link) \
+	night::error(Location{ __FILE__, __LINE__ }, night::error_preprocess, {}, msg, {}, link)
 
-enum class ErrorType {
-	PREPROCESSOR,
-	COMPILE,
-	RUNTIME
-};
+#define NIGHT_COMPILE_ERROR(msg, fix, link, loc) \
+	night::error(Location{ __FILE__, __LINE__ }, night::error_compile, loc, msg, fix, link)
 
-enum class Learn {
-	LEARN, // you really screwed up the syntax if you get linked to this
-	VARIABLES,
-	ARRAYS,
-	CONDITIONALS,
-	LOOPS,
-	FUNCTIONS,
-	TYPE_CHECKING
-};
+#define NIGHT_RUNTIME_ERROR(msg, fix, link) \
+	night::error(Location{ __FILE__, __LINE__ }, night::error_runtime, stmt.loc, msg, fix, link)
 
 namespace night {
+
+const std::string error_preprocess = "preprocessor";
+const std::string error_compile = "compile";
+const std::string error_runtime = "runtime";
+
+const std::string learn_learn = "learn.html"; // you really screwed up the syntax if you get linked to this
+
+const std::string learn_run = "";
+const std::string learn_include = "learn.html#including-files";
+
+const std::string learn_variables = "learn.html#variables";
+const std::string learn_arrays = "learn.html#arrays";
+const std::string learn_operators = "learn.html#operators";
+const std::string learn_conditionals = "learn.html#conditional";
+const std::string learn_loops = "learn.html#loops";
+const std::string learn_functions = "learn.html#functions";
+const std::string learn_classes = "learn.html#classes";
+const std::string learn_type_checking = "learn.html#type-checking";
 
 class error
 {
@@ -35,13 +43,13 @@ public:
 	error(
 		const Location& debug_loc,
 
-		const ErrorType& _type,
+		const std::string& _type,
 		const Location& _loc,
 
 		const std::string& _msg,
 
 		const std::string& _fix,
-		const Learn& _link
+		const std::string& _link
 	);
 
 public:
@@ -70,6 +78,11 @@ private:
 	const std::string u_WHITE = "\033[0;4;37m";
 	const std::string bu_RED = "\033[0;1;4;31m";
 	const std::string bu_WHITE = "\033[0;1;4;37m";
+};
+
+struct error_wrapper
+{
+	const std::string type;
 };
 
 } // namespace night

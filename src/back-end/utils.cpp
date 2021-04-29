@@ -107,11 +107,11 @@ bool find_num_types(const VariableTypeContainer& container)
 		container.contains(VariableType::FLOAT);
 }
 
-std::string get_var_types_as_str(const VariableTypeContainer& var_types_set)
+std::string get_types_as_str(const ValueContainer& var_types_set)
 {
 	assert(!var_types_set.empty());
 
-	std::vector<VariableType> var_types(
+	std::vector<ValueType> var_types(
 		var_types_set.begin(), var_types_set.end());
 
 	std::string str_types = "";

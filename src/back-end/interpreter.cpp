@@ -11,349 +11,270 @@
 #include <string>
 #include <vector>
 
-Interpreter::Interpreter(const std::vector<Statement>& _stmts)
-	: exit_function(false)
+void interpret_statement(std::shared_ptr<Scope>& scope, const Stmt& stmt)
 {
-	std::shared_ptr<NightScope> global_scope = std::make_shared<NightScope>(nullptr);
-	Interpret(global_scope, _stmts);
-}
+	static ExprValue return_value;
+	static bool exit_function = false;
 
-void Interpreter::Interpret(
-	std::shared_ptr<NightScope>& current_scope,
-	const std::vector<Statement>& statements,
-	NightData* return_value
-) {
-	for (const Statement& statement : statements)
+	if (exit_function)
+		return;
+
+	switch (stmt.type)
 	{
-		if (exit_function)
-			break;
+	case StmtType::ASSIGN: {
+		StmtAssign const& stmt_assign = std::get<StmtAssign>(stmt.data);
 
-		const Location loc = statement.loc;
+		NightData const assign_expr =
+			evaluate_expression(scope, stmt_assign.assign_expr);
 
-		switch (statement.type)
+		switch (stmt_assign.type)
 		{
-		case StatementType::VARIABLE: {
-			const Variable* const variable_stmt = &std::get<Variable>(statement.stmt);
-
-			current_scope->variables[variable_stmt->name] = NightData{
-				evaluate_expression(current_scope, variable_stmt->value) };
-
+		case StmtAssign::ASSIGN: {
+			stmt_assign.check_var.expr = stmt_assign.assign_expr;
 			break;
 		}
-		case StatementType::ASSIGNMENT: {
-			const Assignment* const assignment = &std::get<Assignment>(statement.stmt);
-
-			auto* const night_variable = get_variable(current_scope, assignment->variable_name);
-			assert(night_variable != nullptr);
-
-			const NightData assign_expr =
-				evaluate_expression(current_scope, assignment->assign_expr);
-
-			switch (assignment->assign_type)
+		case StmtAssign::PLUS: {
+			if (stmt_assign.check_var.value. == ValueType::STR)
 			{
-			case Assignment::ASSIGN: {
-				night_variable->second = assign_expr;
-				break;
+				std::get<std::string>(night_variable->second.data) += assign_expr.to_str();
 			}
-			case Assignment::PLUS: {
-				if (night_variable->second.type == VariableType::STRING)
-				{
-					std::get<std::string>(night_variable->second.data) += assign_expr.to_str();
-				}
-				else if (night_variable->second.is_num())
-				{
-					if (!assign_expr.is_num())
-						throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "expression can not be used with the operator '+='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, if the variable is type 'int' or 'float', then the operator '+=' can only assign expressions of type 'int' or 'float'");
-
-					if (night_variable->second.type == VariableType::INT)
-						std::get<int>(night_variable->second.data) += (int)assign_expr.get_num();
-					else
-						std::get<float>(night_variable->second.data) += assign_expr.get_num();
-				}
-				else
-				{
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '+='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '+=' can only be used on variables of type 'int', 'float', or 'string'");
-				}
-
-				break;
-			}
-			case Assignment::MINUS: {
-				if (!night_variable->second.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '-='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '-=' can only be used on variables of type 'int' or 'float'");
+			else if (night_variable->second.is_num())
+			{
 				if (!assign_expr.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "expression can not be used with the operator '-='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '-=' can only assign expressions of type 'int' or 'float'");
+					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "expression can not be used with the operator '+='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, if the variable is type 'int' or 'float', then the operator '+=' can only assign expressions of type 'int' or 'float'");
 
 				if (night_variable->second.type == VariableType::INT)
-					std::get<int>(night_variable->second.data) -= (int)assign_expr.get_num();
+					std::get<int>(night_variable->second.data) += (int)assign_expr.get_num();
 				else
-					std::get<float>(night_variable->second.data) -= assign_expr.get_num();
-
-				break;
+					std::get<float>(night_variable->second.data) += assign_expr.get_num();
 			}
-			case Assignment::TIMES: {
-				if (!night_variable->second.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '*='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '*=' can only be used on variables of type 'int' or 'float'");
-				if (!assign_expr.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "expression can not be used with the operator '*='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '*=' can only assign expressions of type 'int' or 'float'");
-
-				if (night_variable->second.type == VariableType::INT)
-					std::get<int>(night_variable->second.data) *= (int)assign_expr.get_num();
-				else
-					std::get<float>(night_variable->second.data) *= assign_expr.get_num();
-
-				break;
-			}
-			case Assignment::DIVIDE: {
-				if (!night_variable->second.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "variable '" + night_variable->first+ "' can not be assigned using the assignment operator '/='", "the operator can only be used on variables of type 'int' or float'");
-				if (!assign_expr.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "expression can not be used with the operator '/='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '/=' can only assign expressions of type 'int' or 'float'");
-
-				if (night_variable->second.type == VariableType::INT)
-					std::get<int>(night_variable->second.data) /= (int)assign_expr.get_num();
-				else
-					std::get<float>(night_variable->second.data) /= assign_expr.get_num();
-
-				break;
-			}
-			case Assignment::MOD: {
-				if (!night_variable->second.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '%='", "the operator can only be used on variables of type 'int' or float'");
-				if (!assign_expr.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "expression can not be used with the operator '%='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '%=' can only assign expressions of type 'int' or 'float'");
-
-				if (night_variable->second.type == VariableType::INT)
-					std::get<int>(night_variable->second.data) /= (int)assign_expr.get_num();
-				else
-					std::get<float>(night_variable->second.data) /= assign_expr.get_num();
-
-				break;
-			}
+			else
+			{
+				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '+='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '+=' can only be used on variables of type 'int', 'float', or 'string'");
 			}
 
 			break;
 		}
-		case StatementType::IF_STATEMENT: {
-			const IfStatement* const if_stmt = &std::get<IfStatement>(statement.stmt);
+		case Assignment::MINUS: {
+			if (!night_variable->second.is_num())
+				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '-='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '-=' can only be used on variables of type 'int' or 'float'");
+			if (!assign_expr.is_num())
+				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "expression can not be used with the operator '-='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '-=' can only assign expressions of type 'int' or 'float'");
 
-			for (const Conditional& conditional : if_stmt->chains)
-			{
-				if (conditional.condition == nullptr)
-				{
-					std::shared_ptr<NightScope> if_stmt_scope =
-						std::make_shared<NightScope>(current_scope);
-
-					Interpret(if_stmt_scope, conditional.body->statements, return_value);
-
-					break;
-				}
-
-				const NightData condition_expr =
-					evaluate_expression(current_scope, conditional.condition);
-
-				if (condition_expr.type != VariableType::BOOL)
-					throw NIGHT_RUNTIME_ERROR("if statement condition is not type: 'bool'", "condition currently is type: '" + condition_expr.type.to_str() + "'", Learn::CONDITIONALS);
-
-				if (std::get<bool>(condition_expr.data))
-				{
-					std::shared_ptr<NightScope> if_stmt_scope =
-						std::make_shared<NightScope>(current_scope);
-
-					Interpret(if_stmt_scope, conditional.body->statements, return_value);
-
-					break;
-				}
-			}
+			if (night_variable->second.type == VariableType::INT)
+				std::get<int>(night_variable->second.data) -= (int)assign_expr.get_num();
+			else
+				std::get<float>(night_variable->second.data) -= assign_expr.get_num();
 
 			break;
 		}
-		case StatementType::FUNCTION_DEF: {
-			const FunctionDef* const function_def = &std::get<FunctionDef>(statement.stmt);
+		case Assignment::TIMES: {
+			if (!night_variable->second.is_num())
+				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '*='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '*=' can only be used on variables of type 'int' or 'float'");
+			if (!assign_expr.is_num())
+				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "expression can not be used with the operator '*='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '*=' can only assign expressions of type 'int' or 'float'");
 
-			night_functions[function_def->name] = NightFunction{
-				function_def->parameters, function_def->body->statements };
+			if (night_variable->second.type == VariableType::INT)
+				std::get<int>(night_variable->second.data) *= (int)assign_expr.get_num();
+			else
+				std::get<float>(night_variable->second.data) *= assign_expr.get_num();
 
 			break;
 		}
-		case StatementType::FUNCTION_CALL: {
-			const FunctionCall* const function_call =
-				&std::get<FunctionCall>(statement.stmt);
+		case Assignment::DIVIDE: {
+			if (!night_variable->second.is_num())
+				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "variable '" + night_variable->first+ "' can not be assigned using the assignment operator '/='", "the operator can only be used on variables of type 'int' or float'");
+			if (!assign_expr.is_num())
+				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "expression can not be used with the operator '/='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '/=' can only assign expressions of type 'int' or 'float'");
 
-			if (function_call->name == "print")
+			if (night_variable->second.type == VariableType::INT)
+				std::get<int>(night_variable->second.data) /= (int)assign_expr.get_num();
+			else
+				std::get<float>(night_variable->second.data) /= assign_expr.get_num();
+
+			break;
+		}
+		case Assignment::MOD: {
+			if (!night_variable->second.is_num())
+				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '%='", "the operator can only be used on variables of type 'int' or float'");
+			if (!assign_expr.is_num())
+				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "expression can not be used with the operator '%='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '%=' can only assign expressions of type 'int' or 'float'");
+
+			if (night_variable->second.type == VariableType::INT)
+				std::get<int>(night_variable->second.data) /= (int)assign_expr.get_num();
+			else
+				std::get<float>(night_variable->second.data) /= assign_expr.get_num();
+
+			break;
+		}
+		}
+
+		break;
+	}
+	case StmtType::IF: {
+		const IfStatement& if_stmt = std::get<IfStatement>(stmt.data);
+
+		for (const Conditional& conditional : if_stmt.chains)
+		{
+			if (conditional.condition == nullptr)
 			{
-				const NightData data = evaluate_expression(
-					current_scope, function_call->arguments[0]);
+				for (auto& body_stmt : conditional.body->statements)
+					interpret_statement(conditional.body, body_stmt);
 
-				if (data.type == VariableType::CLASS)
-					throw NIGHT_RUNTIME_ERROR("argument 1 of function 'print' can only accept basic types", "argument 1 currently is type: '" + data.type.class_name + "'");
-
-				NightPrint(data);
-
-				break;
+				return;
 			}
-			if (function_call->name == "input")
+
+			const NightData condition_expr =
+				evaluate_expression(curr_scope, conditional.condition);
+
+			if (condition_expr.type != ValueType::BOOL) {
+				throw NIGHT_RUNTIME_ERROR(
+					"if statement condition is not type: 'bool'",
+					"condition currently is type: '" + condition_expr.type.to_str() + "'",
+					night::learn_conditionals);
+			}
+
+			if (std::get<bool>(condition_expr.data))
 			{
-				std::string user_input;
-				getline(std::cin, user_input);
-
-				break;
-			}
-			if (function_call->name == "system")
-			{
-				const NightData arg = evaluate_expression(current_scope, function_call->arguments[0]);
-				system(std::get<std::string>(arg.data).c_str());
-
-				break;
+				for (auto& body_stmt : conditional.body->statements)
+					interpret_statement(conditional.body, body_stmt);
 			}
 
-			auto night_function = night_functions.find(function_call->name);
-			assert(night_function != night_functions.end());
+			return;
+		}
 
-			std::shared_ptr<NightScope> function_scope =
+		break;
+	}
+	case StmtType::FUNC_CALL: {
+		const FunctionCall& function_call = std::get<FunctionCall>(stmt.data);
+
+		if (function_call.name == "print")
+		{
+			const NightData data = evaluate_expression(
+				curr_scope, function_call.arguments[0]);
+
+			NightPrint(data);
+
+			break;
+		}
+		if (function_call.name == "input")
+		{
+			std::string user_input;
+			getline(std::cin, user_input);
+
+			break;
+		}
+		if (function_call->name == "system")
+		{
+			const NightData arg = evaluate_expression(curr_scope, function_call.arguments[0]);
+			system(std::get<std::string>(arg.data).c_str());
+
+			break;
+		}
+
+		auto night_function = night_functions.find(function_call->name);
+		assert(night_function != night_functions.end());
+
+		std::shared_ptr<NightScope> function_scope =
+			std::make_shared<NightScope>(curr_scope);
+
+		// turning parameters into variables
+		for (std::size_t a = 0; a < night_function->second.params.size(); ++a)
+		{
+			function_scope->variables[night_function->second.params[a]] =
+				evaluate_expression(curr_scope, function_call->arguments[a]);
+		}
+
+		NightData dummy_return_value;
+		Interpret(function_scope, night_function->second.body, &dummy_return_value);
+
+		exit_function = false;
+		break;
+	}
+	case StmtType::RETURN: {
+		const Return& return_stmt = std::get<Return>(stmt.data);
+
+		if (return_stmt.expression != nullptr)
+			*return_value = evaluate_expression(curr_scope, return_stmt->expression);
+		else
+			return_value = nullptr;
+
+		exit_function = true;
+		break;
+	}
+	case StmtType::WHILE: {
+		const WhileLoop& while_loop = std::get<WhileLoop>(stmt.data);
+
+		while (true)
+		{
+			const NightData condition =
+				evaluate_expression(curr_scope, while_loop.condition);
+
+			if (condition.type != VariableType::BOOL)
+				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "while loop condition does not evaluate to type 'bool'", "condition is currently type '" + condition.type.to_str() + "'");
+
+			if (!std::get<bool>(condition.data))
+				break;
+
+			std::shared_ptr<NightScope> while_loop_scope =
 				std::make_shared<NightScope>(current_scope);
 
-			// turning parameters into variables
-			for (std::size_t a = 0; a < night_function->second.params.size(); ++a)
-			{
-				function_scope->variables[night_function->second.params[a]] =
-					evaluate_expression(current_scope, function_call->arguments[a]);
-			}
-
-			NightData dummy_return_value;
-			Interpret(function_scope, night_function->second.body, &dummy_return_value);
-
-			exit_function = false;
-			break;
+			Interpret(while_loop_scope, while_loop->body->statements);
 		}
-		case StatementType::RETURN: {
-			const Return* const return_stmt = &std::get<Return>(statement.stmt);
 
-			assert(return_value != nullptr);
+		break;
+	}
+	case StmtType::FOR: {
+		const ForLoop* const for_loop = &std::get<ForLoop>(statement.stmt);
 
-			if (return_stmt->expression != nullptr)
-				*return_value = evaluate_expression(current_scope, return_stmt->expression);
-			else
-				return_value = nullptr;
-
-			exit_function = true;
-			break;
-		}
-		case StatementType::WHILE_LOOP: {
-			const WhileLoop* const while_loop =
-				&std::get<WhileLoop>(statement.stmt);
-
-			while (true)
+		const NightData range = evaluate_expression(current_scope, for_loop->range);
+		if (range.type == VariableType::STRING)
+		{
+			for (char range_value : std::get<std::string>(range.data))
 			{
-				const NightData condition =
-					evaluate_expression(current_scope, while_loop->condition);
-
-				if (condition.type != VariableType::BOOL)
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "while loop condition does not evaluate to type 'bool'", "condition is currently type '" + condition.type.to_str() + "'");
-
-				if (!std::get<bool>(condition.data))
-					break;
-
-				std::shared_ptr<NightScope> while_loop_scope =
+				std::shared_ptr<NightScope> for_loop_scope =
 					std::make_shared<NightScope>(current_scope);
 
-				Interpret(while_loop_scope, while_loop->body->statements);
+				for_loop_scope->variables[for_loop->iterator_name] =
+					NightData{ VariableType::STRING, std::string(1, range_value) };
+
+				Interpret(for_loop_scope, for_loop->body->statements);
 			}
-
-			break;
 		}
-		case StatementType::FOR_LOOP: {
-			const ForLoop* const for_loop = &std::get<ForLoop>(statement.stmt);
-
-			const NightData range = evaluate_expression(current_scope, for_loop->range);
-			if (range.type == VariableType::STRING)
+		else
+		{
+			for (const NightData& range_value : range.extras)
 			{
-				for (char range_value : std::get<std::string>(range.data))
-				{
-					std::shared_ptr<NightScope> for_loop_scope =
-						std::make_shared<NightScope>(current_scope);
+				std::shared_ptr<NightScope> for_loop_scope =
+					std::make_shared<NightScope>(current_scope);
 
-					for_loop_scope->variables[for_loop->iterator_name] =
-						NightData{ VariableType::STRING, std::string(1, range_value) };
+				for_loop_scope->variables[for_loop->iterator_name] = range_value;
 
-					Interpret(for_loop_scope, for_loop->body->statements);
-				}
+				Interpret(for_loop_scope, for_loop->body->statements);
 			}
-			else
-			{
-				for (const NightData& range_value : range.extras)
-				{
-					std::shared_ptr<NightScope> for_loop_scope =
-						std::make_shared<NightScope>(current_scope);
-
-					for_loop_scope->variables[for_loop->iterator_name] = range_value;
-
-					Interpret(for_loop_scope, for_loop->body->statements);
-				}
-			}
-
-			break;
 		}
-		case StatementType::ELEMENT: {
-			const Element* const element_stmt = &std::get<Element>(statement.stmt);
 
-			auto* const night_variable = get_variable(current_scope, element_stmt->name);
-			assert(night_variable != nullptr);
+		break;
+	}
+	case StmtType::METHOD: {
+		const MethodCall* const method_call = &std::get<MethodCall>(statement.stmt);
 
-			const NightData index_data =
-				evaluate_expression(current_scope, element_stmt->index[0]);
-			
-			// multidimensional arrays!!!!
-			//
-			//
-			//
-			//
+		auto* const night_variable = get_variable(current_scope, method_call->name);
+		assert(night_variable != nullptr);
 
-			if (index_data.type != VariableType::INT)
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "subscript index does not evaluate to type 'int'", "subscript index currently is of type '" + index_data.type.to_str() + "'");
+		night_variable->second = evaluate_expression(current_scope, method_call->assign_expr);
 
-			const long long index = std::get<int>(index_data.data);
-
-			if (index < 0 || index >= night_variable->second.extras.size())
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::out_of_range, loc, "subscript index is out of range", "array has a size of '" + std::to_string(night_variable->second.extras.size()));
-
-			if (night_variable->second.type == VariableType::STRING)
-			{
-				const NightData assign_data =
-					evaluate_expression(current_scope, element_stmt->assign);
-
-				if (assign_data.type != VariableType::STRING)
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "string elements can only be assigned to other strings of length 1", "expression currently is type '" + assign_data.type.to_str() + "'");
-				if (std::get<std::string>(assign_data.data).length() != 1)
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "string elements can only be assigned to other strings of length 1", "expression currently has length '" + std::to_string(std::get<std::string>(assign_data.data).length()) + "'");
-
-				std::get<std::string>(night_variable->second.data)[(std::size_t)index] =
-					std::get<std::string>(assign_data.data)[0];
-			}
-			else
-			{
-				night_variable->second.extras[(std::size_t)index] =
-					evaluate_expression(current_scope, element_stmt->assign);
-			}
-
-			break;
-		}
-		case StatementType::METHOD_CALL: {
-			const MethodCall* const method_call = &std::get<MethodCall>(statement.stmt);
-
-			auto* const night_variable = get_variable(current_scope, method_call->name);
-			assert(night_variable != nullptr);
-
-			night_variable->second = evaluate_expression(current_scope, method_call->assign_expr);
-
-			break;
-		}
-		}
+		break;
+	}
+	default: {
+		return;
+	}
 	}
 }
 
-NightData Interpreter::evaluate_expression(
-	std::shared_ptr<NightScope>& current_scope,
-	const std::shared_ptr<Expression>& node)
+NightData evaluate_expression(
+	std::shared_ptr<ExprNode>& current_scope,
+	const std::shared_ptr<ExprNode>& node)
 {
 	const Location loc = node->loc;
 
@@ -371,7 +292,7 @@ NightData Interpreter::evaluate_expression(
 
 			return night_data;
 		}
-		case ValueType::VARIABLE: {
+		case ValueType::VAR: {
 			auto* const night_variable = get_variable(current_scope, node->data);
 			assert(night_variable != nullptr);
 
@@ -827,25 +748,3 @@ NightData Interpreter::evaluate_expression(
 	assert(false);
 	return {};
 }
-
-std::pair<const std::string, NightData>* Interpreter::get_variable(
-	std::shared_ptr<NightScope>& current_scope,
-	const std::string& variable_name
-) {
-	NightScope* scope_ptr = current_scope.get();
-	while (scope_ptr != nullptr)
-	{
-		for (auto& variable : scope_ptr->variables)
-		{
-			if (variable.first == variable_name)
-				return &variable;
-		}
-
-		scope_ptr = scope_ptr->upper_scope.get();
-	}
-
-	return nullptr;
-}
-
-Interpreter::NightScope::NightScope(const std::shared_ptr<NightScope>& _upper_scope)
-	: upper_scope(_upper_scope) {}
