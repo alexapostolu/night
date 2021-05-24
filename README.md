@@ -24,6 +24,8 @@ Currently, Night only supports a source build. Binaries for Windows and Linux ar
 
 ### Building from Source
 
+The [latest stable commit](https://github.com/DynamicSquid/night/tree/8079fa9e05499b97d60b8777a6aeb733c23dffb3).
+
 1. Install Dependancies
 
 `g++` (version 7+)
