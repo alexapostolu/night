@@ -1,9 +1,9 @@
 #include "../../include/back-end/parser.hpp"
 #include "../../include/back-end/utils.hpp"
 #include "../../include/back-end/token.hpp"
+#include "../../include/back-end/stmt.hpp"
 #include "../../include/error.hpp"
 
-#include <fstream>
 #include <memory>
 #include <algorithm>
 #include <iterator>
@@ -11,550 +11,477 @@
 #include <vector>
 #include <unordered_set>
 
-bool parse_statement(
-	Lexer& lexer,
-	std::shared_ptr<Scope>& scope
-) {
-	Token token = lexer_eat(lexer, false);
+Parser::Parser(Lexer& lexer)
+	: lexer(lexer)
+{
+	check_funcs = {
+		make_check_function("print", { all_types }),
+		make_check_function("input", {}, { Type::STR }),
+
+		make_check_function("range",
+			{ { Type::INT }, { Type::INT } },
+			{ Type::ARR }),
+			
+		make_check_function("int",
+			{ { Type::INT, Type::FLOAT, Type::STR } },
+			{ Type::INT }),
+		make_check_function("float",
+			{ { Type::INT, Type::FLOAT, Type::STR } },
+			{ Type::FLOAT }),
+		make_check_function("str",
+			{ { Type::BOOL, Type::INT, Type::FLOAT, Type::STR } },
+			{ Type::STR }),
+
+		make_check_function("system",
+			{ { Type::STR } })
+	};
+
+	check_classes = {
+		make_check_class("array",
+			CheckVariableContainer(),
+			CheckFunctionContainer{
+				make_check_function("len", {}, { Type::INT }),
+
+				make_check_function("push", { all_types }),
+				make_check_function("push", { { Type::INT } }, all_types),
+
+				make_check_function("pop"),
+				make_check_function("pop", { { Type::INT } })
+			}
+		),
+		make_check_class("string",
+			CheckVariableContainer(),
+			CheckFunctionContainer{
+				make_check_function("len", {}, { Type::INT })
+			}
+		)
+	};
+}
+
+Stmt Parser::parse_statement(ParserScope& scope)
+{
+	static auto in_func = Parser::check_funcs.end();
+
+	Token token = lexer.eat(true);
 	switch (token.type)
 	{
 	case TokenType::SET: {
 		// validating statement
 
-		if (token = lexer_eat(lexer, false); token.type != TokenType::VARIABLE) {
+		if (lexer.eat(false).type != TokenType::VAR) {
 			throw NIGHT_COMPILE_ERROR(
 				"expected variable name after 'set' keyword",
-				"variable initializations must be in this format: `set variable = expression`",
-				night::learn_variables, lexer.loc);
+				night::format_init, night::learn_variables);
 		}
 
-		std::string var_name = token.data;
+		std::string const var_name = lexer.get_curr(false).data;
 
-		if (token = lexer_eat(lexer, false); token.type != TokenType::ASSIGN) {
+		if (lexer.eat(false).type != TokenType::ASSIGN) {
 			throw NIGHT_COMPILE_ERROR(
 				"expected assignment operator after variable name",
-				"variable initializations must be in this format: `set variable = expression`",
-				night::learn_variables, lexer.loc);
+				night::format_init, night::learn_variables);
 		}
 
-		if (scope->vars.contains(var_name)) {
+		if (scope.get_var(var_name) != nullptr) {
 			throw NIGHT_COMPILE_ERROR(
 				"variable '" + var_name + "' has already been defined",
 				"variables can only be defined once, regardless of their scope",
-				night::learn_variables, lexer.loc);
+				night::learn_variables);
 		}
-		if (Parser::check_funcs.contains(var_name)) {
+		if (check_funcs.contains(var_name)) {
 			throw NIGHT_COMPILE_ERROR(
 				"variable '" + var_name + "' has the same name as a function",
 				"variable and function names must be unique",
-				night::learn_variables, lexer.loc);
+				night::learn_variables);
 		}
-		if (Parser::check_classes.contains(var_name)) {
+		if (check_classes.contains(var_name)) {
 			throw NIGHT_COMPILE_ERROR(
 				"variable '" + var_name + "' has the same name as a class",
 				"variable and class names must be unique",
-				night::learn_variables, lexer.loc);
+				night::learn_variables);
 		}
 
 		// parsing statement
 
-		auto [expr, types] = parse_expression(lexer);
-		if (expr == nullptr) {
+		if (lexer.eat(false).type == TokenType::EOL) {
 			throw NIGHT_COMPILE_ERROR(
 				"expected expression after assignment operator",
-				"variable initializations must be in this format: 'set variable = expression'",
-				night::learn_variables, lexer.loc);
+				night::format_init, night::learn_variables);
 		}
 
-		if (token = lexer_curr(lexer, false); token.type != TokenType::EOL) {
+		auto [expr, types] = parse_expression(scope);
+
+		if (lexer.get_curr(false).type != TokenType::EOL) {
 			throw NIGHT_COMPILE_ERROR(
 				"unexpected token '" + token.data + "' after expression",
-				"variable initializations must be in this format: `set variable = expression`",
-				night::learn_variables, lexer.loc);
+				night::format_init, night::learn_variables);
 		}
 
-		scope->vars[var_name] = CheckVariable{ types, expr };
-		return true;
-	}
-	case TokenType::VARIABLE: {
-		const std::string var_name = token.data;
+		scope.vars[var_name] = CheckVariable{ types };
 
-		token = lexer_eat(lexer, false);
+		return Stmt{
+			lexer.get_loc(), StmtType::INIT,
+			StmtInit{ var_name, expr }
+		};
+	}
+	case TokenType::VAR: {
+		std::string const var_name = token.data;
+
+		token = lexer.eat(false);
 		if (token.type == TokenType::OPEN_BRACKET)
 		{
-			auto  check_func = Parser::check_funcs.find(var_name);
-			if (check_func == Parser::check_funcs.end()) {
+			auto const check_func = check_funcs.find(var_name);
+			if (check_func == check_funcs.end()) {
 				throw NIGHT_COMPILE_ERROR(
 					"function '" + var_name + "' is undefined",
 					"functions must be defined before they are used",
-					night::learn_functions, lexer.loc);
+					night::learn_functions);
 			}
 
 			// parsing arguments
 
-			ExprContainer arg_exprs;
-			std::vector<TypeContainer> arg_types;
-
-			try {
-				auto args = parse_arguments(lexer, scope);
-
-				arg_exprs = std::get<0>(args);
-				arg_types = std::get<1>(args);
-			}
-			catch (const night::error_wrapper& e) {
-				if (e.type == "arg") {
-					throw NIGHT_COMPILE_ERROR(
-						"expected argument in function call '" + var_name + "'",
-						"function calls must be in this format: `function(arg1, arg2)`",
-						night::learn_functions, lexer.loc);
-				}
-				if (e.type == "eol") {
-					throw NIGHT_COMPILE_ERROR(
-						"expected closing bracket in function call '" + var_name + "'",
-						"function calls must be in this format: `function(arg1, arg2)`",
-						night::learn_functions, lexer.loc);
-				}
-				else {
-					throw NIGHT_COMPILE_ERROR(
-						"unexpected token '" + e.type + "' in function call '" + var_name + "'",
-						"function calls must be in this format: `function(arg1, arg2)`",
-						night::learn_functions, lexer.loc);
-				}
-			}
+			auto const [arg_exprs, arg_types] =
+				parse_arguments(scope, check_func->first);
 
 			// type checking arguments
 
-			if (check_func->second.params.size() != arg_types.size()) {
+			if (arg_types.size() != check_func->second.param_types.size()) {
 				throw NIGHT_COMPILE_ERROR(
 					"function call '" + check_func->first + "' has '" + std::to_string(arg_types.size()) + "' arguments",
-					"function '" + check_func->first + "' is defined with '" + std::to_string(check_func->second.params.size()) + "' parameters",
-					night::learn_functions, lexer.loc);
+					"function must be called with '" + std::to_string(check_func->second.param_types.size()) + "' arguments",
+					night::learn_functions);
 			}
 
-			for (int a = 0; a < check_func->second.params.size(); ++a)
-			{
-				// parameter can be any type, so skip type checking
-				if (check_func->second.params[a].empty())
-					continue;
+			check_call_types(check_func->second.param_types,
+				arg_types, check_func->first);
 
-				for (auto const& check_param : check_func->second.params[a])
-				{
-					if (std::find(arg_types[a].begin(), arg_types[a].end(),
-						check_param) == arg_types[a].end()) {
-						throw NIGHT_COMPILE_ERROR(
-							"argument number " + std::to_string(a + 1) + " must contain " + get_types_as_str(check_func->second.params[a]),
-							"argument number " + std::to_string(a + 1) + " currently contains " + get_types_as_str(arg_types[a]),
-							night::learn_functions, lexer.loc);
-					}
-				}
-			}
-
-			scope->stmts.push_back(Stmt{
-				lexer.loc, StmtType::FUNC_CALL,
-				StmtFuncCall{ check_func, arg_exprs }
-			});
+			return Stmt{
+				lexer.get_loc(), StmtType::CALL,
+				StmtCall{ check_func->first, arg_exprs }
+			};
 		}
 		else
 		{
-			std::shared_ptr<ExprNode> method_expr(nullptr);
+			std::shared_ptr<ExprNode> var_expr(nullptr);
+			bool contains_method = false;
 
-			auto* const check_variable = get_variable(scope, var_name);
-			if (check_variable == nullptr) {
+			auto* const check_var = scope.get_var(var_name);
+			if (check_var == nullptr) {
 				throw NIGHT_COMPILE_ERROR(
 					"variable '" + var_name + "' is undefined",
 					"variables must be defined before they are used",
-					night::learn_variables, lexer.loc);
+					night::learn_variables);
 			}
 
-			while (true)
+			while (token.type != TokenType::ASSIGN && token.type != TokenType::EOL)
 			{
-				if (token.type == TokenType::DOT)
+				if (token.type == TokenType::BINARY_OP && token.data == ".")
 				{
-					if (token = lexer_eat(lexer, false); token.type != TokenType::VARIABLE) {
+					contains_method = true;
+
+					// validating statement
+
+					if (lexer.eat(false).type != TokenType::VAR) {
 						throw NIGHT_COMPILE_ERROR(
 							"expected variable name after dot operator",
-							"method statements must be in this format: `object.method()`",
-							night::learn_classes, lexer.loc);
+							night::format_method, night::learn_classes);
 					}
 
-					const std::string& method_name = token.data;
+					std::string const method_name = lexer.get_curr(false).data;
 
-					if (token = lexer_eat(lexer, false); token.type != TokenType::OPEN_BRACKET) {
+					if (lexer.eat(false).type != TokenType::OPEN_BRACKET) {
 						throw NIGHT_COMPILE_ERROR(
 							"expected open bracket after method '" + method_name + "'",
-							"method statements must be in this format: `object.method()`",
-							night::learn_classes, lexer.loc);
+							night::format_method, night::learn_classes);
 					}
 
-					// parse arguments
+					// parsing arguments
 
-					ExprContainer arg_exprs;
-					std::vector<TypeContainer> arg_types;
+					auto const [arg_exprs, arg_types] =
+						parse_arguments(scope, method_name);
 
-					try {
-						auto args = parse_arguments(lexer, scope);
+					// definition checking method call based on name and argument types
 
-						arg_exprs = std::get<0>(args);
-						arg_types = std::get<1>(args);
-					}
-					catch (const night::error_wrapper& e) {
-						if (e.type == "arg") {
-							throw NIGHT_COMPILE_ERROR(
-								"expected argument in method call '" + var_name + "'",
-								"method calls must be in this format: `object.method(arg1, arg2)`",
-								night::learn_classes, lexer.loc);
-						}
-						if (e.type == "eol") {
-							throw NIGHT_COMPILE_ERROR(
-								"expected closing bracket in method call '" + var_name + "'",
-								"method calls must be in this format: `object.method(arg1, arg2)`",
-								night::learn_classes, lexer.loc);
-						}
-						else {
-							throw NIGHT_COMPILE_ERROR(
-								"unexpected token '" + e.type + "' in method call '" + var_name + "'",
-								"method calls must be in this format: `object.method(arg1, arg2)`",
-								night::learn_classes, lexer.loc);
-						}
-					}
+					// [ refactor ]
+					// find check functions based on previous expression class
+					// have a 'previous_class_types' variable
 
-					// type check arguments
-
-					std::vector<CheckFunction> check_funcs;
+					bool ok = false;
 					for (auto& check_class : Parser::check_classes)
 					{
-						auto method = std::ranges::find_if(
+						auto const method = std::ranges::find_if(
 							check_class.second.methods,
-							[&](auto& method) {
+							[&](auto const& method) {
 								return method.first == method_name &&
-									method.second.params.size() == arg_exprs.size();
+									method.second.param_types.size() == arg_exprs.size();
 							}
 						);
 
 						if (method == check_class.second.methods.end())
 							continue;
 
-						for (int a = 0; a < method->second.params.size(); ++a)
-						{
-							// parameter can be any type, so skip type checking
-							if (method->second.params[a].empty())
-								continue;
-
-							for (auto const& check_param : method->second.params[a])
-							{
-								if (std::find(arg_types[a].begin(), arg_types[a].end(),
-									check_param) == arg_types[a].end()) {
-									throw NIGHT_COMPILE_ERROR(
-										"argument number " + std::to_string(a + 1) + " must contain " + get_types_as_str(method->second.params[a]),
-										"argument number " + std::to_string(a + 1) + " currently contains " + get_types_as_str(arg_types[a]),
-										night::learn_functions, lexer.loc);
-								}
-							}
+						try {
+							check_call_types(method->second.param_types,
+								arg_types, method->first);
+						}
+						catch (night::error const&) {
+							continue;
 						}
 
-						check_funcs.push_back(method);
+						ok = true;
+						break;
 					}
 
-					if (check_funcs.empty()) {
-						throw NIGHT_COMPILE_ERROR("");
+					if (!ok) {
+						throw NIGHT_COMPILE_ERROR(
+							"no matching function call '" + method_name + "' in class method",
+							"methods have to be defined before they are used",
+							night::learn_functions);
 					}
 
 					// adding expression node
+					// since all the operators here are dot or subscript, we
+					// can just keep building the AST up
 
-					ExprCall const call{ method_name, arg_exprs };
+					ValueCall const val_call{ method_name, arg_exprs };
 
-					std::shared_ptr<ExprNode> const call_expr =
-						std::make_shared<ExprNode>(lexer.loc, ExprNode::CALL, call);
+					std::shared_ptr<ExprNode> const call_node =
+						std::make_shared<ExprNode>(lexer.get_loc(), ExprNode::CALL, val_call);
 
-					ExprBinaryOP const dot_op{
-						BinaryOPType::DOT, ".", method_expr, call_expr };
+					BinaryOPNode const op_expr{
+						BinaryOPNode::DOT, ".", var_expr, call_node };
 
-					std::shared_ptr<ExprNode> const op_expr =
-						std::make_shared<ExprNode>(lexer.loc, ExprNode::BINARY_OP, dot_op);
+					std::shared_ptr<ExprNode> const op_node =
+						std::make_shared<ExprNode>(lexer.get_loc(), ExprNode::BINARY_OP, op_expr);
 
-					method_expr = op_expr;
+					var_expr = op_node;
 				}
 				else if (token.type == TokenType::OPEN_SQUARE)
 				{
-					auto [expr, types] =
-						parse_expression(lexer, { ValueType::INT });
+					auto [expr, types] = parse_expression(scope, { Type::INT });
 
-					if (lexer_curr(lexer, true).type != TokenType::CLOSE_SQUARE) {
+					if (lexer.get_curr(true).type != TokenType::CLOSE_SQUARE) {
 						throw NIGHT_COMPILE_ERROR(
 							"expected closing square bracket in subscript operator",
-							"subscript operators must be in this format: `array[index]`",
-							night::learn_arrays, lexer.loc);
+							night::format_subscript, night::learn_arrays);
 					}
-					if (!night::contains(types, ValueType::INT)) {
+					if (!types.contains(Type::INT)) {
 						throw NIGHT_COMPILE_ERROR(
 							"subscript index must contain type 'int'",
-							"index currently contains " + get_types_as_str(types),
-							night::learn_arrays, lexer.loc);
+							"index currently contains " + types_as_str(types),
+							night::learn_arrays);
 					}
 
-					ExprUnaryOP const sub_op{
-						UnaryOPType::SUBSCRIPT, "[]", method_expr };
+					UnaryOPNode const sub_op{
+						UnaryOPNode::SUBSCRIPT, "[]", var_expr };
 
 					std::shared_ptr<ExprNode> const sub_expr =
-						std::make_shared<ExprNode>(lexer.loc, ExprNode::UNARY_OP, sub_op);
+						std::make_shared<ExprNode>(lexer.get_loc(), ExprNode::UNARY_OP, sub_op);
 
-					method_expr = sub_expr;
+					var_expr = sub_expr;
 				}
 				else
 				{
-
+					throw NIGHT_COMPILE_ERROR(
+						"unexpected token '" + token.data + "' in variable statement",
+						"",
+						night::learn_variables);
 				}
+
+				token = lexer.eat(false);
 			}
 
 			if (token.type == TokenType::ASSIGN)
 			{
-				if (method_expr != nullptr) {
+				if (contains_method) {
 					throw NIGHT_COMPILE_ERROR(
 						"method calls do not return references",
-						"assigning values to value is not allowed",
+						"assigning values to return values is not allowed",
 						night::learn_classes);
 				}
 
-				auto [expr, types] = parse_expression(lexer);
+				StmtAssign::T assign_type;
 
-				StmtAssign stmt_assign;
-				stmt_assign.check_var = check_variable->second;
-				stmt_assign.assign_expr = expr;
+				if (token.data == "=")
+					assign_type = StmtAssign::ASSIGN;
+				else if (token.data == "+=")
+					assign_type = StmtAssign::PLUS;
+				else if (token.data == "-=")
+					assign_type = StmtAssign::MINUS;
+				else if (token.data == "*=")
+					assign_type = StmtAssign::TIMES;
+				else if (token.data == "/=")
+					assign_type = StmtAssign::DIVIDE;
+				else
+					assign_type = StmtAssign::MOD;
 
-				scope->stmts.push_back(Stmt{
-					lexer.loc, StmtType::ASSIGN,
-					StmtAssign{ 0, check_variable->second }
-				});
+				return Stmt{
+					lexer.get_loc(), StmtType::ASSIGN,
+					StmtAssign{ assign_type, check_var->first, var_expr }
+				};
 			}
 			else if (token.type == TokenType::EOL)
 			{
+				if (var_expr != nullptr && var_expr->type == ExprNode::UNARY_OP) {
+					throw NIGHT_COMPILE_ERROR(
+						"values are not valid statements",
+						"",
+						night::learn_variables);
+				}
 
+				return Stmt{
+					lexer.get_loc(), StmtType::METHOD,
+					StmtMethod{ var_expr }
+				};
 			}
 			else
 			{
-
+				throw NIGHT_COMPILE_ERROR(
+					"unexpected token '" + token.data + "' in variable statement",
+					"",
+					night::learn_variables);
 			}
 		}
 	}
-	
 	case TokenType::IF: {
-		// validating statement
-
-		if (token = lexer_eat(lexer, false); token.type != TokenType::OPEN_BRACKET) {
-			throw NIGHT_COMPILE_ERROR(
-				"expected opening bracket after 'if' keyword",
-				"if statements must be in this format: 'if (condition) {}'",
-				night::learn_conditionals, lexer.loc);
-		}
-		if (token = lexer_eat(lexer, true); token.type == TokenType::EOL) {
-			throw NIGHT_COMPILE_ERROR(
-				"expected an expression after opening bracket",
-				"if statements must be in this format: 'if (condition) {}'",
-				night::learn_conditionals, lexer.loc);
-		}
-
-		// parsing condition
-
-		auto [condition_expr, condition_types] =
-			parse_expression(lexer, { ValueType::BOOL });
-
-		if (!night::contains(condition_types, ValueType::BOOL)) {
-			throw NIGHT_COMPILE_ERROR(
-				"if statement condition must contain type: 'bool'",
-				"condition currently contains " + get_types_as_str(condition_types),
-				night::learn_conditionals, lexer.loc);
-		}
+		auto const condition_expr = parse_condition(
+			scope, "if", "if statement", night::learn_conditionals);
 
 		// parsing body
 
-		std::shared_ptr<Scope> if_scope = std::make_shared<Scope>(scope);
-		parse_body(lexer, if_scope);
+		Scope if_scope{ scope };
+		
+		std::vector<Stmt> const body = parse_body(
+			if_scope, "if conditional",
+			night::format_if, night::learn_conditionals);
 
-		scope->stmts.push_back(Stmt{
-			lexer.loc, StmtType::IF,
-			StmtIf{ { Conditional{ condition_expr, if_scope } } }
-		});
+		std::vector<Conditional> conditionals{
+			Conditional{ condition_expr, body } };
+
+		while (true)
+		{
+			token = lexer.eat(false);
+
+			Scope condition_scope{ scope };
+			std::shared_ptr<ExprNode> condition_expr(nullptr);
+
+			if (token.type == TokenType::IF)
+			{
+				condition_expr = parse_condition(
+					scope, "else if", "else if statement", night::learn_conditionals);
+			}
+			else if (token.type != TokenType::OPEN_CURLY)
+			{
+				throw NIGHT_COMPILE_ERROR(
+					"unexpected token '" + token.data + "' after else keyword",
+					"else keyword must be followed by an if keyword or an opening curly bracket",
+					night::learn_conditionals);
+			}
+
+			conditionals.push_back(Conditional{
+				condition_expr,
+				parse_body(condition_scope, "conditional",
+					night::format_elif, night::learn_conditionals)
+			});
+
+			if (condition_expr == nullptr)
+				break;
+		}
+
+		return Stmt{
+			lexer.get_loc(), StmtType::IF,
+			StmtIf{ conditionals }
+		};
+	}
+	case TokenType::ELIF: {
+		throw NIGHT_COMPILE_ERROR(
+			"elif statement does not precede an if or elif statement",
+			"elif statements must come after an if or an elif statement",
+			night::learn_conditionals);
 	}
 	case TokenType::ELSE: {
-		token = lexer_eat(lexer, false);
-		switch (token.type)
-		{
-		case TokenType::IF: {
-			// validating statement
-
-			token = lexer_eat(lexer, false);
-			if (token.type != TokenType::OPEN_BRACKET) {
-				throw NIGHT_COMPILE_ERROR(
-					"expected open bracket after if keyword",
-					"else if statements must be in this format: `else if (condition) {}`",
-					night::learn_conditionals, lexer.loc);
-			}
-
-			token = lexer_eat(lexer, true);
-			if (token.type == TokenType::EOL) {
-				throw NIGHT_COMPILE_ERROR(
-					"expected open bracket after if keyword",
-					"else if statements must be in this format: `else if (condition) {}`",
-					night::learn_conditionals, lexer.loc);
-			}
-
-			if (scope->stmts.empty() || scope->stmts.back().type != StmtType::IF) {
-				throw NIGHT_COMPILE_ERROR(
-					"else if statement does not precede an if or else if statement",
-					"else if statements must come after an if or an else if statement",
-					night::learn_conditionals, lexer.loc);
-			}
-
-			// parsing condition
-
-			auto [condition_expr, condition_types] =
-				parse_expression(lexer, { ValueType::BOOL });
-
-			if (!night::contains(condition_types, ValueType::BOOL)) {
-				throw NIGHT_COMPILE_ERROR(
-					"else if statement condition must contain type: 'bool'",
-					"condition currently contains " + get_types_as_str(condition_types),
-					night::learn_conditionals, lexer.loc);
-			}
-
-			// parsing body
-			
-			StmtIf* const if_stmt = &std::get<StmtIf>(scope->stmts.back().data);
-
-			token = lexer_eat(lexer, true);
-			if (token.type != TokenType::OPEN_CURLY) {
-				throw NIGHT_COMPILE_ERROR(
-					"expected open curly bracket after if keyword",
-					"else if statements must be in this format: 'else if (condition) {}'",
-					night::learn_conditionals, lexer.loc);
-			}
-
-			std::shared_ptr<Scope> if_else_scope = std::make_shared<Scope>(scope);
-
-			parse_body(lexer, if_else_scope);
-
-			// pushing statement
-
-			if_stmt->chains.push_back(Conditional{ condition_expr, if_else_scope });
-			return false;
-		}
-		case TokenType::OPEN_CURLY: {
-			if (scope->stmts.empty() || scope->stmts.back().type != StmtType::IF) {
-				throw NIGHT_COMPILE_ERROR(
-					"else if statement does not precede an if or else if statement",
-					"else if statements must come after an if or an else if statement",
-					night::learn_conditionals, lexer.loc);
-			}
-
-			StmtIf* const if_stmt = &std::get<StmtIf>(scope->stmts.back().data);
-
-			// parsing body
-
-			if (token = lexer_eat(lexer, true); token.type != TokenType::OPEN_CURLY) {
-				throw NIGHT_COMPILE_ERROR(
-					"expected open curly bracket after 'else' keyword",
-					"else statements must be in this format: `else {}`",
-					night::learn_conditionals, lexer.loc);
-			}
-
-			std::shared_ptr<Scope> else_scope = std::make_shared<Scope>(scope);
-
-			parse_body(lexer, else_scope);
-
-			// pushing statement
-
-			if_stmt->chains.push_back(Conditional{ nullptr, else_scope });
-			return false;
-		}
-		default: {
-			throw NIGHT_COMPILE_ERROR(
-				"unexpected token '" + token.data + "' after else keyword",
-				"else keyword must be followed by an if keyword or an opening curly bracket",
-				night::learn_conditionals, lexer.loc);
-		}
-		}
+		throw NIGHT_COMPILE_ERROR(
+			"else statement does not precede an if or elif statement",
+			"else statements must come after an if or an elif statement",
+			night::learn_conditionals);
 	}
-	
-	case TokenType::DEF: {
+	case TokenType::FN: {
 		// validating statement
 
-		if (token = lexer_eat(lexer, false); token.type != TokenType::VARIABLE) {
+		if (lexer.eat(false).type != TokenType::VAR) {
 			throw NIGHT_COMPILE_ERROR(
 				"expected function name after 'def' keyword",
-				"function definitions must be in this format: `def function (parameters) {}`",
-				night::learn_functions, lexer.loc);
+				night::format_fn, night::learn_functions);
 		}
-		
-		std::string const func_name = token.data;
-		
-		if (token = lexer_eat(lexer, false); token.type != TokenType::OPEN_BRACKET) {
+
+		std::string const func_name = lexer.get_curr(false).data;
+
+		if (lexer.eat(false).type != TokenType::OPEN_BRACKET) {
 			throw NIGHT_COMPILE_ERROR(
 				"expected opening bracket after function name",
-				"function definitions must be in this format: `def function(parameters) {}`",
-				night::learn_functions, lexer.loc);
+				night::format_fn, night::learn_functions);
 		}
-		
-		if (scope->vars.contains(func_name)) {
+
+		if (scope.vars.contains(func_name)) {
 			throw NIGHT_COMPILE_ERROR(
 				"function '" + func_name + "' can not have the same name as a variable",
 				"function and variable names must be unique",
-				night::learn_functions, lexer.loc);
+				night::learn_functions);
 		}
-		if (Parser::check_funcs.contains(func_name)) {
+		if (check_funcs.contains(func_name)) {
 			throw NIGHT_COMPILE_ERROR(
 				"function '" + func_name + "' has already been defined",
 				"functions can only be defined once",
-				night::learn_functions, lexer.loc);
+				night::learn_functions);
 		}
-		if (Parser::check_classes.contains(func_name)) {
+		if (check_classes.contains(func_name)) {
 			throw NIGHT_COMPILE_ERROR(
 				"function '" + func_name + "' can not have the same name as a class",
 				"function and class names must be unique",
-				night::learn_functions, lexer.loc);
+				night::learn_functions);
 		}
-		
-		if (scope->upper_scope != nullptr) {
+
+		if (scope.upper != nullptr) {
 			throw NIGHT_COMPILE_ERROR(
 				"function '" + func_name + "' can not be defined inside of a local scope",
 				"functions must be defined in the global scope",
-				night::learn_functions, lexer.loc);
+				night::learn_functions);
 		}
 
 		// parsing parameters
 		// also turns parameters into variables for definition checking the function body
 
-		std::shared_ptr<Scope> func_scope = std::make_shared<Scope>(scope);
+		Scope func_scope{ scope };
 
 		std::vector<std::string> param_names;
 
 		while (true)
 		{
-			if (token = lexer_eat(lexer, false); token.type != TokenType::VARIABLE) {
+			if (lexer.eat(false).type != TokenType::VAR) {
 				throw NIGHT_COMPILE_ERROR(
 					"expected variable names as function parameters",
-					"function definitions must be in this format: `def function(param1, param2) {}`",
-					night::learn_functions, lexer.loc);
+					night::format_fn, night::learn_functions);
 			}
-			
-			const std::string param_name = token.data;
+
+			std::string const param_name = lexer.get_curr(false).data;
 
 			if (Parser::check_funcs.contains(param_name)) {
 				throw NIGHT_COMPILE_ERROR(
 					"function parameter can not have the same name as a function",
 					"function parameter names must be unique",
-					night::learn_functions, lexer.loc);
+					night::learn_functions);
 			}
 			if (Parser::check_classes.contains(param_name)) {
 				throw NIGHT_COMPILE_ERROR(
 					"function parameter can not have the same name as a class",
 					"function parameter names must be unique",
-					night::learn_functions, lexer.loc);
+					night::learn_functions);
 			}
 
 			param_names.push_back(param_name);
-			func_scope->vars[param_name] = CheckVariable{};
+			func_scope.vars[param_name] = CheckVariable{};
 
-			token = lexer_eat(lexer, false);
+			Token const token = lexer.eat(false);
 
 			if (token.type == TokenType::CLOSE_BRACKET)
 				break;
@@ -562,187 +489,143 @@ bool parse_statement(
 			if (token.type != TokenType::COMMA) {
 				throw NIGHT_COMPILE_ERROR(
 					"expected command or closing bracket after parameter '" + param_name + "'",
-					"function definitions must be in this format: `def function(parameters) {}`",
-					night::learn_functions, lexer.loc);
+					night::format_fn, night::learn_functions);
 			}
 		}
 
-		if (token = lexer_eat(lexer, true); token.type != TokenType::OPEN_CURLY) {
+		if (lexer.eat(true).type != TokenType::OPEN_CURLY) {
 			throw NIGHT_COMPILE_ERROR(
 				"expected opening curly bracket after closing bracket",
-				"function definitions must be in this format: `def function (parameters) {}`",
-				night::learn_functions, lexer.loc);
+				night::format_fn, night::learn_functions);
 		}
 
 		// define function before parsing body to ensure function is defined for recursion
 		// and return types
 
 		Parser::check_funcs[func_name] = CheckFunction();
+
 		auto check_func = Parser::check_funcs.find(func_name);
-		check_func->second.params.resize(param_names.size());
+		check_func->second.param_types.resize(param_names.size());
 
 		// parsing body
 
-		parse_body(lexer, func_scope);
+		in_func = check_func;
+		
+		std::vector<Stmt> fn_stmts = parse_body(func_scope, "function definition",
+			night::format_fn, night::learn_functions);
+
+		in_func = Parser::check_funcs.end();
+
+		if (lexer.eat(false).type != TokenType::EOL) {
+			throw NIGHT_COMPILE_ERROR(
+				"unexpected token '" + token.data + "' after closing curly bracket",
+				night::format_fn, night::learn_functions);
+		}
 
 		// set check function to be void or not, and assign check function
 		// parameters' types
 
 		check_func->second.is_void = check_func->second.rtn_types.empty();
 
-		for (std::size_t a = 0; a < check_func->second.params.size(); ++a)
-			check_func->second.params[a] = func_scope->vars[param_names[a]].types;
+		for (std::size_t a = 0; a < check_func->second.param_types.size(); ++a)
+			check_func->second.param_types[a] = func_scope.vars[param_names[a]].types;
 
-		return true;
+		return Stmt{
+			lexer.get_loc(), StmtType::FN,
+			StmtFn{ func_name, param_names, fn_stmts }
+		};
 	}
 	case TokenType::RETURN: {
-		// a note on the function scope:
-		/*
-		// make sure the check function is pushed to the check functions array
-		// before making the recursive call to extract the body
-		//
-		// if that doesn't happen then this won't work, since here it climbs up
-		// scopes in order to find the function scope
-		*/
-
-		const Scope* function_scope = scope->upper_scope.get();
-		while (function_scope->upper_scope != nullptr)
-			function_scope = function_scope->upper_scope.get();
-
-		if (function_scope->stmts.back().type != StmtType::) {
+		if (in_func == Parser::check_funcs.end()) {
 			throw NIGHT_COMPILE_ERROR(
 				"return statement is outside of a function",
 				"return statements must be inside of a function",
 				night::learn_functions);
 		}
 
+		auto const [expr, types] = parse_expression(scope);
+		in_func->second.rtn_types.insert(types.begin(), types.end());
 
-
-		// a note on void functions:
-		/*
-		// to determine if a check function is void or not, the presence of
-		// return statements are analyzed
-		//
-		// if a function doesn't have a return statement, then it is void
-		*/
-
-		const FunctionDef& function_def =
-			std::get<FunctionDef>(function_scope->stmts.back().data);
-
-		// parsing return expression
-
-		auto [expr, types] = parse_expression(lexer);
-
-		if (is_reachable(scope))
-			Parser::check_funcs[function_def.name].rtn_types.insert(types);
-
-		scope->stmts.push_back(
-			Stmt{ lexer.loc, StmtType::RETURN, StmtReturn{ expr } });
+		return Stmt{
+			lexer.get_loc(), StmtType::RETURN,
+			StmtReturn{ expr }
+		};
 	}
-
 	case TokenType::WHILE: {
-		// validating statement
+		auto condition_expr = parse_condition(
+			scope, "while", "while loop", night::learn_loops);
 
-		if (token = lexer_eat(lexer, false); token.type != TokenType::OPEN_BRACKET) {
+		if (lexer.peek(true).type == TokenType::EOL) {
 			throw NIGHT_COMPILE_ERROR(
-				"expected opening bracket after 'while' keyword",
-				"while loop statements must be in this format: 'while (condition) {}'",
-				night::learn_loops, lexer.loc);
+				"expected statement(s) after closing bracket",
+				night::format_while, night::learn_loops);
 		}
 
-		// parsing condition
+		ParserScope while_scope{ &scope };
+		std::vector<Stmt> const stmts = parse_body(while_scope, "while loop",
+			night::format_while, night::learn_loops);
 
-		auto [condition_expr, condition_types] =
-			parse_expression(lexer, { ValueType::BOOL });
-
-		if (!night::contains(condition_types, ValueType::BOOL)) {
-				throw NIGHT_COMPILE_ERROR(
-					"while loop condition must contain type 'bool'",
-					"condition currently contains " + get_types_as_str(condition_types),
-					night::learn_loops, lexer.loc);
-			}
-
-		std::shared_ptr<Scope> while_scope = std::make_shared<Scope>(nullptr);
-		parse_body(lexer, while_scope);
-		
-		scope->stmts.push_back(Stmt{
-			lexer.loc, StmtType::WHILE,
-			StmtWhile{ condition_expr, while_scope }
-		});
+		return Stmt{
+			lexer.get_loc(), StmtType::WHILE,
+			StmtWhile{ condition_expr, stmts }
+		};
 	}
 	case TokenType::FOR: {
 		// validating statement
 
-		if (token = lexer_eat(lexer, false); token.type != TokenType::OPEN_BRACKET) {
+		if (lexer.eat(false).type != TokenType::OPEN_BRACKET) {
 			throw NIGHT_COMPILE_ERROR(
 				"expected opening bracket after 'for' keyword",
-				"for loops must be in this format: 'for (iterator : range) {}'",
-				night::learn_loops, lexer.loc);
+				night::format_for, night::learn_loops);
 		}
-		if (token = lexer_eat(lexer, false); token.type != TokenType::VARIABLE) {
+		if (lexer.eat(false).type != TokenType::VAR) {
 			throw NIGHT_COMPILE_ERROR(
 				"expected iterator after opening bracket",
-				"for loops must be in this format: 'for (iterator : range) {}'",
-				night::learn_loops, lexer.loc);
+				night::format_for, night::learn_loops);
 		}
-		
-		std::string const it_name = token.data;
-		
-		if (token = lexer_eat(lexer, false); token.type != TokenType::COLON) {
+
+		std::string const it_name = lexer.get_curr(false).data;
+
+		if (lexer.eat(false).type != TokenType::COLON) {
 			throw NIGHT_COMPILE_ERROR(
 				"expected colon after iterator",
-				"for loops must be in this format: 'for (iterator : range) {}'",
-				night::learn_loops, lexer.loc);
+				night::format_for, night::learn_loops);
+		}
+		if (lexer.eat(false).type == TokenType::EOL) {
+			throw NIGHT_COMPILE_ERROR(
+				"expected range after colon",
+				night::format_for, night::learn_loops);
 		}
 
 		// parsing iterator and range
 
 		auto [range_expr, range_types] = parse_expression(
-			lexer,
-			{
-				ExprValue{ ValueType::STR },
-				ExprValue{ ValueType::ARR, {}, Parser::all_types }
-			}
-		);
+			scope, { Type::STR, Type{ Type::ARR, Parser::all_types } });
 
-		if (range_expr == nullptr) {
+		if (!range_types.contains(Type::STR) && !range_types.contains(Type::ARR)) {
 			throw NIGHT_COMPILE_ERROR(
-				"expected range after colon",
-				"for loops must be in this format: 'for (iterator : range) {}'",
-				night::learn_loops, lexer.loc);
-		}
-
-		if (!night::contains(range_types, ValueType::STR, ValueType::ARR)) {
-			throw NIGHT_COMPILE_ERROR(
+				"range currently contains " + types_as_str(range_types),
 				"for loop range must contain type 'str' or 'arr'",
-				"range currently contains " + get_types_as_str(range_types),
-				night::learn_loops, lexer.loc);
+				night::learn_loops);
 		}
 
 		// parsing statement
 
-		std::shared_ptr<Scope> for_scope = std::make_shared<Scope>(scope);
-		for_scope->vars[it_name] = CheckVariable(range_types);
+		ParserScope for_scope{ &scope };
+		for_scope.vars[it_name] = CheckVariable(range_types);
 
-		parse_body(lexer, for_scope);
+		if (lexer.peek(true).type == TokenType::EOL) {
+			throw NIGHT_COMPILE_ERROR(
+				"expected statement(s) after closing bracket",
+				night::format_for, night::learn_loops);
+		}
 
-		scope->stmts.push_back(Stmt{
-			lexer.loc, StmtType::FOR,
-			StmtFor{ it_name, range_expr, for_scope }
-		});
+		return Stmt{
+			lexer.get_loc(), StmtType::FOR,
+			StmtFor{ it_name, range_expr, parse_body(for_scope, "for loop",
+				night::format_for, night::learn_loops) }
+		};
 	}
-
-	case TokenType::CLOSE_CURLY: {
-		//if (token_peek(lexer, false).type != TokenType::EOL) {
-
-		//}
-		
-		return scope->upper_scope != nullptr;
-	}
-	case TokenType::EOL: {
-		return true;
-	}
-
 	default: {
 		throw NIGHT_COMPILE_ERROR(
 			"unknown syntax",
@@ -750,716 +633,415 @@ bool parse_statement(
 			night::learn_learn);
 	}
 	}
-
-	/*
-	// delete these
-	if (tokens.size() >= 2 && tokens[0].type == TokenType::VARIABLE && tokens[1].type == TokenType::ASSIGN)
-	{
-		if (tokens.size() == 2)
-			throw NIGHT_COMPILE_ERROR("expected expression after assignment operator", "variable assignments must be in this format: 'variable_name = expression'", Learn::VARIABLES);
-
-		// definition and type checking variable
-
-		auto* const check_variable = get_variable(current_scope, tokens[0].data);
-		if (check_variable == nullptr)
-			throw NIGHT_COMPILE_ERROR("variable '" + tokens[0].data + "' is undefined", "variables must be defined before they are used", Learn::VARIABLES);
-
-		if (!check_variable->second.types.empty())
-		{
-			if (tokens[1].data == "+=" && !find_num_types(check_variable->second.types) &&
-				!check_variable->second.types.contains(VariableType::STRING))
-				throw NIGHT_COMPILE_ERROR("assignment operator '+=' can only be used on variables of type 'int', 'float', or 'str'", "variable '" + check_variable->first + " currently contains " + get_var_types_as_str(check_variable->second.types), Learn::VARIABLES);
-			if (tokens[1].data != "=" && tokens[1].data != "+=" && !find_num_types(check_variable->second.types))
-				throw NIGHT_COMPILE_ERROR("assignment operator '" + tokens[1].data + "' can only be used on variables of type 'int' or 'float'", "variable '" + tokens[0].data + " currently contains " + get_var_types_as_str(check_variable->second.types), Learn::VARIABLES);
-		}
-
-		// extracting and type checking expression
-
-		const std::vector<Value> values = TokensToValues(
-			std::vector<Token>(tokens.begin() + 2, tokens.end()));
-
-		const std::shared_ptr<Expression> assign_expr =
-			ValuesToExpression(values);
-
-		const VariableTypeContainer assign_types =
-			type_check_expr(current_scope, assign_expr);
-
-		if (tokens[1].data == "+=" && !find_num_types(assign_types) &&
-			!assign_types.contains(VariableType::STRING))
-			throw NIGHT_COMPILE_ERROR("assignment operator '+=' can only assign expressions of type 'int', 'float', or 'str'", "expression has " + get_var_types_as_str(assign_types), Learn::VARIABLES);
-		if (tokens[1].data != "=" && tokens[1].data != "+=" && !find_num_types(assign_types) &&
-			!assign_types.contains(VariableType::STRING))
-			throw NIGHT_COMPILE_ERROR("assignment operator '" + tokens[1].data + "' can only assign expressions of type 'int' or 'float'", "expression has " + get_var_types_as_str(assign_types), Learn::VARIABLES);
-
-		// determining assignment type
-
-		Assignment assignment{ {}, check_variable->first, assign_expr };
-		switch (tokens[1].data[0])
-		{
-		case '=':
-			assignment.assign_type = Assignment::ASSIGN;
-			break;
-		case '+':
-			assignment.assign_type = Assignment::PLUS;
-			break;
-		case '-':
-			assignment.assign_type = Assignment::MINUS;
-			break;
-		case '*':
-			assignment.assign_type = Assignment::TIMES;
-			break;
-		case '/':
-			assignment.assign_type = Assignment::DIVIDE;
-			break;
-		case '%':
-			assignment.assign_type = Assignment::MOD;
-			break;
-		default:
-			assert(false);
-		}
-
-		// adding types to check variable and pushing statement
-
-		if (assignment.assign_type != Assignment::PLUS ||
-			(assignment.assign_type == Assignment::PLUS &&
-				!check_variable->second.types.contains(VariableType::STRING)))
-		{
-			if (assign_types.contains(VariableType::INT))
-				check_variable->second.types.insert({ VariableType::INT });
-			if (assign_types.contains(VariableType::FLOAT))
-				check_variable->second.types.insert({ VariableType::FLOAT });
-		}
-
-		current_scope->statements.push_back(Statement{
-			loc, StatementType::ASSIGNMENT, assignment });
-	}
-	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VARIABLE && tokens[1].type == TokenType::OPEN_SQUARE)
-	{
-		// extracting and type checking subscript indices
-
-		VariableTypeContainer index_types;
-		std::vector<std::shared_ptr<Expression> > index_exprs;
-
-		int open_square_count = 0;
-		auto it = tokens.begin() + 1;
-		for (auto start = tokens.begin() + 2; it != tokens.end(); ++it)
-		{
-			if (it->type == TokenType::OPEN_SQUARE)
-			{
-				open_square_count++;
-			}
-			else if (it->type == TokenType::CLOSE_SQUARE)
-			{
-				open_square_count--;
-				if (open_square_count == 0)
-				{
-					if (!index_types.empty() &&
-						!index_types.contains(VariableType::ARRAY) &&
-						!index_types.contains(VariableType::STRING))
-						throw NIGHT_COMPILE_ERROR("subscript operator can only be used on variables of type 'str' or 'arr'", "variable currently contains " + get_var_types_as_str(index_types), Learn::ARRAYS);
-
-					const std::vector<Value> values =
-						TokensToValues(std::vector<Token>(start, it));
-
-					index_exprs.push_back(ValuesToExpression(values));
-					index_types = type_check_expr(current_scope, index_exprs.back());
-
-					if (!find_num_types(index_types))
-						throw NIGHT_COMPILE_ERROR("array indices must be of type 'int'", "index currently contains " + get_var_types_as_str(index_types), Learn::ARRAYS);
-
-					start = std::next(it, 2);
-				}
-			}
-			else if (it->type == TokenType::ASSIGN)
-			{
-				if (open_square_count < 0)
-					throw NIGHT_COMPILE_ERROR("missing " + std::to_string(open_square_count) + " open square bracket(s)");
-				if (open_square_count > 0)
-					throw NIGHT_COMPILE_ERROR("missing " + std::to_string(open_square_count) + " close square bracket(s)");
-
-				break;
-			}
-		}
-
-		if (it == tokens.end())
-			throw NIGHT_COMPILE_ERROR("expected assignment operator in element assignment", "element assignments must be in this form: 'variable[index] = expression'", Learn::ARRAYS);
-
-		// definition checking variable
-
-		auto* const check_variable = get_variable(current_scope, tokens[0].data);
-		if (check_variable == nullptr)
-			throw NIGHT_COMPILE_ERROR("variable '" + tokens[1].data + "' is undefined", "variables have to be defined before they are used", Learn::VARIABLES);
-
-		// type checking variable
-
-		//  !night::contains(check_variable->second.types, VariableType::ARRAY, VariableType::STRING)
-		if (!check_variable->second.types.contains(VariableType::ARRAY) &&
-			!check_variable->second.types.contains(VariableType::STRING))
-			throw NIGHT_COMPILE_ERROR("subscript operator '[]' can only be used on variables of type 'str' or 'arr'", "variable '" + check_variable->first + "' currently contains " + get_var_types_as_str(check_variable->second.types), Learn::ARRAYS);
-
-		// parsing expression
-
-		const std::vector<Value> values = TokensToValues(
-			std::vector<Token>(std::next(it, 1), tokens.end()));
-
-		const std::shared_ptr<Expression> assign_expr =
-			ValuesToExpression(values);
-
-		const VariableTypeContainer assign_types =
-			type_check_expr(current_scope, assign_expr);
-
-		check_variable->second.types.insert(
-			assign_types.begin(), assign_types.end());
-
-		// pushing statement
-
-		current_scope->statements.push_back(Statement{
-			loc, StatementType::ELEMENT,
-			Element{ tokens[0].data, index_exprs, assign_expr }
-			});
-	}
-	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VARIABLE && tokens[1].type == TokenType::OPERATOR && tokens[1].data == ".")
-	{
-		auto* const check_variable = get_variable(current_scope, tokens[0].data);
-		if (check_variable == nullptr)
-			throw NIGHT_COMPILE_ERROR("variable '" + tokens[0].data + "' is undefined", "variables must be defined before they are used", Learn::VARIABLES);
-
-		// methods on arrays!!
-		// create a function to parse methods and arrays??
-
-		for (auto it = tokens.begin() + 2; it != tokens.end(); ++it)
-		{
-			if (it->type != TokenType::VARIABLE)
-				throw NIGHT_COMPILE_ERROR("expected variable name after operator '.'", "method calls must be in this format: 'object.method()'");
-
-			// make sure to also add types to check_variable when using push() method
-
-
-
-			if (std::next(it, 1) == tokens.end())
-				break;
-			if (std::next(it, 1)->type != TokenType::OPERATOR)
-				throw NIGHT_COMPILE_ERROR("expected dot operator after method '" + it->data + "'", "method calls must be in this format: 'object.method()'");
-		}
-
-		const std::shared_ptr<Expression> assign_expr =
-			ValuesToExpression(TokensToValues(tokens));
-
-		//type_check_expr(current_scope, assign_expr);
-
-		// pushing statement
-
-		current_scope->statements.push_back(Statement{
-			loc, StatementType::METHOD_CALL,
-			MethodCall{ tokens[0].data, assign_expr }
-			});
-	}
-	else if (tokens.size() >= 2 && tokens[0].type == TokenType::VARIABLE && tokens[1].type == TokenType::OPEN_BRACKET)
-	{
-		// extracting types and expressions for arguments
-
-		std::vector<VariableTypeContainer>   argument_types;
-		std::vector<std::shared_ptr<Expression> > argument_expressions;
-
-		int open_bracket_count = 0;
-		auto it = tokens.begin() + 1;
-		for (auto start = tokens.begin() + 2; it != tokens.end(); ++it)
-		{
-			if (it->type == TokenType::OPEN_BRACKET)
-				open_bracket_count++;
-			else if (it->type == TokenType::CLOSE_BRACKET)
-				open_bracket_count--;
-
-			if ((it->type == TokenType::COMMA && open_bracket_count == 1) ||
-				(it->type == TokenType::CLOSE_BRACKET && open_bracket_count == 0))
-			{
-				if (it == tokens.begin() + 2 && it->type == TokenType::CLOSE_BRACKET)
-					break;
-
-				const std::vector<Value> values =
-					TokensToValues(std::vector<Token>(start, it));
-
-				argument_expressions.push_back(ValuesToExpression(values));
-				argument_types.push_back(type_check_expr(current_scope, argument_expressions.back()));
-
-				start = std::next(it, 1);
-
-				if (it->type == TokenType::CLOSE_BRACKET)
-					break;
-			}
-		}
-
-		if (open_bracket_count < 0)
-			throw NIGHT_COMPILE_ERROR("missing opening bracket in function call", std::to_string(open_bracket_count) + " closing bracket(s) do not have an associated opening bracket", Learn::FUNCTIONS);
-		if (open_bracket_count > 0)
-			throw NIGHT_COMPILE_ERROR("missing closing bracket in function call", std::to_string(open_bracket_count) + " opening bracket(s) do not have an associated closing bracket", Learn::FUNCTIONS);
-		if (it == tokens.end())
-			throw NIGHT_COMPILE_ERROR("unexpected token(s) after function call", "function calls must be in this format: 'function(parameters)'", Learn::FUNCTIONS);
-
-		// fetching check function
-
-		auto check_function = check_functions.find(tokens[0].data);
-		if (check_function == check_functions.end())
-			throw NIGHT_COMPILE_ERROR("function '" + tokens[0].data + "' is undefined", "functions must be defined before they are called", Learn::FUNCTIONS);
-
-		// definition and type checking arguments with parameters
-
-		if (argument_types.size() != check_function->second.parameters.size())
-			throw NIGHT_COMPILE_ERROR("function '" + check_function->first + "' can only be called with '" + std::to_string(check_function->second.parameters.size()) + "' argument(s)", "function '" + check_function->first + "' was called with '" + std::to_string(argument_types.size()) + "' argument(s)", Learn::FUNCTIONS);
-
-		for (std::size_t a = 0; a < argument_types.size(); ++a)
-		{
-			if (argument_types[a].empty())
-				continue;
-
-			/*
-			bool match = false;
-			for (auto param_type : check_function->second.parameters[a])
-			{
-				if (argument_types[a].find(param_type) != argument_types[a].end())
-				{
-					match = true;
-					break;
-				}
-			}
-			//
-
-			bool match = std::all_of(
-				check_function->second.parameters[a].begin(),
-				check_function->second.parameters[a].end(),
-				[&](const auto& param_type) {
-					return argument_types[a].contains(param_type);
-				}
-			);
-
-			if (!match)
-				throw NIGHT_COMPILE_ERROR("argument number '" + std::to_string(a + 1) + "' for function call '" + check_function->first + "' can only contain " + get_var_types_as_str(check_function->second.parameters[a]) + "'", "argument number '" + std::to_string(a + 1) + "' currently contains " + get_var_types_as_str(argument_types[a]), Learn::TYPE_CHECKING);
-		}
-
-		// pushing statement
-
-		current_scope->statements.push_back(Statement{
-			loc, StatementType::FUNCTION_CALL,
-			FunctionCall{ tokens[0].data, argument_expressions }
-			});
-	}	
-	*/
 }
 
-void parse_body(Lexer& lexer, std::shared_ptr<Scope>& scope)
+std::vector<Stmt> Parser::parse_body(
+	ParserScope& scope,
+	std::string const& stmt_name,
+	std::string const& stmt_format,
+	std::string const& stmt_learn)
 {
-	if (lexer_peek(lexer, true).type == TokenType::OPEN_CURLY)
-	{
-		bool stmt_parsed = true;
-		while (stmt_parsed)
-			stmt_parsed = parse_statement(lexer, scope);
+	if (lexer.peek(true).type != TokenType::OPEN_CURLY)
+		return { parse_statement(scope) };
+
+	lexer.eat(true);
+
+	std::vector<Stmt> stmts;
+	while (lexer.peek(true).type != TokenType::CLOSE_CURLY &&
+		   lexer.peek(true).type != TokenType::_EOF)
+		stmts.push_back(parse_statement(scope));
+
+	if (lexer.eat(true).type == TokenType::_EOF) {
+		throw NIGHT_COMPILE_ERROR(
+			"expected closing bracket at the end of " + stmt_name + " body",
+			stmt_format, stmt_learn);
 	}
-	else
-	{
-		parse_statement(lexer, scope);
-	}
+
+	return stmts;
 }
 
-std::tuple<std::shared_ptr<ExprNode>, TypeContainer>
-parse_expression(Lexer& lexer, const std::vector<ValueType>& required_types)
+std::shared_ptr<ExprNode> Parser::parse_condition(
+	ParserScope& scope,
+	std::string const& stmt_name,
+	std::string const& stmt_format,
+	std::string const& stmt_learn)
 {
-	Token token = lexer_eat(lexer, false);
-	if (token.type == TokenType::EOL)
-		return std::make_tuple(nullptr, TypeContainer());
+	// validating statement
 
-	std::shared_ptr<ExprNode> root =
-		std::make_shared<ExprNode>(lexer.loc, token.type, token.data);
+	std::string const loop_name = lexer.get_curr(false).data;
 
-	std::shared_ptr<ExprNode> protect = nullptr;
-
-	int open_bracket = 0, open_square = 0;
-
-	token = lexer_eat(lexer, false);
-	while (!expr_reached_end())
-	{
-		if (token.type == TokenType::OPEN_BRACKET)
-		{
-			// RECURSION!!!!!!!!
-
-			// protect
-		}
-
-		std::shared_ptr<ExprNode> curr = root;
-		std::shared_ptr<ExprNode> prev = curr;
-		
-		std::shared_ptr<ExprNode> node =
-			std::make_shared<ExprNode>(lexer.loc, token.type, token.data);
-
-		if (node->type == ExprNode::VALUE || node->type == ExprNode::VAR)
-		{
-			while (curr != nullptr)
-			{
-				prev = curr;
-
-				switch (curr->type)
-				{
-				case ExprNode::UNARY_OP: {
-					curr = std::get<ExprUnaryOP>(curr->data).value;
-					break;
-				}
-				case ExprNode::BINARY_OP: {
-					curr = std::get<ExprBinaryOP>(curr->data).left;
-					break;
-				}
-				case ExprNode::VALUE: {
-					throw NIGHT_COMPILE_ERROR(
-						"expected operator before value'" + std::get<ExprValue>(curr->data) + "' in expression",
-						"",
-						night::learn_learn, lexer.loc);
-				}
-				default: {
-					throw NIGHT_COMPILE_ERROR(
-						"unexpected " + (curr->type == ExprNode::VAR ? "variable" : "value") + " '" + );
-				}
-				}
-			}
-
-			prev 
-		}
+	if (lexer.eat(false).type != TokenType::OPEN_BRACKET) {
+		throw NIGHT_COMPILE_ERROR(
+			"expected opening bracket after '" + loop_name + "' keyword",
+			stmt_format, stmt_learn);
+	}
+	if (lexer.eat(false).type == TokenType::EOL) {
+		throw NIGHT_COMPILE_ERROR(
+			"expected an expression after opening bracket",
+			stmt_format, stmt_learn);
 	}
 
-	return std::make_tuple(root, type_check_expr(root));
+	// parsing condition
+
+	auto [condition_expr, condition_types] =
+		parse_expression(scope, { Type::BOOL });
+
+	if (lexer.get_curr(false).type != TokenType::CLOSE_BRACKET) {
+		throw NIGHT_COMPILE_ERROR(
+			"expected closing bracket after " + stmt_name + " condition",
+			stmt_format, stmt_learn);
+	}
+	if (!condition_types.contains(Type::BOOL)) {
+		throw NIGHT_COMPILE_ERROR(
+			stmt_name + " condition currently contains " + types_as_str(condition_types),
+			"condition must contain type 'bool'",
+			stmt_learn);
+	}
+
+	return condition_expr;
 }
 
-std::tuple<std::vector<std::shared_ptr<ExprNode> >, std::vector<TypeContainer> >
-parse_arguments(
-	Lexer& lexer,
-	std::shared_ptr<Scope>& curr_scope
-) {
-	std::vector<std::shared_ptr<ExprNode> > call_exprs;
+auto Parser::parse_arguments(
+	ParserScope& scope,
+	std::string const& func_name)
+{
+	ExprContainer call_exprs;
 	std::vector<TypeContainer> call_types;
 
 	while (true)
 	{
-		const auto [expr, types] = parse_expression(lexer);
-		if (expr == nullptr)
-			throw night::error_wrapper("arg");
+		auto const [expr, types] = parse_expression(scope);
+		if (expr == nullptr) {
+			throw NIGHT_COMPILE_ERROR(
+				"expected argument in function call '" + func_name + "'",
+				night::format_call, night::learn_functions);
+		}
 
 		call_exprs.push_back(expr);
 		call_types.push_back(types);
 
-		const Token token = lexer_curr(lexer, true);
+		Token const token = lexer.get_curr(false);
 
 		if (token.type == TokenType::CLOSE_BRACKET)
 			return std::make_tuple(call_exprs, call_types);
 
-		if (token.type == TokenType::EOL)
-			throw night::error_wrapper("eol");
-		if (token.type != TokenType::COMMA)
-			throw night::error_wrapper(token.data);
+		if (token.type == TokenType::EOL) {
+			throw NIGHT_COMPILE_ERROR(
+				"expected closing bracket in function call '" + func_name + "'",
+				night::format_call, night::learn_functions);
+		}
+		if (token.type != TokenType::COMMA) {
+			throw NIGHT_COMPILE_ERROR(
+				"unexpected token '" + token.data + "' in function call '" + func_name + "'",
+				night::format_call, night::learn_functions);
+		}
 	}
 }
 
-TypeContainer parser_type_check_expr(
-	std::shared_ptr<Scope> const& curr_scope,
-	std::shared_ptr<ExprNode> const& node,
-	TypeContainer const& required_types
-) {
-	switch (node->type)
+std::tuple<std::shared_ptr<ExprNode>, Parser::TypeContainer>
+Parser::parse_expression(
+	ParserScope& scope,
+	TypeContainer const& required_types)
+{
+	static std::unordered_map<std::string, UnaryOPNode::T> const unary_op_convers{
+		{ "-", UnaryOPNode::NEGATIVE },
+		{ "!", UnaryOPNode::NOT }
+	};
+
+	static std::unordered_map<std::string, BinaryOPNode::T> const binary_op_convers{
+		{ "+", BinaryOPNode::PLUS },
+		{ "-", BinaryOPNode::MINUS },
+		{ "*", BinaryOPNode::TIMES },
+		{ "/", BinaryOPNode::DIVIDE },
+		{ "%", BinaryOPNode::MOD },
+		{ ">", BinaryOPNode::GREATER },
+		{ "<", BinaryOPNode::SMALLER },
+		{ ">=", BinaryOPNode::GREATER_EQ },
+		{ "<=", BinaryOPNode::SMALLER_EQ },
+		{ "==", BinaryOPNode::EQUAL },
+		{ "!=", BinaryOPNode::NOT_EQUAL },
+		{ "||", BinaryOPNode::OR },
+		{ "&&", BinaryOPNode::AND }
+	};
+
+	std::shared_ptr<ExprNode> root(nullptr), protect(nullptr);
+
+	Token token = lexer.eat(false);
+	while (true)
 	{
-	case ExprNode::VALUE: {
-		ExprValue const& expr_val = std::get<ExprValue>(node->data);
-
-		if (expr_val.type == ValueType::ARR)
+		if (token.is_value())
 		{
-			TypeContainer elem_types;
-			for (auto const& elem : expr_val.elem_types)
+			// traveling tree
+
+			std::shared_ptr<ExprNode> curr(root), prev(nullptr);
+			while (curr != nullptr)
 			{
-				TypeContainer const elem_type =
-					parser_type_check_expr(curr_scope, elem);
-
-				elem_types.insert(elem_type.begin(), elem_type.end());
-			}
-
-			return elem_types;
-		}
-
-		return { expr_val };
-	}
-	case ExprNode::VAR: {
-		std::string const& var_name = std::get<ExprVar>(node->data).name;
-
-		auto* const check_var = get_variable(curr_scope, var_name);
-		if (check_var == nullptr) {
-			throw NIGHT_COMPILE_ERROR(
-				"variable '" + var_name + "' is undefined",
-				"variables must be defined before they are used",
-				night::learn_variables, node->loc);
-		}
-
-		// if the variable is a function parameter
-		if (check_var->second.types.empty())
-		{
-			if (!is_reachable(curr_scope))
-				return required_types;
-
-			check_var->second.types = required_types;
-		}
-
-		return check_var->second.types;
-	}
-	case ExprNode::CALL: {
-		auto const& func_node = std::get<ExprCall>(node->data);
-
-		auto const check_func = Parser::check_funcs.find(func_node.name);
-		if (check_func == Parser::check_funcs.end()) {
-			throw NIGHT_COMPILE_ERROR(
-				"function '" + func_name + "' is undefined",
-				"function must be defined before they are used",
-				night::learn_functions, node->loc);
-		}
-
-		if (check_func->second.is_void) {
-			throw NIGHT_COMPILE_ERROR(
-				"function '" + check_func->first + "' does not have a return value",
-				"functions must have a return value to be used in expression",
-				night::learn_functions, node->loc);
-		}
-		if (func_node.params.size() != check_func->second.params.size()) {
-			throw NIGHT_COMPILE_ERROR(
-				"function '" + check_func->first + "' is called with '" + std::to_string(func_node.params.size()) + "' argument(s)",
-				"function '" + check_func->first + "' can only be called with '" + std::to_string(check_func->second.params.size()) + "' argument(s)",
-				night::learn_functions, node->loc);
-		}
-
-		// type checking function parameters
-
-		for (std::size_t a = 0; a < check_func->second.params.size(); ++a)
-		{
-			// parameter can be any type, so skip type checking
-			if (check_func->second.params[a].empty())
-				continue;
-
-			for (ExprValue const& check_param : check_func->second.params[a])
-			{
-				if (std::find(func_node.params[a].begin(), func_node.params[a].end(),
-					check_param) == func_node.params[a].end()) {
+				if (curr->is_value()) {
 					throw NIGHT_COMPILE_ERROR(
-						"argument number " + std::to_string(a + 1) + " must contain " + get_types_as_str(check_func->second.params[a]),
-						"argument number " + std::to_string(a + 1) + " currently contains " + get_types_as_str(func_node.params[a]),
-						night::learn_functions, node->loc);
+						"expected operator between values",
+						"",
+						night::learn_learn);
 				}
-			}
-		}
 
-		// a note about empty return types:
-		/*
-		// if a function's return types can't be deduced when the function is
-		// defined, then the return type is treated as if it were any type
-		//
-		// returning 'all_types' here wouldn't be wrong, but to keep the types
-		// to a minimum (only containing necessary types), 'required_types' is
-		// returned instead
-		*/
-		return check_func->second.rtn_types.empty()
-			? required_types
-			: check_func->second.rtn_types;
-	}
-	case ExprNode::UNARY_OP: {
-		ExprUnaryOP const& unary_op = std::get<ExprUnaryOP>(node->data);
-
-		switch (unary_op.type)
-		{
-		case UnaryOPType::NEGATIVE: {
-			TypeContainer const types = 
-				parser_type_check_expr(curr_scope, unary_op.value,
-				{ ExprValue{ ValueType::INT }, ExprValue{ ValueType::FLOAT } });
-
-			if (!night::contains(types, ValueType::INT, ValueType::FLOAT))
-				THROW_ERR_TYPE_CHECK_UNARY("types 'int' or 'float'");
-
-			return {
-				ExprValue{ ValueType::INT },
-				ExprValue{ValueType::FLOAT } };
-		}
-		case UnaryOPType::NOT: {
-			TypeContainer const types =
-				parser_type_check_expr(curr_scope, unary_op.value,
-				{ ExprValue{ ValueType::BOOL } });
-
-			if (!night::contains(types, ValueType::BOOL))
-				THROW_ERR_TYPE_CHECK_UNARY("type 'bool'");
-
-			return { ExprValue{ ValueType::BOOL } };
-		}
-		case UnaryOPType::SUBSCRIPT: {
-			TypeContainer const types =
-				parser_type_check_expr(curr_scope, unary_op.value,
-				{ ExprValue{ ValueType::INT }, ExprValue{ ValueType::FLOAT } });
-
-			TypeContainer rtn_types;
-			if (night::contains(types, ValueType::STR))
-				rtn_types.push_back(ExprValue{ ValueType::STR });
-			if (auto pos = night::find(types, ValueType::ARR); pos != nullptr)
-				rtn_types.insert(rtn_types.end(), pos->elem_types.begin(), pos->elem_types.end());
-
-			if (rtn_types.empty())
-				THROW_ERR_TYPE_CHECK_UNARY("types 'str' or 'arr'");
-
-			return rtn_types;
-		}
-		}
-	}
-	case ExprNode::BINARY_OP: {
-		ExprBinaryOP const& binary_op = std::get<ExprBinaryOP>(node->data);
-
-		switch (binary_op.type)
-		{
-		case BinaryOPType::PLUS:
-		case BinaryOPType::MINUS:
-		case BinaryOPType::TIMES:
-		case BinaryOPType::DIVIDE:
-		case BinaryOPType::MOD: {
-			parser_type_check_num_expr(curr_scope, node);
-			return {
-				ExprValue{ ValueType::INT },
-				ExprValue{ ValueType::FLOAT } };
-		}
-
-		case BinaryOPType::GREATER:
-		case BinaryOPType::GREATER_EQ:
-		case BinaryOPType::SMALLER:
-		case BinaryOPType::SMALLER_EQ: {
-			parser_type_check_num_expr(curr_scope, node);
-			return { ExprValue{ ValueType::BOOL } };
-		}
-
-		case BinaryOPType::AND:
-		case BinaryOPType::OR: {
-			TypeContainer types = parser_type_check_expr(
-				curr_scope, binary_op.left, { ExprValue{ ValueType::BOOL } });
-
-			if (!night::contains(types, ValueType::BOOL))
-				THROW_ERR_TYPE_CHECK_BINARY("left", "type 'bool'");
-
-			types = parser_type_check_expr(curr_scope, binary_op.right,
-				{ ExprValue{ ValueType::BOOL } });
-
-			if (!night::contains(types, ValueType::BOOL))
-				THROW_ERR_TYPE_CHECK_BINARY("right", "type 'bool'");
-
-			return { ExprValue{ ValueType::BOOL } };
-		}
-
-		case BinaryOPType::EQUAL:
-		case BinaryOPType::NOT_EQUAL: {
-			TypeContainer const& lhs = parser_type_check_expr(
-				curr_scope, binary_op.left, { ExprValue{ ValueType::BOOL } });
-
-			TypeContainer const& rhs = parser_type_check_expr(
-				curr_scope, binary_op.right, { ExprValue{ ValueType::BOOL } });
-
-			bool const match = std::any_of(lhs.begin(), lhs.end(),
-				[&](const ValueType& type) { return night::contains(lhs, type); });
-
-			if (!match) {
-				throw NIGHT_COMPILE_ERROR(
-					"operator '" + binary_op.data + "' can only be used to compare two equivalent non-class types",
-					"left hand value of operator '" + binary_op.data + "' currently contains " + get_types_as_str(lhs) + ", but right hand value currently contains " + get_types_as_str(rhs),
-					night::learn_operators, node->loc);
+				prev = curr;
+				curr = curr->travel_ast();
 			}
 
-			return { ExprValue{ ValueType::BOOL } };
-		}
-		
-		case BinaryOPType::DOT: {
-			// find required types and return types based on method
+			// constructing node
 
-			// a note about empty method types:
-			/*
-			// if a method's return types can't be deduced when the method is
-			// defined, then the return type is treated as if it where any type
-			//
-			// returning 'all_types' here wouldn't be wrong, but to keep the
-			// types to a minimum (only containing necessary types),
-			// 'required_types' is returned instead
-			*/
-			bool return_required_types = false;
+			if (prev == nullptr)
+				prev = std::make_shared<ExprNode>();
+			else
+				prev->travel_ast() = std::make_shared<ExprNode>();
 
-			VariableTypeContainer required_t, return_types;
-			for (const auto& check_class : check_classes)
+			std::shared_ptr<ExprNode> expr_node = prev->travel_ast();
+
+			expr_node->loc = lexer.get_loc();
+
+			switch (token.type)
 			{
-				auto it = check_class.second.methods.find(node->right->data);
-				if (it == check_class.second.methods.end())
-					continue;
+			case TokenType::BOOL_T: {
+				expr_node->type = ExprNode::LITERAL;
+				expr_node->data = ValueLiteral{ ValueLiteral::BOOL, token.data == "true" };
 
-				// find required types
+				break;
+			}
+			case TokenType::INT_T: {
+				expr_node->type = ExprNode::LITERAL;
+				expr_node->data = ValueLiteral{ ValueLiteral::INT, std::stoi(token.data) };
 
-				if (check_class.first == "array")
-					required_t.insert(VariableType::ARRAY);
-				else if (check_class.first == "string")
-					required_t.insert(VariableType::STRING);
+				break;
+			}
+			case TokenType::FLOAT_T: {
+				expr_node->type = ExprNode::LITERAL;
+				expr_node->data = ValueLiteral{ ValueLiteral::FLOAT, std::stof(token.data) };
+
+				break;
+			}
+			case TokenType::STR_T: {
+				expr_node->type = ExprNode::LITERAL;
+				expr_node->data = ValueLiteral{ ValueLiteral::STR, token.data };
+
+				break;
+			}
+			case TokenType::VAR: {
+				if (lexer.peek(false).type == TokenType::OPEN_BRACKET)
+				{
+					std::string const func_name = lexer.get_curr(false).data;
+
+					auto const [arg_exprs, arg_types] =
+						parse_arguments(scope, func_name);
+
+					expr_node->type = ExprNode::CALL;
+					expr_node->data = ValueCall(
+						func_name, arg_exprs);
+				}
+				else if (lexer.peek(false).type == TokenType::OPEN_SQUARE)
+				{
+					expr_node->type = ExprNode::VARIABLE;
+					expr_node->data = ValueVar{ lexer.get_curr(false).data };
+
+					lexer.eat(false);
+
+					//traveling tree
+
+					std::shared_ptr<ExprNode> curr(root), prev(nullptr);
+					while (!token.is_value() && curr != protect)
+					{
+						prev = curr;
+
+						std::string const op_data = curr->type == ExprNode::UNARY_OP
+							? std::get<UnaryOPNode>(curr->data).data
+							: std::get<BinaryOPNode>(curr->data).data;
+
+						if (!higher_precedence(op_data, "[]"))
+							break;
+
+						curr = curr->travel_ast();
+					}
+
+					// constructing node
+
+					auto const [expr, types] = parse_expression(scope);
+					if (lexer.get_curr(false).type != TokenType::CLOSE_SQUARE) {
+						throw NIGHT_COMPILE_ERROR(
+							"expected closing square bracket at the end of subscript operator",
+							"",
+							night::learn_arrays);
+					}
+					if (!types.contains(Type::INT)) {
+						throw NIGHT_COMPILE_ERROR(
+							"subscript operator currently contains " + types_as_str(types),
+							"subscript operator must contains type 'int'",
+							night::learn_arrays);
+					}
+
+					auto const pos = unary_op_convers.find(token.data);
+					assert(pos != unary_op_convers.end());
+
+					std::shared_ptr<ExprNode> const expr_node = std::make_shared<ExprNode>(
+						lexer.get_loc(),
+						ExprNode::UNARY_OP,
+						UnaryOPNode{ pos->second, "[]", curr, expr }
+					);
+
+					if (prev != nullptr)
+						root = expr_node;
+					else
+						prev->travel_ast() = expr_node;
+				}
 				else
-					required_t.insert(check_class.first);
+				{
+					expr_node->type = ExprNode::VARIABLE;
+					expr_node->data = ValueVar{ lexer.get_curr(false).data };
+				}
 
-				// find return types
+				break;
+			}
+			case TokenType::OPEN_SQUARE: {
+				ExprContainer arr_exprs;
 
-				if (it->second.return_types.empty())
-					return_required_types = true;
-				else if (!return_required_types)
-					return_types.insert(it->second.return_types);
+				while (true)
+				{
+					auto const expr = std::get<0>(parse_expression(scope));
+					if (expr == nullptr) {
+						throw NIGHT_COMPILE_ERROR(
+							"expected element in array",
+							night::format_array, night::learn_arrays);
+					}
+
+					arr_exprs.push_back(expr);
+
+					token = lexer.get_curr(false);
+
+					if (token.type == TokenType::CLOSE_SQUARE)
+						break;
+
+					if (token.type == TokenType::EOL) {
+						throw NIGHT_COMPILE_ERROR(
+							"expected closing square bracket in array",
+							night::format_array, night::learn_arrays);
+					}
+					if (token.type != TokenType::COMMA) {
+						throw NIGHT_COMPILE_ERROR(
+							"unexpected token '" + token.data + "' in array",
+							night::format_array, night::learn_arrays);
+					}
+				}
+
+				expr_node->type = ExprNode::ARRAY;
+				expr_node->data = ValueArray{ arr_exprs };
+
+				break;
+			}
+			default: {
+				throw std::runtime_error(
+					__FILE__ + std::string("\n") +
+					std::to_string(__LINE__) + "missing value");
+			}
+			}
+		}
+		else if (token.type == TokenType::OPEN_BRACKET)
+		{
+			std::shared_ptr<ExprNode> curr(root), prev(nullptr);
+			while (curr != nullptr)
+			{
+				if (curr->is_value()) {
+					throw NIGHT_COMPILE_ERROR(
+						"expected operator between value and opening bracket",
+						"",
+						night::learn_learn);
+				}
+
+				prev = curr;
+				curr = curr->travel_ast();
 			}
 
-			const VariableTypeContainer object_types =
-				type_check_expr(current_scope, node->left, required_t);
+			if (curr == nullptr)
+			{
+				root = std::get<0>(parse_expression(scope, required_types));
+				protect = root;
+			}
+			else
+			{
+				prev->travel_ast() = std::get<0>(parse_expression(scope, required_types));
+				protect = prev->travel_ast();
+			}
 
-			if (!required_t.empty() &&
-				!object_types.contains(VariableType::STRING) &&
-				!object_types.contains(VariableType::ARRAY) &&
-				!object_types.contains(VariableType::CLASS))
-				throw NIGHT_COMPILE_ERROR("operator '" + node->data + "' can only be used on types: 'str', 'arr', and 'obj'", "left hand value of operator '" + node->data + "' currently contains " + get_var_types_as_str(object_types), Learn::TYPE_CHECKING);
-
-			if (required_t.empty())
-				throw NIGHT_COMPILE_ERROR("method '" + node->right->data + "' does not exist within any class");
-
-			// TO DO:
-			// type check method parameters
-			//
-			//
-
-
-			return return_required_types ? required_types : return_types;
+			if (lexer.get_curr(false).type != TokenType::CLOSE_BRACKET) {
+				throw NIGHT_COMPILE_ERROR(
+					"expected closing bracket in expression",
+					"",
+					night::learn_learn);
+			}
 		}
-		}
-	}
-	}
-}
-
-std::pair<std::string const, CheckVariable>* get_variable(
-	std::shared_ptr<Scope> const& scope,
-	std::string const& var_name
-) {
-	for (Scope* current_scope = scope.get(); current_scope != nullptr;)
-	{
-		for (auto& variable : current_scope->variables)
+		else if (token.type == TokenType::UNARY_OP || token.type == TokenType::BINARY_OP)
 		{
-			if (variable.first == var_name)
-				return &variable;
+			//traveling tree
+
+			std::shared_ptr<ExprNode> curr(root), prev(nullptr);
+			while (!token.is_value() && curr != protect)
+			{
+				prev = curr;
+
+				std::string const op_data = curr->type == ExprNode::UNARY_OP
+					? std::get<UnaryOPNode>(curr->data).data
+					: std::get<BinaryOPNode>(curr->data).data;
+
+				if (!higher_precedence(op_data, token.data))
+					break;
+
+				curr = curr->travel_ast();
+			}
+
+			// constructing node
+
+			std::shared_ptr<ExprNode> expr_node = std::make_shared<ExprNode>();
+			expr_node->loc = lexer.get_loc();
+
+			if (token.type == TokenType::UNARY_OP)
+			{
+				auto const pos = unary_op_convers.find(token.data);
+				assert(pos != unary_op_convers.end());
+
+				expr_node->type = ExprNode::UNARY_OP;
+				expr_node->data = UnaryOPNode{ pos->second, token.data, curr };
+			}
+			else
+			{
+				auto const op_type = binary_op_convers.find(token.data);
+				assert(op_type != binary_op_convers.end());
+
+				expr_node->type = ExprNode::BINARY_OP;
+				expr_node->data = BinaryOPNode{ op_type->second, token.data, curr, nullptr };
+			}
+
+			if (prev != nullptr)
+				root = expr_node;
+			else
+				prev->travel_ast() = expr_node;
+		}
+		else
+		{
+			return std::make_tuple(root, type_check_expr(scope, root, required_types));
 		}
 
-		current_scope = current_scope->upper_scope.get();
+		lexer.eat(false);
 	}
-
-	return nullptr;
 }
 
-bool lower_precedence(
+bool Parser::higher_precedence(
 	std::string const& op1,
-	std::string const& op2
-) {
-	const std::vector<std::unordered_set<std::string> > operators{
-		{ "[]", "." },
-		{ "!" },
-		{ "*", "/", "%" },
-		{ "+", "-" },
-		{ ">", "<", ">=", "<=" },
+	std::string const& op2) const
+{
+	std::vector<std::unordered_set<std::string> > const operators{
+		{ "||", "&&" },
 		{ "==", "!=" },
-		{ "||", "&&" }
+		{ ">", "<", ">=", "<=" },
+		{ "+", "-" },
+		{ "*", "/", "%" },
+		{ "!" },
+		{ "[]", "." },
 	};
 
 	std::size_t pre1, pre2;
@@ -1471,88 +1053,399 @@ bool lower_precedence(
 			pre2 = a;
 	}
 
-	return pre1 < pre2;
+	return pre1 > pre2;
 }
 
-void parser_type_check_num_expr(
-	std::shared_ptr<Scope> const& curr_scope,
-	std::shared_ptr<ExprNode> const& node
-) {
-	ExprBinaryOP const& binary_op = std::get<ExprBinaryOP>(node->data);
-
-	TypeContainer types = parser_type_check_expr(curr_scope, binary_op.left,
-		{ ExprValue{ ValueType::INT }, ExprValue{ ValueType::FLOAT } });
-
-	if (!night::contains(types, ValueType::INT, ValueType::FLOAT))
-		THROW_ERR_TYPE_CHECK_BINARY("left", "types 'int' or 'float'");
-
-	types = parser_type_check_expr(curr_scope, binary_op.right,
-		{ ExprValue{ ValueType::INT }, ExprValue{ ValueType::FLOAT } });
-
-	if (!night::contains(types, ValueType::INT, ValueType::FLOAT))
-		THROW_ERR_TYPE_CHECK_BINARY("right", "types 'int' or 'float'");
-}
-
-
-bool is_reachable(std::shared_ptr<Scope> const& scope)
+Parser::TypeContainer Parser::type_check_expr(
+	ParserScope& scope,
+	std::shared_ptr<ExprNode> const& expr,
+	TypeContainer const& required_types) const
 {
-	return scope->upper_scope != nullptr &&
-		scope->upper_scope->stmts.back().type == StmtType::FUNC_DEF;
+	switch (expr->type)
+	{
+	case ExprNode::LITERAL: {
+		ValueLiteral const& val = std::get<ValueLiteral>(expr->data);
+
+		switch (val.type)
+		{
+		case ValueLiteral::BOOL:
+			return { Type::BOOL };
+		case ValueLiteral::INT:
+			return { Type::INT };
+		case ValueLiteral::FLOAT:
+			return { Type::FLOAT };
+		case ValueLiteral::STR:
+			return { Type::STR };
+		}
+	}
+	case ExprNode::ARRAY: {
+		ValueArray const& val = std::get<ValueArray>(expr->data);
+
+		TypeContainer elem_types;
+		for (auto const& elem_expr : val.elem_exprs)
+		{
+			TypeContainer const elem_type = type_check_expr(scope, elem_expr);
+			elem_types.insert(elem_type.begin(), elem_type.end());
+		}
+
+		return { Type(Type::ARR, elem_types) };
+	}
+	case ExprNode::VARIABLE: {
+		ValueVar const& val = std::get<ValueVar>(expr->data);
+
+		auto* const check_var = scope.get_var(val.name);
+		if (check_var == nullptr) {
+			throw NIGHT_COMPILE_ERROR(
+				"variable '" + val.name + "' is undefined",
+				"variables must be defined before they are used",
+				night::learn_variables);
+		}
+
+		// if the variable is a function parameter
+		if (check_var->second.types.empty())
+			check_var->second.types = required_types;
+
+		return check_var->second.types;
+	}
+	case ExprNode::CALL: {
+		ValueCall const& val = std::get<ValueCall>(expr->data);
+
+		auto const check_func_it = check_funcs.find(val.func_name);
+		if (check_func_it == check_funcs.end()) {
+			throw NIGHT_COMPILE_ERROR(
+				"function '" + val.func_name + "' is not defined",
+				"functions have to be defined before they are used",
+				night::learn_functions);
+		}
+
+		CheckFunction const& check_func = check_func_it->second;
+
+		if (val.param_exprs.size() != check_func.param_types.size()) {
+			throw NIGHT_COMPILE_ERROR(
+				"function '" + val.func_name + "' is called with '" + std::to_string(val.param_exprs.size()) + "' argument(s)",
+				"function '" + val.func_name + "' can only be called with '" + std::to_string(check_func.param_types.size()) + "' argument(s)",
+				night::learn_functions);
+		}
+
+		// checking if function is void
+
+		if (check_func.is_void) {
+			throw NIGHT_COMPILE_ERROR(
+				"function '" + val.func_name + "' does not have a return value",
+				"functions must have a return value to be used in expression",
+				night::learn_functions);
+		}
+
+		for (std::size_t a = 0; a < check_func.param_types.size(); ++a)
+		{
+			TypeContainer arg_types = type_check_expr(
+				scope, val.param_exprs[a], check_func.param_types[a]);
+
+			if (arg_types.empty())
+				continue;
+
+			bool const match = std::ranges::any_of(
+				check_func.param_types[a],
+				[&](auto const& param_type) {
+					return arg_types.contains(param_type); }
+			);
+
+			if (!match) {
+				throw NIGHT_COMPILE_ERROR(
+					"argument number " + std::to_string(a + 1) + " for function " + val.func_name+ " must contain " + types_as_str(check_func.param_types[a]),
+					"argument number " + std::to_string(a + 1) + " currently contains " + types_as_str(arg_types),
+					night::learn_functions);
+			}
+		}
+
+		return check_func.rtn_types;
+	}
+	case ExprNode::UNARY_OP: {
+		UnaryOPNode const& op = std::get<UnaryOPNode>(expr->data);
+		switch (op.type)
+		{
+		case UnaryOPNode::NEGATIVE: {
+			TypeContainer const types = type_check_expr(
+				scope, op.value, { Type::INT, Type::FLOAT });
+
+			if (!types.contains(Type::INT) && !types.contains(Type::FLOAT))
+				op.throw_unary_op_err(lexer, types, "types 'int' or 'float'");
+
+			return { Type::INT, Type::FLOAT };
+		}
+		case UnaryOPNode::NOT: {
+			TypeContainer const types = type_check_expr(
+				scope, op.value, { Type::BOOL });
+
+			if (!types.contains(Type::BOOL))
+				op.throw_unary_op_err(lexer, types, "type 'bool'");
+
+			return { Type::BOOL };
+		}
+		case UnaryOPNode::SUBSCRIPT: {
+			TypeContainer const types = type_check_expr(
+				scope, op.value, { Type::INT, Type::FLOAT });
+
+			TypeContainer rtn_types;
+			if (types.contains(Type::STR))
+				rtn_types.insert(Type::STR);
+			if (auto pos = std::find(types.begin(), types.end(), Type::ARR); pos != types.end())
+				rtn_types.insert(pos->elem_types.begin(), pos->elem_types.end());
+
+			if (rtn_types.empty())
+				op.throw_unary_op_err(lexer, types, "types 'str' or 'arr'");
+
+			return rtn_types;
+		}
+		}
+	}
+	case ExprNode::BINARY_OP: {
+		BinaryOPNode const& binary_op = std::get<BinaryOPNode>(expr->data);
+		switch (binary_op.type)
+		{
+		case BinaryOPNode::PLUS:
+		case BinaryOPNode::MINUS:
+		case BinaryOPNode::TIMES:
+		case BinaryOPNode::DIVIDE:
+		case BinaryOPNode::MOD: {
+			binary_op.eval_num_types(scope);
+			return { Type::INT, Type::FLOAT };
+		}
+
+		case BinaryOPNode::GREATER:
+		case BinaryOPNode::GREATER_EQ:
+		case BinaryOPNode::SMALLER:
+		case BinaryOPNode::SMALLER_EQ: {
+			binary_op.eval_num_types(scope);
+			return { Type::BOOL };
+		}
+
+		case BinaryOPNode::AND:
+		case BinaryOPNode::OR: {
+			TypeContainer const left_types = type_check_expr(
+				scope, binary_op.left, { Type::BOOL });
+
+			if (!left_types.contains(Type::BOOL))
+				binary_op.throw_binary_op_err(lexer, left_types, "left", "type 'bool'");
+
+			TypeContainer const right_types = type_check_expr(
+				scope, binary_op.left, { Type::BOOL });
+
+			if (!right_types.contains(Type::BOOL))
+				binary_op.throw_binary_op_err(lexer, right_types, "left", "type 'bool'");
+
+			return { Type::BOOL };
+		}
+
+		case BinaryOPNode::EQUAL:
+		case BinaryOPNode::NOT_EQUAL: {
+			TypeContainer const& left_types = type_check_expr(
+				scope, binary_op.left, { Type::BOOL });
+
+			TypeContainer const& right_types = type_check_expr(
+				scope, binary_op.right, { Type::BOOL });
+
+			bool const match = std::ranges::any_of(left_types,
+				[&](Type const& type) { return left_types.contains(type); });
+
+			if (!match) {
+				throw NIGHT_COMPILE_ERROR(
+					"operator '" + binary_op.op + "' can only be used to compare two equivalent non-class types",
+					"left hand value of operator '" + binary_op.op + "' currently contains " + types_as_str(right_types) + ", but right hand value currently contains " + types_as_str(right_types),
+					night::learn_operators);
+			}
+
+			return { Type::BOOL };
+		}
+
+		case BinaryOPNode::DOT: {
+			BinaryOPNode const& binary_op = std::get<BinaryOPNode>(expr->data);
+
+			if (binary_op.right->type != ExprNode::CALL) {
+				throw NIGHT_COMPILE_ERROR(
+					"expected method call to the right of dot operator",
+					"method calls must be in this format: `object.method()`",
+					night::learn_classes);
+			}
+
+			ValueCall const& method =
+				std::get<ValueCall>(binary_op.right->data);
+
+			// find required types and return types based on method
+
+			TypeContainer send_types, rtn_types;
+			for (const auto& check_class : Parser::check_classes)
+			{
+				auto const it = check_class.second.methods.find(method.func_name);
+
+				if (it == check_class.second.methods.end() ||
+					it->second.is_void ||
+					it->second.param_types.size() != method.param_exprs.size())
+					continue;
+
+				// type check method parameters to see if it matches
+
+				bool valid = true;
+				for (std::size_t a = 0; a < it->second.param_types.size() && valid; ++a)
+				{
+					TypeContainer arg_types = type_check_expr(
+						scope, method.param_exprs[a], it->second.param_types[a]);
+
+					if (arg_types.empty())
+						continue;
+
+					valid = std::ranges::any_of(
+						it->second.param_types[a],
+						[&](auto const& param_type)
+							{ return arg_types.contains(param_type); }
+					);
+				}
+
+				if (!valid)
+					continue;
+
+				// find required types
+
+				if (check_class.first == "array")
+					send_types.insert(Type::ARR);
+				else if (check_class.first == "string")
+					send_types.insert(Type::STR);
+
+				rtn_types.insert(
+					it->second.rtn_types.begin(),
+					it->second.rtn_types.end());
+			}
+
+			if (send_types.empty()) {
+				throw NIGHT_COMPILE_ERROR(
+					"method '" + method.func_name + "' does not exist within any class",
+					"methods have to be defined before they are used",
+					night::learn_classes);
+			}
+
+			TypeContainer const obj_types = type_check_expr(
+				scope, binary_op.left, send_types);
+
+			if (!obj_types.contains(Type::STR) && !obj_types.contains(Type::ARR)) {
+				throw NIGHT_COMPILE_ERROR(
+					"operator '" + binary_op.op + "' can only be used on types: 'str', 'arr', and 'obj'",
+					"left hand value of operator '" + binary_op.op + "' currently contains " + types_as_str(obj_types),
+					night::learn_type_checking);
+			}
+
+			return rtn_types.empty()
+				? required_types
+				: rtn_types;
+		}
+		}
+	}
+	}
 }
 
-TypeContainer const Parser::all_types{
-	ExprValue{ ValueType::BOOL }, ExprValue{ ValueType::INT }, ExprValue{ ValueType::FLOAT },
-	ExprValue{ ValueType::STR }, ExprValue{ ValueType::ARR }
+void Parser::throw_unary_op_err(
+	UnaryOPNode& unary_op,
+	TypeContainer const& types,
+	std::string const& used_types)
+{
+	throw NIGHT_COMPILE_ERROR(
+		"operator '" + unary_op.data + "' is currently used on " + types_as_str(types),
+		"operator '" + unary_op.data + "' can only be used on " + used_types,
+		night::learn_operators);
 };
 
-CheckFunctionContainer Parser::check_funcs{
-	make_check_function("print", { all_types }),
-	make_check_function("input", {}, { ExprValue{ ValueType::STR } }),
+void Parser::check_call_types(
+	std::vector<TypeContainer> const& param_types,
+	std::vector<TypeContainer> const& arg_types,
+	std::string const& func_name)
+{
+	assert(param_types.size() == arg_types.size());
 
-	make_check_function("range",
-		{
-			{ ExprValue{ ValueType::INT } },
-			{ ExprValue{ ValueType::INT } }
-		},
-		{
-			ExprValue{ ValueType::ARR }
-		}),
+	for (std::size_t a = 0; a < param_types.size(); ++a)
+	{
+		// parameter can be any type, so skip type checking
+		if (param_types[a].empty())
+			continue;
 
-	make_check_function("int",
-		{
-			{ ExprValue{ ValueType::INT }, ExprValue{ ValueType::FLOAT }, ExprValue{ ValueType::STR } }
-		},
-		{
-			ExprValue{ ValueType::INT }
-		}),
-	make_check_function("float",
-		{ { ExprValue{ ValueType::INT }, ExprValue{ ValueType::FLOAT }, ExprValue{ ValueType::STR } } },
-		{ ExprValue{ ValueType::FLOAT } }),
-	make_check_function("str",
-		{ { ExprValue{ ValueType::BOOL }, ExprValue{ ValueType::INT}, ExprValue{ ValueType::FLOAT}, ExprValue{ ValueType::STR } } },
-		{ ExprValue{ ValueType::STR } }),
+		// checking to see if at least one argument type matches a parameter type
 
-	make_check_function("system",
-		{ { ExprValue{ ValueType::STR } } })
-};
+		bool const match = std::ranges::any_of(
+			param_types[a],
+			[&](auto const& param_type) {
+				return arg_types[a].contains(param_type); }
+		);
 
-CheckClassContainer Parser::check_classes{
-	make_check_class("array",
-		CheckVariableContainer(),
-		CheckFunctionContainer{
-			make_check_function("len", {}, { VariableType::INT }),
-
-			make_check_function("push", { all_types }),
-			make_check_function("push", { { VariableType::INT } }, all_types),
-
-			make_check_function("pop"),
-			make_check_function("pop", { { VariableType::INT } })
+		if (!match) {
+			throw NIGHT_COMPILE_ERROR(
+				"for function call '" + func_name + ", argument number " + std::to_string(a + 1) +
+					" must contain " + types_as_str(param_types[a]),
+				"argument currently contains " + types_as_str(arg_types[a]),
+				night::learn_functions);
 		}
-	),
-	make_check_class("string",
-		CheckVariableContainer(),
-		CheckFunctionContainer{
-			make_check_function("len", {}, { VariableType::INT })
-		}
-	)
-};
+	}
+}
+
+std::string Parser::types_as_str(TypeContainer const& var_types_set)
+{
+	assert(!var_types_set.empty());
+
+	std::vector<Type> var_types(var_types_set.begin(), var_types_set.end());
+
+	std::string str_types = "";
+
+	for (std::size_t a = 0; a < var_types.size() - 1; ++a)
+		str_types += "'" + var_types[a].to_str() + "', ";
+
+	str_types = var_types.size() > 1
+		? "types " + str_types + ", and "
+		: "type " + str_types;
+
+	str_types += "'" + var_types.back().to_str() + "'";
+
+	return str_types;
+}
+
+
+Parser::TypeContainer const Parser::all_types{
+	Type::BOOL, Type::INT, Type::FLOAT, Type::STR, Type::ARR };
+
+std::pair<std::string const, Parser::CheckFunction> Parser::make_check_function(
+	std::string const& name,
+	std::vector<TypeContainer> const& params,
+	TypeContainer			   const& rtn_types)
+{
+	return { name, { params, rtn_types } };
+}
+
+std::pair<std::string const, Parser::CheckClass> Parser::make_check_class(
+	std::string const& name,
+
+	CheckVariableContainer const& vars,
+	CheckFunctionContainer const& methods)
+{
+	return { name, { vars, methods } };
+}
+
+
+
+Parser::Type::Type(T _type)
+	: type(_type) {}
+
+Parser::Type::Type(T _type, TypeContainer const& _elem_types)
+	: type(_type), elem_types(_elem_types) {}
+
+std::string Parser::Type::to_str() const
+{
+	switch (type)
+	{
+	case T::BOOL:
+		return "bool";
+	case T::INT:
+		return "int";
+	case T::FLOAT:
+		return "float";
+	case T::STR:
+		return "str";
+	case T::ARR:
+		return "arr";
+	}
+}

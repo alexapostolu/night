@@ -14,29 +14,35 @@ void ReplaceEscape(
 	const char ch
 );
 
-// matches token with keyword
-void FindKeyword(
-	const Location& loc,
-
-	std::vector<Token>& tokens,
-	std::string& token
-);
-
-struct Lexer
+class Lexer
 {
-	std::fstream *const code_file;
+public:
+	Lexer(
+		std::string const& file_name,
+		bool		const  main_file
+	);
+
+public:
+	Token eat(bool const next_line);
+	void eat(TokenType const& expect_type, bool const next_line,
+		std::string const& stmt_format, std::string const& stmt_learn);
+	Token peek(bool const next_line);
+
+	Token get_curr(bool const next_line);
+	Location get_loc() const;
+	
+private:
+	bool new_line();
+
+private:
+	std::fstream code_file;
 	Location loc;
 
 	std::string code_line;
 	std::size_t i;
 	
-	Token curr, peek;
+	Token curr, next;
 
-	std::unordered_map<char, std::map<char, TokenType> > const symbols;
+	static std::unordered_map<char, std::map<char, TokenType> > const symbols;
+	static std::unordered_map<std::string, TokenType> const keywords;
 };
-
-Lexer lexer_create(std::string const& file_name, bool const main_file);
-void lexer_new_line(Lexer const& lexer);
-Token lexer_eat(Lexer& lexer, bool const next_line);
-Token lexer_peek(Lexer& lexer, bool const next_line);
-Token lexer_curr(Lexer& lexer, bool const next_line);

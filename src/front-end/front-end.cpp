@@ -3,71 +3,45 @@
 #include "../../include/back-end/parser.hpp"
 #include "../../include/back-end/lexer.hpp"
 #include "../../include/back-end/token.hpp"
-#include "../../include/back-end/utils.hpp"
 #include "../../include/error.hpp"
 
-#include <fstream>
 #include <string>
 #include <vector>
 
 void FrontEnd(int argc, char** argv)
 {
 	if (argc != 2) {
-		throw FrontEndError("invalid command line arguments; only pass in the file name as an argument");
+		throw NIGHT_PREPROCESS_ERROR(
+			"invalid command line arguments",
+			night::learn_run);
 	}
 
+	if (std::string(argv[1]) == "--help")
+	{
+		std::cout << "--help    displays list of commands\n"
+				  << "--version displays current version\n"
+				  << "<file>    runs <file>\n";
+		return;
+	}
 	if (std::string(argv[1]) == "--version")
 	{
 		std::cout << "night v0.0.0";
 		return;
 	}
 
-	Lexer lexer = lexer_create(argv[1], true);
-	
-	std::shared_ptr<Scope> global_scope = std::make_shared<Scope>(nullptr);
+	Lexer lexer(argv[1], true);
+	Parser parser(lexer);
 
-	bool stmt_parsed = true;
-	while (stmt_parsed)
-		stmt_parsed = parse_statement(lexer, global_scope);
+	Parser::Scope global_scope{ nullptr };
 
-	// Optimizer optimizer = optimizer_create()
+	std::vector<Stmt> stmts;
+	while (lexer.peek(true).type != TokenType::_EOF)
+		stmts.push_back(parser.parse_statement(global_scope));
 
-	for (auto stmt : global_scope->statements)
-		interpret_statement(global_scope, stmt);
-}
+	// Optimizer optimizer;
 
-std::vector<Token> OpenFile(const std::string& file)
-{
-	std::ifstream source_file(file);
-	if (!source_file.is_open())
-		throw FrontEndError("file '" + file + "' could not be opened");
+	Interpreter interpreter;
 
-	std::vector<Token> tokens;
-	std::string file_line;
-	for (Location loc{ file, 1 }; getline(source_file, file_line); ++loc.line)
-	{
-		std::vector<Token> file_tokens = Lexer(loc, file_line);
-		if (file_tokens.size() >= 1 && file_tokens[0].type == TokenType::IMPORT)
-		{
-			if (file_tokens.size() == 1 || file_tokens[1].type != TokenType::STRING)
-				throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, loc, "expected file name after '" + file_tokens[0].data + "' statement");
-			if (file_tokens.size() > 3) // EOF
-				throw CompileError(__FILE__, __LINE__, CompileError::invalid_syntax, loc, "'" + file_tokens[0].data + "' must be on its own line");
-
-			if (file_tokens[0].data == "import" && file_tokens[1].data == "python")
-				throw FrontEndError("module 'python' could not be imported; only good languages are allowed here");
-
-			const std::vector<Token> import_tokens = OpenFile(
-				(file_tokens[0].data == "import" ? "../../../pkgs/" : "") +
-				(file_tokens[1].data + ".night")
-			);
-
-			file_tokens.erase(file_tokens.begin(), file_tokens.begin() + 3); // EOF
-			file_tokens.insert(file_tokens.begin(), import_tokens.begin(), import_tokens.end());
-		}
-
-		tokens.insert(tokens.end(), file_tokens.begin(), file_tokens.end());
-	}
-
-	return tokens;
+	for (Stmt const& stmt : stmts)
+		interpreter.interpret_statement(stmt);
 }
