@@ -8,7 +8,7 @@
     margin-bottom: 60px;
 
 	border: solid;
-	border-color: #eee;
+	border-color: rgb(150, 150, 150);
 
 	padding: 20px;
 
@@ -38,7 +38,7 @@
 }
 
 #main .code .var {
-	color:#eee;
+	color:rgb(197, 197, 197);
 }
 
 #main .code .bool {

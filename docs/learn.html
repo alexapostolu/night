@@ -63,43 +63,44 @@
 			<p class="desc">For basic output to the console, you can use the <code>print()</code> function. It takes a single parameter of any type, and displays it to the console. Singleline comments are also supported.</p>
 
 			<p class="code">
-				<span class="func">print</span>(<class class="str">'Hello World!\n'</class>)<br><br>
-				<span class="func">print</span>(<class class="str">"You can also use double quotations\n"</class>)<br><br>
+				<span class="func">print</span>(<class class="str">'Hello World!\n'</class>)<br><br>\
 
 				<span class="com"># this is a comment</span>
 			</p>
 
 			<h2 id="variables">Variables</h2>
 
-			<p class="desc">Night is dynamically typed, meaning you don't have to worry about the types of a variable.</p>
+			<p class="desc">Night is dynamically typed, meaning you don't have to worry about the types of a variable. Night also supports many common expressions. It's best to assign types to variables when possible, and leave then immutable.</p>
 
 			<p class="code">
-				<span class="key">set</span> <span class="var">boolean</span> = true<br><br>
+				<span class="key">set</span> <span class="var">var</span> = 5<br>
+				<span class="var">var</span> = <span class="str">"squid"</span><br><br>
+
+				<span class="com"># you can specifiy a specific type for a variable</span><br>
+				<span class="key">set</span> <span class="var">is_god</span>:&nbsp&nbsp&nbsp<span class="key">bool</span>&nbsp&nbsp&nbsp&nbsp&nbsp= <span class="bool">true</span><br>
+				<span class="key">set</span> <span class="var">light_on</span>: <span class="key">bool mut</span> = <span class="bool">true</span><br><br>
+				
+				<span class="var">is_god</span>&nbsp&nbsp&nbsp= <span class="bool">false</span> <span class="com"># error! 'is_god'&nbsp&nbsp&nbspis immutable and cannot be reassigned</span><br>
+				<span class="var">light_on</span> = 5&nbsp&nbsp&nbsp&nbsp&nbsp<span class="com"># error! 'light_on' can only be assigned to type 'bool'</span><br><br>
 
 				<span class="key">set</span> <span class="var">integer</span> = 10<br><br>
 
 				<span class="key">set</span> <span class="var">float</span> = 3.14<br><br>
 
-				<span class="key">set</span> <span class="var">name</span> = <span class="str">'squid'</span><br>
-				<span class="var">name</span> = <span class="str">'dynamic '</span> + name
+				<span class="key">set</span> <span class="var">name</span> = <span class="str">"squid"</span><br>
+				<span class="var">name</span> = <span class="str">"octopus"</span>
 			</p>
 
       		<h2 id="input">User Input</h2>
 
-			<p class="desc">User input in Night takes the form of the function <code>input()</code>. The function will return the user input in the form of a string. You can use the following casts to convert between types: <code>int</code>, <code>float</code>, or <code>str</code></p>
+			<p class="desc">User input in Night takes the form of the function <code>input()</code>. The function will return the user input in the form of a string. You can use the following casts to convert between types: <code>int</code>, <code>float</code>, or <code>str</code>.</p>
 
 			<p class="code">
 				<span class="func">print</span>(<span class="str">'What is your name? '</span>)<br>
-				<span class="key">set</span> <span class="var">name</span> = <span class="func">input()</span><br><br>
+				<span class="key">set</span> <span class="var">name</span> = <span class="func">input</span>()<br><br>
 
-				<span class="key">set</span> <span class="var">age</span> = <span class="func">int</span>(<span class="func">input()</span>)
+				<span class="key">set</span> <span class="var">age</span> = <span class="func">int</span>(<span class="func">input</span>())
 			</p>
-
-			<h2 id="expressions">Expressions</h2>
-
-			<p class="desc">Common boolean, arithmetric, and string expressions are supported. They can be used whenever a value is expected. Operator precedence can be found in the reference guide.</p>
-
-			<script src="https://gist.github.com/DynamicSquid/81a81911bc3f4aec7fa5cd00dc94f82d.js"></script>
 
 			<p class="desc">Some implicit conversions are also supported. Type <code>int</code> and type <code>dec</code> can be used interchangeably, and any type can concatenate into type <code>str</code>.</p>
 			

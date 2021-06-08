@@ -9,7 +9,7 @@ canvas {
 }
 
 body {
-	background-color: black;
+	background-color: rgb(10, 10, 10);
 }
 
 #main {	
@@ -22,7 +22,7 @@ body {
 }
 
 #main h2 {
-	color: rgb(231, 231, 231);
+	color: rgb(209, 208, 208);
 	
 	margin-top: 40px;
 	font-family: 'Roboto', sans-serif;
