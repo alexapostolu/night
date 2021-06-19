@@ -4,6 +4,7 @@
 #include "../../include/back-end/stmt.hpp"
 #include "../../include/error.hpp"
 
+#include <functional>
 #include <memory>
 #include <algorithm>
 #include <iterator>
@@ -1161,39 +1162,50 @@ Parser::TypeContainer Parser::type_check_expr(
 		return check_func.rtn_types;
 	}
 	case ExprNode::UNARY_OP: {
-		UnaryOPNode const& op = std::get<UnaryOPNode>(expr->data);
-		switch (op.type)
+		auto const throw_unary_op_err = [&](
+			UnaryOPNode   const& unary_op,
+			TypeContainer const& types,
+			std::string   const& used_types)
+		{
+			throw NIGHT_COMPILE_ERROR(
+				"operator '" + unary_op.data + "' is currently used on " + types_as_str(types),
+				"operator '" + unary_op.data + "' can only be used on " + used_types,
+				night::learn_operators);
+		};
+
+		UnaryOPNode const& unary_op = std::get<UnaryOPNode>(expr->data);
+		switch (unary_op.type)
 		{
 		case UnaryOPNode::NEGATIVE: {
 			TypeContainer const types = type_check_expr(
-				scope, op.value, { Type::INT, Type::FLOAT });
+				scope, unary_op.value, { Type::INT, Type::FLOAT });
 
 			if (!types.contains(Type::INT) && !types.contains(Type::FLOAT))
-				op.throw_unary_op_err(lexer, types, "types 'int' or 'float'");
+				throw_unary_op_err(unary_op, types, "types 'int' or 'float'");
 
 			return { Type::INT, Type::FLOAT };
 		}
 		case UnaryOPNode::NOT: {
 			TypeContainer const types = type_check_expr(
-				scope, op.value, { Type::BOOL });
+				scope, unary_op.value, { Type::BOOL });
 
 			if (!types.contains(Type::BOOL))
-				op.throw_unary_op_err(lexer, types, "type 'bool'");
+				throw_unary_op_err(unary_op, types, "type 'bool'");
 
 			return { Type::BOOL };
 		}
 		case UnaryOPNode::SUBSCRIPT: {
 			TypeContainer const types = type_check_expr(
-				scope, op.value, { Type::INT, Type::FLOAT });
+				scope, unary_op.value, { Type::INT, Type::FLOAT });
 
 			TypeContainer rtn_types;
 			if (types.contains(Type::STR))
 				rtn_types.insert(Type::STR);
-			if (auto pos = std::find(types.begin(), types.end(), Type::ARR); pos != types.end())
+			if (auto const pos = std::find(types.begin(), types.end(), Type::ARR); pos != types.end())
 				rtn_types.insert(pos->elem_types.begin(), pos->elem_types.end());
 
 			if (rtn_types.empty())
-				op.throw_unary_op_err(lexer, types, "types 'str' or 'arr'");
+				throw_unary_op_err(unary_op, types, "types 'str' or 'arr'");
 
 			return rtn_types;
 		}
@@ -1201,23 +1213,48 @@ Parser::TypeContainer Parser::type_check_expr(
 	}
 	case ExprNode::BINARY_OP: {
 		BinaryOPNode const& binary_op = std::get<BinaryOPNode>(expr->data);
+
+		auto const throw_binary_op_err = [&](
+			TypeContainer const& types,
+			std::string   const& side,
+			std::string   const& used_types)
+		{
+			throw NIGHT_COMPILE_ERROR(
+				side + " hand value of operator '" + binary_op.data + "' currently contains " + types_as_str(types),
+				"operator '" + binary_op.data + "' can only be used on " + used_types,
+				night::learn_operators);
+		};
+
+		TypeContainer rtn_num_types;
+
 		switch (binary_op.type)
 		{
 		case BinaryOPNode::PLUS:
 		case BinaryOPNode::MINUS:
 		case BinaryOPNode::TIMES:
 		case BinaryOPNode::DIVIDE:
-		case BinaryOPNode::MOD: {
-			binary_op.eval_num_types(scope);
-			return { Type::INT, Type::FLOAT };
-		}
+		case BinaryOPNode::MOD:
+			rtn_num_types = { Type::INT, Type::FLOAT };
 
 		case BinaryOPNode::GREATER:
 		case BinaryOPNode::GREATER_EQ:
 		case BinaryOPNode::SMALLER:
 		case BinaryOPNode::SMALLER_EQ: {
-			binary_op.eval_num_types(scope);
-			return { Type::BOOL };
+			TypeContainer const left_types = type_check_expr(
+				scope, binary_op.left, { Type::INT, Type::FLOAT });
+
+			if (!left_types.contains(Type::INT) && !left_types.contains(Type::FLOAT))
+				throw_binary_op_err(left_types, "left", "types 'int' or 'float'");
+
+			TypeContainer const right_types = type_check_expr(
+				scope, binary_op.right, { Type::INT, Type::FLOAT });
+
+			if (!right_types.contains(Type::INT) && !right_types.contains(Type::FLOAT))
+				throw_binary_op_err(right_types, "right", "types 'int' or 'float'");
+
+			return rtn_num_types.empty()
+				? TypeContainer{ Type::BOOL }
+				: rtn_num_types;
 		}
 
 		case BinaryOPNode::AND:
@@ -1226,13 +1263,13 @@ Parser::TypeContainer Parser::type_check_expr(
 				scope, binary_op.left, { Type::BOOL });
 
 			if (!left_types.contains(Type::BOOL))
-				binary_op.throw_binary_op_err(lexer, left_types, "left", "type 'bool'");
+				throw_binary_op_err(left_types, "left", "type 'bool'");
 
 			TypeContainer const right_types = type_check_expr(
 				scope, binary_op.left, { Type::BOOL });
 
 			if (!right_types.contains(Type::BOOL))
-				binary_op.throw_binary_op_err(lexer, right_types, "left", "type 'bool'");
+				throw_binary_op_err(right_types, "left", "type 'bool'");
 
 			return { Type::BOOL };
 		}
@@ -1250,8 +1287,8 @@ Parser::TypeContainer Parser::type_check_expr(
 
 			if (!match) {
 				throw NIGHT_COMPILE_ERROR(
-					"operator '" + binary_op.op + "' can only be used to compare two equivalent non-class types",
-					"left hand value of operator '" + binary_op.op + "' currently contains " + types_as_str(right_types) + ", but right hand value currently contains " + types_as_str(right_types),
+					"left hand value of operator '" + binary_op.data + "' currently contains " + types_as_str(right_types) + ", but right hand value currently contains " + types_as_str(right_types),
+					"operator '" + binary_op.data + "' can only be used to compare two equivalent non-class types",
 					night::learn_operators);
 			}
 
@@ -1328,8 +1365,8 @@ Parser::TypeContainer Parser::type_check_expr(
 
 			if (!obj_types.contains(Type::STR) && !obj_types.contains(Type::ARR)) {
 				throw NIGHT_COMPILE_ERROR(
-					"operator '" + binary_op.op + "' can only be used on types: 'str', 'arr', and 'obj'",
-					"left hand value of operator '" + binary_op.op + "' currently contains " + types_as_str(obj_types),
+					"operator '" + binary_op.data + "' can only be used on types: 'str', 'arr', and 'obj'",
+					"left hand value of operator '" + binary_op.data + "' currently contains " + types_as_str(obj_types),
 					night::learn_type_checking);
 			}
 
@@ -1341,17 +1378,6 @@ Parser::TypeContainer Parser::type_check_expr(
 	}
 	}
 }
-
-void Parser::throw_unary_op_err(
-	UnaryOPNode& unary_op,
-	TypeContainer const& types,
-	std::string const& used_types)
-{
-	throw NIGHT_COMPILE_ERROR(
-		"operator '" + unary_op.data + "' is currently used on " + types_as_str(types),
-		"operator '" + unary_op.data + "' can only be used on " + used_types,
-		night::learn_operators);
-};
 
 void Parser::check_call_types(
 	std::vector<TypeContainer> const& param_types,
@@ -1384,7 +1410,7 @@ void Parser::check_call_types(
 	}
 }
 
-std::string Parser::types_as_str(TypeContainer const& var_types_set)
+std::string Parser::types_as_str(TypeContainer const& var_types_set) const
 {
 	assert(!var_types_set.empty());
 

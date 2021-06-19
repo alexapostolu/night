@@ -10,9 +10,6 @@
 #define NIGHT_PREPROCESS_ERROR(msg, link) \
 	night::error(Location{ __FILE__, __LINE__ }, night::error_preprocess, {}, msg, {}, link)
 
-#define NIGHT_COMPILE_ERROR(msg, fix, link) \
-	night::error(Location{ __FILE__, __LINE__ }, night::error_compile, lexer.get_loc(), msg, fix, link)
-
 namespace night {
 
 std::string const format_array = "arrays must be in this format: `[elem1, elem2]`";

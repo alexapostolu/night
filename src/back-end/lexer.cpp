@@ -225,8 +225,8 @@ std::unordered_map<char, std::map<char, TokenType> > const Lexer::symbols{
 };
 
 std::unordered_map<std::string, TokenType> const Lexer::keywords{
-	{ "true", TokenType::BOOL },
-	{ "false", TokenType::BOOL },
+	{ "true", TokenType::BOOL_L },
+	{ "false", TokenType::BOOL_L },
 	{ "set", TokenType::SET },
 	{ "if", TokenType::IF },
 	{ "else", TokenType::ELSE },

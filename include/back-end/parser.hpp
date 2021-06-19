@@ -11,6 +11,9 @@
 #include <unordered_set>
 #include <functional>
 
+#define NIGHT_COMPILE_ERROR(msg, fix, link) \
+	night::error(Location{ __FILE__, __LINE__ }, night::error_compile, lexer.get_loc(), msg, fix, link)
+
 class Parser
 {
 private:
@@ -81,12 +84,6 @@ private:
 		TypeContainer const& required_types = {}
 	) const;
 
-	void throw_unary_op_err(
-		UnaryOPNode& unary_op,
-		TypeContainer const& types,
-		std::string const& used_types);
-
-
 	void check_call_types(
 		std::vector<TypeContainer> const& param_types,
 		std::vector<TypeContainer> const& arg_types,
@@ -95,7 +92,7 @@ private:
 
 	std::string types_as_str(
 		TypeContainer const& var_types_set
-	);
+	) const;
 
 public:
 	struct CheckVariable;

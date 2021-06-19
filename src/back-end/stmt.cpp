@@ -9,33 +9,6 @@
 
 
 
-void BinaryOPNode::eval_num_types(
-	Parser::ParserScope& scope) const
-{
-	std::vector<Type> const left_types =
-		left->eval_types(scope, { Type::INT, Type::FLOAT });
-
-	if (!night::contains(left_types, Type::INT, Type::FLOAT))
-		throw_binary_op_err(left_types, "left", "types 'int' or 'float'");
-
-	std::vector<Type> const right_types =
-		right->eval_types(scope, { Type::INT, Type::FLOAT });
-	 
-	if (!night::contains(right_types, Type::INT, Type::FLOAT))
-		throw_binary_op_err(left_types, "right", "types 'int' or 'float'");
-}
-
-void BinaryOPNode::throw_binary_op_err(
-	Lexer& lexer,
-	std::vector<Type> const& types,
-	std::string const& side,
-	std::string const& used_types) const
-{
-	throw NIGHT_COMPILE_ERROR(
-		side + " hand value of operator '" + op + "' currently contains " + types_as_str(types),
-		"operator '" + op + "' can only be used on " + used_types,
-		night::learn_operators);
-}
 
 
 

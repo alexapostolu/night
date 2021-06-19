@@ -70,17 +70,6 @@ struct BinaryOPNode
 
 	std::string data;
 	std::shared_ptr<ExprNode> left, right;
-
-	void eval_num_types(
-		Parser::ParserScope& scope
-	) const;
-
-	void throw_binary_op_err(
-		Lexer& lexer,
-		std::vector<Type> const& types,
-		std::string const& side,
-		std::string const& used_types
-	) const;
 };
 
 struct ExprNode
