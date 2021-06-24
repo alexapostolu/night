@@ -6,12 +6,6 @@
 #include <memory>
 #include <algorithm>
 
-
-
-
-
-
-
 std::shared_ptr<ExprNode>& ExprNode::travel_ast()
 {
 	return type == ExprNode::UNARY_OP

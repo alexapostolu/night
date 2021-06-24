@@ -42,7 +42,7 @@ struct ValueVar
 
 struct ValueCall
 {
-	std::string func_name;
+	std::string name;
 	ExprContainer param_exprs;
 };
 
@@ -115,9 +115,10 @@ struct StmtAssign
 		TIMES,
 		DIVIDE,
 		MOD
-	} const type;
+	} type;
 
-	std::string var;
+	std::string var_name;
+	std::vector<std::shared_ptr<ExprNode> > subscript_chain;
 	std::shared_ptr<ExprNode> assign_expr;
 };
 

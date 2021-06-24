@@ -164,6 +164,7 @@ Stmt Parser::parse_statement(ParserScope& scope)
 		else
 		{
 			std::shared_ptr<ExprNode> var_expr(nullptr);
+			std::vector<std::shared_ptr<ExprNode> > subscript_chain;
 			bool contains_method = false;
 
 			auto* const check_var = scope.get_var(var_name);
@@ -273,6 +274,8 @@ Stmt Parser::parse_statement(ParserScope& scope)
 							night::learn_arrays);
 					}
 
+					subscript_chain.push_back(expr);
+
 					UnaryOPNode const sub_op{
 						UnaryOPNode::SUBSCRIPT, "[]", var_expr };
 
@@ -318,7 +321,7 @@ Stmt Parser::parse_statement(ParserScope& scope)
 
 				return Stmt{
 					lexer.get_loc(), StmtType::ASSIGN,
-					StmtAssign{ assign_type, check_var->first, var_expr }
+					StmtAssign{ assign_type, check_var->first, subscript_chain, var_expr }
 				};
 			}
 			else if (token.type == TokenType::EOL)
@@ -1111,10 +1114,10 @@ Parser::TypeContainer Parser::type_check_expr(
 	case ExprNode::CALL: {
 		ValueCall const& val = std::get<ValueCall>(expr->data);
 
-		auto const check_func_it = check_funcs.find(val.func_name);
+		auto const check_func_it = check_funcs.find(val.name);
 		if (check_func_it == check_funcs.end()) {
 			throw NIGHT_COMPILE_ERROR(
-				"function '" + val.func_name + "' is not defined",
+				"function '" + val.name + "' is not defined",
 				"functions have to be defined before they are used",
 				night::learn_functions);
 		}
@@ -1123,8 +1126,8 @@ Parser::TypeContainer Parser::type_check_expr(
 
 		if (val.param_exprs.size() != check_func.param_types.size()) {
 			throw NIGHT_COMPILE_ERROR(
-				"function '" + val.func_name + "' is called with '" + std::to_string(val.param_exprs.size()) + "' argument(s)",
-				"function '" + val.func_name + "' can only be called with '" + std::to_string(check_func.param_types.size()) + "' argument(s)",
+				"function '" + val.name + "' is called with '" + std::to_string(val.param_exprs.size()) + "' argument(s)",
+				"function '" + val.name + "' can only be called with '" + std::to_string(check_func.param_types.size()) + "' argument(s)",
 				night::learn_functions);
 		}
 
@@ -1132,7 +1135,7 @@ Parser::TypeContainer Parser::type_check_expr(
 
 		if (check_func.is_void) {
 			throw NIGHT_COMPILE_ERROR(
-				"function '" + val.func_name + "' does not have a return value",
+				"function '" + val.name + "' does not have a return value",
 				"functions must have a return value to be used in expression",
 				night::learn_functions);
 		}
@@ -1153,7 +1156,7 @@ Parser::TypeContainer Parser::type_check_expr(
 
 			if (!match) {
 				throw NIGHT_COMPILE_ERROR(
-					"argument number " + std::to_string(a + 1) + " for function " + val.func_name+ " must contain " + types_as_str(check_func.param_types[a]),
+					"argument number " + std::to_string(a + 1) + " for function " + val.name + " must contain " + types_as_str(check_func.param_types[a]),
 					"argument number " + std::to_string(a + 1) + " currently contains " + types_as_str(arg_types),
 					night::learn_functions);
 			}
@@ -1313,7 +1316,7 @@ Parser::TypeContainer Parser::type_check_expr(
 			TypeContainer send_types, rtn_types;
 			for (const auto& check_class : Parser::check_classes)
 			{
-				auto const it = check_class.second.methods.find(method.func_name);
+				auto const it = check_class.second.methods.find(method.name);
 
 				if (it == check_class.second.methods.end() ||
 					it->second.is_void ||
@@ -1355,7 +1358,7 @@ Parser::TypeContainer Parser::type_check_expr(
 
 			if (send_types.empty()) {
 				throw NIGHT_COMPILE_ERROR(
-					"method '" + method.func_name + "' does not exist within any class",
+					"method '" + method.name + "' does not exist within any class",
 					"methods have to be defined before they are used",
 					night::learn_classes);
 			}
