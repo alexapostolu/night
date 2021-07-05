@@ -1,7 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Anonymous+Pro&display=swap');
 
-#title img {
+#header canvas {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	z-index: -2;
+}
+
+#header img {
 	display: block;
 
 	margin-top: 100px;
@@ -9,7 +16,7 @@
 	margin-right: auto;
 }
 
-#title h1 {
+#header h1 {
 	color: #eee;
 
 	text-align: center;
@@ -18,7 +25,7 @@
 	font-family: 'Montserrat';
 }
 
-#title hr {
+#header hr {
 	background-color: gray;
 	
 	position: relative;
@@ -32,7 +39,7 @@
 	top: 88px;
 }
 
-#title #tag {
+#header #tag {
     background-color: #eee;
 	color: gray;
 	
@@ -52,31 +59,25 @@
 	font-family: 'Anonymous Pro';
 }
 
-#title #tag b {
+#header #tag b {
 	color: black;
 }
 
-#title #actions {
+#header #actions {
 	display: flex;
 
 	color: #eee;
 	
-	margin-top: 50px;
-	margin-left: 12%;
-	margin-right: 12%;
-	margin-bottom: 50px;
+	margin: 50px 12% 50px 12%;
 }
 
-#title #actions a {
+#header #actions a {
 	color: #eee;
 	text-decoration: none;
 }
 
-#title #actions h2 {
-	margin-top: 0px;
-	margin-bottom: 0px;
-	margin-left: 20%;
-	margin-right: 20%;
+#header #actions h2 {
+	margin: 0 20% 0 20%;
 	
 	border: solid;
 	border-radius: 25px;
@@ -90,11 +91,11 @@
 	transition-duration: 0.6s;
 }
 
-#title .action {
+#header .action {
     flex: 1;
 }
 
-#title .action h2:hover {
+#header .action h2:hover {
 	background-color: #eee;
 	color: black;
 }
