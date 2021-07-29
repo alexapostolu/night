@@ -5,6 +5,7 @@
 #include "../../include/back-end/token.hpp"
 #include "../../include/error.hpp"
 
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -18,8 +19,7 @@ void FrontEnd(int argc, char** argv)
 
 	if (std::string(argv[1]) == "--help")
 	{
-		std::cout << "--help    displays list of commands\n"
-				  << "--version displays current version\n"
+		std::cout << "--version displays current version\n"
 				  << "<file>    runs <file>\n";
 		return;
 	}
@@ -32,16 +32,21 @@ void FrontEnd(int argc, char** argv)
 	Lexer lexer(argv[1], true);
 	Parser parser(lexer);
 
-	Parser::Scope global_scope{ nullptr };
+	Parser::ParserScope global_scope{ nullptr };
 
 	std::vector<Stmt> stmts;
-	while (lexer.peek(true).type != TokenType::_EOF)
+
+	auto token = lexer.eat(true);
+	while (lexer.get_curr().type != TokenType::_EOF)
+	{
 		stmts.push_back(parser.parse_statement(global_scope));
 
-	// Optimizer optimizer;
+		if (lexer.get_curr().type == TokenType::EOL)
+			lexer.eat(true);
+	}
+
+	Interpreter::InterpreterScope interpret_scope{ nullptr };
 
 	Interpreter interpreter;
-
-	for (Stmt const& stmt : stmts)
-		interpreter.interpret_statement(stmt);
+	interpreter.interpret_statements(interpret_scope, stmts);
 }

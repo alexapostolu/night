@@ -1,14 +1,17 @@
 #pragma once
 
-#include "../include/back-end/utils.hpp"
-
 #include <stdexcept>
 #include <cassert>
 #include <string>
-#include <vector>
 
 #define NIGHT_PREPROCESS_ERROR(msg, link) \
-	night::error(Location{ __FILE__, __LINE__ }, night::error_preprocess, {}, msg, {}, link)
+	night::error(__FILE__, __LINE__, night::error_preprocess, {}, msg, {}, link)
+
+struct Location
+{
+	std::string file;
+	int line, col;
+};
 
 namespace night {
 
@@ -47,7 +50,8 @@ class error
 {
 public:
 	error(
-		Location const& debug_loc,
+		std::string_view debug_file,
+		int const        debug_line,
 
 		std::string const& _type,
 		Location	const& _loc,
@@ -76,7 +80,7 @@ private:
 	const std::string RESET = "\033[0m";
 	const std::string RED = "\033[0;31m";
 	const std::string YELLOW = "\033[0;33m";
-	const std::string CYAN = "\033[0;36m";
+	const std::string CYAN = "\033[38;5;45m";
 	const std::string WHITE = "\033[0;37m";
 	const std::string b_RED = "\033[0;1;31m";
 	const std::string b_WHITE = "\033[0;1;37m";

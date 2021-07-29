@@ -1,5 +1,4 @@
 #include "../../include/back-end/interpreter.hpp"
-#include "../../include/back-end/utils.hpp"
 #include "../../include/back-end/token.hpp"
 #include "../../include/back-end/stmt.hpp"
 #include "../../include/error.hpp"
@@ -13,144 +12,219 @@
 #include <string>
 #include <vector>
 
-// std::optional
-Interpreter::Data Interpreter::interpret_statement(
+bool Interpreter::Data::is_num() const
+{
+	return type == Data::INT || type == Data::FLOAT;
+}
+
+std::string Interpreter::Data::to_str() const
+{
+	switch (type)
+	{
+	case T::BOOL:
+		return "bool";
+	case T::INT:
+		return "int";
+	case T::FLOAT:
+		return "float";
+	case T::STR:
+		return "str";
+	case T::ARR:
+		return "arr";
+	}
+}
+
+void Interpreter::Data::Print() const
+{
+	switch (type)
+	{
+	case BOOL:
+		std::cout << std::get<bool>(val);
+		break;
+	case INT:
+		std::cout << std::get<int>(val);
+		break;
+	case FLOAT:
+		std::cout << std::get<float>(val);
+		break;
+	case STR:
+		std::cout << std::get<std::string>(val);
+		break;
+	case ARR: {
+		auto& arr = std::get<std::vector<Data> >(val);
+
+		std::cout << "[ ";
+
+		for (int a = 0; a < (int)arr.size() - 1; ++a)
+		{
+			arr[a].Print();
+			std::cout << ", ";
+		}
+
+		if (!arr.empty())
+		{
+			arr.back().Print();
+			std::cout << " ";
+		}
+
+		std::cout << "]";
+
+		break;
+	}
+	}
+
+	std::cout.flush();
+}
+
+bool Interpreter::Data::compare_data(
+	Data const& data1,
+	Data const& data2)
+{
+	if (data1.type != data2.type)
+		return false;
+
+	switch (data1.type)
+	{
+	case Data::BOOL:
+		return std::get<bool>(data1.val) == std::get<bool>(data2.val);
+	case Data::INT:
+		return std::get<int>(data1.val) == std::get<int>(data2.val);
+	case Data::FLOAT:
+		return std::get<float>(data1.val) == std::get<float>(data2.val);
+	case Data::STR:
+		return std::get<std::string>(data1.val) == std::get<std::string>(data2.val);
+	case Data::ARR:
+		return compare_array(data1, data2);
+	}
+}
+
+bool Interpreter::Data::compare_array(
+	Data const& data1,
+	Data const& data2)
+{
+	auto& arr1 = std::get<std::vector<Data> >(data1.val);
+	auto& arr2 = std::get<std::vector<Data> >(data2.val);
+
+	if (arr1.size() != arr2.size())
+		return false;
+
+	for (std::size_t a = 0; a < arr1.size(); ++a)
+	{
+		if (!compare_data(arr1[a], arr2[a]))
+			return false;
+	}
+
+	return true;
+}
+
+std::optional<Interpreter::Data> Interpreter::interpret_statements(
+	InterpreterScope& upper_scope,
+	std::vector<Stmt> const& stmts,
+	NightVariableContainer const& vars)
+{
+	InterpreterScope scope{ upper_scope };
+	scope.vars = vars;
+
+	for (auto const& stmt : stmts)
+	{
+		std::optional<Data> rtn_val = interpret_statement(scope, stmt);
+		if (rtn_val.has_value())
+			return rtn_val;
+	}
+
+	return std::nullopt;
+}
+
+std::optional<Interpreter::Data> Interpreter::interpret_statement(
 	InterpreterScope& scope,
 	Stmt const& stmt)
 {
+	auto const& loc = stmt.loc;
+
 	switch (stmt.type)
 	{
-	case StmtType::ASSIGN: {
-		StmtAssign const& stmt_assign = std::get<StmtAssign>(stmt.data);
+	case StmtType::INIT: {
+		StmtInit const& stmt_init = std::get<StmtInit>(stmt.data);
+		scope.vars[stmt_init.name] = { evaluate_expression(scope, stmt_init.expr) };
 
-		auto const night_var   = scope.get_var(stmt_assign.var_name);
-		Data const assign_data = evaluate_expression(scope, stmt_assign.assign_expr);
+		return std::nullopt;
+	}
+	case StmtType::ASSIGN: {
+		auto& stmt_assign = std::get<StmtAssign>(stmt.data);
+
+		// get data produced by subscript chain
+		auto chain = interpret_subscript_chain(scope, stmt_assign, loc);
+
+		// 'interpret_subscript_chain' already handles assignments involving
+		// string characters, and if that's the case no value will be returned
+		if (!chain.has_value())
+			return std::nullopt;
+
+		auto [curr_data, assign_data] = chain.value();
 
 		switch (stmt_assign.type)
 		{
 		case StmtAssign::ASSIGN: {
-			if (stmt_assign.subscript_chain.size() == 0)
-			{
-				night_var->second.data = assign_data;
-				return std::nullopt;
-			}
-
-			if (night_var->second.data.type == Data::STR)
-			{
-				if (stmt_assign.subscript_chain.size() > 1) {
-					throw NIGHT_RUNTIME_ERROR(
-						"subscript operator can not be used on letter value",
-						"",
-						night::learn_strings);
-				}
-
-				if (night_var->second.data.type != Data::STR) {
-					throw NIGHT_RUNTIME_ERROR("");
-				}
-
-				std::string assign_str =
-					std::get<std::string>(night_var->second.data.val);
-
-				assign_str
-				
-				night_var->second.data.val = std::;
-				return std::nullopt;
-			}
-			else if (curr.type == Data::ARR)
-			{
-				curr = std::get<std::vector<Data> >(curr.data);
-			}
-
-			for (auto const& index : stmt_assign.subscript_chain)
-			{
-				if (curr.type == Data::STR)
-				{
-
-				}
-				else if (curr.type == Data::ARR)
-				{
-					curr = std::get<std::vector<Data> >(curr.data);
-				}
-				
-				throw NIGHT_RUNTIME_ERROR();
-			}
-			night_var->second.data = evaluate_expression(scope, stmt_assign.assign_expr);
+			*curr_data = assign_data;
 			break;
 		}
 		case StmtAssign::PLUS: {
-			if (stmt_assign.check_var.value. == ValueType::STR)
+			if (curr_data->type == Data::STR)
 			{
-				std::get<std::string>(night_variable->second.data) += assign_expr.to_str();
-			}
-			else if (night_variable->second.is_num())
-			{
-				if (!assign_expr.is_num())
-					throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "expression can not be used with the operator '+='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, if the variable is type 'int' or 'float', then the operator '+=' can only assign expressions of type 'int' or 'float'");
+				if (assign_data.type != Data::STR) {
+					throw NIGHT_RUNTIME_ERROR(
+						"value is type 'str' but expression is type '" + assign_data.to_str() + "'",
+						"type 'str' can only be concatenated with type 'str'",
+						night::learn_strings);
+				}
 
-				if (night_variable->second.type == VariableType::INT)
-					std::get<int>(night_variable->second.data) += (int)assign_expr.get_num();
+				std::get<std::string>(curr_data->val) += std::get<std::string>(assign_data.val);
+			}
+			else if (curr_data->is_num())
+			{
+				if (!assign_data.is_num()) {
+					throw NIGHT_RUNTIME_ERROR(
+						"expression of type '" + assign_data.to_str() + "' can not be assigned using the assignment '+='",
+						"assignment '+=' on that variable can only be used for expressions of type 'int' or 'float'",
+						"");
+				}
+
+				if (curr_data->type == Data::INT)
+				{
+					std::get<int>(curr_data->val) += assign_data.type == Data::INT
+						? std::get<int>(assign_data.val)
+						: (int)std::get<float>(assign_data.val);
+				}
 				else
-					std::get<float>(night_variable->second.data) += assign_expr.get_num();
+				{
+					std::get<float>(curr_data->val) += assign_data.type == Data::INT
+						? std::get<int>(assign_data.val)
+						: std::get<float>(assign_data.val);
+
+				}
 			}
 			else
 			{
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '+='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '+=' can only be used on variables of type 'int', 'float', or 'string'");
+				throw NIGHT_RUNTIME_ERROR(
+					"assignment operator '+=' can only be used on types 'int', 'float', or 'str'",
+					"operator is currently being used on type '" + curr_data->to_str() + "'",
+					"");
 			}
 
 			break;
 		}
-		case StmtAssign::MINUS: {
-			if (!night_variable->second.is_num())
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '-='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '-=' can only be used on variables of type 'int' or 'float'");
-			if (!assign_expr.is_num())
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "expression can not be used with the operator '-='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '-=' can only assign expressions of type 'int' or 'float'");
-
-			if (night_variable->second.type == VariableType::INT)
-				std::get<int>(night_variable->second.data) -= (int)assign_expr.get_num();
-			else
-				std::get<float>(night_variable->second.data) -= assign_expr.get_num();
-
+		case StmtAssign::MINUS:
+			interpret_assignment(curr_data, assign_data, "-=", []<typename T>(T x, T y) -> T { return x - y; }, loc);
 			break;
-		}
-		case StmtAssign::TIMES: {
-			if (!night_variable->second.is_num())
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '*='", "the variable contains type '" + night_variable->second.type.to_str() + "'; however, the operator '*=' can only be used on variables of type 'int' or 'float'");
-			if (!assign_expr.is_num())
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "expression can not be used with the operator '*='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '*=' can only assign expressions of type 'int' or 'float'");
-
-			if (night_variable->second.type == VariableType::INT)
-				std::get<int>(night_variable->second.data) *= (int)assign_expr.get_num();
-			else
-				std::get<float>(night_variable->second.data) *= assign_expr.get_num();
-
+		case StmtAssign::TIMES:
+			interpret_assignment(curr_data, assign_data, "*=", []<typename T>(T x, T y) -> T { return x * y; }, loc);
 			break;
-		}
-		case StmtAssign::DIVIDE: {
-			if (!night_variable->second.is_num())
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '/='", "the operator can only be used on variables of type 'int' or float'");
-			if (!assign_expr.is_num())
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "expression can not be used with the operator '/='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '/=' can only assign expressions of type 'int' or 'float'");
-
-			if (night_variable->second.type == VariableType::INT)
-				std::get<int>(night_variable->second.data) /= (int)assign_expr.get_num();
-			else
-				std::get<float>(night_variable->second.data) /= assign_expr.get_num();
-
+		case StmtAssign::DIVIDE:
+			interpret_assignment(curr_data, assign_data, "/=", []<typename T>(T x, T y) -> T { return x / y; }, loc);
 			break;
-		}
-		case StmtAssign::MOD: {
-			if (!night_variable->second.is_num())
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "variable '" + night_variable->first + "' can not be assigned using the assignment operator '%='", "the operator can only be used on variables of type 'int' or float'");
-			if (!assign_expr.is_num())
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "expression can not be used with the operator '%='", "the expression contains type '" + assign_expr.type.to_str() + "'; however, the operator '%=' can only assign expressions of type 'int' or 'float'");
-
-			if (night_variable->second.type == VariableType::INT)
-				std::get<int>(night_variable->second.data) /= (int)assign_expr.get_num();
-			else
-				std::get<float>(night_variable->second.data) /= assign_expr.get_num();
-
+		case StmtAssign::MOD:
+			interpret_assignment(curr_data, assign_data, "%=", []<typename T>(T x, T y) -> T { return (T)std::fmod(x, y); }, loc);
 			break;
-		}
 		}
 
 		return std::nullopt;
@@ -158,182 +232,324 @@ Interpreter::Data Interpreter::interpret_statement(
 	case StmtType::IF: {
 		StmtIf const& stmt_if = std::get<StmtIf>(stmt.data);
 
-		for (const Conditional& conditional : stmt_if.chains)
+		for (Conditional const& conditional : stmt_if.chains)
 		{
-			if (conditional.condition == nullptr)
+			// if conditional is 'if' or 'elif'
+			if (conditional.condition != nullptr)
 			{
-				for (auto& body_stmt : conditional.body->statements)
-					interpret_statement(conditional.body, body_stmt);
+				// evaluate condition
+				Data const condition_expr =
+					evaluate_expression(scope, conditional.condition);
 
-				return;
+				if (condition_expr.type != Data::BOOL) {
+					throw NIGHT_RUNTIME_ERROR(
+						"if statement condition must be type 'bool'",
+						"condition is currently type '" + condition_expr.to_str() + "'",
+						night::learn_conditionals);
+				}
+
+				// if condition is not true, continue to next conditional
+				if (!std::get<bool>(condition_expr.val))
+					continue;
 			}
 
-			const NightData condition_expr =
-				evaluate_expression(curr_scope, conditional.condition);
-
-			if (condition_expr.type != ValueType::BOOL) {
-				throw NIGHT_RUNTIME_ERROR(
-					"if statement condition is not type: 'bool'",
-					"condition currently is type: '" + condition_expr.type.to_str() + "'",
-					night::learn_conditionals);
-			}
-
-			if (std::get<bool>(condition_expr.data))
-			{
-				for (auto& body_stmt : conditional.body->statements)
-					interpret_statement(conditional.body, body_stmt);
-			}
-
-			return;
+			// if conditional is 'else', or if condition is true
+			return interpret_statements(scope, conditional.body);
 		}
 
-		break;
+		// if no conditional is true
+		return std::nullopt;
 	}
 	case StmtType::FN: {
-		StmtFn const& fn_stmt = std::get<StmtFn>(stmt->data);
-
-		night_funcs.push_back(NightFunction{
-			fn_stmt.params,
-			fn_stmt.body
-			});
+		StmtFn const& stmt_fn = std::get<StmtFn>(stmt.data);
+		night_funcs[stmt_fn.name] = { stmt_fn.params, stmt_fn.body };
 
 		return std::nullopt;
 	}
 	case StmtType::CALL: {
-		const FunctionCall& function_call = std::get<FunctionCall>(stmt.data);
+		auto& stmt_call = std::get<StmtCall>(stmt.data);
 
-		if (function_call.name == "print")
+		// evaluate pre-defined functions first
+		if (stmt_call.name == "print")
 		{
-			const NightData data = evaluate_expression(
-				curr_scope, function_call.arguments[0]);
+			Data const data = evaluate_expression(scope, stmt_call.args[0]);
+			data.Print();
 
-			NightPrint(data);
-
-			break;
+			return std::nullopt;
 		}
-		if (function_call.name == "input")
+		if (stmt_call.name == "input")
 		{
 			std::string user_input;
 			getline(std::cin, user_input);
 
-			break;
+			return std::nullopt;
 		}
-		if (function_call->name == "system")
+		if (stmt_call.name == "system")
 		{
-			const NightData arg = evaluate_expression(curr_scope, function_call.arguments[0]);
-			system(std::get<std::string>(arg.data).c_str());
+			Data const arg = evaluate_expression(scope, stmt_call.args.at(0));
 
-			break;
+			if (arg.type != Data::STR) {
+				throw NIGHT_RUNTIME_ERROR(
+					"function call 'system', argument number 1 must be type 'str'",
+					"argument is currently type '" + arg.to_str() + "'",
+					night::learn_functions);
+			}
+
+			system(std::get<std::string>(arg.val).c_str());
+
+			return std::nullopt;
 		}
 
-		auto night_function = night_functions.find(function_call->name);
-		assert(night_function != night_functions.end());
+		auto night_func = night_funcs.find(stmt_call.name);
+		assert(night_func != night_funcs.end());
 
-		std::shared_ptr<NightScope> function_scope =
-			std::make_shared<NightScope>(curr_scope);
+		auto vars = interpret_arguments(scope,
+			night_func->second.params, stmt_call.args);
 
-		// turning parameters into variables
-		for (std::size_t a = 0; a < night_function->second.params.size(); ++a)
-		{
-			function_scope->variables[night_function->second.params[a]] =
-				evaluate_expression(curr_scope, function_call->arguments[a]);
-		}
-
-		NightData dummy_return_value;
-		Interpret(function_scope, night_function->second.body, &dummy_return_value);
-
-		exit_function = false;
-		break;
+		return interpret_statements(scope, night_func->second.body, vars);
 	}
 	case StmtType::RETURN: {
-		StmtReturn const& rtn_stmt = std::get<StmtReturn>(stmt.data);
+		auto& stmt_rtn = std::get<StmtReturn>(stmt.data);
 
-		if (rtn_stmt.expr != nullptr)
-			return evaluate_expression(scope, rtn_stmt.expr);
-		else
-			return std::nullopt;
+		return stmt_rtn.expr != nullptr
+			? std::optional<Data>{ evaluate_expression(scope, stmt_rtn.expr) }
+			: std::optional<Data>{ std::nullopt };
 	}
 	case StmtType::WHILE: {
-		WhileLoop const& while_loop = std::get<WhileLoop>(stmt.data);
+		StmtWhile const& stmt_while = std::get<StmtWhile>(stmt.data);
 
 		while (true)
 		{
-			const NightData condition =
-				evaluate_expression(curr_scope, while_loop.condition);
+			// evaluate condition
+			Data const condition =
+				evaluate_expression(scope, stmt_while.condition);
 
-			if (condition.type != VariableType::BOOL)
-				throw RuntimeError(__FILE__, __LINE__, RuntimeError::invalid_type, loc, "while loop condition does not evaluate to type 'bool'", "condition is currently type '" + condition.type.to_str() + "'");
+			if (condition.type != Data::BOOL) {
+				throw NIGHT_RUNTIME_ERROR(
+					"while loop condition must be type 'bool'",
+					"condition is currently type '" + condition.to_str() + "'",
+					night::learn_loops);
+			}
 
-			if (!std::get<bool>(condition.data))
+			// break if condition is false
+			if (!std::get<bool>(condition.val))
 				break;
 
-			std::shared_ptr<NightScope> while_loop_scope =
-				std::make_shared<NightScope>(current_scope);
+			auto rtn_val = interpret_statements(scope, stmt_while.body);
 
-			Interpret(while_loop_scope, while_loop->body->statements);
+			// if body returns a value, stop the loop
+			if (rtn_val.has_value())
+				return rtn_val;
 		}
 
 		return std::nullopt;
 	}
 	case StmtType::FOR: {
-		const ForLoop* const for_loop = &std::get<ForLoop>(statement.stmt);
+		auto& stmt_for = std::get<StmtFor>(stmt.data);
 
-		const NightData range = evaluate_expression(current_scope, for_loop->range);
-		if (range.type == VariableType::STRING)
+		Data const range = evaluate_expression(scope, stmt_for.range);
+		
+		if (range.type == Data::STR)
 		{
-			for (char range_value : std::get<std::string>(range.data))
+			auto& str_arr = std::get<std::string>(range.val);
+
+			for (char range_value : str_arr)
 			{
-				std::shared_ptr<NightScope> for_loop_scope =
-					std::make_shared<NightScope>(current_scope);
+				// create iterator variable
+				NightVariableContainer it_var;
+				it_var[stmt_for.it_name] = { Data::STR, std::string(1, range_value) };
 
-				for_loop_scope->variables[for_loop->iterator_name] =
-					NightData{ VariableType::STRING, std::string(1, range_value) };
+				auto rtn_val = interpret_statements(scope, stmt_for.body, it_var);
 
-				Interpret(for_loop_scope, for_loop->body->statements);
+				// if body returns a value, stop the loop
+				if (rtn_val.has_value())
+					return rtn_val;
+			}
+		}
+		else if (range.type == Data::ARR)
+		{
+			auto& vec_arr = std::get<std::vector<Data> >(range.val);
+
+			for (Data const& range_value : vec_arr)
+			{
+				// create iterator variable
+				NightVariableContainer it_var;
+				it_var[stmt_for.it_name] = { range_value };
+
+				auto rtn_val = interpret_statements(scope, stmt_for.body, it_var);
+
+				// if body returns a value, stop the loop
+				if (rtn_val.has_value())
+					return rtn_val;
 			}
 		}
 		else
 		{
-			for (const NightData& range_value : range.extras)
-			{
-				std::shared_ptr<NightScope> for_loop_scope =
-					std::make_shared<NightScope>(current_scope);
-
-				for_loop_scope->variables[for_loop->iterator_name] = range_value;
-
-				Interpret(for_loop_scope, for_loop->body->statements);
-			}
+			throw NIGHT_RUNTIME_ERROR(
+				"for loop range must be type 'str' or 'arr'",
+				"range is currently type '" + range.to_str() + "'",
+				night::learn_loops);
 		}
 
-		break;
+		return std::nullopt;
 	}
 	case StmtType::METHOD: {
-		StmtMethod const& method_call = std::get<StmtMethod>(stmt.data);
-
-		auto* const night_variable = get_variable(current_scope, method_call.);
-		assert(night_variable != nullptr);
-
-		night_variable->second = evaluate_expression(current_scope, method_call.assign_expr);
+		StmtMethod const& method_stmt = std::get<StmtMethod>(stmt.data);
+		evaluate_expression(scope, method_stmt.assign_expr);
 
 		break;
 	}
-	default: {
-		return;
-		// return std::nullopt;
+	default:
+		return std::nullopt;
 	}
+}
+
+std::optional<std::pair<Interpreter::Data*, Interpreter::Data> > Interpreter::interpret_subscript_chain(
+	InterpreterScope& scope,
+	StmtAssign const& stmt_assign,
+	Location const& loc)
+{
+	auto const night_var = scope.get_var(stmt_assign.var_name);
+	assert(night_var != nullptr);
+
+	Data const assign_data = evaluate_expression(scope, stmt_assign.assign_expr);
+
+	Data* curr_data = &night_var->second.data;
+	for (std::size_t a = 0; a < stmt_assign.subscript_chain.size(); ++a)
+	{
+		// evaluate index
+		Data const& index_data =
+			evaluate_expression(scope, stmt_assign.subscript_chain[a]);
+
+		if (index_data.type != Data::INT) {
+			throw NIGHT_RUNTIME_ERROR(
+				"subscript operator's index can only be type 'int'",
+				"index is currently type '" + index_data.to_str() + "'",
+				night::learn_strings);
+		}
+
+		// get integer value of index
+		int const index = std::get<int>(index_data.val);
+
+		if (index < 0) {
+			throw NIGHT_RUNTIME_ERROR(
+				"subscript operator can not contain a negative value",
+				"operator can only be a non-negative integer",
+				curr_data->type == Data::STR ? night::learn_strings : night::learn_arrays);
+		}
+
+
+		// special case for strings
+		if (curr_data->type == Data::STR)
+		{
+			std::string& var_str = std::get<std::string>(curr_data->val);
+
+			if (index >= (int)var_str.length()) {
+				throw NIGHT_RUNTIME_ERROR(
+					"subscript operator is out of range for string",
+					"string length is " + std::to_string(var_str.length()),
+					night::learn_strings);
+			}
+			if (stmt_assign.type != StmtAssign::ASSIGN) {
+				throw NIGHT_RUNTIME_ERROR(
+					"single characters in string can only be used with assignment operator",
+					"",
+					night::learn_strings);
+			}
+
+			std::string const& assign_str = std::get<std::string>(assign_data.val);
+
+			if (assign_str.length() != 1) {
+				throw NIGHT_RUNTIME_ERROR(
+					"characters can only be assigned to other characters",
+					"character is currently assigned to string of length '" + std::to_string(assign_str.length()),
+					night::learn_strings);
+			}
+
+			var_str[index] = assign_str[0];
+
+			return std::nullopt;
+		}
+
+		if (curr_data->type != Data::ARR) {
+			throw NIGHT_RUNTIME_ERROR(
+				"subscript operator can only be used on type 'str' or 'arr'",
+				"operator is currently used on type '" + curr_data->to_str() + "'",
+				night::learn_learn);
+		}
+
+		std::vector<Data>& var_arr = std::get<std::vector<Data> >(curr_data->val);
+
+		// check is index is out of bounds
+		if (index >= (int)var_arr.size()) {
+			throw NIGHT_RUNTIME_ERROR(
+				"subscript operator is out of range for array",
+				"array length is " + std::to_string(var_arr.size()),
+				night::learn_arrays);
+		}
+
+		curr_data = &var_arr[index];
 	}
+
+	return { { curr_data, assign_data } };
+}
+
+template <typename Operation>
+void Interpreter::interpret_assignment(
+	Data* const curr_data,
+	Data const& assign_data,
+	std::string const& op,
+	Operation assign,
+	Location const& loc)
+{
+
+	if (!curr_data->is_num()) {
+		throw NIGHT_RUNTIME_ERROR(
+			"value can not be assigned using the assignment '" + op + "'",
+			"assignment '" + op + "' can only be used on variables of type 'int' or 'float'",
+			"");
+	}
+	if (!assign_data.is_num()) {
+		throw NIGHT_RUNTIME_ERROR(
+			"expression of type '" + assign_data.to_str() + "' can not be assigned with assignment '" + op + "'",
+			"assignment '" + op + "' can only assign expressions of type 'int' or 'float'",
+			"");
+	}
+
+	float assign_num = assign_data.type == Data::INT
+		? std::get<int>(assign_data.val)
+		: std::get<float>(assign_data.val);
+
+	if (curr_data->type == Data::INT)
+		curr_data->val = assign(std::get<int>(curr_data->val), (int)assign_num);
+	else
+		curr_data->val = assign(std::get<float>(curr_data->val), assign_num);
+}
+
+Interpreter::NightVariableContainer Interpreter::interpret_arguments(
+	InterpreterScope& scope,
+	std::vector<std::string> const& param_names,
+	ExprContainer const& param_exprs)
+{
+	assert(param_names.size() == param_exprs.size());
+
+	NightVariableContainer vars;
+	for (std::size_t a = 0; a < param_names.size(); ++a)
+		vars[param_names[a]] = { evaluate_expression(scope, param_exprs[a]) };
+
+	return vars;
 }
 
 Interpreter::Data Interpreter::evaluate_expression(
 	InterpreterScope& scope,
 	std::shared_ptr<ExprNode> const& expr)
 {
-	Location const& loc = expr->loc;
+	auto& loc = expr->loc;
 
 	switch (expr->type)
 	{
 	case ExprNode::LITERAL: {
-		ValueLiteral const& val = std::get<ValueLiteral>(expr->data);
+		auto& val = std::get<ValueLiteral>(expr->data);
 		switch (val.type)
 		{
 		case ValueLiteral::BOOL:
@@ -347,16 +563,16 @@ Interpreter::Data Interpreter::evaluate_expression(
 		}
 	}
 	case ExprNode::ARRAY: {
-		ValueArray const& val = std::get<ValueArray>(expr->data);
+		auto& val = std::get<ValueArray>(expr->data);
 
 		std::vector<Data> elem_data(val.elem_exprs.size());
-		for (std::size_t a = 0; a < val.elem_exprs.size(); ++a)
+		for (std::size_t a = 0; a < elem_data.size(); ++a)
 			elem_data[a] = evaluate_expression(scope, val.elem_exprs[a]);
 
 		return { Data::ARR, elem_data };
 	}
 	case ExprNode::VARIABLE: {
-		ValueVar const& val = std::get<ValueVar>(expr->data);
+		auto& val = std::get<ValueVar>(expr->data);
 
 		auto* const night_var = scope.get_var(val.name);
 		assert(night_var != nullptr);
@@ -386,12 +602,12 @@ Interpreter::Data Interpreter::evaluate_expression(
 			}
 			if (param.type == Data::FLOAT)
 			{
-				return Data{ Data::INT, (int)std::get<float>(param.data) };
+				return Data{ Data::INT, (int)std::get<float>(param.val) };
 			}
 			if (param.type == Data::STR)
 			{
 				try {
-					return Data{ Data::INT, std::stoi(std::get<std::string>(param.data)) };
+					return Data{ Data::INT, std::stoi(std::get<std::string>(param.val)) };
 				}
 				catch (std::invalid_argument const&) {
 					throw NIGHT_RUNTIME_ERROR(
@@ -412,16 +628,16 @@ Interpreter::Data Interpreter::evaluate_expression(
 
 			if (param.type == Data::INT)
 			{
-				return Data{ Data::INT, std::get<int>(param.data) };
+				return Data{ Data::INT, std::get<int>(param.val) };
 			}
 			if (param.type == Data::FLOAT)
 			{
-				return Data{ Data::FLOAT, std::get<float>(param.data) };
+				return Data{ Data::FLOAT, std::get<float>(param.val) };
 			}
 			if (param.type == Data::STR)
 			{
 				try {
-					return Data{ Data::FLOAT, std::stof(std::get<std::string>(param.data)) };
+					return Data{ Data::FLOAT, std::stof(std::get<std::string>(param.val)) };
 				}
 				catch (std::invalid_argument const&) {
 					throw NIGHT_RUNTIME_ERROR(
@@ -435,6 +651,26 @@ Interpreter::Data Interpreter::evaluate_expression(
 				"function call 'int', argument number 1, is currently type '" + param.to_str() + "'",
 				"argument can only be types 'int', 'float', or 'str'",
 				night::learn_functions);
+		}
+		if (night_func->first == "str")
+		{
+			Data const param = evaluate_expression(scope, val.param_exprs.at(0));
+			switch (param.type)
+			{
+			case Data::BOOL:
+				return Data{ Data::STR, std::get<bool>(param.val) ? "true" : "false" };
+			case Data::INT:
+				return Data{ Data::STR, std::to_string(std::get<int>(param.val)) };
+			case Data::FLOAT:
+				return Data{ Data::STR, std::to_string(std::get<float>(param.val)) };
+			case Data::STR:
+				return param;
+			case Data::ARR:
+				throw NIGHT_RUNTIME_ERROR(
+					"type 'arr' cannot be converted into type 'str'",
+					"",
+					"");
+			}
 		}
 		if (night_func->first == "range")
 		{
@@ -454,34 +690,28 @@ Interpreter::Data Interpreter::evaluate_expression(
 					night::learn_functions);
 			}
 
-			int const start = std::get<int>(start_d.data);
-			int const end	= std::get<int>(end_d.data);
+			int const start = std::get<int>(start_d.val);
+			int const end	= std::get<int>(end_d.val);
 
 			std::vector<Data> elems(end - start + 1);
-			for (std::size_t a = start; a <= end; ++a)
-				elems[a - start] = Data{ Data::INT, (int)a };
+			for (std::size_t a = 0; a < elems.size(); ++a)
+				elems[a] = Data{ Data::INT, (int)a + start };
 
 			return Data{ Data::ARR, elems };
 		}
 
-		// turn parameters into variables
-		for (std::size_t a = 0; a < night_func->second.params.size(); ++a)
-		{
-			scope.vars[night_func->second.params[a]] =
-				NightVariable{ evaluate_expression(scope, val.param_exprs.at(a)) };
+		auto vars = interpret_arguments(scope,
+			night_func->second.params, val.param_exprs);
+
+		auto rtn_val = interpret_statements(scope, night_func->second.body, vars);
+		if (!rtn_val.has_value()) {
+			throw NIGHT_RUNTIME_ERROR(
+				"function call '" + val.name + "' does not return a value in expression",
+				"functions must return a value when used in an expression",
+				night::learn_functions);
 		}
 
-		for (Stmt const& stmt : night_func->second.body)
-		{
-			std::optional<Data> rtn_val = interpret_statement(scope, stmt);
-			if (rtn_val.has_value())
-				return rtn_val.value();
-		}
-
-		throw NIGHT_RUNTIME_ERROR(
-			"function call '" + val.name + "' does not return a value in expression",
-			"functions must return a value when used in an expression",
-			night::learn_functions);
+		return rtn_val.value();
 	}
 	case ExprNode::UNARY_OP: {
 		UnaryOPNode const& unary_op = std::get<UnaryOPNode>(expr->data);
@@ -497,13 +727,12 @@ Interpreter::Data Interpreter::evaluate_expression(
 			}
 
 			return value.type == Data::INT
-				? Data{ value.type, -std::get<int>(value.data) }
-				: Data{ value.type, -std::get<float>(value.data) };
+				? Data{ value.type, -std::get<int>(value.val) }
+				: Data{ value.type, -std::get<float>(value.val) };
 		}
 		if (unary_op.data == "!")
 		{
 			Data const value = evaluate_expression(scope, unary_op.value);
-
 			if (value.type != Data::BOOL) {
 				throw NIGHT_RUNTIME_ERROR(
 					"operator  '!' is currently used on type '" + value.to_str() + "'",
@@ -511,7 +740,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 					night::learn_learn);
 			}
 
-			return Data{ Data::BOOL, !std::get<bool>(value.data) };
+			return Data{ Data::BOOL, !std::get<bool>(value.val) };
 		}
 		if (unary_op.data == "[]")
 		{
@@ -523,17 +752,17 @@ Interpreter::Data Interpreter::evaluate_expression(
 					night::learn_learn);
 			}
 
-			int const index = std::get<int>(index_d.data);
+			int const index = std::get<int>(index_d.val);
 
 			Data const array = evaluate_expression(scope, unary_op.value);
 			if (array.type == Data::STR)
 			{
-				std::string const& str = std::get<std::string>(array.data);
+				std::string const& str = std::get<std::string>(array.val);
 
 				if (index < 0 || index >= (int)str.length()) {
 					throw NIGHT_RUNTIME_ERROR(
 						"index for subscript operator is out of range",
-						"index " + std::to_string(index) + " is out of range for string length " + std::to_string(std::get<std::string>(array.data).length()) + "",
+						"index " + std::to_string(index) + " is out of range for string length " + std::to_string(std::get<std::string>(array.val).length()) + "",
 						night::learn_learn);
 				}
 
@@ -541,7 +770,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 			}
 			if (array.type == Data::ARR)
 			{
-				std::vector<Data> const& arr = std::get<std::vector<Data>>(array.data);
+				std::vector<Data> const& arr = std::get<std::vector<Data>>(array.val);
 
 				if (index < 0 || index >= (int)arr.size()) {
 					throw NIGHT_RUNTIME_ERROR(
@@ -560,13 +789,13 @@ Interpreter::Data Interpreter::evaluate_expression(
 		}
 	}
 	case ExprNode::BINARY_OP: {
-		BinaryOPNode const& binary_op = std::get<BinaryOPNode>(expr->data);
+		auto& binary_op = std::get<BinaryOPNode>(expr->data);
 
 		switch (binary_op.type)
 		{
 		case BinaryOPNode::PLUS: {
-			Data const left = evaluate_expression(scope, binary_op.left);
-			Data const right = evaluate_expression(scope, binary_op.right);
+			auto const left = evaluate_expression(scope, binary_op.left);
+			auto const right = evaluate_expression(scope, binary_op.right);
 
 			if (!left.is_num() && left.type != Data::STR && right.type != Data::STR) {
 				throw NIGHT_RUNTIME_ERROR(
@@ -582,7 +811,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 					night::learn_learn);
 			}
 
-			if (left.type == Data::STR|| right.type == Data::STR)
+			if (left.type == Data::STR || right.type == Data::STR)
 			{
 				return Data{ Data::STR,
 					left.to_str() + right.to_str() };
@@ -591,76 +820,63 @@ Interpreter::Data Interpreter::evaluate_expression(
 			if (left.type == Data::INT && right.type == Data::INT)
 			{
 				return Data{ Data::INT,
-					std::get<int>(left.data) + std::get<int>(right.data) };
+					std::get<int>(left.val) + std::get<int>(right.val) };
 			}
 			if (left.type == Data::FLOAT && right.type == Data::FLOAT)
 			{
 				return Data{ Data::FLOAT,
-					std::get<float>(left.data) + std::get<float>(right.data) };
+					std::get<float>(left.val) + std::get<float>(right.val) };
 			}
 			if (left.type == Data::FLOAT)
 			{
 				return Data{ Data::FLOAT,
-					std::get<float>(left.data) + std::get<int>(right.data) };
+					std::get<float>(left.val) + std::get<int>(right.val) };
 			}
 			if (right.type == Data::FLOAT)
 			{
 				return Data{ Data::FLOAT,
-					std::get<int>(left.data) + std::get<float>(right.data) };
+					std::get<int>(left.val) + std::get<float>(right.val) };
 			}
 		}
 
-		case BinaryOPNode::MINUS: {
+		case BinaryOPNode::MINUS:
 			return eval_expr_binary_num(scope, binary_op,
-				[](auto x, auto y) { return x - y; });
-		}
-		case BinaryOPNode::TIMES: {
+				[]<typename T>(T x, T y) -> T { return x - y; }, true);
+		case BinaryOPNode::TIMES:
 			return eval_expr_binary_num(scope, binary_op,
-				[](auto x, auto y) { return x * y; });
-		}
-		case BinaryOPNode::DIVIDE: {
+				[]<typename T>(T x, T y) -> T { return x * y; }, true);
+		case BinaryOPNode::DIVIDE:
 			return eval_expr_binary_num(scope, binary_op,
-				[](auto x, auto y) { return x / y; });
-		}
-		case BinaryOPNode::MOD: {
+				[]<typename T>(T x, T y) -> T { return x / y; }, true);
+		case BinaryOPNode::MOD:
 			return eval_expr_binary_num(scope, binary_op,
-				[](auto x, auto y) { return std::fmod(x % y); });
-		}
+				[]<typename T>(T x, T y) -> T { return (T)std::fmod(x, y); }, true);
 
-		case BinaryOPNode::GREATER: {
-			return eval_expr_binary_num_comp(scope, binary_op,
-				[](auto x, auto y) { return x > y; });
-		}
-		case BinaryOPNode::SMALLER: {
-			return eval_expr_binary_num_comp(scope, binary_op,
-				[](auto x, auto y) { return x < y; });
-		}
-		case BinaryOPNode::GREATER_EQ: {
-			return eval_expr_binary_num_comp(scope, binary_op,
-				[](auto x, auto y) { return x >= y; });
-		}
-		case BinaryOPNode::SMALLER_EQ: {
-			return eval_expr_binary_num_comp(scope, binary_op,
-				[](auto x, auto y) { return x <= y; });
-		}
+		case BinaryOPNode::GREATER:
+			return eval_expr_binary_num(scope, binary_op,
+				[]<typename T>(T x, T y) { return x > y; }, false);
+		case BinaryOPNode::SMALLER:
+			return eval_expr_binary_num(scope, binary_op,
+				[]<typename T>(T x, T y) { return x < y; }, false);
+		case BinaryOPNode::GREATER_EQ:
+			return eval_expr_binary_num(scope, binary_op,
+				[]<typename T>(T x, T y) { return x >= y; }, false);
+		case BinaryOPNode::SMALLER_EQ:
+			return eval_expr_binary_num(scope, binary_op,
+				[]<typename T>(T x, T y) { return x <= y; }, false);
 
-		case BinaryOPNode::OR: {
+		case BinaryOPNode::OR:
 			return eval_expr_binary_bool(scope, binary_op,
 				[](bool left, bool right) { return left || right; });
-		}
-		case BinaryOPNode::AND: {
+		case BinaryOPNode::AND:
 			return eval_expr_binary_bool(scope, binary_op,
 				[](bool left, bool right) { return left && right; });
-		}
 
-		case BinaryOPNode::EQUAL: {
-			return eval_expr_binary_comp(scope, binary_op,
-				[](auto left, auto right) { return left == right; });
-		}
-		case BinaryOPNode::NOT_EQUAL: {
-			return eval_expr_binary_comp(scope, binary_op,
-				[](auto left, auto right) { return left != right; });
-		}
+		case BinaryOPNode::EQUAL:
+			return { Data::BOOL, eval_expr_binary_comp(scope, binary_op) };
+		case BinaryOPNode::NOT_EQUAL:
+			return { Data::BOOL, !eval_expr_binary_comp(scope, binary_op) };
+
 		case BinaryOPNode::DOT: {
 			Data object = evaluate_expression(scope, binary_op.left);
 			if (object.type != Data::STR && object.type != Data::ARR) {
@@ -677,12 +893,12 @@ Interpreter::Data Interpreter::evaluate_expression(
 					night::learn_classes);
 			}
 
-			ValueCall const& method = std::get<ValueCall>(binary_op.right->data);
+			auto& method = std::get<ValueCall>(binary_op.right->data);
 
 			if (object.type == Data::ARR)
 			{
 				std::vector<Data>& obj_arr =
-					std::get<std::vector<Data> >(object.data);
+					std::get<std::vector<Data> >(object.val);
 
 				if (method.name == "len")
 				{
@@ -707,7 +923,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 							night::learn_arrays);
 					}
 
-					obj_arr.insert(obj_arr.begin() + std::get<int>(index.data), value);
+					obj_arr.insert(obj_arr.begin() + std::get<int>(index.val), value);
 
 					return object;
 				}
@@ -726,7 +942,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 							night::learn_arrays);
 					}
 
-					obj_arr.erase(obj_arr.begin() + std::get<int>(index.data));
+					obj_arr.erase(obj_arr.begin() + std::get<int>(index.val));
 
 					return object;
 				}
@@ -738,7 +954,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 				if (method.name == "len")
 				{
 					return Data{ Data::INT,
-						(int)std::get<std::string>(object.data).length() };
+						(int)std::get<std::string>(object.val).length() };
 				}
 
 				assert(false && "method exists in Parser, but not Interpreter");
@@ -749,30 +965,16 @@ Interpreter::Data Interpreter::evaluate_expression(
 	}
 }
 
-std::string Interpreter::Data::to_str() const
-{
-	switch (type)
-	{
-	case T::BOOL:
-		return "bool";
-	case T::INT:
-		return "int";
-	case T::FLOAT:
-		return "float";
-	case T::STR:
-		return "str";
-	case T::ARR:
-		return "arr";
-	}
-}
-
 template <typename Operation>
 Interpreter::Data Interpreter::eval_expr_binary_num(
 	InterpreterScope& scope,
 	BinaryOPNode const& binary_op,
-	Operation const& operation)
+	Operation const& operation,
+	bool num_rtn_type)
 {
-	Data const lhs = evaluate_expression(scope, binary_op.left);
+	auto const& loc = binary_op.loc;
+
+	auto const lhs = evaluate_expression(scope, binary_op.left);
 	if (!lhs.is_num()) {
 		throw NIGHT_RUNTIME_ERROR(
 			"binary operator '" + binary_op.data + "' can only be used on types 'int' or 'float'",
@@ -780,7 +982,7 @@ Interpreter::Data Interpreter::eval_expr_binary_num(
 			night::learn_learn);
 	}
 
-	Data const rhs = evaluate_expression(scope, binary_op.right);
+	auto const rhs = evaluate_expression(scope, binary_op.right);
 	if (!rhs.is_num()) {
 		throw NIGHT_RUNTIME_ERROR(
 			"binary operator '" + binary_op.data + "' can only be used on types 'int' or 'float'",
@@ -788,45 +990,24 @@ Interpreter::Data Interpreter::eval_expr_binary_num(
 			night::learn_learn);
 	}
 
-	if (lhs.type == Data::INT && lhs.type == Data::INT)
-		return Data{ Data::INT, operation(std::get<int>(lhs.data), std::get<int>(rhs.data)) };
-	else
-		return Data{ Data::FLOAT, operation(lhs.get_num(), rhs.get_num()) };
-}
-
-template <typename Operation>
-Interpreter::Data Interpreter::eval_expr_binary_num_comp(
-	InterpreterScope& scope,
-	BinaryOPNode const& binary_op,
-	Operation const& operation)
-{
-	Data const lhs = evaluate_expression(scope, binary_op.left);
-	if (!lhs.is_num()) {
-		throw NIGHT_RUNTIME_ERROR(
-			"binary operator '" + binary_op.data + "' can only be used on types 'int' or 'float'",
-			"left hand value of operator is currently type '" + lhs.to_str() + "'",
-			night::learn_learn);
-	}
-
-	Data const rhs = evaluate_expression(scope, binary_op.right);
-	if (!rhs.is_num()) {
-		throw NIGHT_RUNTIME_ERROR(
-			"binary operator '" + binary_op.data + "' can only be used on types 'int' or 'float'",
-			"right hand value of operator is currently type '" + lhs.to_str() + "'",
-			night::learn_learn);
-	}
-
-	return Data{ Data::BOOL, operation(lhs.get_num(), rhs.get_num()) };
+	if (lhs.type == Data::INT && rhs.type == Data::INT)
+		return Data{ num_rtn_type ? Data::INT : Data::BOOL, operation(std::get<int>(lhs.val), std::get<int>(rhs.val)) };
+	if (lhs.type == Data::INT)
+		return Data{ num_rtn_type ? Data::FLOAT : Data::BOOL, operation(std::get<int>(lhs.val), (int)std::get<float>(rhs.val)) };
+	if (rhs.type == Data::INT)
+		return Data{ num_rtn_type ? Data::FLOAT : Data::BOOL, operation(std::get<float>(lhs.val), (float)std::get<int>(rhs.val)) };
+	return Data{ num_rtn_type ? Data::FLOAT : Data::BOOL, operation(std::get<float>(lhs.val), std::get<float>(rhs.val))};
 }
 
 template <typename Operation>
 Interpreter::Data Interpreter::eval_expr_binary_bool(
 	InterpreterScope& scope,
 	BinaryOPNode const& binary_op,
-	Operation const& operation
-)
+	Operation const& operation)
 {
-	Data const left = evaluate_expression(scope, binary_op.left);
+	auto const& loc = binary_op.loc;
+
+	auto const left = evaluate_expression(scope, binary_op.left);
 	if (left.type != Data::BOOL) {
 		throw NIGHT_RUNTIME_ERROR(
 			"left hand value of operator '" + binary_op.data + "' has type '" + left.to_str() + "'",
@@ -834,7 +1015,7 @@ Interpreter::Data Interpreter::eval_expr_binary_bool(
 			night::learn_learn);
 	}
 
-	Data const right = evaluate_expression(scope, binary_op.right);
+	auto const right = evaluate_expression(scope, binary_op.right);
 	if (right.type != Data::BOOL) {
 		throw NIGHT_RUNTIME_ERROR(
 			"right hand value of operator '" + binary_op.data + "' has type '" + right.to_str() + "'",
@@ -842,28 +1023,27 @@ Interpreter::Data Interpreter::eval_expr_binary_bool(
 			night::learn_learn);
 	}
 
-	return Data{ Data::BOOL,
-		operation(std::get<bool>(left), std::get<bool>(right)) };
+	return Data{
+		Data::BOOL,
+		operation(std::get<bool>(left.val), std::get<bool>(right.val))
+	};
 }
 
-template <typename Operation>
-Interpreter::Data Interpreter::eval_expr_binary_comp(
+bool Interpreter::eval_expr_binary_comp(
 	InterpreterScope& scope,
-	BinaryOPNode const& binary_op,
-	Operation const& operation
-)
+	BinaryOPNode const& binary_op)
 {
-	Data const left  = evaluate_expression(scope, binary_op.left);
-	Data const right = evaluate_expression(scope, binary_op.right);
+	auto const& loc = binary_op.loc;
+
+	auto const left  = evaluate_expression(scope, binary_op.left);
+	auto const right = evaluate_expression(scope, binary_op.right);
 
 	if (left.type != right.type) {
-		throw NIGHT_COMPILE_ERROR(
+		throw NIGHT_RUNTIME_ERROR(
 			"operator '" + binary_op.data + "' can only be used on values with the same type",
-			"left hand value has type '" + left.type.to_str() + "' but right hand value has type '" + right.type.to_str() + "'",
+			"left hand value has type '" + left.to_str() + "' but right hand value has type '" + right.to_str() + "'",
 			night::learn_learn);
 	}
 
-	return left.type == Data::ARR
-		? Data{ Data::BOOL, compare_array(left, right) }
-		: Data{ Data::BOOL, operation(left.data, right.data) };
+	return Data::compare_data(left, right);
 }

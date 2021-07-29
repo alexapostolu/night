@@ -8,31 +8,24 @@
 #include <map>
 #include <unordered_map>
 
-void ReplaceEscape(
-	std::string& token,
-	const std::string& str,
-	const char ch
-);
-
 class Lexer
 {
 public:
-	Lexer(
-		std::string const& file_name,
-		bool		const  main_file
-	);
+	Lexer(std::string_view file_name, bool main_file);
 
 public:
-	Token eat(bool const next_line);
-	void eat(TokenType const& expect_type, bool const next_line,
-		std::string const& stmt_format, std::string const& stmt_learn);
-	Token peek(bool const next_line);
+	Token eat(bool go_to_next_line);
 
-	Token get_curr(bool const next_line);
+	Token get_curr() const;
 	Location get_loc() const;
 	
 private:
-	bool new_line();
+	bool next_token(bool go_to_next_line);
+	bool next_line();
+
+	// when a string token has been scanned, this function is called to replace
+	// escape strings with escape characters
+	void replace_escape_chars(std::string& token) const;
 
 private:
 	std::fstream code_file;
@@ -41,7 +34,7 @@ private:
 	std::string code_line;
 	std::size_t i;
 	
-	Token curr, next;
+	Token curr;
 
 	static std::unordered_map<char, std::map<char, TokenType> > const symbols;
 	static std::unordered_map<std::string, TokenType> const keywords;

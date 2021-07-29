@@ -6,3 +6,6 @@ bool Token::is_value() const
 		   type == TokenType::FLOAT_L || type == TokenType::STR_L ||
 		   type == TokenType::VAR     || type == TokenType::OPEN_SQUARE;
 }
+
+Token const Token::_EOL{ {}, TokenType::EOL, "EOL" };
+Token const Token::_EOF{ {}, TokenType::_EOF, "EOF" };

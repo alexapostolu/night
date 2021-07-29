@@ -1,13 +1,12 @@
 #pragma once
 
-#include "../back-end/parser.hpp"
-#include "../back-end/interpreter.hpp"
 #include "../error.hpp"
 
 #include <variant>
 #include <memory>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 struct ExprNode;
 
@@ -61,6 +60,8 @@ struct UnaryOPNode
 
 struct BinaryOPNode
 {
+	Location loc;
+
 	enum T {
 		PLUS, MINUS, TIMES, DIVIDE, MOD,
 		GREATER, GREATER_EQ, SMALLER, SMALLER_EQ,
@@ -210,6 +211,19 @@ struct Scope
 	std::unordered_map<std::string, VarContainer> vars;
 
 	std::pair<std::string const, VarContainer>* get_var(
-		std::string const& name
-	);
+		std::string const& name)
+	{
+		for (Scope<VarContainer>* curr_scope = this; curr_scope != nullptr;)
+		{
+			for (auto& var : curr_scope->vars)
+			{
+				if (var.first == name)
+					return &var;
+			}
+
+			curr_scope = curr_scope->upper;
+		}
+
+		return nullptr;
+	}
 };

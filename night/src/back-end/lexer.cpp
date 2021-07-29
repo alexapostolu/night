@@ -1,58 +1,34 @@
 #include "../../include/back-end/lexer.hpp"
 #include "../../include/back-end/token.hpp"
-#include "../../include/back-end/utils.hpp"
 #include "../../include/error.hpp"
 
-#include <regex>
+#include <cctype>
 #include <string>
 #include <vector>
-#include <map>
-#include <cctype>
 #include <unordered_map>
+#include <iostream>
 
-void ReplaceEscape(std::string& token, const std::string& str, const char ch)
-{
-	std::size_t escape = token.find(str);
-	while (escape != std::string::npos)
-	{
-		token[escape] = ch;
-		token.erase(escape + 1, 1);
-
-		escape = token.find(str, escape + 1);
-	}
-}
-
-
-
-Lexer::Lexer(
-	std::string const& file_name,
-	bool const main_file)
-	: code_file(file_name), loc({ file_name, 0 }), i(0)
+Lexer::Lexer(std::string_view file_name, bool main_file)
+	: code_file(file_name.data()), loc({ file_name.data(), 1 }), i(0)
 {
 	if (!code_file.is_open()) {
 		throw NIGHT_PREPROCESS_ERROR(
-			"file '" + file_name + "' could not be opened",
+			"file '" + loc.file + "' could not be opened",
 			main_file ? night::learn_run : night::learn_include);
 	}
 
 	getline(code_file, code_line);
 }
 
-Token Lexer::eat(
-	bool const next_line)
+Token Lexer::eat(bool go_to_next_line)
 {
-	// go to next valid character
-	while (true)
+	if (!next_token(go_to_next_line))
 	{
-		while (i < code_line.length() && code_line[i] == ' ' || code_line[i] == '\t')
-			++i;
-
-		if (i < code_line.length() && code_line[i] != '#')
-			break;
-
-		if (!next_line)
-			return Token{ {}, TokenType::EOL };
+		curr = go_to_next_line ? Token::_EOF : Token::_EOL;
+		return curr;
 	}
+
+	loc.col = i;
 
 	// scan strings
 	if (code_line[i] == '"')
@@ -60,124 +36,128 @@ Token Lexer::eat(
 		++i;
 
 		std::string str;
-		while (true)
+		while (code_line[i] != '"')
 		{
-			if (i == code_line.length())
-			{
-				if (!new_line()) {
-					throw NIGHT_COMPILE_ERROR(
-						"expected closing quotes for string '" + str + "'",
-						"",
-						night::learn_strings, loc);
-				}
+			if (i == code_line.length() && !next_line()) {
+				throw night::error(
+					__FILE__, __LINE__, night::error_compile, loc,
+					"expected closing quotes for string '" + str + "'",
+					"",
+					night::learn_strings);
 			}
 
-			// to do:
-			// check backslash quotes
-
-			str += code_line[i];
-			++i;
+			// account for backslash quotes
+			if (i < code_line.length() - 1 && code_line[i] == '\\' && code_line[i] == '"')
+			{
+				str += "\"";
+				i += 2;
+			}
+			else
+			{
+				str += code_line[i];
+				++i;
+			}
 		}
 
-		++i; 
-		return Token{ loc, TokenType::STRING, str };;
+		++i;
+
+		replace_escape_chars(str);
+
+		curr = { loc, TokenType::STR_L, str };
+		return curr;
 	}
 
 	// scan keywords
 	if (std::isalpha(code_line[i]))
 	{
-		std::string keyword = code_line[i] + "";
+		std::string keyword;
 		while (i < code_line.length() && std::isalpha(code_line[i]))
+		{
 			keyword += code_line[i];
+			++i;
+		}
 
-		if (auto const find_keyword = keywords.find(keyword);
-			find_keyword != keywords.end())
-			return Token{ loc, find_keyword->second, keyword };
-		
-		return Token{ loc, TokenType::VAR, keyword };
+		if (auto it = keywords.find(keyword); it != keywords.end())
+			curr = { loc, it->second, keyword };
+		else
+			curr = { loc, TokenType::VAR, keyword };
+
+		return curr;
 	}
 
 	// scan numbers
 	if (std::isdigit(code_line[i]))
 	{
-		std::string number = code_line[i] + "";
-		while (i < code_line.length() && std::isalpha(code_line[i]))
-			number += code_line[i];
-
-		if (i < code_line.length() - 1 && code_line[i] == '.' &&
-			std::isalpha(code_line[i + 1]))
+		std::string number;
+		while (i < code_line.length() && std::isdigit(code_line[i]))
 		{
+			number += code_line[i];
 			++i;
-			while (i < code_line.length() && std::isalpha(code_line[i]))
-				number += code_line[i];
-
-			return Token{ loc, TokenType::FLOAT_L, number };
 		}
 
-		return Token{ loc, TokenType::INT_L, number };
+		// scan decimal points
+		if (i < code_line.length() - 1 && code_line[i] == '.' &&
+			std::isdigit(code_line[i + 1]))
+		{
+			++i;
+			while (i < code_line.length() && std::isdigit(code_line[i]))
+			{
+				number += code_line[i];
+				++i;
+			}
+
+			curr = { loc, TokenType::FLOAT_L, number };
+			return curr;
+		}
+
+		curr = { loc, TokenType::INT_L, number };
+		return curr;
 	}
 
-	// scan negatives
+	// scan negative
 	if (i < code_line.length() - 1 && code_line[i] == '-' && std::isdigit(code_line[i + 1]))
 	{
 		++i;
-		return Token{ loc, TokenType::UNARY_OP, "-" };
+
+		curr = { loc, TokenType::UNARY_OP, "-" };
+		return curr;
 	}
 
 	// scan symbols	
-	if (auto const symbol = symbols.find(code_line[i]); symbol != symbols.end()) {
-		for (auto const& [c, tok_type] : symbol->second)
+	if (auto symbol = symbols.find(code_line[i]); symbol != symbols.end())
+	{
+		for (auto& [c, tok_type] : symbol->second)
 		{
 			if (c == '\0')
 			{
+				std::string tok_data = std::string(1, code_line[i]);
+
 				++i;
-				return { loc, tok_type, std::string(1, code_line[i]) };
+
+				curr = { loc, tok_type, tok_data };
+				return curr;
 			}
 			if (c != '\0' && i < code_line.length() - 1 && code_line[i + 1] == c)
 			{
+				std::string tok_data = std::string(1, code_line[i]) + c;
+
 				i += 2;
-				return { loc, tok_type, std::string(1, code_line[i]) + c };
+
+				curr = { loc, tok_type, tok_data };
+				return curr;
 			}
 		}
 	}
 
-	throw NIGHT_COMPILE_ERROR(
-		loc,
+	throw night::error(
+		__FILE__, __LINE__, night::error_compile, loc,
 		std::string("unknown symbol '") + code_line[i] + "'",
 		"",
 		night::learn_learn);
 }
 
-void Lexer::eat(
-	TokenType   const& expect_type,
-	bool	    const  next_line,
-	std::string const& stmt_format,
-	std::string const& stmt_learn)
+Token Lexer::get_curr() const
 {
-	Token const curr = get_curr(false);
-	Token const next = eat(next_line);
-	if (next.type != expect_type) {
-		throw NIGHT_COMPILE_ERROR(
-			get_loc(),
-			"expected " + night::tos(expect_type) + " after " + night::tos(curr.type),
-			stmt_format, stmt_learn);
-	}
-}
-
-Token Lexer::peek(bool const next_line)
-{
-	return Token();
-}
-
-Token Lexer::get_curr(
-	bool const next_line)
-{
-	if (next_line)
-	{
-		while (curr.type == TokenType::EOL)
-			curr = eat(true);
-	}
-	
 	return curr;
 }
 
@@ -186,13 +166,52 @@ Location Lexer::get_loc() const
 	return loc;
 }
 
-bool Lexer::new_line()
+bool Lexer::next_line()
 {
 	if (!std::getline(code_file, code_line))
 		return false;
 
 	i = 0;
+	loc.line++;
+
 	return true;
+}
+
+bool Lexer::next_token(bool go_to_next_line)
+{
+	while (i < code_line.length() && std::isspace(code_line[i]))
+		++i;
+
+	assert(i <= code_line.length());
+	if (i == code_line.length() || code_line[i] == '#')
+	{
+		if (go_to_next_line)
+			return next_line() ? next_token(true) : false;
+		else
+			return false;
+	}
+
+	return true;
+}
+
+void Lexer::replace_escape_chars(std::string& token) const
+{
+	static std::unordered_map<std::string, char> const esc_chars{
+		{ "\\a", '\a' }, { "\\b", '\b' }, { "\\f", '\f' }, { "\\n", '\n' },
+		{ "\\r", '\r' }, { "\\t", '\t' }, { "\\v", '\v' }, { "\\\\", '\\' },
+		{ "\\'", '\'' }
+	};
+
+	std::size_t pos = token.find("\\");
+	while (pos < token.size() - 1)
+	{
+		std::string esc{ '\\', token[pos + 1] };
+
+		if (auto it = esc_chars.find(esc); it != esc_chars.end())
+			token.replace(pos, 2, std::string(1, it->second));
+
+		pos = token.find("\\", pos + 1);
+	}
 }
 
 std::unordered_map<char, std::map<char, TokenType> > const Lexer::symbols{

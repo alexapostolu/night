@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../back-end/utils.hpp"
+#include "../error.hpp"
 
 #include <string>
 
@@ -47,4 +47,7 @@ struct Token
 	std::string data;
 
 	bool is_value() const;
+
+	static Token const _EOL;
+	static Token const _EOF;
 };

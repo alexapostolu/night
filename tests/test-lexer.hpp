@@ -29,8 +29,7 @@ int TestLexer()
 
     for (int a = 0; a < sizeof(toks) / sizeof(toks[0]); ++a)
     {
-        string tok = lexer.eat(false).data;
-        if (tok != toks[a])
+        if (string tok = lexer.eat(false).data; tok != toks[a])
         {
             cout << "\n";
             cout << "error when scanning tokens!\n";
