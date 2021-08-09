@@ -24,7 +24,7 @@ template<
 		ValType1 val1,
 		ValType2... val2)
 {
-	return std::find(container.begin(), container.end(), val1) != container.end() &&
+	return std::find(container.begin(), container.end(), val1) != container.end() ||
 		contains(container, val2...);
 }
 

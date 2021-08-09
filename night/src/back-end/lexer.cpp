@@ -226,7 +226,7 @@ std::unordered_map<char, std::map<char, TokenType> > const Lexer::symbols{
 
 	{ '|', { { '|', TokenType::BINARY_OP } } },
 	{ '&', { { '&', TokenType::BINARY_OP } } },
-	{ '!', { { '=', TokenType::UNARY_OP }, { '\0', TokenType::BINARY_OP } } },
+	{ '!', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::UNARY_OP } } },
 
 	{ '.', { { '\0', TokenType::BINARY_OP } } },
 

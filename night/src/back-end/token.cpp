@@ -7,5 +7,10 @@ bool Token::is_value() const
 		   type == TokenType::VAR     || type == TokenType::OPEN_SQUARE;
 }
 
+bool Token::is_operator() const
+{
+	return type == TokenType::UNARY_OP || type == TokenType::BINARY_OP;
+}
+
 Token const Token::_EOL{ {}, TokenType::EOL, "EOL" };
 Token const Token::_EOF{ {}, TokenType::_EOF, "EOF" };

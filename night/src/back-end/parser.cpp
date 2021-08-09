@@ -33,10 +33,10 @@ Parser::Parser(Lexer& lexer)
 		make_check_function("str",
 			{ { Type::BOOL, Type::INT, Type::FLOAT, Type::STR } },
 			{ Type::STR }),
-		make_check_function("type",
-			{ all_types },
-			{ Type::TYPE }
-		),
+		//make_check_function("type",
+			//{ all_types },
+			//{ Type::TYPE }
+		//),
 
 		make_check_function("system",
 			{ { Type::STR } })
@@ -64,7 +64,8 @@ Parser::Parser(Lexer& lexer)
 	};
 }
 
-Stmt Parser::parse_statement(ParserScope& scope)
+Stmt
+Parser::parse_statement(ParserScope& scope)
 {
 	static auto in_func = Parser::check_funcs.end();
 
@@ -108,15 +109,15 @@ Stmt Parser::parse_statement(ParserScope& scope)
 		}
 
 		// parsing statement
+		
+		lexer.eat(false); // move lexer to start of expressing
+		auto [expr, types] = parse_expression(scope);
 
-		if (lexer.eat(false).type == TokenType::EOL) {
+		if (expr == nullptr) {
 			throw NIGHT_COMPILE_ERROR(
 				"expected expression after assignment operator",
 				night::format_init, night::learn_variables);
 		}
-
-		auto [expr, types] = parse_expression(scope);
-
 		if (lexer.get_curr().type != TokenType::EOL) {
 			throw NIGHT_COMPILE_ERROR(
 				"unexpected token '" + token.data + "' after expression",
@@ -134,7 +135,7 @@ Stmt Parser::parse_statement(ParserScope& scope)
 		auto const var_name = token.data;
 
 		token = lexer.eat(false);
- 		if (token.type == TokenType::OPEN_BRACKET)
+		if (token.type == TokenType::OPEN_BRACKET)
 		{
 			auto const check_func = check_funcs.find(var_name);
 			if (check_func == check_funcs.end()) {
@@ -146,9 +147,6 @@ Stmt Parser::parse_statement(ParserScope& scope)
 
 			auto const [arg_exprs, arg_types] =
 				parse_arguments(scope, check_func->first);
-
-			// move lexer to start of next statement
-			lexer.eat(false);
 
 			// type checking arguments
 
@@ -162,6 +160,9 @@ Stmt Parser::parse_statement(ParserScope& scope)
 			check_call_types(check_func->second.param_types,
 				arg_types, check_func->first);
 
+			// move lexer to start of next statement
+			lexer.eat(false);
+
 			return Stmt{
 				lexer.get_loc(), StmtType::CALL,
 				StmtCall{ check_func->first, arg_exprs }
@@ -169,7 +170,8 @@ Stmt Parser::parse_statement(ParserScope& scope)
 		}
 		else
 		{
-			std::shared_ptr<ExprNode> var_expr(nullptr);
+			ValueVar const val_var{ var_name };
+			std::shared_ptr<ExprNode> var_expr = std::make_shared<ExprNode>(lexer.get_loc(), ExprNode::VARIABLE, val_var);
 			std::vector<std::shared_ptr<ExprNode> > subscript_chain;
 			bool contains_method = false;
 
@@ -254,13 +256,13 @@ Stmt Parser::parse_statement(ParserScope& scope)
 
 					ValueCall const val_call{ method_name, arg_exprs };
 
-					std::shared_ptr<ExprNode> const call_node =
+					auto const call_node =
 						std::make_shared<ExprNode>(lexer.get_loc(), ExprNode::CALL, val_call);
 
 					BinaryOPNode const op_expr{ lexer.get_loc(),
 						BinaryOPNode::DOT, ".", var_expr, call_node };
 
-					std::shared_ptr<ExprNode> const op_node =
+					auto const op_node =
 						std::make_shared<ExprNode>(lexer.get_loc(), ExprNode::BINARY_OP, op_expr);
 
 					var_expr = op_node;
@@ -650,15 +652,17 @@ Stmt Parser::parse_statement(ParserScope& scope)
 				night::format_for, night::learn_loops) }
 		};
 	}
-	default:
+	default: {
 		throw NIGHT_COMPILE_ERROR(
 			"unknown syntax",
 			"no clue what you did here sorry :/",
 			night::learn_learn);
 	}
+	}
 }
 
-std::vector<Stmt> Parser::parse_body(
+std::vector<Stmt>
+Parser::parse_body(
 	ParserScope& scope,
 	std::string const& stmt_name,
 	std::string const& stmt_format,
@@ -705,7 +709,8 @@ std::vector<Stmt> Parser::parse_body(
 	return stmts;
 }
 
-std::shared_ptr<ExprNode> Parser::parse_condition(
+std::shared_ptr<ExprNode>
+Parser::parse_condition(
 	ParserScope& scope,
 	std::string const& stmt_format,
 	std::string const& stmt_learn)
@@ -745,7 +750,8 @@ std::shared_ptr<ExprNode> Parser::parse_condition(
 	return condition_expr;
 }
 
-std::pair<ExprContainer, std::vector<Parser::TypeContainer> > Parser::parse_arguments(
+std::pair<ExprContainer, std::vector<Parser::TypeContainer> >
+Parser::parse_arguments(
 	ParserScope& scope,
 	std::string_view func_name)
 {
@@ -771,8 +777,12 @@ std::pair<ExprContainer, std::vector<Parser::TypeContainer> > Parser::parse_argu
 
 		if (token.type == TokenType::CLOSE_BRACKET)
 		{
-			call_exprs.push_back(expr);
-			call_types.push_back(types);
+			// if function does contain arguments
+			if (expr != nullptr)
+			{
+				call_exprs.push_back(expr);
+				call_types.push_back(types);
+			}
 
 			return { call_exprs, call_types };
 		}
@@ -810,7 +820,8 @@ Parser::parse_expression(
 		{ "==", BinaryOPNode::EQUAL },
 		{ "!=", BinaryOPNode::NOT_EQUAL },
 		{ "||", BinaryOPNode::OR },
-		{ "&&", BinaryOPNode::AND }
+		{ "&&", BinaryOPNode::AND },
+		{ ".", BinaryOPNode::DOT }
 	};
 
 	std::shared_ptr<ExprNode> root(nullptr), protect(nullptr);
@@ -818,14 +829,12 @@ Parser::parse_expression(
 	Token token = lexer.get_curr();
 	while (true)
 	{
+		ExprNode* prev(nullptr);
+		std::shared_ptr<ExprNode> curr(root);
+
 		if (token.is_value())
 		{
 			// traveling tree
-
-			std::shared_ptr<ExprNode> prev(nullptr);
-			std::shared_ptr<ExprNode> curr = root == nullptr
-				? nullptr
-				: std::make_shared<ExprNode>(*root);
 
 			while (curr != nullptr)
 			{
@@ -835,7 +844,7 @@ Parser::parse_expression(
 						"", "");
 				}
 
-				prev = curr;
+				prev = curr.get();
 				curr = curr->travel_ast();
 			}
 
@@ -843,8 +852,6 @@ Parser::parse_expression(
 
 			if (prev == nullptr)
 			{
-				assert(curr == nullptr);
-
 				root = std::make_shared<ExprNode>();
 				curr = root;
 			}
@@ -926,9 +933,9 @@ Parser::parse_expression(
 					);
 
 					if (prev != nullptr)
-						root = curr;
+						root = sub_op;
 					else
-						prev->travel_ast() = curr;
+						prev->travel_ast() = sub_op;
 				}
 				else
 				{
@@ -941,10 +948,11 @@ Parser::parse_expression(
 			}
 			case TokenType::OPEN_SQUARE: {
 				ExprContainer arr_exprs;
-
 				while (true)
 				{
-					auto const& expr = std::get<0>(parse_expression(scope));
+					lexer.eat(false);
+
+					auto const expr = std::get<0>(parse_expression(scope));
 					if (expr == nullptr) {
 						throw NIGHT_COMPILE_ERROR(
 							"expected element in array",
@@ -981,7 +989,6 @@ Parser::parse_expression(
 		}
 		else if (token.type == TokenType::OPEN_BRACKET)
 		{
-			std::shared_ptr<ExprNode> curr(root), prev(nullptr);
 			while (curr != nullptr)
 			{
 				if (curr->is_value()) {
@@ -991,7 +998,7 @@ Parser::parse_expression(
 						night::learn_learn);
 				}
 
-				prev = curr;
+				prev = curr.get();
 				curr = curr->travel_ast();
 			}
 
@@ -1013,55 +1020,61 @@ Parser::parse_expression(
 					night::learn_learn);
 			}
 		}
-		else if (token.type == TokenType::UNARY_OP || token.type == TokenType::BINARY_OP)
+		else if (token.is_operator())
 		{
+			if (curr == nullptr && token.type == TokenType::BINARY_OP) {
+				throw NIGHT_COMPILE_ERROR(
+					"expected value before operator '" + token.data + "'",
+					"", "");
+			}
+
 			//traveling tree
 
-			std::shared_ptr<ExprNode> curr(root), prev(nullptr);
-			while (!curr->is_value() && curr != protect)
+			while (curr != nullptr && !curr->is_value() && curr != protect)
 			{
-				prev = curr;
-
-				std::string const op_data = curr->type == ExprNode::UNARY_OP
+				auto const op_data = curr->type == ExprNode::UNARY_OP
 					? std::get<UnaryOPNode>(curr->data).data
 					: std::get<BinaryOPNode>(curr->data).data;
 
-				if (!higher_precedence(op_data, token.data))
+				if (!higher_precedence(token.data, op_data))
 					break;
 
+				prev = curr.get();
 				curr = curr->travel_ast();
 			}
 
 			// constructing node
 
-			std::shared_ptr<ExprNode> expr_node = std::make_shared<ExprNode>();
-			expr_node->loc = lexer.get_loc();
+			auto op_node = std::make_shared<ExprNode>();
+			op_node->loc = lexer.get_loc();
 
 			if (token.type == TokenType::UNARY_OP)
 			{
 				auto const pos = unary_op_convers.find(token.data);
 				assert(pos != unary_op_convers.end());
 
-				expr_node->type = ExprNode::UNARY_OP;
-				expr_node->data = UnaryOPNode{ pos->second, token.data, curr };
+				op_node->type = ExprNode::UNARY_OP;
+				op_node->data = UnaryOPNode{ pos->second, token.data, curr };
 			}
 			else
 			{
 				auto const op_type = binary_op_convers.find(token.data);
 				assert(op_type != binary_op_convers.end());
 
-				expr_node->type = ExprNode::BINARY_OP;
-				expr_node->data = BinaryOPNode{ lexer.get_loc(), op_type->second, token.data, curr, nullptr };
+				op_node->type = ExprNode::BINARY_OP;
+				op_node->data = BinaryOPNode{ lexer.get_loc(), op_type->second, token.data, curr, nullptr };
 			}
 
 			if (prev == nullptr)
-				root = expr_node;
+				root = op_node;
 			else
-				prev->travel_ast() = expr_node;
+				prev->travel_ast() = op_node;
 		}
 		else
 		{
-			return std::make_tuple(root, type_check_expr(scope, root, required_types));
+			return root == nullptr
+				? std::make_tuple(nullptr, TypeContainer{})
+				: std::make_tuple(root, type_check_expr(scope, root, required_types));
 		}
 
 		token = lexer.eat(false);
@@ -1084,7 +1097,7 @@ bool Parser::higher_precedence(
 		{ "[]", "." },
 	};
 
-	std::size_t pre1, pre2;
+	std::size_t pre1 = operators.size(), pre2;
 	for (std::size_t a = 0; a < operators.size(); ++a)
 	{
 		if (operators[a].contains(op1))
@@ -1093,18 +1106,18 @@ bool Parser::higher_precedence(
 			pre2 = a;
 	}
 
+	assert(pre1 != operators.size());
 	return pre1 > pre2;
 }
 
 Parser::TypeContainer Parser::type_check_expr(
-	ParserScope& scope,
+	ParserScope&					 scope,
 	std::shared_ptr<ExprNode> const& expr,
-	TypeContainer const& required_types,
+	TypeContainer const&			 required_types,
 	TypeContainer* const_types,
 	CheckVariable* const_var) const
 {
 	assert(expr != nullptr);
-
 	switch (expr->type)
 	{
 	case ExprNode::LITERAL: {
@@ -1272,7 +1285,7 @@ Parser::TypeContainer Parser::type_check_expr(
 		}
 	}
 	case ExprNode::BINARY_OP: {
-		BinaryOPNode const& binary_op = std::get<BinaryOPNode>(expr->data);
+		auto const& binary_op = std::get<BinaryOPNode>(expr->data);
 
 		auto const throw_binary_op_err = [&](
 			TypeContainer const& types,
@@ -1465,6 +1478,8 @@ Parser::TypeContainer Parser::type_check_expr(
 		}
 	}
 	}
+
+	assert(false);
 }
 
 void Parser::check_call_types(
@@ -1517,7 +1532,6 @@ std::string Parser::types_as_str(TypeContainer const& var_types_set) const
 
 	return str_types;
 }
-
 
 Parser::TypeContainer const Parser::all_types{
 	Type::BOOL, Type::INT, Type::FLOAT, Type::STR, Type::ARR };

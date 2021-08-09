@@ -39,7 +39,7 @@ void Interpreter::Data::Print() const
 	switch (type)
 	{
 	case BOOL:
-		std::cout << std::get<bool>(val);
+		std::cout << (std::get<bool>(val) ? "true" : "false");
 		break;
 	case INT:
 		std::cout << std::get<int>(val);
@@ -54,7 +54,6 @@ void Interpreter::Data::Print() const
 		auto& arr = std::get<std::vector<Data> >(val);
 
 		std::cout << "[ ";
-
 		for (int a = 0; a < (int)arr.size() - 1; ++a)
 		{
 			arr[a].Print();
@@ -395,6 +394,16 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 	}
 	case StmtType::METHOD: {
 		StmtMethod const& method_stmt = std::get<StmtMethod>(stmt.data);
+		
+		//
+		//
+		// 
+		// 
+		// 
+		// this just evaluates the method call, but doesn't modify anything
+		// change so that method like `arr.push(8)` actually modifies the object
+		//
+		//
 		evaluate_expression(scope, method_stmt.assign_expr);
 
 		break;
@@ -563,11 +572,11 @@ Interpreter::Data Interpreter::evaluate_expression(
 		}
 	}
 	case ExprNode::ARRAY: {
-		auto& val = std::get<ValueArray>(expr->data);
+		auto& arr = std::get<ValueArray>(expr->data);
 
-		std::vector<Data> elem_data(val.elem_exprs.size());
+		std::vector<Data> elem_data(arr.elem_exprs.size());
 		for (std::size_t a = 0; a < elem_data.size(); ++a)
-			elem_data[a] = evaluate_expression(scope, val.elem_exprs[a]);
+			elem_data[a] = evaluate_expression(scope, arr.elem_exprs[a]);
 
 		return { Data::ARR, elem_data };
 	}
@@ -580,7 +589,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 		return night_var->second.data;
 	}
 	case ExprNode::CALL: {
-		ValueCall const& val = std::get<ValueCall>(expr->data);
+		auto const& val = std::get<ValueCall>(expr->data);
 	
 		auto const night_func = night_funcs.find(val.name);
 		assert(night_func != night_funcs.end());
@@ -714,7 +723,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 		return rtn_val.value();
 	}
 	case ExprNode::UNARY_OP: {
-		UnaryOPNode const& unary_op = std::get<UnaryOPNode>(expr->data);
+		auto const& unary_op = std::get<UnaryOPNode>(expr->data);
 		
 		if (unary_op.data == "-")
 		{
@@ -787,6 +796,8 @@ Interpreter::Data Interpreter::evaluate_expression(
 				"subscript operator is currently used on type '" + array.to_str() + "'",
 				night::learn_learn);
 		}
+
+		assert(false);
 	}
 	case ExprNode::BINARY_OP: {
 		auto& binary_op = std::get<BinaryOPNode>(expr->data);
@@ -886,13 +897,6 @@ Interpreter::Data Interpreter::evaluate_expression(
 					night::learn_classes);
 			}
 
-			if (binary_op.right->type == ExprNode::CALL) {
-				throw NIGHT_RUNTIME_ERROR(
-					"operator '" + binary_op.data + "' can only be used on objects",
-					"operator is currently used on type '" + object.to_str() + "'",
-					night::learn_classes);
-			}
-
 			auto& method = std::get<ValueCall>(binary_op.right->data);
 
 			if (object.type == Data::ARR)
@@ -908,6 +912,11 @@ Interpreter::Data Interpreter::evaluate_expression(
 				{
 					Data const value = evaluate_expression(scope, method.param_exprs[0]);
 					obj_arr.push_back(value);
+
+					auto* var = scope.get_var(std::get<ValueVar>(binary_op.left->data).name);
+					assert(var != nullptr);
+
+					var->second.data = object;
 
 					return object;
 				}

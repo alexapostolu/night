@@ -47,6 +47,7 @@ struct Token
 	std::string data;
 
 	bool is_value() const;
+	bool is_operator() const;
 
 	static Token const _EOL;
 	static Token const _EOF;

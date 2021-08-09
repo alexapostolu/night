@@ -196,7 +196,7 @@ private:
 			BOOL,
 			INT, FLOAT,
 			STR, ARR,
-			TYPE
+			//TYPE
 		} type;
 
 		Type(T _type);
