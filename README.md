@@ -12,7 +12,7 @@ Night provides compile time definition and type checking, in addition with stati
 
 ## Current Progress
 
-Stable version still in development.
+Stable version still in development, along with the website.
 
 ---
 
