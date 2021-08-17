@@ -28,7 +28,7 @@ The [latest stable commit](https://github.com/DynamicSquid/night/tree/8079fa9e05
 
 1. Install Dependancies
 
-`g++` (version 7+)<br>
+`g++` (version 8+)<br>
 `cmake` (version 3+)
 
 2. Clone Repository
