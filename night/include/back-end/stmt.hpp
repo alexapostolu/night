@@ -2,6 +2,7 @@
 
 #include "../error.hpp"
 
+#include <iostream>
 #include <variant>
 #include <memory>
 #include <string>
@@ -210,8 +211,7 @@ struct Scope
 	Scope* upper;
 	std::unordered_map<std::string, VarContainer> vars;
 
-	std::pair<std::string const, VarContainer>* get_var(
-		std::string const& name)
+	std::pair<std::string const, VarContainer>* get_var(std::string const& name)
 	{
 		for (Scope<VarContainer>* curr_scope = this; curr_scope != nullptr;)
 		{

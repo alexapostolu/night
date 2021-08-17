@@ -119,12 +119,12 @@ bool Interpreter::Data::compare_array(
 std::optional<Interpreter::Data> Interpreter::interpret_statements(
 	InterpreterScope& upper_scope,
 	std::vector<Stmt> const& stmts,
-	NightVariableContainer const& vars)
+	NightVariableContainer const& add_vars)
 {
-	InterpreterScope scope{ upper_scope };
-	scope.vars = vars;
+	InterpreterScope scope{ &upper_scope };
+	scope.vars = add_vars;
 
-	for (auto const& stmt : stmts)
+	for (auto& stmt : stmts)
 	{
 		std::optional<Data> rtn_val = interpret_statement(scope, stmt);
 		if (rtn_val.has_value())
@@ -145,7 +145,7 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 	case StmtType::INIT: {
 		StmtInit const& stmt_init = std::get<StmtInit>(stmt.data);
 		scope.vars[stmt_init.name] = { evaluate_expression(scope, stmt_init.expr) };
-
+		
 		return std::nullopt;
 	}
 	case StmtType::ASSIGN: {
@@ -229,15 +229,15 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 		return std::nullopt;
 	}
 	case StmtType::IF: {
-		StmtIf const& stmt_if = std::get<StmtIf>(stmt.data);
+		auto const& stmt_if = std::get<StmtIf>(stmt.data);
 
-		for (Conditional const& conditional : stmt_if.chains)
+		for (auto const& conditional : stmt_if.chains)
 		{
 			// if conditional is 'if' or 'elif'
 			if (conditional.condition != nullptr)
 			{
 				// evaluate condition
-				Data const condition_expr =
+				auto const condition_expr =
 					evaluate_expression(scope, conditional.condition);
 
 				if (condition_expr.type != Data::BOOL) {
@@ -394,16 +394,6 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 	}
 	case StmtType::METHOD: {
 		StmtMethod const& method_stmt = std::get<StmtMethod>(stmt.data);
-		
-		//
-		//
-		// 
-		// 
-		// 
-		// this just evaluates the method call, but doesn't modify anything
-		// change so that method like `arr.push(8)` actually modifies the object
-		//
-		//
 		evaluate_expression(scope, method_stmt.assign_expr);
 
 		break;
@@ -815,7 +805,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 					night::learn_learn);
 			}
 
-			if (!right.is_num() && right.type != Data::STR&& left.type != Data::STR) {
+			if (!right.is_num() && right.type != Data::STR && left.type != Data::STR) {
 				throw NIGHT_RUNTIME_ERROR(
 					"operator '+' can only be used on types 'int', 'float', or 'str'",
 					"right hand value of operator '+' currently is type '" + right.to_str() + "'",
@@ -825,7 +815,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 			if (left.type == Data::STR || right.type == Data::STR)
 			{
 				return Data{ Data::STR,
-					left.to_str() + right.to_str() };
+					std::get<std::string>(left.val) + std::get<std::string>(right.val) };
 			}
 
 			if (left.type == Data::INT && right.type == Data::INT)

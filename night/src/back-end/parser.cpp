@@ -364,9 +364,12 @@ Parser::parse_statement(ParserScope& scope)
 
 		Scope if_scope{ scope };
 		
+		lexer.eat(true);
+
 		std::vector<Stmt> const body = parse_body(
 			if_scope, "if conditional",
 			night::format_if, night::learn_conditionals);
+
 
 		std::vector<Conditional> conditionals{
 			Conditional{ condition_expr, body } };
