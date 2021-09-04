@@ -1,3 +1,0 @@
-C:\dev\tools\cmake\bin\cmake.exe -E rm -f CMakeFiles\cmTC_00bc9.dir/objects.a
-C:\dev\tools\mingw64\bin\ar.exe cr CMakeFiles\cmTC_00bc9.dir/objects.a @CMakeFiles\cmTC_00bc9.dir\objects1.rsp
-C:\dev\tools\mingw64\bin\gcc.exe  -v -Wl,--whole-archive CMakeFiles\cmTC_00bc9.dir/objects.a -Wl,--no-whole-archive -o cmTC_00bc9.exe -Wl,--out-implib,libcmTC_00bc9.dll.a -Wl,--major-image-version,0,--minor-image-version,0 
