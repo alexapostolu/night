@@ -5,6 +5,7 @@
 #include <cctype>
 #include <string>
 #include <vector>
+#include <map>
 #include <unordered_map>
 #include <iostream>
 
@@ -130,14 +131,14 @@ Token Lexer::eat(bool go_to_next_line)
 		{
 			if (c == '\0')
 			{
-				std::string tok_data = std::string(1, code_line[i]);
+				std::string tok_data(1, code_line[i]);
 
 				++i;
 
 				curr = { loc, tok_type, tok_data };
 				return curr;
 			}
-			if (c != '\0' && i < code_line.length() - 1 && code_line[i + 1] == c)
+			if (i < code_line.length() - 1 && code_line[i + 1] == c)
 			{
 				std::string tok_data = std::string(1, code_line[i]) + c;
 
@@ -152,7 +153,7 @@ Token Lexer::eat(bool go_to_next_line)
 	throw night::error(
 		__FILE__, __LINE__, night::error_compile, loc,
 		std::string("unknown symbol '") + code_line[i] + "'",
-		"",
+		code_line[i] == '"' ? "did you mean to use double quotations `\"`" : "",
 		night::learn_learn);
 }
 
@@ -214,7 +215,7 @@ void Lexer::replace_escape_chars(std::string& token) const
 	}
 }
 
-std::unordered_map<char, std::map<char, TokenType> > const Lexer::symbols{
+std::unordered_map<char, std::vector<std::pair<char, TokenType> > > const Lexer::symbols{
 	{ '+', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },
 	{ '-', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },
 	{ '*', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },

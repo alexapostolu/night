@@ -45,7 +45,8 @@ private:
 	 * parses body that precedes a statement
 	 *   ex. body of conditionals, loops, or functions
 	 *
-	 * lexer should be at first token of body; ends at last token of body
+	 * lexer should be at first token of body (including curly brackets)
+	 * ends at first token of next statement
 	 */
 	std::vector<Stmt> parse_body(
 		ParserScope& scope,
@@ -106,8 +107,11 @@ private:
 		TypeContainer const& var_types_set
 	) const;
 
-public:
-	struct CheckVariable;
+	inline void throw_binary_type_err(
+		BinaryOPNode const& op,
+		TypeContainer const& types,
+		std::string const& side,
+		std::string const& used_types) const;
 
 private:
 	struct CheckFunction;

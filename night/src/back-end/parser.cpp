@@ -161,7 +161,7 @@ Parser::parse_statement(ParserScope& scope)
 				arg_types, check_func->first);
 
 			// move lexer to start of next statement
-			lexer.eat(false);
+			lexer.eat(true);
 
 			return Stmt{
 				lexer.get_loc(), StmtType::CALL,
@@ -477,9 +477,14 @@ Parser::parse_statement(ParserScope& scope)
 
 		std::vector<std::string> param_names;
 
+		bool once = true;
 		while (true)
 		{
-			if (lexer.eat(false).type != TokenType::VAR) {
+			token = lexer.eat(false);
+			if (once && token.type == TokenType::CLOSE_BRACKET)
+				break;
+
+			if (token.type != TokenType::VAR) {
 				throw NIGHT_COMPILE_ERROR(
 					"expected variable names as function parameters",
 					night::format_fn, night::learn_functions);
@@ -515,42 +520,39 @@ Parser::parse_statement(ParserScope& scope)
 			}
 		}
 
-		if (lexer.eat(true).type != TokenType::OPEN_CURLY) {
-			throw NIGHT_COMPILE_ERROR(
-				"expected opening curly bracket after closing bracket",
-				night::format_fn, night::learn_functions);
-		}
-
 		// define function before parsing body to ensure function is defined for recursion
 		// and return types
 
 		Parser::check_funcs[func_name] = CheckFunction();
 
-		auto check_func = Parser::check_funcs.find(func_name);
-		check_func->second.param_types.resize(param_names.size());
+		in_func = Parser::check_funcs.find(func_name);
+
+		auto& check_func = in_func->second;
+		check_func.param_types.resize(param_names.size());
 
 		// parsing body
 
-		in_func = check_func;
-		
-		std::vector<Stmt> fn_stmts = parse_body(func_scope, "function definition",
+		// move lexer to first token of body
+		lexer.eat(true);
+
+		auto fn_stmts = parse_body(func_scope, "function definition",
 			night::format_fn, night::learn_functions);
 
 		in_func = Parser::check_funcs.end();
 
-		if (lexer.eat(false).type != TokenType::EOL) {
-			throw NIGHT_COMPILE_ERROR(
-				"unexpected token '" + token.data + "' after closing curly bracket",
-				night::format_fn, night::learn_functions);
-		}
-
 		// set check function to be void or not, and assign check function
 		// parameters' types
 
-		check_func->second.is_void = check_func->second.rtn_types.empty();
+		check_func.is_void = check_func.rtn_types.empty();
 
-		for (std::size_t a = 0; a < check_func->second.param_types.size(); ++a)
-			check_func->second.param_types[a] = func_scope.vars[param_names[a]].types;
+		for (std::size_t a = 0; a < check_func.param_types.size(); ++a)
+		{
+			auto& assign_types = func_scope.vars.at(param_names.at(a)).types;
+
+			check_func.param_types[a] = assign_types.empty()
+				? all_types
+				: assign_types;
+		}
 
 		return Stmt{
 			lexer.get_loc(), StmtType::FN,
@@ -565,9 +567,15 @@ Parser::parse_statement(ParserScope& scope)
 				night::learn_functions);
 		}
 
+		lexer.eat(false);
+
 		auto const [expr, types] = parse_expression(scope);
-		in_func->second.rtn_types.insert(in_func->second.rtn_types.end(),
+
+		in_func->second.rtn_types.insert(
+			in_func->second.rtn_types.end(),
 			types.begin(), types.end());
+
+		lexer.eat(true);
 
 		return Stmt{
 			lexer.get_loc(), StmtType::RETURN,
@@ -674,12 +682,6 @@ Parser::parse_body(
 	if (lexer.get_curr().type != TokenType::OPEN_CURLY)
 		return { parse_statement(scope) };
 
-	if (lexer.eat(true).type != TokenType::CLOSE_CURLY) {
-		throw NIGHT_COMPILE_ERROR(
-			"unexpected token for " + stmt_name + " body",
-			stmt_format, stmt_learn);
-	}
-
 	// move lexer to first token of body
 	lexer.eat(true);
 
@@ -689,10 +691,16 @@ Parser::parse_body(
 		auto token = lexer.get_curr();
 		if (token.type == TokenType::CLOSE_CURLY)
 		{
+			if (lexer.eat(false).type != TokenType::EOL) {
+				throw NIGHT_COMPILE_ERROR(
+					"unexpected token '" + lexer.get_curr().data + "' after closing curly bracket",
+					stmt_format, stmt_learn);
+			}
+
 			// move lexer to next statement
 			lexer.eat(true);
 
-			break;
+			return stmts;
 		}
 		else if (token.type == TokenType::EOL)
 		{
@@ -708,8 +716,6 @@ Parser::parse_body(
 
 		stmts.push_back(parse_statement(scope));
 	}
-
-	return stmts;
 }
 
 std::shared_ptr<ExprNode>
@@ -806,24 +812,16 @@ Parser::parse_expression(
 	TypeContainer const& required_types)
 {
 	static std::unordered_map<std::string, UnaryOPNode::T> const unary_op_convers{
-		{ "-", UnaryOPNode::NEGATIVE },
-		{ "!", UnaryOPNode::NOT }
-	};
+		{ "-", UnaryOPNode::NEGATIVE }, { "!", UnaryOPNode::NOT } };
 
 	static std::unordered_map<std::string, BinaryOPNode::T> const binary_op_convers{
-		{ "+", BinaryOPNode::PLUS },
-		{ "-", BinaryOPNode::MINUS },
-		{ "*", BinaryOPNode::TIMES },
-		{ "/", BinaryOPNode::DIVIDE },
+		{ "+", BinaryOPNode::PLUS },		{ "-", BinaryOPNode::MINUS },
+		{ "*", BinaryOPNode::TIMES },		{ "/", BinaryOPNode::DIVIDE },
 		{ "%", BinaryOPNode::MOD },
-		{ ">", BinaryOPNode::GREATER },
-		{ "<", BinaryOPNode::SMALLER },
-		{ ">=", BinaryOPNode::GREATER_EQ },
-		{ "<=", BinaryOPNode::SMALLER_EQ },
-		{ "==", BinaryOPNode::EQUAL },
-		{ "!=", BinaryOPNode::NOT_EQUAL },
-		{ "||", BinaryOPNode::OR },
-		{ "&&", BinaryOPNode::AND },
+		{ ">", BinaryOPNode::GREATER },     { "<", BinaryOPNode::SMALLER },
+		{ ">=", BinaryOPNode::GREATER_EQ }, { "<=", BinaryOPNode::SMALLER_EQ },
+		{ "==", BinaryOPNode::EQUAL },		{ "!=", BinaryOPNode::NOT_EQUAL },
+		{ "||", BinaryOPNode::OR },			{ "&&", BinaryOPNode::AND },
 		{ ".", BinaryOPNode::DOT }
 	};
 
@@ -1086,7 +1084,8 @@ Parser::parse_expression(
 	}
 }
 
-bool Parser::higher_precedence(
+bool
+Parser::higher_precedence(
 	std::string const& op1,
 	std::string const& op2) const
 {
@@ -1113,7 +1112,8 @@ bool Parser::higher_precedence(
 	return pre1 > pre2;
 }
 
-Parser::TypeContainer Parser::type_check_expr(
+Parser::TypeContainer
+Parser::type_check_expr(
 	ParserScope&					 scope,
 	std::shared_ptr<ExprNode> const& expr,
 	TypeContainer const&			 required_types,
@@ -1188,8 +1188,6 @@ Parser::TypeContainer Parser::type_check_expr(
 				night::learn_functions);
 		}
 
-		// checking if function is void
-
 		if (check_func.is_void) {
 			throw NIGHT_COMPILE_ERROR(
 				"function '" + val.name + "' does not have a return value",
@@ -1201,9 +1199,9 @@ Parser::TypeContainer Parser::type_check_expr(
 		for (std::size_t a = 0; a < check_func.param_types.size(); ++a)
 		{
 			auto const arg_types = type_check_expr(
-				scope, val.param_exprs[a], check_func.param_types[a]);
+				scope, val.param_exprs.at(a), check_func.param_types[a]);
 
-			if (arg_types.empty())
+			if (arg_types.empty() || check_func.param_types[a].empty())
 				continue;
 
 			bool const match = std::ranges::any_of(
@@ -1290,43 +1288,24 @@ Parser::TypeContainer Parser::type_check_expr(
 	case ExprNode::BINARY_OP: {
 		auto const& binary_op = std::get<BinaryOPNode>(expr->data);
 
-		auto const throw_binary_op_err = [&](
-			TypeContainer const& types,
-			std::string   const& side,
-			std::string   const& used_types)
-		{
-			throw NIGHT_COMPILE_ERROR(
-				side + " hand value of operator '" + binary_op.data + "' currently contains " + types_as_str(types),
-				"operator '" + binary_op.data + "' can only be used on " + used_types,
-				night::learn_operators);
-		};
-
 		TypeContainer rtn_num_types;
 
 		switch (binary_op.type)
 		{
 		case BinaryOPNode::PLUS: {
-			auto const left_types = type_check_expr(
-				scope, binary_op.left, { Type::INT, Type::FLOAT });
+			auto left_types = type_check_expr(
+				scope, binary_op.left, { Type::INT, Type::FLOAT, Type::STR });
 
-			if (!night::contains(left_types, Type::INT, Type::FLOAT, Type::STR)) {
-				throw NIGHT_COMPILE_ERROR(
-					"left hand value of operator '" + binary_op.data + "' currently contains " + types_as_str(left_types),
-					"operator '" + binary_op.data + "' can only be used on types `int`, `float`, or `str`",
-					night::learn_operators);
-			}
+			if (!night::contains(left_types, Type::INT, Type::FLOAT, Type::STR))
+				throw_binary_type_err(binary_op, left_types, "left", "`int`, `float`, or `str`");
 
-			auto const right_types = type_check_expr(
-				scope, binary_op.right, { Type::INT, Type::FLOAT });
+			auto right_types = type_check_expr(
+				scope, binary_op.right, { Type::INT, Type::FLOAT, Type::STR });
 			
-			if (!night::contains(right_types, Type::INT, Type::FLOAT, Type::STR)) {
-				throw NIGHT_COMPILE_ERROR(
-					"right hand value of operator '" + binary_op.data + "' currently contains " + types_as_str(right_types),
-					"operator '" + binary_op.data + "' can only be used on types `int`, `float`, or `str`",
-					night::learn_operators);
-			}
+			if (!night::contains(right_types, Type::INT, Type::FLOAT, Type::STR))
+				throw_binary_type_err(binary_op, right_types, "right", "`int`, `float`, or `str`");
 
-			return { Type::INT, Type::STR };
+			return { Type::INT, Type::FLOAT, Type::STR };
 		}
 
 		case BinaryOPNode::MINUS:
@@ -1343,13 +1322,13 @@ Parser::TypeContainer Parser::type_check_expr(
 				scope, binary_op.left, { Type::INT, Type::FLOAT });
 
 			if (!night::contains(left_types, Type::INT, Type::FLOAT))
-				throw_binary_op_err(left_types, "left", "types 'int' or 'float'");
+				throw_binary_type_err(binary_op, left_types, "left", "types 'int' or 'float'");
 
 			auto const right_types = type_check_expr(
 				scope, binary_op.right, { Type::INT, Type::FLOAT });
 
 			if (!night::contains(right_types, Type::INT, Type::FLOAT))
-				throw_binary_op_err(right_types, "right", "types 'int' or 'float'");
+				throw_binary_type_err(binary_op, right_types, "right", "types 'int' or 'float'");
 
 			return rtn_num_types.empty()
 				? TypeContainer{ Type::BOOL }
@@ -1362,13 +1341,13 @@ Parser::TypeContainer Parser::type_check_expr(
 				scope, binary_op.left, { Type::BOOL });
 
 			if (!night::contains(left_types, Type::BOOL))
-				throw_binary_op_err(left_types, "left", "type 'bool'");
+				throw_binary_type_err(binary_op, left_types, "left", "type 'bool'");
 
 			auto const right_types = type_check_expr(
 				scope, binary_op.left, { Type::BOOL });
 
 			if (!night::contains(right_types, Type::BOOL))
-				throw_binary_op_err(right_types, "left", "type 'bool'");
+				throw_binary_type_err(binary_op, right_types, "left", "type 'bool'");
 
 			return { Type::BOOL };
 		}
@@ -1379,10 +1358,10 @@ Parser::TypeContainer Parser::type_check_expr(
 			CheckVariable get_const_var;
 
 			auto const& left_types = type_check_expr(
-				scope, binary_op.left, { Type::BOOL }, &get_const_types, &get_const_var);
+				scope, binary_op.left, all_types, &get_const_types, &get_const_var);
 
 			auto const& right_types = type_check_expr(
-				scope, binary_op.right, { Type::BOOL }, &get_const_types, &get_const_var);
+				scope, binary_op.right, all_types, &get_const_types, &get_const_var);
 
 			bool const match = std::ranges::any_of(left_types,
 				[&](Type const& type) { return night::contains(left_types, type); });
@@ -1401,7 +1380,7 @@ Parser::TypeContainer Parser::type_check_expr(
 		}
 
 		case BinaryOPNode::DOT: {
-			BinaryOPNode const& binary_op = std::get<BinaryOPNode>(expr->data);
+			auto const& binary_op = std::get<BinaryOPNode>(expr->data);
 
 			if (binary_op.right->type != ExprNode::CALL) {
 				throw NIGHT_COMPILE_ERROR(
@@ -1410,7 +1389,7 @@ Parser::TypeContainer Parser::type_check_expr(
 					night::learn_classes);
 			}
 
-			ValueCall const& method =
+			auto const& method =
 				std::get<ValueCall>(binary_op.right->data);
 
 			// find required types and return types based on method
@@ -1482,10 +1461,11 @@ Parser::TypeContainer Parser::type_check_expr(
 	}
 	}
 
-	assert(false);
+	throw std::runtime_error("Parser::type_check_expr(), missing node");
 }
 
-void Parser::check_call_types(
+void
+Parser::check_call_types(
 	std::vector<TypeContainer> const& param_types,
 	std::vector<TypeContainer> const& arg_types,
 	std::string const& func_name)
@@ -1495,7 +1475,7 @@ void Parser::check_call_types(
 	for (std::size_t a = 0; a < param_types.size(); ++a)
 	{
 		// parameter can be any type, so skip type checking
-		if (param_types[a].empty())
+		if (param_types[a].empty() || arg_types[a].empty())
 			continue;
 
 		// checking to see if at least one argument type matches a parameter type
@@ -1516,7 +1496,8 @@ void Parser::check_call_types(
 	}
 }
 
-std::string Parser::types_as_str(TypeContainer const& var_types_set) const
+std::string
+Parser::types_as_str(TypeContainer const& var_types_set) const
 {
 	assert(!var_types_set.empty());
 
@@ -1535,6 +1516,20 @@ std::string Parser::types_as_str(TypeContainer const& var_types_set) const
 
 	return str_types;
 }
+
+inline void
+Parser::throw_binary_type_err(
+	BinaryOPNode  const& op,
+	TypeContainer const& types,
+	std::string   const& side,
+	std::string   const& used_types) const
+{
+	throw NIGHT_COMPILE_ERROR(
+		side + " hand value of operator '" + op.data + "' currently contains " + types_as_str(types),
+		"operator '" + op.data + "' can only be used on " + used_types,
+		night::learn_operators);
+}
+
 
 Parser::TypeContainer const Parser::all_types{
 	Type::BOOL, Type::INT, Type::FLOAT, Type::STR, Type::ARR };
@@ -1579,6 +1574,8 @@ std::string Parser::Type::to_str() const
 	case T::ARR:
 		return "arr";
 	}
+
+	throw std::runtime_error("Parser::Type::to_str(), missing type to string conversion");
 }
 
 bool Parser::Type::operator==(Type _t) const

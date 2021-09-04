@@ -1,0 +1,3 @@
+C:/dev/repos/night/CMakeFiles/CMakeTmp/CMakeFiles/cmTC_00bc9.dir
+C:/dev/repos/night/CMakeFiles/CMakeTmp/CMakeFiles/edit_cache.dir
+C:/dev/repos/night/CMakeFiles/CMakeTmp/CMakeFiles/rebuild_cache.dir

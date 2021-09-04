@@ -36,6 +36,6 @@ private:
 	
 	Token curr;
 
-	static std::unordered_map<char, std::map<char, TokenType> > const symbols;
+	static std::unordered_map<char, std::vector<std::pair<char, TokenType> > > const symbols;
 	static std::unordered_map<std::string, TokenType> const keywords;
 };

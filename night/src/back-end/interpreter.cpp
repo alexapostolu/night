@@ -34,36 +34,36 @@ std::string Interpreter::Data::to_str() const
 	}
 }
 
-void Interpreter::Data::Print() const
+void Interpreter::Data::print(Data const& data)
 {
-	switch (type)
+	switch (data.type)
 	{
 	case BOOL:
-		std::cout << (std::get<bool>(val) ? "true" : "false");
+		std::cout << (std::get<bool>(data.val) ? "true" : "false");
 		break;
 	case INT:
-		std::cout << std::get<int>(val);
+		std::cout << std::get<int>(data.val);
 		break;
 	case FLOAT:
-		std::cout << std::get<float>(val);
+		std::cout << std::get<float>(data.val);
 		break;
 	case STR:
-		std::cout << std::get<std::string>(val);
+		std::cout << std::get<std::string>(data.val);
 		break;
 	case ARR: {
-		auto& arr = std::get<std::vector<Data> >(val);
+		auto& arr = std::get<std::vector<Data> >(data.val);
 
 		std::cout << "[ ";
 		for (int a = 0; a < (int)arr.size() - 1; ++a)
 		{
-			arr[a].Print();
+			Data::print(arr[a]);
 			std::cout << ", ";
 		}
 
 		if (!arr.empty())
 		{
-			arr.back().Print();
-			std::cout << " ";
+			Data::print(arr.back());
+			std::cout << ' ';
 		}
 
 		std::cout << "]";
@@ -121,8 +121,7 @@ std::optional<Interpreter::Data> Interpreter::interpret_statements(
 	std::vector<Stmt> const& stmts,
 	NightVariableContainer const& add_vars)
 {
-	InterpreterScope scope{ &upper_scope };
-	scope.vars = add_vars;
+	InterpreterScope scope{ &upper_scope, add_vars };
 
 	for (auto& stmt : stmts)
 	{
@@ -149,7 +148,7 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 		return std::nullopt;
 	}
 	case StmtType::ASSIGN: {
-		auto& stmt_assign = std::get<StmtAssign>(stmt.data);
+		auto const& stmt_assign = std::get<StmtAssign>(stmt.data);
 
 		// get data produced by subscript chain
 		auto chain = interpret_subscript_chain(scope, stmt_assign, loc);
@@ -271,8 +270,8 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 		// evaluate pre-defined functions first
 		if (stmt_call.name == "print")
 		{
-			Data const data = evaluate_expression(scope, stmt_call.args[0]);
-			data.Print();
+			auto data = evaluate_expression(scope, stmt_call.args[0]);
+			Data::print(data);
 
 			return std::nullopt;
 		}
@@ -544,7 +543,6 @@ Interpreter::Data Interpreter::evaluate_expression(
 	std::shared_ptr<ExprNode> const& expr)
 {
 	auto& loc = expr->loc;
-
 	switch (expr->type)
 	{
 	case ExprNode::LITERAL: {

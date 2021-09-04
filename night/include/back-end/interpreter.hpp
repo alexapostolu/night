@@ -33,10 +33,11 @@ private:
 
 		bool is_num() const;
 		std::string to_str() const;
-		void Print() const;
 
 		static bool compare_data(Data const& data1, Data const& data2);
 		static bool compare_array(Data const& data1, Data const& data2);
+
+		static void print(Data const& data);
 	};
 
 	struct NightVariable;
