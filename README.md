@@ -12,7 +12,7 @@ Night provides compile time definition and type checking, in addition with stati
 
 ## Current Progress
 
-Stable version still in development, along with the website.
+Fixing website :(
 
 ---
 
@@ -23,8 +23,6 @@ Night comes in two parts, the interpreter (this repo) and [Dusk](https://github.
 Currently, Night only supports a source build. Binaries for Windows and Linux are comming soon :)
 
 ### Building from Source
-
-The [latest stable commit](https://github.com/DynamicSquid/night/tree/8079fa9e05499b97d60b8777a6aeb733c23dffb3).
 
 1. Install Dependancies
 
@@ -64,6 +62,8 @@ cmake --build .
 ```
 
 4. Run Night
+
+Create a file called `source.night` where you'll write your code.
 
 Windows:
 
