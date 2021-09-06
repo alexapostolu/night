@@ -171,7 +171,7 @@ Parser::parse_statement(ParserScope& scope)
 		else
 		{
 			ValueVar const val_var{ var_name };
-			std::shared_ptr<ExprNode> var_expr = std::make_shared<ExprNode>(lexer.get_loc(), ExprNode::VARIABLE, val_var);
+			auto var_expr = std::make_shared<ExprNode>(lexer.get_loc(), ExprNode::VARIABLE, val_var);
 			std::vector<std::shared_ptr<ExprNode> > subscript_chain;
 			bool contains_method = false;
 
@@ -269,6 +269,7 @@ Parser::parse_statement(ParserScope& scope)
 				}
 				else if (token.type == TokenType::OPEN_SQUARE)
 				{
+					lexer.eat(false);
 					auto [expr, types] = parse_expression(scope, { Type::INT });
 
 					if (lexer.get_curr().type != TokenType::CLOSE_SQUARE) {
@@ -328,9 +329,14 @@ Parser::parse_statement(ParserScope& scope)
 				else
 					assign_type = StmtAssign::MOD;
 
+				lexer.eat(false);
+				auto [expr, type] = parse_expression(scope);
+
+				lexer.eat(true);
+
 				return Stmt{
 					lexer.get_loc(), StmtType::ASSIGN,
-					StmtAssign{ assign_type, check_var->first, subscript_chain, var_expr }
+					StmtAssign{ assign_type, check_var->first, subscript_chain, expr }
 				};
 			}
 			else if (token.type == TokenType::EOL)
@@ -827,12 +833,12 @@ Parser::parse_expression(
 
 	std::shared_ptr<ExprNode> root(nullptr), protect(nullptr);
 
-	Token token = lexer.get_curr();
 	while (true)
 	{
 		ExprNode* prev(nullptr);
 		std::shared_ptr<ExprNode> curr(root);
 
+		Token token = lexer.get_curr();
 		if (token.is_value())
 		{
 			// traveling tree
@@ -912,8 +918,7 @@ Parser::parse_expression(
 
 					// constructing node
 
-					token = lexer.eat(false);
-					if (token.type == TokenType::EOL) {
+					if (lexer.eat(false).type == TokenType::EOL) {
 						throw NIGHT_COMPILE_ERROR(
 							"expected expression after open bracket",
 							night::format_subscript, night::learn_arrays);
@@ -933,7 +938,7 @@ Parser::parse_expression(
 						UnaryOPNode{ UnaryOPNode::SUBSCRIPT, "[]", curr, expr }
 					);
 
-					if (prev != nullptr)
+					if (prev == nullptr)
 						root = sub_op;
 					else
 						prev->travel_ast() = sub_op;
@@ -985,7 +990,7 @@ Parser::parse_expression(
 				break;
 			}
 			default:
-				assert(false);
+				throw std::runtime_error("Parser::parse_expression(), missing token value");
 			}
 		}
 		else if (token.type == TokenType::OPEN_BRACKET)
@@ -1078,7 +1083,7 @@ Parser::parse_expression(
 				: std::make_tuple(root, type_check_expr(scope, root, required_types));
 		}
 
-		token = lexer.eat(false);
+		lexer.eat(false);
 
 	END:;
 	}
@@ -1262,7 +1267,7 @@ Parser::type_check_expr(
 		}
 		case UnaryOPNode::SUBSCRIPT: {
 			auto index = type_check_expr(scope, unary_op.index, { Type::INT });
-			if (night::contains(index, Type::INT)) {
+			if (!night::contains(index, Type::INT)) {
 				throw NIGHT_COMPILE_ERROR(
 					"subscript operator currently contains " + types_as_str(index),
 					"subscript operator must contains type 'int'",

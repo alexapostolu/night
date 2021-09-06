@@ -32,6 +32,8 @@ std::string Interpreter::Data::to_str() const
 	case T::ARR:
 		return "arr";
 	}
+
+	throw std::runtime_error("Interpreter::Data::to_str(), missing type to string conversion");
 }
 
 void Interpreter::Data::print(Data const& data)
@@ -337,7 +339,10 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 
 			// if body returns a value, stop the loop
 			if (rtn_val.has_value())
+			{
+				std::cout << "HI\n";
 				return rtn_val;
+			}
 		}
 
 		return std::nullopt;
@@ -392,10 +397,10 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 		return std::nullopt;
 	}
 	case StmtType::METHOD: {
-		StmtMethod const& method_stmt = std::get<StmtMethod>(stmt.data);
+		auto const& method_stmt = std::get<StmtMethod>(stmt.data);
 		evaluate_expression(scope, method_stmt.assign_expr);
 
-		break;
+		return std::nullopt;
 	}
 	default:
 		return std::nullopt;

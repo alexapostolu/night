@@ -78,8 +78,10 @@ private:
 		std::string_view func_name
 	);
 
-	// starts at first token of expression
-	// ends at the first non-expression token
+	/*
+	 * lexer starts at first token of expression
+	 * ends at the first non-expression token of same line
+	 */
 	std::tuple<std::shared_ptr<ExprNode>, TypeContainer> parse_expression(
 		ParserScope& scope,
 		TypeContainer const& required_types = {}
