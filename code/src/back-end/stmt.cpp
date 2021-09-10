@@ -1,6 +1,6 @@
-#include "../../include/back-end/stmt.hpp"
-#include "../../include/back-end/parser.hpp"
-#include "../../include/error.hpp"
+#include "back-end/stmt.hpp"
+#include "back-end/parser.hpp"
+#include "error.hpp"
 
 #include <memory>
 #include <algorithm>

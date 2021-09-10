@@ -1,6 +1,6 @@
-#include "../../include/back-end/lexer.hpp"
-#include "../../include/back-end/token.hpp"
-#include "../../include/error.hpp"
+#include "back-end/lexer.hpp"
+#include "back-end/token.hpp"
+#include "error.hpp"
 
 #include <iostream>
 #include <cctype>

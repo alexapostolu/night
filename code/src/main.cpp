@@ -1,5 +1,5 @@
-#include "../include/front-end/front-end.hpp"
-#include "../include/error.hpp"
+#include "front-end/front-end.hpp"
+#include "error.hpp"
 
 #include <iostream>
 #include <stdexcept>
