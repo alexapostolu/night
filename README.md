@@ -26,7 +26,7 @@ Currently, Night only supports a source build. Binaries for Windows and Linux ar
 
 1. Install Dependancies
 
-`g++` (version 8+)<br>
+`g++` (version 10+)<br>
 `cmake` (version 3+)
 
 2. Clone Repository
