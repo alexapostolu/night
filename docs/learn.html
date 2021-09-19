@@ -76,21 +76,21 @@
 			<p class="desc">Night is dynamically typed, meaning you don't have to worry about the types of a variable. Night also supports many common expressions. It's best to assign types to variables when possible, and leave then immutable.</p>
 
 			<p class="code">
-				<span class="key">set</span> <span class="var">var</span> = 5<br>
+				<span class="key">let</span> <span class="var">var</span> = 5<br>
 				<span class="var">var</span> = <span class="str">"squid"</span><br><br>
 
 				<span class="com"># you can specifiy a specific type for a variable</span><br>
-				<span class="key">set</span> <span class="var">is_god</span>:&nbsp&nbsp&nbsp<span class="key">bool</span>&nbsp&nbsp&nbsp&nbsp&nbsp= <span class="bool">true</span><br>
-				<span class="key">set</span> <span class="var">light_on</span>: <span class="key">bool mut</span> = <span class="bool">true</span><br><br>
+				<span class="key">let</span> <span class="var">is_god</span>:&nbsp&nbsp&nbsp<span class="key">bool</span>&nbsp&nbsp&nbsp&nbsp&nbsp= <span class="bool">true</span><br>
+				<span class="key">let</span> <span class="var">light_on</span>: <span class="key">bool mut</span> = <span class="bool">true</span><br><br>
 				
 				<span class="var">is_god</span>&nbsp&nbsp&nbsp= <span class="bool">false</span> <span class="com"># error! 'is_god'&nbsp&nbsp&nbspis immutable and cannot be reassigned</span><br>
 				<span class="var">light_on</span> = 5&nbsp&nbsp&nbsp&nbsp&nbsp<span class="com"># error! 'light_on' can only be assigned to type 'bool'</span><br><br>
 
-				<span class="key">set</span> <span class="var">integer</span> = 10<br><br>
+				<span class="key">let</span> <span class="var">integer</span> = 10<br><br>
 
-				<span class="key">set</span> <span class="var">float</span> = 3.14<br><br>
+				<span class="key">let</span> <span class="var">float</span> = 3.14<br><br>
 
-				<span class="key">set</span> <span class="var">name</span> = <span class="str">"squid"</span><br>
+				<span class="key">let</span> <span class="var">name</span> = <span class="str">"squid"</span><br>
 				<span class="var">name</span> = <span class="str">"octopus"</span>
 			</p>
 
@@ -100,9 +100,9 @@
 
 			<p class="code">
 				<span class="func">print</span>(<span class="str">'What is your name? '</span>)<br>
-				<span class="key">set</span> <span class="var">name</span> = <span class="func">input</span>()<br><br>
+				<span class="key">let</span> <span class="var">name</span> = <span class="func">input</span>()<br><br>
 
-				<span class="key">set</span> <span class="var">age</span> = <span class="func">int</span>(<span class="func">input</span>())
+				<span class="key">let</span> <span class="var">age</span> = <span class="func">int</span>(<span class="func">input</span>())
 			</p>
 
 			<p class="desc">Some implicit conversions are also supported. Type <code>int</code> and type <code>dec</code> can be used interchangeably, and any type can concatenate into type <code>str</code>.</p>
@@ -146,7 +146,7 @@
 				typed system.</p>
 
 			<p class="code">
-				<span class="key">set</span> <span class="var">var</span> = <span class="str">'s'</span> <span class="com"># 'var' contains type: 'str'</span><br>
+				<span class="key">let</span> <span class="var">var</span> = <span class="str">'s'</span> <span class="com"># 'var' contains type: 'str'</span><br>
 				<span class="var">var</span> = <span class="bool">true</span>   <span class="com"> # 'var' contains type: 'str', 'bool'</span><br><br>
 
 				<span class="key">def</span> <span class="func">mult</span>(<span class="param">x</span>) {<br>

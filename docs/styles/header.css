@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Anonymous+Pro&display=swap');
 
-#header canvas {
+#header canvas, script {
 	position: absolute;
 	top: 0px;
 	left: 0px;
