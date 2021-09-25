@@ -2,12 +2,12 @@
 #include "../../include/back-end/token.hpp"
 #include "../../include/error.hpp"
 
+#include <iostream>
 #include <cctype>
 #include <string>
 #include <vector>
 #include <map>
 #include <unordered_map>
-#include <iostream>
 
 Lexer::Lexer(std::string_view file_name, bool main_file)
 	: code_file(file_name.data()), loc({ file_name.data(), 1 }), i(0)
@@ -100,6 +100,8 @@ Token Lexer::eat(bool go_to_next_line)
 		if (i < code_line.length() - 1 && code_line[i] == '.' &&
 			std::isdigit(code_line[i + 1]))
 		{
+			number += ".";
+
 			++i;
 			while (i < code_line.length() && std::isdigit(code_line[i]))
 			{
@@ -250,11 +252,8 @@ std::unordered_map<std::string, TokenType> const Lexer::keywords{
 	{ "let", TokenType::LET },
 	{ "if", TokenType::IF },
 	{ "else", TokenType::ELSE },
-	{ "switch", TokenType::SWITCH },
 	{ "while", TokenType::WHILE },
 	{ "for", TokenType::FOR },
 	{ "fn", TokenType::FN },
-	{ "return", TokenType::RETURN },
-	{ "import", TokenType::IMPORT },
-	{ "include", TokenType::IMPORT }
+	{ "return", TokenType::RETURN }
 };

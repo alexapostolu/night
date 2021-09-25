@@ -64,279 +64,46 @@ Parser::Parser(Lexer& lexer)
 	};
 }
 
-Stmt
-Parser::parse_statement(ParserScope& scope)
+Stmt Parser::parse_statement(ParserScope& scope)
 {
 	static auto in_func = Parser::check_funcs.end();
 
-	auto token = lexer.get_curr();
-	switch (token.type)
+	switch (lexer.get_curr().type)
 	{
 	case TokenType::LET:
 		return parse_stmt_let(scope);
 	case TokenType::VAR:
 		return parse_stmt_var(scope);
+
 	case TokenType::IF:
 		return parse_stmt_if(scope);
-	case TokenType::ELIF: {
+
+	case TokenType::WHILE:
+		return parse_stmt_while(scope);
+	case TokenType::FOR:
+		return parse_stmt_for(scope);
+
+	case TokenType::FN:
+		return parse_stmt_fn(scope, in_func);
+	case TokenType::RETURN:
+		return parse_stmt_rtn(scope, in_func);
+
+	case TokenType::ELIF:
+	case TokenType::ELSE:
 		throw NIGHT_COMPILE_ERROR(
-			"elif statement does not precede an if or elif statement",
-			"elif statements must come after an if or an elif statement",
+			lexer.get_curr().data + " statement does not precede an if or elif statement",
+			lexer.get_curr().data + " statements must come after an if or an elif statement",
 			night::learn_conditionals);
-	}
-	case TokenType::ELSE: {
-		throw NIGHT_COMPILE_ERROR(
-			"else statement does not precede an if or elif statement",
-			"else statements must come after an if or an elif statement",
-			night::learn_conditionals);
-	}
-	case TokenType::FN: {
-		// validating statement
 
-		if (lexer.eat(false).type != TokenType::VAR) {
-			throw NIGHT_COMPILE_ERROR(
-				"expected function name after 'def' keyword",
-				night::format_fn, night::learn_functions);
-		}
-
-		auto const func_name = lexer.get_curr().data;
-
-		if (lexer.eat(false).type != TokenType::OPEN_BRACKET) {
-			throw NIGHT_COMPILE_ERROR(
-				"expected opening bracket after function name",
-				night::format_fn, night::learn_functions);
-		}
-
-		if (scope.vars.contains(func_name)) {
-			throw NIGHT_COMPILE_ERROR(
-				"function '" + func_name + "' can not have the same name as a variable",
-				"function and variable names must be unique",
-				night::learn_functions);
-		}
-		if (check_funcs.contains(func_name)) {
-			throw NIGHT_COMPILE_ERROR(
-				"function '" + func_name + "' has already been defined",
-				"functions can only be defined once",
-				night::learn_functions);
-		}
-		if (check_classes.contains(func_name)) {
-			throw NIGHT_COMPILE_ERROR(
-				"function '" + func_name + "' can not have the same name as a class",
-				"function and class names must be unique",
-				night::learn_functions);
-		}
-
-		if (scope.upper != nullptr) {
-			throw NIGHT_COMPILE_ERROR(
-				"function '" + func_name + "' can not be defined inside of a local scope",
-				"functions must be defined in the global scope",
-				night::learn_functions);
-		}
-
-		// parsing parameters
-		// also turns parameters into variables for definition checking the function body
-
-		Scope func_scope{ scope };
-
-		std::vector<std::string> param_names;
-
-		bool once = true;
-		while (true)
-		{
-			token = lexer.eat(false);
-			if (once && token.type == TokenType::CLOSE_BRACKET)
-				break;
-
-			if (token.type != TokenType::VAR) {
-				throw NIGHT_COMPILE_ERROR(
-					"expected variable names as function parameters",
-					night::format_fn, night::learn_functions);
-			}
-
-			std::string const param_name = lexer.get_curr().data;
-
-			if (Parser::check_funcs.contains(param_name)) {
-				throw NIGHT_COMPILE_ERROR(
-					"function parameter can not have the same name as a function",
-					"function parameter names must be unique",
-					night::learn_functions);
-			}
-			if (Parser::check_classes.contains(param_name)) {
-				throw NIGHT_COMPILE_ERROR(
-					"function parameter can not have the same name as a class",
-					"function parameter names must be unique",
-					night::learn_functions);
-			}
-
-			param_names.push_back(param_name);
-			func_scope.vars[param_name] = CheckVariable{};
-
-			Token const token = lexer.eat(false);
-
-			if (token.type == TokenType::CLOSE_BRACKET)
-				break;
-
-			if (token.type != TokenType::COMMA) {
-				throw NIGHT_COMPILE_ERROR(
-					"expected command or closing bracket after parameter '" + param_name + "'",
-					night::format_fn, night::learn_functions);
-			}
-		}
-
-		// define function before parsing body to ensure function is defined for recursion
-		// and return types
-
-		Parser::check_funcs[func_name] = CheckFunction();
-
-		in_func = Parser::check_funcs.find(func_name);
-
-		auto& check_func = in_func->second;
-		check_func.param_types.resize(param_names.size());
-
-		// parsing body
-
-		// move lexer to first token of body
-		lexer.eat(true);
-
-		auto fn_stmts = parse_body(func_scope, "function definition",
-			night::format_fn, night::learn_functions);
-
-		in_func = Parser::check_funcs.end();
-
-		// set check function to be void or not, and assign check function
-		// parameters' types
-
-		check_func.is_void = check_func.rtn_types.empty();
-
-		for (std::size_t a = 0; a < check_func.param_types.size(); ++a)
-		{
-			auto& assign_types = func_scope.vars.at(param_names.at(a)).types;
-
-			check_func.param_types[a] = assign_types.empty()
-				? all_types
-				: assign_types;
-		}
-
-		return Stmt{
-			lexer.get_loc(), StmtType::FN,
-			StmtFn{ func_name, param_names, fn_stmts }
-		};
-	}
-	case TokenType::RETURN: {
-		if (in_func == Parser::check_funcs.end()) {
-			throw NIGHT_COMPILE_ERROR(
-				"return statement is outside of a function",
-				"return statements must be inside of a function",
-				night::learn_functions);
-		}
-
-		lexer.eat(false);
-
-		auto const [expr, types] = parse_expression(scope);
-
-		in_func->second.rtn_types.insert(
-			in_func->second.rtn_types.end(),
-			types.begin(), types.end());
-
-		lexer.eat(true);
-
-		return Stmt{
-			lexer.get_loc(), StmtType::RETURN,
-			StmtReturn{ expr }
-		};
-	}
-	case TokenType::WHILE: {
-		auto condition_expr = parse_condition(
-			scope, "while loop", night::learn_loops);
-
-		if (lexer.eat(true).type == TokenType::EOL) {
-			throw NIGHT_COMPILE_ERROR(
-				"expected statement(s) after closing bracket",
-				night::format_while, night::learn_loops);
-		}
-
-		ParserScope while_scope{ &scope };
-		std::vector<Stmt> const stmts = parse_body(while_scope, "while loop",
-			night::format_while, night::learn_loops);
-
-		return Stmt{
-			lexer.get_loc(), StmtType::WHILE,
-			StmtWhile{ condition_expr, stmts }
-		};
-	}
-	case TokenType::FOR: {
-		// validating statement
-
-		if (lexer.eat(false).type != TokenType::OPEN_BRACKET) {
-			throw NIGHT_COMPILE_ERROR(
-				"expected opening bracket after 'for' keyword",
-				night::format_for, night::learn_loops);
-		}
-		if (lexer.eat(false).type != TokenType::VAR) {
-			throw NIGHT_COMPILE_ERROR(
-				"expected iterator after opening bracket",
-				night::format_for, night::learn_loops);
-		}
-
-		auto const it_name = lexer.get_curr().data;
-
-		if (lexer.eat(false).type != TokenType::COLON) {
-			throw NIGHT_COMPILE_ERROR(
-				"expected colon after iterator",
-				night::format_for, night::learn_loops);
-		}
-		if (lexer.eat(false).type == TokenType::EOL) {
-			throw NIGHT_COMPILE_ERROR(
-				"expected range after colon",
-				night::format_for, night::learn_loops);
-		}
-
-		// parsing iterator and range
-
-		auto [range_expr, range_types] = parse_expression(
-			scope, { Type::STR, Type{ Type::ARR, Parser::all_types } });
-
-		if (lexer.get_curr().type != TokenType::CLOSE_BRACKET) {
-			throw NIGHT_COMPILE_ERROR(
-				"expected closing bracket at the end of expression",
-				night::format_for, night::learn_loops);
-		}
-
-		if (!night::contains(range_types, Type::STR, Type::ARR)) {
-			throw NIGHT_COMPILE_ERROR(
-				"range currently contains " + types_as_str(range_types),
-				"for loop range must contain type 'str' or 'arr'",
-				night::learn_loops);
-		}
-
-		// parsing statement
-
-		if (lexer.eat(true).type == TokenType::EOL) {
-			throw NIGHT_COMPILE_ERROR(
-				"expected statement(s) after closing bracket",
-				night::format_for, night::learn_loops);
-		}
-
-		ParserScope for_scope{ &scope };
-		for_scope.vars[it_name] = CheckVariable(range_types);
-
-		return Stmt{
-			lexer.get_loc(), StmtType::FOR,
-			StmtFor{ it_name, range_expr, parse_body(for_scope, "for loop",
-				night::format_for, night::learn_loops) }
-		};
-	}
-	default: {
+	default:
 		throw NIGHT_COMPILE_ERROR(
 			"unknown syntax",
 			"no clue what you did here sorry :/",
 			night::learn_learn);
 	}
-	}
 }
 
-Stmt
-Parser::parse_stmt_let(ParserScope& scope)
+Stmt Parser::parse_stmt_let(ParserScope& scope)
 {
 	// validating statement
 
@@ -397,8 +164,7 @@ Parser::parse_stmt_let(ParserScope& scope)
 	};
 }
 
-Stmt
-Parser::parse_stmt_var(ParserScope& scope)
+Stmt Parser::parse_stmt_var(ParserScope& scope)
 {
 	auto const var_name = lexer.get_curr().data;
 
@@ -631,8 +397,7 @@ Parser::parse_stmt_var(ParserScope& scope)
 	}
 }
 
-Stmt
-Parser::parse_stmt_if(ParserScope& scope)
+Stmt Parser::parse_stmt_if(ParserScope& scope)
 {
 	auto const condition_expr = parse_condition(
 		scope, "if statement", night::learn_conditionals);
@@ -688,6 +453,255 @@ Parser::parse_stmt_if(ParserScope& scope)
 	return Stmt{
 		lexer.get_loc(), StmtType::IF,
 		StmtIf{ conditionals }
+	};
+}
+
+Stmt Parser::parse_stmt_while(ParserScope& scope)
+{
+	auto condition_expr = parse_condition(
+		scope, "while loop", night::learn_loops);
+
+	if (lexer.eat(true).type == TokenType::EOL) {
+		throw NIGHT_COMPILE_ERROR(
+			"expected statement(s) after closing bracket",
+			night::format_while, night::learn_loops);
+	}
+
+	ParserScope while_scope{ &scope };
+	std::vector<Stmt> const stmts = parse_body(while_scope, "while loop",
+		night::format_while, night::learn_loops);
+
+	return Stmt{
+		lexer.get_loc(), StmtType::WHILE,
+		StmtWhile{ condition_expr, stmts }
+	};
+}
+
+Stmt Parser::parse_stmt_for(ParserScope& scope)
+{
+	// validating statement
+
+	if (lexer.eat(false).type != TokenType::OPEN_BRACKET) {
+		throw NIGHT_COMPILE_ERROR(
+			"expected opening bracket after 'for' keyword",
+			night::format_for, night::learn_loops);
+	}
+	if (lexer.eat(false).type != TokenType::VAR) {
+		throw NIGHT_COMPILE_ERROR(
+			"expected iterator after opening bracket",
+			night::format_for, night::learn_loops);
+	}
+
+	auto const it_name = lexer.get_curr().data;
+
+	if (lexer.eat(false).type != TokenType::COLON) {
+		throw NIGHT_COMPILE_ERROR(
+			"expected colon after iterator",
+			night::format_for, night::learn_loops);
+	}
+	if (lexer.eat(false).type == TokenType::EOL) {
+		throw NIGHT_COMPILE_ERROR(
+			"expected range after colon",
+			night::format_for, night::learn_loops);
+	}
+
+	// parsing iterator and range
+
+	auto [range_expr, range_types] = parse_expression(
+		scope, { Type::STR, Type{ Type::ARR, Parser::all_types } });
+
+	if (lexer.get_curr().type != TokenType::CLOSE_BRACKET) {
+		throw NIGHT_COMPILE_ERROR(
+			"expected closing bracket at the end of expression",
+			night::format_for, night::learn_loops);
+	}
+
+	if (!night::contains(range_types, Type::STR, Type::ARR)) {
+		throw NIGHT_COMPILE_ERROR(
+			"range currently contains " + types_as_str(range_types),
+			"for loop range must contain type 'str' or 'arr'",
+			night::learn_loops);
+	}
+
+	// parsing statement
+
+	if (lexer.eat(true).type == TokenType::EOL) {
+		throw NIGHT_COMPILE_ERROR(
+			"expected statement(s) after closing bracket",
+			night::format_for, night::learn_loops);
+	}
+
+	ParserScope for_scope{ &scope };
+
+	for_scope.vars[it_name] = CheckVariable();
+	if (night::contains(range_types, Type::STR))
+		for_scope.vars[it_name].types.push_back(Type::STR);
+	if (auto it = std::ranges::find(range_types, Type::ARR); it != range_types.end())
+		for_scope.vars[it_name].types.insert(for_scope.vars[it_name].types.end(), it->elem_types.begin(), it->elem_types.end());
+
+	return Stmt{
+		lexer.get_loc(), StmtType::FOR,
+		StmtFor{ it_name, range_expr, parse_body(for_scope, "for loop",
+			night::format_for, night::learn_loops) }
+	};
+}
+
+Stmt Parser::parse_stmt_fn(ParserScope& scope, CheckFunctionContainer::iterator& in_func)
+{
+	// validating statement
+
+	if (lexer.eat(false).type != TokenType::VAR) {
+		throw NIGHT_COMPILE_ERROR(
+			"expected function name after 'def' keyword",
+			night::format_fn, night::learn_functions);
+	}
+
+	auto const func_name = lexer.get_curr().data;
+
+	if (lexer.eat(false).type != TokenType::OPEN_BRACKET) {
+		throw NIGHT_COMPILE_ERROR(
+			"expected opening bracket after function name",
+			night::format_fn, night::learn_functions);
+	}
+
+	if (scope.vars.contains(func_name)) {
+		throw NIGHT_COMPILE_ERROR(
+			"function '" + func_name + "' can not have the same name as a variable",
+			"function and variable names must be unique",
+			night::learn_functions);
+	}
+	if (check_funcs.contains(func_name)) {
+		throw NIGHT_COMPILE_ERROR(
+			"function '" + func_name + "' has already been defined",
+			"functions can only be defined once",
+			night::learn_functions);
+	}
+	if (check_classes.contains(func_name)) {
+		throw NIGHT_COMPILE_ERROR(
+			"function '" + func_name + "' can not have the same name as a class",
+			"function and class names must be unique",
+			night::learn_functions);
+	}
+
+	if (scope.upper != nullptr) {
+		throw NIGHT_COMPILE_ERROR(
+			"function '" + func_name + "' can not be defined inside of a local scope",
+			"functions must be defined in the global scope",
+			night::learn_functions);
+	}
+
+	// parsing parameters
+	// also turns parameters into variables for definition checking the function body
+
+	Scope func_scope{ scope };
+
+	std::vector<std::string> param_names;
+
+	bool once = true;
+	while (true)
+	{
+		Token token = lexer.eat(false);
+		if (once && token.type == TokenType::CLOSE_BRACKET)
+			break;
+
+		if (token.type != TokenType::VAR) {
+			throw NIGHT_COMPILE_ERROR(
+				"expected variable names as function parameters",
+				night::format_fn, night::learn_functions);
+		}
+
+		std::string const param_name = lexer.get_curr().data;
+
+		if (Parser::check_funcs.contains(param_name)) {
+			throw NIGHT_COMPILE_ERROR(
+				"function parameter can not have the same name as a function",
+				"function parameter names must be unique",
+				night::learn_functions);
+		}
+		if (Parser::check_classes.contains(param_name)) {
+			throw NIGHT_COMPILE_ERROR(
+				"function parameter can not have the same name as a class",
+				"function parameter names must be unique",
+				night::learn_functions);
+		}
+
+		param_names.push_back(param_name);
+		func_scope.vars[param_name] = CheckVariable{};
+
+		token = lexer.eat(false);
+
+		if (token.type == TokenType::CLOSE_BRACKET)
+			break;
+
+		if (token.type != TokenType::COMMA) {
+			throw NIGHT_COMPILE_ERROR(
+				"expected command or closing bracket after parameter '" + param_name + "'",
+				night::format_fn, night::learn_functions);
+		}
+	}
+
+	// define function before parsing body to ensure function is defined for recursion
+	// and return types
+
+	Parser::check_funcs[func_name] = CheckFunction();
+
+	in_func = Parser::check_funcs.find(func_name);
+
+	auto& check_func = in_func->second;
+	check_func.param_types.resize(param_names.size());
+
+	// parsing body
+
+	// move lexer to first token of body
+	lexer.eat(true);
+
+	auto fn_stmts = parse_body(func_scope, "function definition",
+		night::format_fn, night::learn_functions);
+
+	in_func = Parser::check_funcs.end();
+
+	// set check function to be void or not, and assign check function
+	// parameters' types
+
+	check_func.is_void = check_func.rtn_types.empty();
+
+	for (std::size_t a = 0; a < check_func.param_types.size(); ++a)
+	{
+		auto& assign_types = func_scope.vars.at(param_names.at(a)).types;
+
+		check_func.param_types[a] = assign_types.empty()
+			? all_types
+			: assign_types;
+	}
+
+	return Stmt{
+		lexer.get_loc(), StmtType::FN,
+		StmtFn{ func_name, param_names, fn_stmts }
+	};
+}
+
+Stmt Parser::parse_stmt_rtn(ParserScope& scope, CheckFunctionContainer::iterator& in_func)
+{
+	if (in_func == Parser::check_funcs.end()) {
+		throw NIGHT_COMPILE_ERROR(
+			"return statement is outside of a function",
+			"return statements must be inside of a function",
+			night::learn_functions);
+	}
+
+	lexer.eat(false);
+
+	auto const [expr, types] = parse_expression(scope);
+
+	in_func->second.rtn_types.insert(
+		in_func->second.rtn_types.end(),
+		types.begin(), types.end());
+
+	lexer.eat(true);
+
+	return Stmt{
+		lexer.get_loc(), StmtType::RETURN,
+		StmtReturn{ expr }
 	};
 }
 
@@ -848,7 +862,7 @@ Parser::parse_expression(
 
 	while (true)
 	{
-		ExprNode* prev(nullptr);
+		ExprNode* prev = nullptr;
 		std::shared_ptr<ExprNode> curr(root);
 
 		Token token = lexer.get_curr();
@@ -1021,13 +1035,15 @@ Parser::parse_expression(
 				curr = curr->travel_ast();
 			}
 
-			if (curr == nullptr)
+			if (root == nullptr)
 			{
+				lexer.eat(false);
 				root = std::get<0>(parse_expression(scope, required_types));
 				protect = root;
 			}
 			else
 			{
+				lexer.eat(false);
 				prev->travel_ast() = std::get<0>(parse_expression(scope, required_types));
 				protect = prev->travel_ast();
 			}

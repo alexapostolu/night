@@ -102,6 +102,10 @@ public:
 	Stmt parse_stmt_let(ParserScope& scope);
 	Stmt parse_stmt_var(ParserScope& scope);
 	Stmt parse_stmt_if(ParserScope& scope);
+	Stmt parse_stmt_fn(ParserScope& scope, CheckFunctionContainer::iterator& in_func);
+	Stmt parse_stmt_rtn(ParserScope& scope, CheckFunctionContainer::iterator& in_func);
+	Stmt parse_stmt_while(ParserScope& scope);
+	Stmt parse_stmt_for(ParserScope& scope);
 
 private:
 	/*

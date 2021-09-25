@@ -40,6 +40,9 @@ private:
 		static void print(Data const& data);
 	};
 
+public:
+	Interpreter();
+
 	struct NightVariable;
 
 public:
@@ -104,7 +107,6 @@ private:
 	);
 
 private:
-	// don't have this as a struct
 	struct NightVariable
 	{
 		Data data;

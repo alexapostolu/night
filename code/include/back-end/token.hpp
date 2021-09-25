@@ -27,14 +27,11 @@ enum class TokenType
 	BOOL_T, INT_T, FLOAT_T, STR_T,
 
 	IF, ELIF, ELSE,
-	SWITCH,
 
 	WHILE, FOR,
 
 	FN,
 	RETURN,
-
-	IMPORT,
 
 	EOL, _EOF
 };

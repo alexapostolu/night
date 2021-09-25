@@ -12,6 +12,15 @@
 #include <string>
 #include <vector>
 
+Interpreter::Interpreter()
+{
+	night_funcs["input"] = {};
+	night_funcs["int"] = {};
+	night_funcs["float"] = {};
+	night_funcs["str"] = {};
+	night_funcs["range"] = {};
+}
+
 bool Interpreter::Data::is_num() const
 {
 	return type == Data::INT || type == Data::FLOAT;
@@ -77,9 +86,7 @@ void Interpreter::Data::print(Data const& data)
 	std::cout.flush();
 }
 
-bool Interpreter::Data::compare_data(
-	Data const& data1,
-	Data const& data2)
+bool Interpreter::Data::compare_data(Data const& data1, Data const& data2)
 {
 	if (data1.type != data2.type)
 		return false;
@@ -101,9 +108,7 @@ bool Interpreter::Data::compare_data(
 	}
 }
 
-bool Interpreter::Data::compare_array(
-	Data const& data1,
-	Data const& data2)
+bool Interpreter::Data::compare_array(Data const& data1, Data const& data2)
 {
 	auto& arr1 = std::get<std::vector<Data> >(data1.val);
 	auto& arr2 = std::get<std::vector<Data> >(data2.val);
@@ -121,8 +126,7 @@ bool Interpreter::Data::compare_array(
 }
 
 std::optional<Interpreter::Data> Interpreter::interpret_statements(
-	InterpreterScope& upper_scope,
-	std::vector<Stmt> const& stmts,
+	InterpreterScope& upper_scope, std::vector<Stmt> const& stmts,
 	NightVariableContainer const& add_vars)
 {
 	InterpreterScope scope{ &upper_scope, add_vars };
@@ -138,8 +142,7 @@ std::optional<Interpreter::Data> Interpreter::interpret_statements(
 }
 
 std::optional<Interpreter::Data> Interpreter::interpret_statement(
-	InterpreterScope& scope,
-	Stmt const& stmt)
+	InterpreterScope& scope, Stmt const& stmt)
 {
 	auto const& loc = stmt.loc;
 
@@ -817,7 +820,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 					night::learn_learn);
 			}
 
-			if (left.type == Data::STR || right.type == Data::STR)
+			if (left.type == Data::STR && right.type == Data::STR)
 			{
 				return Data{ Data::STR,
 					std::get<std::string>(left.val) + std::get<std::string>(right.val) };
@@ -843,6 +846,11 @@ Interpreter::Data Interpreter::evaluate_expression(
 				return Data{ Data::FLOAT,
 					std::get<int>(left.val) + std::get<float>(right.val) };
 			}
+
+			throw NIGHT_RUNTIME_ERROR(
+				"operator '+' can only be used on types 'int', 'float', or two types both of 'str'",
+				"left hand value of operator '+' currently is type '" + left.to_str() + "', and right hand value is type '" + right.to_str() + "'",
+				night::learn_functions);
 		}
 
 		case BinaryOPNode::MINUS:
