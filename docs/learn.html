@@ -46,7 +46,6 @@
 				<li><a href="#hello-world">Hello World!</a></li>
 				<li><a href="#variables">Variables</a></li>
 				<li><a href="#input">User Input</a></li>
-				<li><a href="#expressions">Expressions</a></li>
 				<li><a href="#conditionals">Conditionals</a></li>
 				<li><a href="#functions">Functions</a></li>
 				<li><a href="#loops">Loops</a></li>
@@ -66,7 +65,7 @@
 			<p class="desc">For basic output to the console, you can use the <code>print()</code> function. It takes a single parameter of any type, and displays it to the console. Singleline comments are also supported.</p>
 
 			<p class="code">
-				<span class="func">print</span>(<class class="str">'Hello World!\n'</class>)<br><br>\
+				<span class="func">print</span>(<class class="str">'Hello World!\n'</class>)<br><br>
 
 				<span class="com"># this is a comment</span>
 			</p>
@@ -105,21 +104,46 @@
 				<span class="key">let</span> <span class="var">age</span> = <span class="func">int</span>(<span class="func">input</span>())
 			</p>
 
-			<p class="desc">Some implicit conversions are also supported. Type <code>int</code> and type <code>dec</code> can be used interchangeably, and any type can concatenate into type <code>str</code>.</p>
-			
-			<script src="https://gist.github.com/DynamicSquid/44be9da318f9f851716e0787c46c9cfa.js"></script>
-
 			<h2 id="conditionals">Conditionals</h2>
 
-			<p class="desc">Conditionals in Night take use of curly brackets to group code together.</p>
+			<p class="desc">Conditionals in Night are similar to other languages. If there is only one statement nested in the conditional, curly bracket can be omitted.</p>
 
-			<script src="https://gist.github.com/DynamicSquid/75ae0edbc43f62d116686ab013b37f8b.js"></script>
+			<p class="code">
+				<span class="key">let</span> num = <span class="func">"input</span>()<br><br>
+
+				<span class="key">if</span> (<span class="var">num</span> > 50)<br>
+				{<br>
+					<span class="func">print</span>(<span class="str">"too big!"</span>)<br>
+					<span class="func">exit()</span><br>
+				}<br><br>
+
+				<span class="key">if</span> (<span class="var">num</span> < 0)<br>
+					<span class="func">print</span>(<span class="str">"neg"</span>)<br>
+				<span class="key">elif</span> (<span class="var">num</span> == 0)<br>
+					<span class="func">print</span>(<span class="str">"zero"</span>)<br>
+				<span class="key">else</span><br>
+					<span class="func">print</span>(<span class="str">"pos"</span>);<br>
+			</p>
 
 			<h2 id="functions">Functions</h2>
 
 			<p class="desc">Functions in Night support all five types, along with a <code>null</code> (void) type. Regular type functions must have a return value, while <code>null</code> type functions do not need a return value.</p>
 
-			<script src="https://gist.github.com/DynamicSquid/e5d8523f997bf29ea1447009de84c629.js"></script>
+			<p class="code">
+				fn add(x, y)
+				{
+					return x + y
+				}
+
+				fn sub(x: int, y: int mut)
+				{
+					y += 1
+					return x - y
+				}
+
+				print(add(2, 3))
+				print(sub(9, 7))
+			</p>
 
 			<p class="desc">Note that functions have to be defined before they are used.</p>
 
@@ -127,16 +151,27 @@
 
 			<p class="desc">There are two types of loops in Night, the <code>while</code> and <code>for</code> loop. The <code>while</code> loop will only run if its condition evaluates to <code>true</code>, and the <code>for</code> loop will only run a prespecified amount of times.</p>
 
-			<script src="https://gist.github.com/DynamicSquid/1d1f571a1e3b4cdb5d39a3197bf6ea8d.js"></script>
+			<p class="code">
+				let arr = [ 5, 6, 7 ]
+				for (x : arr)
+					print(str(x) + " ")
+			</p>
 
 			<p class="desc">Unlike the <code>while</code> loop, the <code>for</code> loop's condition is static and cannot change once it's set.</p>
 
 			<h2 id="arrays">Arrays</h2>
 
-			<p>To initialize an array, use square brackets after the variable type, and contain your elements using square brackets as well. You can also specify the amount of elements in your array by putting a value inside the square brackets. If an array is not initialized with any or enough elements, then the appropriate default value will be set. Arrays can only contain one type of value.</p>
+			<p class="desc">Arrays in Night can contain elements of multiple types. There's a variety of built in methods to assist array functions, all of which are documented in the reference page.</p>
 
-			<script src="https://gist.github.com/DynamicSquid/5739894815463d00dec6b60c26936937.js"></script>
+			<p class="code">
+				<span class="key">let</span> <span class="var">arr</span> = [ 5, 6, 6 ]<br>
+				<span class="var">arr</span>.<span class="meth">pop</span>()<br><br>
+				<span class="var">arr</span>.<span class="meth">push</span>(7)<br><br>
 
+				<span class="func">print</span>(<span class="var">arr</span>[0])<br>
+				<span class="func">print</span>(<span class="var">arr</span>)
+			</p>
+			
 			<h2 id="type-checking">Type Checking</h2>
 
 			<p class="desc">What differs Night from other dynamically typed languages is its type safety.<br><br>
