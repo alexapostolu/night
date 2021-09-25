@@ -43,6 +43,8 @@ private:
 public:
 	Interpreter();
 
+
+private:
 	struct NightVariable;
 
 public:
