@@ -189,8 +189,7 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 				if (!assign_data.is_num()) {
 					throw NIGHT_RUNTIME_ERROR(
 						"expression of type '" + assign_data.to_str() + "' can not be assigned using the assignment '+='",
-						"assignment '+=' on that variable can only be used for expressions of type 'int' or 'float'",
-						"");
+						"assignment '+=' on that variable can only be used for expressions of type 'int' or 'float'");
 				}
 
 				if (curr_data->type == Data::INT)
@@ -211,8 +210,7 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 			{
 				throw NIGHT_RUNTIME_ERROR(
 					"assignment operator '+=' can only be used on types 'int', 'float', or 'str'",
-					"operator is currently being used on type '" + curr_data->to_str() + "'",
-					"");
+					"operator is currently being used on type '" + curr_data->to_str() + "'");
 			}
 
 			break;
@@ -501,14 +499,12 @@ void Interpreter::interpret_assignment(
 	if (!curr_data->is_num()) {
 		throw NIGHT_RUNTIME_ERROR(
 			"value can not be assigned using the assignment '" + op + "'",
-			"assignment '" + op + "' can only be used on variables of type 'int' or 'float'",
-			"");
+			"assignment '" + op + "' can only be used on variables of type 'int' or 'float'");
 	}
 	if (!assign_data.is_num()) {
 		throw NIGHT_RUNTIME_ERROR(
 			"expression of type '" + assign_data.to_str() + "' can not be assigned with assignment '" + op + "'",
-			"assignment '" + op + "' can only assign expressions of type 'int' or 'float'",
-			"");
+			"assignment '" + op + "' can only assign expressions of type 'int' or 'float'");
 	}
 
 	float assign_num = assign_data.type == Data::INT
@@ -657,9 +653,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 				return param;
 			case Data::ARR:
 				throw NIGHT_RUNTIME_ERROR(
-					"type 'arr' cannot be converted into type 'str'",
-					"",
-					"");
+					"type 'arr' cannot be converted into type 'str'", "");
 			}
 		}
 		if (night_func->first == "range")
