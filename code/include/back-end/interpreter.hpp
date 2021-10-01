@@ -8,8 +8,8 @@
 #include <vector>
 #include <unordered_map>
 
-#define NIGHT_RUNTIME_ERROR(msg, fix, link) \
-	night::error(__FILE__, __LINE__, night::error_runtime, loc, msg, fix, link);
+#define NIGHT_RUNTIME_ERROR(msg, fix) \
+	night::error(__FILE__, __LINE__, night::error_runtime, loc, msg, fix);
 
 class Interpreter
 {
@@ -42,7 +42,6 @@ private:
 
 public:
 	Interpreter();
-
 
 private:
 	struct NightVariable;

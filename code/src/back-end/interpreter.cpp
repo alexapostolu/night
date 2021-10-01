@@ -179,8 +179,7 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 				if (assign_data.type != Data::STR) {
 					throw NIGHT_RUNTIME_ERROR(
 						"value is type 'str' but expression is type '" + assign_data.to_str() + "'",
-						"type 'str' can only be concatenated with type 'str'",
-						night::learn_strings);
+						"type 'str' can only be concatenated with type 'str'");
 				}
 
 				std::get<std::string>(curr_data->val) += std::get<std::string>(assign_data.val);
@@ -249,8 +248,7 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 				if (condition_expr.type != Data::BOOL) {
 					throw NIGHT_RUNTIME_ERROR(
 						"if statement condition must be type 'bool'",
-						"condition is currently type '" + condition_expr.to_str() + "'",
-						night::learn_conditionals);
+						"condition is currently type '" + condition_expr.to_str() + "'");
 				}
 
 				// if condition is not true, continue to next conditional
@@ -296,8 +294,7 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 			if (arg.type != Data::STR) {
 				throw NIGHT_RUNTIME_ERROR(
 					"function call 'system', argument number 1 must be type 'str'",
-					"argument is currently type '" + arg.to_str() + "'",
-					night::learn_functions);
+					"argument is currently type '" + arg.to_str() + "'");
 			}
 
 			system(std::get<std::string>(arg.val).c_str());
@@ -332,8 +329,7 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 			if (condition.type != Data::BOOL) {
 				throw NIGHT_RUNTIME_ERROR(
 					"while loop condition must be type 'bool'",
-					"condition is currently type '" + condition.to_str() + "'",
-					night::learn_loops);
+					"condition is currently type '" + condition.to_str() + "'");
 			}
 
 			// break if condition is false
@@ -395,8 +391,7 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 		{
 			throw NIGHT_RUNTIME_ERROR(
 				"for loop range must be type 'str' or 'arr'",
-				"range is currently type '" + range.to_str() + "'",
-				night::learn_loops);
+				"range is currently type '" + range.to_str() + "'");
 		}
 
 		return std::nullopt;
@@ -432,8 +427,7 @@ std::optional<std::pair<Interpreter::Data*, Interpreter::Data> > Interpreter::in
 		if (index_data.type != Data::INT) {
 			throw NIGHT_RUNTIME_ERROR(
 				"subscript operator's index can only be type 'int'",
-				"index is currently type '" + index_data.to_str() + "'",
-				night::learn_strings);
+				"index is currently type '" + index_data.to_str() + "'");
 		}
 
 		// get integer value of index
@@ -442,8 +436,7 @@ std::optional<std::pair<Interpreter::Data*, Interpreter::Data> > Interpreter::in
 		if (index < 0) {
 			throw NIGHT_RUNTIME_ERROR(
 				"subscript operator can not contain a negative value",
-				"operator can only be a non-negative integer",
-				curr_data->type == Data::STR ? night::learn_strings : night::learn_arrays);
+				"operator can only be a non-negative integer");
 		}
 
 
@@ -455,14 +448,11 @@ std::optional<std::pair<Interpreter::Data*, Interpreter::Data> > Interpreter::in
 			if (index >= (int)var_str.length()) {
 				throw NIGHT_RUNTIME_ERROR(
 					"subscript operator is out of range for string",
-					"string length is " + std::to_string(var_str.length()),
-					night::learn_strings);
+					"string length is " + std::to_string(var_str.length()));
 			}
 			if (stmt_assign.type != StmtAssign::ASSIGN) {
 				throw NIGHT_RUNTIME_ERROR(
-					"single characters in string can only be used with assignment operator",
-					"",
-					night::learn_strings);
+					"single characters in string can only be used with assignment operator", "");
 			}
 
 			std::string const& assign_str = std::get<std::string>(assign_data.val);
@@ -470,8 +460,7 @@ std::optional<std::pair<Interpreter::Data*, Interpreter::Data> > Interpreter::in
 			if (assign_str.length() != 1) {
 				throw NIGHT_RUNTIME_ERROR(
 					"characters can only be assigned to other characters",
-					"character is currently assigned to string of length '" + std::to_string(assign_str.length()),
-					night::learn_strings);
+					"character is currently assigned to string of length '" + std::to_string(assign_str.length()));
 			}
 
 			var_str[index] = assign_str[0];
@@ -482,8 +471,7 @@ std::optional<std::pair<Interpreter::Data*, Interpreter::Data> > Interpreter::in
 		if (curr_data->type != Data::ARR) {
 			throw NIGHT_RUNTIME_ERROR(
 				"subscript operator can only be used on type 'str' or 'arr'",
-				"operator is currently used on type '" + curr_data->to_str() + "'",
-				night::learn_learn);
+				"operator is currently used on type '" + curr_data->to_str() + "'");
 		}
 
 		std::vector<Data>& var_arr = std::get<std::vector<Data> >(curr_data->val);
@@ -492,8 +480,7 @@ std::optional<std::pair<Interpreter::Data*, Interpreter::Data> > Interpreter::in
 		if (index >= (int)var_arr.size()) {
 			throw NIGHT_RUNTIME_ERROR(
 				"subscript operator is out of range for array",
-				"array length is " + std::to_string(var_arr.size()),
-				night::learn_arrays);
+				"array length is " + std::to_string(var_arr.size()));
 		}
 
 		curr_data = &var_arr[index];
@@ -619,15 +606,13 @@ Interpreter::Data Interpreter::evaluate_expression(
 				catch (std::invalid_argument const&) {
 					throw NIGHT_RUNTIME_ERROR(
 						"function call 'int', argument number 1, cannot be converted into type 'int'",
-						"argument can only be a number in the form of a string",
-						night::learn_functions);
+						"argument can only be a number in the form of a string");
 				}
 			}
 
 			throw NIGHT_RUNTIME_ERROR(
 				"function call 'int', argument number 1, is currently type '" + param.to_str() + "'",
-				"argument can only be types 'int', 'float', or 'str'",
-				night::learn_functions);
+				"argument can only be types 'int', 'float', or 'str'");
 		}
 		if (night_func->first == "float")
 		{
@@ -648,16 +633,14 @@ Interpreter::Data Interpreter::evaluate_expression(
 				}
 				catch (std::invalid_argument const&) {
 					throw NIGHT_RUNTIME_ERROR(
-						"function call 'float', argument number 1, cannot be converted into type 'float'",
-						"argument can only be a number in the form of a string",
-						night::learn_functions);
+						"function call `float`, argument number 1, cannot be converted into type `float`",
+						"argument can only be a number in the form of a string");
 				}
 			}
 
 			throw NIGHT_RUNTIME_ERROR(
-				"function call 'int', argument number 1, is currently type '" + param.to_str() + "'",
-				"argument can only be types 'int', 'float', or 'str'",
-				night::learn_functions);
+				"function call `int`, argument number 1, is currently type `" + param.to_str() + "`",
+				"argument can only be types `int`, `float`, or `str`");
 		}
 		if (night_func->first == "str")
 		{
@@ -685,16 +668,14 @@ Interpreter::Data Interpreter::evaluate_expression(
 			if (start_d.type != Data::INT) {
 				throw NIGHT_RUNTIME_ERROR(
 					"function '" + val.name + "', argument 1, is type '" + start_d.to_str() + "'",
-					"argument can only be type 'int'",
-					night::learn_functions);
+					"argument can only be type 'int'");
 			}
 
 			Data const end_d = evaluate_expression(scope, val.param_exprs.at(1));
 			if (end_d.type != Data::INT) {
 				throw NIGHT_RUNTIME_ERROR(
 					"function '" + val.name + "', argument 2, is type '" + end_d.to_str() + "'",
-					"argument can only be type 'int'",
-					night::learn_functions);
+					"argument can only be type 'int'");
 			}
 
 			int const start = std::get<int>(start_d.val);
@@ -714,8 +695,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 		if (!rtn_val.has_value()) {
 			throw NIGHT_RUNTIME_ERROR(
 				"function call '" + val.name + "' does not return a value in expression",
-				"functions must return a value when used in an expression",
-				night::learn_functions);
+				"functions must return a value when used in an expression");
 		}
 
 		return rtn_val.value();
@@ -729,8 +709,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 			if (!value.is_num()) {
 				throw NIGHT_RUNTIME_ERROR(
 					"left have value of operator '-' is currently type '" + value.to_str() + "'",
-					"unary operator '-' can only be used on types 'int' or 'float'",
-					night::learn_learn);
+					"unary operator '-' can only be used on types 'int' or 'float'");
 			}
 
 			return value.type == Data::INT
@@ -743,8 +722,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 			if (value.type != Data::BOOL) {
 				throw NIGHT_RUNTIME_ERROR(
 					"operator  '!' is currently used on type '" + value.to_str() + "'",
-					"operator '!' can only be used on type 'bool'",
-					night::learn_learn);
+					"operator '!' can only be used on type 'bool'");
 			}
 
 			return Data{ Data::BOOL, !std::get<bool>(value.val) };
@@ -755,8 +733,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 			if (index_d.type != Data::INT) {
 				throw NIGHT_RUNTIME_ERROR(
 					"index for subscript operator must be type 'int'",
-					"index is currently type '" + index_d.to_str() + "'",
-					night::learn_learn);
+					"index is currently type '" + index_d.to_str() + "'");
 			}
 
 			int const index = std::get<int>(index_d.val);
@@ -769,8 +746,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 				if (index < 0 || index >= (int)str.length()) {
 					throw NIGHT_RUNTIME_ERROR(
 						"index for subscript operator is out of range",
-						"index " + std::to_string(index) + " is out of range for string length " + std::to_string(std::get<std::string>(array.val).length()) + "",
-						night::learn_learn);
+						"index " + std::to_string(index) + " is out of range for string length " + std::to_string(std::get<std::string>(array.val).length()) + "");
 				}
 
 				return Data{ Data::STR, std::string(1, str[(std::size_t)index]) };
@@ -782,17 +758,15 @@ Interpreter::Data Interpreter::evaluate_expression(
 				if (index < 0 || index >= (int)arr.size()) {
 					throw NIGHT_RUNTIME_ERROR(
 						"index for subscript operator is out of range",
-						"index is value '" + std::to_string(index) + "' but array length is value '" + std::to_string(arr.size()) + "'",
-						night::learn_learn);
+						"index is value `" + std::to_string(index) + "` but array length is value `" + std::to_string(arr.size()) + "`");
 				}
 
 				return arr[(std::size_t)index];
 			}
 			
 			throw NIGHT_RUNTIME_ERROR(
-				"subscript operator can only be used on types 'str' or 'arr'",
-				"subscript operator is currently used on type '" + array.to_str() + "'",
-				night::learn_learn);
+				"subscript operator can only be used on types `str` or `arr`",
+				"subscript operator is currently used on type `" + array.to_str() + "`");
 		}
 
 		assert(false);
@@ -808,16 +782,14 @@ Interpreter::Data Interpreter::evaluate_expression(
 
 			if (!left.is_num() && left.type != Data::STR && right.type != Data::STR) {
 				throw NIGHT_RUNTIME_ERROR(
-					"operator '+' can only be used on types 'int', 'float', or 'str'",
-					"left hand value of operator '+' currently is type '" + left.to_str() + "'",
-					night::learn_learn);
+					"operator `+` can only be used on types `int`, `float`, or `str`",
+					"left hand value of operator `+` currently is type `" + left.to_str() + "`");
 			}
 
 			if (!right.is_num() && right.type != Data::STR && left.type != Data::STR) {
 				throw NIGHT_RUNTIME_ERROR(
-					"operator '+' can only be used on types 'int', 'float', or 'str'",
-					"right hand value of operator '+' currently is type '" + right.to_str() + "'",
-					night::learn_learn);
+					"operator `+` can only be used on types `int`, `float`, or `str`",
+					"right hand value of operator `+` currently is type `" + right.to_str() + "`");
 			}
 
 			if (left.type == Data::STR && right.type == Data::STR)
@@ -848,9 +820,8 @@ Interpreter::Data Interpreter::evaluate_expression(
 			}
 
 			throw NIGHT_RUNTIME_ERROR(
-				"operator '+' can only be used on types 'int', 'float', or two types both of 'str'",
-				"left hand value of operator '+' currently is type '" + left.to_str() + "', and right hand value is type '" + right.to_str() + "'",
-				night::learn_functions);
+				"operator `+` can only be used on types `int`, `float`, or two types both of `str`",
+				"left hand value of operator `+` currently is type `" + left.to_str() + "`, and right hand value is type `" + right.to_str() + "`");
 		}
 
 		case BinaryOPNode::MINUS:
@@ -896,8 +867,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 			if (object.type != Data::STR && object.type != Data::ARR) {
 				throw NIGHT_RUNTIME_ERROR(
 					"operator '" + binary_op.data + "' can only be used on objects",
-					"operator is currently used on type '" + object.to_str() + "'",
-					night::learn_classes);
+					"operator is currently used on type '" + object.to_str() + "'");
 			}
 
 			auto& method = std::get<ValueCall>(binary_op.right->data);
@@ -930,9 +900,8 @@ Interpreter::Data Interpreter::evaluate_expression(
 
 					if (index.type != Data::INT) {
 						throw NIGHT_RUNTIME_ERROR(
-							"function call '" + method.name + "', argument number '2' can only be type 'int'",
-							"argument is currently type '" + index.to_str() + "'",
-							night::learn_arrays);
+							"function call `" + method.name + "`, argument number `2` can only be type `int`",
+							"argument is currently type `" + index.to_str() + "`");
 					}
 
 					obj_arr.insert(obj_arr.begin() + std::get<int>(index.val), value);
@@ -949,9 +918,8 @@ Interpreter::Data Interpreter::evaluate_expression(
 					Data const index = evaluate_expression(scope, method.param_exprs[0]);
 					if (index.type != Data::INT) {
 						throw NIGHT_RUNTIME_ERROR(
-							"index type is required to be type 'int'",
-							"index is currently type '" + index.to_str() + "'",
-							night::learn_arrays);
+							"index type is required to be type `int`",
+							"index is currently type `" + index.to_str() + "`");
 					}
 
 					obj_arr.erase(obj_arr.begin() + std::get<int>(index.val));
@@ -998,16 +966,14 @@ Interpreter::Data Interpreter::eval_expr_binary_num(
 	if (!lhs.is_num()) {
 		throw NIGHT_RUNTIME_ERROR(
 			"binary operator '" + binary_op.data + "' can only be used on types 'int' or 'float'",
-			"left hand value of operator is currently type '" + lhs.to_str() + "'",
-			night::learn_learn);
+			"left hand value of operator is currently type '" + lhs.to_str() + "'");
 	}
 
 	auto const rhs = evaluate_expression(scope, binary_op.right);
 	if (!rhs.is_num()) {
 		throw NIGHT_RUNTIME_ERROR(
 			"binary operator '" + binary_op.data + "' can only be used on types 'int' or 'float'",
-			"right hand value of operator is currently type '" + lhs.to_str() + "'",
-			night::learn_learn);
+			"right hand value of operator is currently type '" + lhs.to_str() + "'");
 	}
 
 	if (lhs.type == Data::INT && rhs.type == Data::INT)
@@ -1031,16 +997,14 @@ Interpreter::Data Interpreter::eval_expr_binary_bool(
 	if (left.type != Data::BOOL) {
 		throw NIGHT_RUNTIME_ERROR(
 			"left hand value of operator '" + binary_op.data + "' has type '" + left.to_str() + "'",
-			"operator can only be used on type 'bool'",
-			night::learn_learn);
+			"operator can only be used on type 'bool'");
 	}
 
 	auto const right = evaluate_expression(scope, binary_op.right);
 	if (right.type != Data::BOOL) {
 		throw NIGHT_RUNTIME_ERROR(
 			"right hand value of operator '" + binary_op.data + "' has type '" + right.to_str() + "'",
-			"operator can only be used on type 'bool'",
-			night::learn_learn);
+			"operator can only be used on type 'bool'");
 	}
 
 	return Data{
@@ -1061,8 +1025,7 @@ bool Interpreter::eval_expr_binary_comp(
 	if (left.type != right.type) {
 		throw NIGHT_RUNTIME_ERROR(
 			"operator '" + binary_op.data + "' can only be used on values with the same type",
-			"left hand value has type '" + left.to_str() + "' but right hand value has type '" + right.to_str() + "'",
-			night::learn_learn);
+			"left hand value has type '" + left.to_str() + "' but right hand value has type '" + right.to_str() + "'");
 	}
 
 	return Data::compare_data(left, right);

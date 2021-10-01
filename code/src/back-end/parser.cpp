@@ -92,14 +92,12 @@ Stmt Parser::parse_statement(ParserScope& scope)
 	case TokenType::ELSE:
 		throw NIGHT_COMPILE_ERROR(
 			lexer.get_curr().data + " statement does not precede an if or elif statement",
-			lexer.get_curr().data + " statements must come after an if or an elif statement",
-			night::learn_conditionals);
+			lexer.get_curr().data + " statements must come after an if or an elif statement");
 
 	default:
 		throw NIGHT_COMPILE_ERROR(
 			"unknown syntax",
-			"no clue what you did here sorry :/",
-			night::learn_learn);
+			"no clue what you did here sorry :/");
 	}
 }
 
@@ -110,7 +108,7 @@ Stmt Parser::parse_stmt_let(ParserScope& scope)
 	if (lexer.eat(false).type != TokenType::VAR) {
 		throw NIGHT_COMPILE_ERROR(
 			"expected variable name after `let` keyword",
-			night::format_init, night::learn_variables);
+			night::format_init);
 	}
 
 	auto const var_name = lexer.get_curr().data;
@@ -118,26 +116,23 @@ Stmt Parser::parse_stmt_let(ParserScope& scope)
 	if (lexer.eat(false).type != TokenType::ASSIGN) {
 		throw NIGHT_COMPILE_ERROR(
 			"expected assignment after variable name",
-			night::format_init, night::learn_variables);
+			night::format_init);
 	}
 
 	if (scope.get_var(var_name) != nullptr) {
 		throw NIGHT_COMPILE_ERROR(
 			"variable '" + var_name + "' has already been defined",
-			"variables can only be defined once, regardless of their scope",
-			night::learn_variables);
+			"variables can only be defined once, regardless of their scope");
 	}
 	if (check_funcs.contains(var_name)) {
 		throw NIGHT_COMPILE_ERROR(
 			"variable '" + var_name + "' has the same name as a function",
-			"variable and function names must be unique",
-			night::learn_variables);
+			"variable and function names must be unique");
 	}
 	if (check_classes.contains(var_name)) {
 		throw NIGHT_COMPILE_ERROR(
 			"variable '" + var_name + "' has the same name as a class",
-			"variable and class names must be unique",
-			night::learn_variables);
+			"variable and class names must be unique");
 	}
 
 	// parsing statement
@@ -148,12 +143,12 @@ Stmt Parser::parse_stmt_let(ParserScope& scope)
 	if (expr == nullptr) {
 		throw NIGHT_COMPILE_ERROR(
 			"expected expression after assignment operator",
-			night::format_init, night::learn_variables);
+			night::format_init);
 	}
 	if (lexer.get_curr().type != TokenType::EOL) {
 		throw NIGHT_COMPILE_ERROR(
 			"unexpected token '" + lexer.get_curr().data + "' after expression",
-			night::format_init, night::learn_variables);
+			night::format_init);
 	}
 
 	scope.vars[var_name] = CheckVariable{ types };
@@ -175,8 +170,7 @@ Stmt Parser::parse_stmt_var(ParserScope& scope)
 		if (check_func == check_funcs.end()) {
 			throw NIGHT_COMPILE_ERROR(
 				"function `" + var_name + "` is undefined",
-				"functions must be defined before they are used",
-				night::learn_functions);
+				"functions must be defined before they are used");
 		}
 
 		auto const [arg_exprs, arg_types] =
@@ -187,8 +181,7 @@ Stmt Parser::parse_stmt_var(ParserScope& scope)
 		if (arg_types.size() != check_func->second.param_types.size()) {
 			throw NIGHT_COMPILE_ERROR(
 				"function call '" + check_func->first + "' has '" + std::to_string(arg_types.size()) + "' arguments",
-				"function must be called with '" + std::to_string(check_func->second.param_types.size()) + "' arguments",
-				night::learn_functions);
+				"function must be called with '" + std::to_string(check_func->second.param_types.size()) + "' arguments");
 		}
 
 		check_call_types(check_func->second.param_types,
@@ -213,8 +206,7 @@ Stmt Parser::parse_stmt_var(ParserScope& scope)
 		if (check_var == nullptr) {
 			throw NIGHT_COMPILE_ERROR(
 				"variable '" + var_name + "' is undefined",
-				"variables must be defined before they are used",
-				night::learn_variables);
+				"variables must be defined before they are used");
 		}
 
 		while (token.type != TokenType::ASSIGN && token.type != TokenType::EOL)
@@ -228,7 +220,7 @@ Stmt Parser::parse_stmt_var(ParserScope& scope)
 				if (lexer.eat(false).type != TokenType::VAR) {
 					throw NIGHT_COMPILE_ERROR(
 						"expected variable name after dot operator",
-						night::format_method, night::learn_classes);
+						night::format_method);
 				}
 
 				std::string const method_name = lexer.get_curr().data;
@@ -236,7 +228,7 @@ Stmt Parser::parse_stmt_var(ParserScope& scope)
 				if (lexer.eat(false).type != TokenType::OPEN_BRACKET) {
 					throw NIGHT_COMPILE_ERROR(
 						"expected open bracket after method '" + method_name + "'",
-						night::format_method, night::learn_classes);
+						night::format_method);
 				}
 
 				// parsing arguments
@@ -280,8 +272,7 @@ Stmt Parser::parse_stmt_var(ParserScope& scope)
 				if (!ok) {
 					throw NIGHT_COMPILE_ERROR(
 						"no matching function call '" + method_name + "' in class method",
-						"methods have to be defined before they are used",
-						night::learn_functions);
+						"methods have to be defined before they are used");
 				}
 
 				// adding expression node
@@ -309,13 +300,12 @@ Stmt Parser::parse_stmt_var(ParserScope& scope)
 				if (lexer.get_curr().type != TokenType::CLOSE_SQUARE) {
 					throw NIGHT_COMPILE_ERROR(
 						"expected closing square bracket in subscript operator",
-						night::format_subscript, night::learn_arrays);
+						night::format_subscript);
 				}
 				if (!night::contains(types, Type::INT)) {
 					throw NIGHT_COMPILE_ERROR(
 						"subscript index must contain type 'int'",
-						"index currently contains " + types_as_str(types),
-						night::learn_arrays);
+						"index currently contains " + types_as_str(types));
 				}
 
 				subscript_chain.push_back(expr);
@@ -331,9 +321,7 @@ Stmt Parser::parse_stmt_var(ParserScope& scope)
 			else
 			{
 				throw NIGHT_COMPILE_ERROR(
-					"unexpected token '" + token.data + "' in variable statement",
-					"",
-					night::learn_variables);
+					"unexpected token '" + token.data + "' in variable statement", "");
 			}
 
 			token = lexer.eat(false);
@@ -344,8 +332,7 @@ Stmt Parser::parse_stmt_var(ParserScope& scope)
 			if (contains_method) {
 				throw NIGHT_COMPILE_ERROR(
 					"method calls do not return references",
-					"assigning values to return values is not allowed",
-					night::learn_classes);
+					"assigning values to return values is not allowed");
 			}
 
 			StmtAssign::T assign_type;
@@ -376,10 +363,7 @@ Stmt Parser::parse_stmt_var(ParserScope& scope)
 		else if (token.type == TokenType::EOL)
 		{
 			if (var_expr != nullptr && var_expr->type == ExprNode::UNARY_OP) {
-				throw NIGHT_COMPILE_ERROR(
-					"values are not valid statements",
-					"",
-					night::learn_variables);
+				throw NIGHT_COMPILE_ERROR("values are not valid statements", "");
 			}
 
 			return Stmt{
@@ -390,28 +374,21 @@ Stmt Parser::parse_stmt_var(ParserScope& scope)
 		else
 		{
 			throw NIGHT_COMPILE_ERROR(
-				"unexpected token '" + token.data + "' in variable statement",
-				"",
-				night::learn_variables);
+				"unexpected token '" + token.data + "' in variable statement", "");
 		}
 	}
 }
 
 Stmt Parser::parse_stmt_if(ParserScope& scope)
 {
-	auto const condition_expr = parse_condition(
-		scope, "if statement", night::learn_conditionals);
+	auto const condition_expr = parse_condition(scope, "if statement");
 
 	// parsing body
 
-	Scope if_scope{ scope };
-
 	lexer.eat(true);
 
-	std::vector<Stmt> const body = parse_body(
-		if_scope, "if conditional",
-		night::format_if, night::learn_conditionals);
-
+	Scope if_scope{ scope };
+	auto const body = parse_body(if_scope, "if conditional", night::format_if);
 
 	std::vector<Conditional> conditionals{
 		Conditional{ condition_expr, body } };
@@ -423,16 +400,14 @@ Stmt Parser::parse_stmt_if(ParserScope& scope)
 
 		if (lexer.get_curr().type == TokenType::ELIF)
 		{
-			condition_expr = parse_condition(scope,
-				"else if statement", night::learn_conditionals);
+			condition_expr = parse_condition(scope, "else if statement");
 		}
 		else if (lexer.get_curr().type == TokenType::ELSE)
 		{
 			if (lexer.eat(true).type != TokenType::OPEN_CURLY) {
 				throw NIGHT_COMPILE_ERROR(
 					"unexpected token '" + lexer.get_curr().data + "' after else keyword",
-					"else keyword must be followed by an if keyword or an opening curly bracket",
-					night::learn_conditionals);
+					"else keyword must be followed by an if keyword or an opening curly bracket");
 			}
 		}
 		else
@@ -442,8 +417,7 @@ Stmt Parser::parse_stmt_if(ParserScope& scope)
 
 		conditionals.push_back(Conditional{
 			condition_expr,
-			parse_body(condition_scope, "conditional",
-				night::format_elif, night::learn_conditionals)
+			parse_body(condition_scope, "conditional", night::format_elif)
 		});
 
 		if (condition_expr == nullptr)
@@ -458,22 +432,20 @@ Stmt Parser::parse_stmt_if(ParserScope& scope)
 
 Stmt Parser::parse_stmt_while(ParserScope& scope)
 {
-	auto condition_expr = parse_condition(
-		scope, "while loop", night::learn_loops);
+	auto const condition_expr = parse_condition(scope, "while loop");
 
 	if (lexer.eat(true).type == TokenType::EOL) {
 		throw NIGHT_COMPILE_ERROR(
 			"expected statement(s) after closing bracket",
-			night::format_while, night::learn_loops);
+			night::format_while);
 	}
 
 	ParserScope while_scope{ &scope };
-	std::vector<Stmt> const stmts = parse_body(while_scope, "while loop",
-		night::format_while, night::learn_loops);
+	auto const body = parse_body(while_scope, "while loop", night::format_while);
 
 	return Stmt{
 		lexer.get_loc(), StmtType::WHILE,
-		StmtWhile{ condition_expr, stmts }
+		StmtWhile{ condition_expr, body }
 	};
 }
 
@@ -484,12 +456,12 @@ Stmt Parser::parse_stmt_for(ParserScope& scope)
 	if (lexer.eat(false).type != TokenType::OPEN_BRACKET) {
 		throw NIGHT_COMPILE_ERROR(
 			"expected opening bracket after 'for' keyword",
-			night::format_for, night::learn_loops);
+			night::format_for);
 	}
 	if (lexer.eat(false).type != TokenType::VAR) {
 		throw NIGHT_COMPILE_ERROR(
 			"expected iterator after opening bracket",
-			night::format_for, night::learn_loops);
+			night::format_for);
 	}
 
 	auto const it_name = lexer.get_curr().data;
@@ -497,12 +469,12 @@ Stmt Parser::parse_stmt_for(ParserScope& scope)
 	if (lexer.eat(false).type != TokenType::COLON) {
 		throw NIGHT_COMPILE_ERROR(
 			"expected colon after iterator",
-			night::format_for, night::learn_loops);
+			night::format_for);
 	}
 	if (lexer.eat(false).type == TokenType::EOL) {
 		throw NIGHT_COMPILE_ERROR(
 			"expected range after colon",
-			night::format_for, night::learn_loops);
+			night::format_for);
 	}
 
 	// parsing iterator and range
@@ -513,14 +485,13 @@ Stmt Parser::parse_stmt_for(ParserScope& scope)
 	if (lexer.get_curr().type != TokenType::CLOSE_BRACKET) {
 		throw NIGHT_COMPILE_ERROR(
 			"expected closing bracket at the end of expression",
-			night::format_for, night::learn_loops);
+			night::format_for);
 	}
 
 	if (!night::contains(range_types, Type::STR, Type::ARR)) {
 		throw NIGHT_COMPILE_ERROR(
 			"range currently contains " + types_as_str(range_types),
-			"for loop range must contain type 'str' or 'arr'",
-			night::learn_loops);
+			"for loop range must contain type 'str' or 'arr'");
 	}
 
 	// parsing statement
@@ -528,7 +499,7 @@ Stmt Parser::parse_stmt_for(ParserScope& scope)
 	if (lexer.eat(true).type == TokenType::EOL) {
 		throw NIGHT_COMPILE_ERROR(
 			"expected statement(s) after closing bracket",
-			night::format_for, night::learn_loops);
+			night::format_for);
 	}
 
 	ParserScope for_scope{ &scope };
@@ -541,8 +512,8 @@ Stmt Parser::parse_stmt_for(ParserScope& scope)
 
 	return Stmt{
 		lexer.get_loc(), StmtType::FOR,
-		StmtFor{ it_name, range_expr, parse_body(for_scope, "for loop",
-			night::format_for, night::learn_loops) }
+		StmtFor{ it_name, range_expr,
+				 parse_body(for_scope, "for loop", night::format_for) }
 	};
 }
 
@@ -553,7 +524,7 @@ Stmt Parser::parse_stmt_fn(ParserScope& scope, CheckFunctionContainer::iterator&
 	if (lexer.eat(false).type != TokenType::VAR) {
 		throw NIGHT_COMPILE_ERROR(
 			"expected function name after 'def' keyword",
-			night::format_fn, night::learn_functions);
+			night::format_fn);
 	}
 
 	auto const func_name = lexer.get_curr().data;
@@ -561,33 +532,29 @@ Stmt Parser::parse_stmt_fn(ParserScope& scope, CheckFunctionContainer::iterator&
 	if (lexer.eat(false).type != TokenType::OPEN_BRACKET) {
 		throw NIGHT_COMPILE_ERROR(
 			"expected opening bracket after function name",
-			night::format_fn, night::learn_functions);
+			night::format_fn);
 	}
 
 	if (scope.vars.contains(func_name)) {
 		throw NIGHT_COMPILE_ERROR(
 			"function '" + func_name + "' can not have the same name as a variable",
-			"function and variable names must be unique",
-			night::learn_functions);
+			"function and variable names must be unique");
 	}
 	if (check_funcs.contains(func_name)) {
 		throw NIGHT_COMPILE_ERROR(
 			"function '" + func_name + "' has already been defined",
-			"functions can only be defined once",
-			night::learn_functions);
+			"functions can only be defined once");
 	}
 	if (check_classes.contains(func_name)) {
 		throw NIGHT_COMPILE_ERROR(
 			"function '" + func_name + "' can not have the same name as a class",
-			"function and class names must be unique",
-			night::learn_functions);
+			"function and class names must be unique");
 	}
 
 	if (scope.upper != nullptr) {
 		throw NIGHT_COMPILE_ERROR(
 			"function '" + func_name + "' can not be defined inside of a local scope",
-			"functions must be defined in the global scope",
-			night::learn_functions);
+			"functions must be defined in the global scope");
 	}
 
 	// parsing parameters
@@ -607,7 +574,7 @@ Stmt Parser::parse_stmt_fn(ParserScope& scope, CheckFunctionContainer::iterator&
 		if (token.type != TokenType::VAR) {
 			throw NIGHT_COMPILE_ERROR(
 				"expected variable names as function parameters",
-				night::format_fn, night::learn_functions);
+				night::format_fn);
 		}
 
 		std::string const param_name = lexer.get_curr().data;
@@ -615,14 +582,12 @@ Stmt Parser::parse_stmt_fn(ParserScope& scope, CheckFunctionContainer::iterator&
 		if (Parser::check_funcs.contains(param_name)) {
 			throw NIGHT_COMPILE_ERROR(
 				"function parameter can not have the same name as a function",
-				"function parameter names must be unique",
-				night::learn_functions);
+				"function parameter names must be unique");
 		}
 		if (Parser::check_classes.contains(param_name)) {
 			throw NIGHT_COMPILE_ERROR(
 				"function parameter can not have the same name as a class",
-				"function parameter names must be unique",
-				night::learn_functions);
+				"function parameter names must be unique");
 		}
 
 		param_names.push_back(param_name);
@@ -636,7 +601,7 @@ Stmt Parser::parse_stmt_fn(ParserScope& scope, CheckFunctionContainer::iterator&
 		if (token.type != TokenType::COMMA) {
 			throw NIGHT_COMPILE_ERROR(
 				"expected command or closing bracket after parameter '" + param_name + "'",
-				night::format_fn, night::learn_functions);
+				night::format_fn);
 		}
 	}
 
@@ -655,8 +620,7 @@ Stmt Parser::parse_stmt_fn(ParserScope& scope, CheckFunctionContainer::iterator&
 	// move lexer to first token of body
 	lexer.eat(true);
 
-	auto fn_stmts = parse_body(func_scope, "function definition",
-		night::format_fn, night::learn_functions);
+	auto fn_stmts = parse_body(func_scope, "function definition", night::format_fn);
 
 	in_func = Parser::check_funcs.end();
 
@@ -685,8 +649,7 @@ Stmt Parser::parse_stmt_rtn(ParserScope& scope, CheckFunctionContainer::iterator
 	if (in_func == Parser::check_funcs.end()) {
 		throw NIGHT_COMPILE_ERROR(
 			"return statement is outside of a function",
-			"return statements must be inside of a function",
-			night::learn_functions);
+			"return statements must be inside of a function");
 	}
 
 	lexer.eat(false);
@@ -705,12 +668,9 @@ Stmt Parser::parse_stmt_rtn(ParserScope& scope, CheckFunctionContainer::iterator
 	};
 }
 
-std::vector<Stmt>
-Parser::parse_body(
-	ParserScope& scope,
-	std::string const& stmt_name,
-	std::string const& stmt_format,
-	std::string const& stmt_learn)
+std::vector<Stmt> Parser::parse_body(
+	ParserScope& scope, std::string const& stmt_name,
+	std::string const& stmt_format)
 {
 	if (lexer.get_curr().type != TokenType::OPEN_CURLY)
 		return { parse_statement(scope) };
@@ -727,7 +687,7 @@ Parser::parse_body(
 			if (lexer.eat(false).type != TokenType::EOL) {
 				throw NIGHT_COMPILE_ERROR(
 					"unexpected token '" + lexer.get_curr().data + "' after closing curly bracket",
-					stmt_format, stmt_learn);
+					stmt_format);
 			}
 
 			// move lexer to next statement
@@ -744,18 +704,15 @@ Parser::parse_body(
 		{
 			throw NIGHT_COMPILE_ERROR(
 				"expected closing bracket at the end of " + stmt_name + " body",
-				stmt_format, stmt_learn);
+				stmt_format);
 		}
 
 		stmts.push_back(parse_statement(scope));
 	}
 }
 
-std::shared_ptr<ExprNode>
-Parser::parse_condition(
-	ParserScope& scope,
-	std::string const& stmt_format,
-	std::string const& stmt_learn)
+std::shared_ptr<ExprNode> Parser::parse_condition(
+	ParserScope& scope, std::string const& stmt_format)
 {
 	// validating statement
 
@@ -764,12 +721,12 @@ Parser::parse_condition(
 	if (lexer.eat(false).type != TokenType::OPEN_BRACKET) {
 		throw NIGHT_COMPILE_ERROR(
 			"expected opening bracket after '" + loop_name + "' keyword",
-			stmt_format, stmt_learn);
+			stmt_format);
 	}
 	if (lexer.eat(false).type == TokenType::EOL) {
 		throw NIGHT_COMPILE_ERROR(
 			"expected an expression after opening bracket",
-			stmt_format, stmt_learn);
+			stmt_format);
 	}
 
 	// parsing condition
@@ -780,13 +737,12 @@ Parser::parse_condition(
 	if (lexer.get_curr().type != TokenType::CLOSE_BRACKET) {
 		throw NIGHT_COMPILE_ERROR(
 			"expected closing bracket after " + loop_name + " condition",
-			stmt_format, stmt_learn);
+			stmt_format);
 	}
 	if (!night::contains(condition_types, Type::BOOL)) {
 		throw NIGHT_COMPILE_ERROR(
 			loop_name + " condition currently contains " + types_as_str(condition_types),
-			"condition must contain type 'bool'",
-			stmt_learn);
+			"condition must contain type 'bool'");
 	}
 
 	return condition_expr;
@@ -794,13 +750,12 @@ Parser::parse_condition(
 
 std::pair<ExprContainer, std::vector<Parser::TypeContainer> >
 Parser::parse_arguments(
-	ParserScope& scope,
-	std::string_view func_name)
+	ParserScope& scope, std::string_view func_name)
 {
 	if (lexer.eat(false).type == TokenType::EOL) {
 		throw NIGHT_COMPILE_ERROR(
 			"for function call '" + std::string(func_name) + "': expected expression after open bracket",
-			night::format_call, night::learn_functions);
+			night::format_call);
 	}
 
 	ExprContainer call_exprs;
@@ -814,7 +769,7 @@ Parser::parse_arguments(
 		if (token.type == TokenType::EOL) {
 			throw NIGHT_COMPILE_ERROR(
 				"for function call '" + std::string(func_name) + "', last argument: expected closing bracket after expression",
-				night::format_call, night::learn_functions);
+				night::format_call);
 		}
 
 		if (token.type == TokenType::CLOSE_BRACKET)
@@ -832,7 +787,7 @@ Parser::parse_arguments(
 		if (token.type != TokenType::COMMA) {
 			throw NIGHT_COMPILE_ERROR(
 				"unexpected token '" + token.data + "' in function call '" + std::string(func_name) + "'",
-				night::format_call, night::learn_functions);
+				night::format_call);
 		}
 
 		lexer.eat(false);
@@ -875,7 +830,7 @@ Parser::parse_expression(
 				if (curr->is_value()) {
 					throw NIGHT_COMPILE_ERROR(
 						"expected operator between values",
-						"", "");
+						"");
 				}
 
 				prev = curr.get();
@@ -948,7 +903,7 @@ Parser::parse_expression(
 					if (lexer.eat(false).type == TokenType::EOL) {
 						throw NIGHT_COMPILE_ERROR(
 							"expected expression after open bracket",
-							night::format_subscript, night::learn_arrays);
+							night::format_subscript);
 					}
 
 					auto const [expr, types] = parse_expression(scope);
@@ -956,7 +911,7 @@ Parser::parse_expression(
 					if (lexer.get_curr().type != TokenType::CLOSE_SQUARE) {
 						throw NIGHT_COMPILE_ERROR(
 							"expected closing square bracket at the end of subscript operator",
-							"", night::learn_arrays);
+							night::format_subscript);
 					}
 
 					auto const sub_op = std::make_shared<ExprNode>(
@@ -988,8 +943,7 @@ Parser::parse_expression(
 					auto const expr = std::get<0>(parse_expression(scope));
 					if (expr == nullptr) {
 						throw NIGHT_COMPILE_ERROR(
-							"expected element in array",
-							night::format_array, night::learn_arrays);
+							"expected element in array", night::format_array);
 					}
 
 					arr_exprs.push_back(expr);
@@ -1002,12 +956,12 @@ Parser::parse_expression(
 					if (token.type == TokenType::EOL) {
 						throw NIGHT_COMPILE_ERROR(
 							"expected closing square bracket in array",
-							night::format_array, night::learn_arrays);
+							night::format_array);
 					}
 					if (token.type != TokenType::COMMA) {
 						throw NIGHT_COMPILE_ERROR(
 							"unexpected token '" + token.data + "' in array",
-							night::format_array, night::learn_arrays);
+							night::format_array);
 					}
 				}
 
@@ -1026,9 +980,7 @@ Parser::parse_expression(
 			{
 				if (curr->is_value()) {
 					throw NIGHT_COMPILE_ERROR(
-						"expected operator between value and opening bracket",
-						"",
-						night::learn_learn);
+						"expected operator between value and opening bracket", "");
 				}
 
 				prev = curr.get();
@@ -1050,9 +1002,7 @@ Parser::parse_expression(
 
 			if (lexer.get_curr().type != TokenType::CLOSE_BRACKET) {
 				throw NIGHT_COMPILE_ERROR(
-					"expected closing bracket in expression",
-					"",
-					night::learn_learn);
+					"expected closing bracket in expression", "");
 			}
 		}
 		else if (token.is_operator())
@@ -1060,7 +1010,7 @@ Parser::parse_expression(
 			if (curr == nullptr && token.type == TokenType::BINARY_OP) {
 				throw NIGHT_COMPILE_ERROR(
 					"expected value before operator '" + token.data + "'",
-					"", "");
+					"");
 			}
 
 			//traveling tree
@@ -1192,8 +1142,7 @@ Parser::type_check_expr(
 		if (check_var == nullptr) {
 			throw NIGHT_COMPILE_ERROR(
 				"variable '" + val.name + "' is undefined",
-				"variables must be defined before they are used",
-				night::learn_variables);
+				"variables must be defined before they are used");
 		}
 
 		// if the variable is a function parameter
@@ -1209,8 +1158,7 @@ Parser::type_check_expr(
 		if (check_func_it == check_funcs.end()) {
 			throw NIGHT_COMPILE_ERROR(
 				"function '" + val.name + "' is not defined",
-				"functions have to be defined before they are used",
-				night::learn_functions);
+				"functions have to be defined before they are used");
 		}
 
 		auto& check_func = check_func_it->second;
@@ -1218,15 +1166,13 @@ Parser::type_check_expr(
 		if (val.param_exprs.size() != check_func.param_types.size()) {
 			throw NIGHT_COMPILE_ERROR(
 				"function '" + val.name + "' is called with '" + std::to_string(val.param_exprs.size()) + "' argument(s)",
-				"function '" + val.name + "' can only be called with '" + std::to_string(check_func.param_types.size()) + "' argument(s)",
-				night::learn_functions);
+				"function '" + val.name + "' can only be called with '" + std::to_string(check_func.param_types.size()) + "' argument(s)");
 		}
 
 		if (check_func.is_void) {
 			throw NIGHT_COMPILE_ERROR(
 				"function '" + val.name + "' does not have a return value",
-				"functions must have a return value to be used in expression",
-				night::learn_functions);
+				"functions must have a return value to be used in expression");
 		}
 
 		// type checking arguments
@@ -1247,8 +1193,7 @@ Parser::type_check_expr(
 			if (!match) {
 				throw NIGHT_COMPILE_ERROR(
 					"function '" + val.name + "' argument number " + std::to_string(a + 1) + ", must contain " + types_as_str(check_func.param_types[a]),
-					"argument currently contains " + types_as_str(arg_types),
-					night::learn_functions);
+					"argument currently contains " + types_as_str(arg_types));
 			}
 
 			// store the types of constant type checking
@@ -1269,8 +1214,7 @@ Parser::type_check_expr(
 		{
 			throw NIGHT_COMPILE_ERROR(
 				"operator '" + unary_op.data + "' is currently used on " + types_as_str(types),
-				"operator '" + unary_op.data + "' can only be used on " + used_types,
-				night::learn_operators);
+				"operator '" + unary_op.data + "' can only be used on " + used_types);
 		};
 
 		auto& unary_op = std::get<UnaryOPNode>(expr->data);
@@ -1299,8 +1243,7 @@ Parser::type_check_expr(
 			if (!night::contains(index, Type::INT)) {
 				throw NIGHT_COMPILE_ERROR(
 					"subscript operator currently contains " + types_as_str(index),
-					"subscript operator must contains type 'int'",
-					night::learn_arrays);
+					"subscript operator must contains type 'int'");
 			}
 
 			auto const types = type_check_expr(
@@ -1403,8 +1346,7 @@ Parser::type_check_expr(
 			if (!match) {
 				throw NIGHT_COMPILE_ERROR(
 					"left hand value of operator '" + binary_op.data + "' currently contains " + types_as_str(right_types) + ", but right hand value currently contains " + types_as_str(right_types),
-					"operator '" + binary_op.data + "' can only be used to compare two equivalent non-class types",
-					night::learn_operators);
+					"operator '" + binary_op.data + "' can only be used to compare two equivalent non-class types");
 			}
 
 			//if (binary_op.type == BinaryOPNode::EQUAL)
@@ -1419,8 +1361,7 @@ Parser::type_check_expr(
 			if (binary_op.right->type != ExprNode::CALL) {
 				throw NIGHT_COMPILE_ERROR(
 					"expected method call to the right of dot operator",
-					"method calls must be in this format: `object.method()`",
-					night::learn_classes);
+					"method calls must be in this format: `object.method()`");
 			}
 
 			auto const& method =
@@ -1473,8 +1414,7 @@ Parser::type_check_expr(
 			if (send_types.empty()) {
 				throw NIGHT_COMPILE_ERROR(
 					"method '" + method.name + "' does not exist within any class",
-					"methods have to be defined before they are used",
-					night::learn_classes);
+					"methods have to be defined before they are used");
 			}
 
 			TypeContainer const obj_types = type_check_expr(
@@ -1483,8 +1423,7 @@ Parser::type_check_expr(
 			if (!night::contains(obj_types, Type::STR, Type::ARR)) {
 				throw NIGHT_COMPILE_ERROR(
 					"operator '" + binary_op.data + "' can only be used on types: 'str', 'arr', and 'obj'",
-					"left hand value of operator '" + binary_op.data + "' currently contains " + types_as_str(obj_types),
-					night::learn_type_checking);
+					"left hand value of operator '" + binary_op.data + "' currently contains " + types_as_str(obj_types));
 			}
 
 			return rtn_types.empty()
@@ -1524,8 +1463,7 @@ Parser::check_call_types(
 			throw NIGHT_COMPILE_ERROR(
 				"for function call '" + func_name + ", argument number " + std::to_string(a + 1) +
 					" must contain " + types_as_str(param_types[a]),
-				"argument currently contains " + types_as_str(arg_types[a]),
-				night::learn_functions);
+				"argument currently contains " + types_as_str(arg_types[a]));
 		}
 	}
 }
@@ -1560,8 +1498,7 @@ Parser::throw_binary_type_err(
 {
 	throw NIGHT_COMPILE_ERROR(
 		side + " hand value of operator '" + op.data + "' currently contains " + types_as_str(types),
-		"operator '" + op.data + "' can only be used on " + used_types,
-		night::learn_operators);
+		"operator '" + op.data + "' can only be used on " + used_types);
 }
 
 

@@ -11,11 +11,8 @@
 
 void FrontEnd(int argc, char** argv)
 {
-	if (argc != 2) {
-		throw NIGHT_PREPROCESS_ERROR(
-			"invalid command line arguments",
-			night::learn_run);
-	}
+	if (argc != 2)
+		throw NIGHT_PREPROCESS_ERROR("invalid command line arguments");
 
 	if (std::string(argv[1]) == "--help")
 	{

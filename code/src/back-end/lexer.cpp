@@ -12,11 +12,8 @@
 Lexer::Lexer(std::string_view file_name, bool main_file)
 	: code_file(file_name.data()), loc({ file_name.data(), 1 }), i(0)
 {
-	if (!code_file.is_open()) {
-		throw NIGHT_PREPROCESS_ERROR(
-			"file '" + loc.file + "' could not be opened",
-			main_file ? night::learn_run : night::learn_include);
-	}
+	if (!code_file.is_open())
+		throw NIGHT_PREPROCESS_ERROR("file '" + loc.file + "' could not be opened");
 
 	getline(code_file, code_line);
 }
@@ -42,9 +39,7 @@ Token Lexer::eat(bool go_to_next_line)
 			if (i == code_line.length() && !next_line()) {
 				throw night::error(
 					__FILE__, __LINE__, night::error_compile, loc,
-					"expected closing quotes for string '" + str + "'",
-					"",
-					night::learn_strings);
+					"expected closing quotes for string '" + str + "'", "");
 			}
 
 			// account for backslash quotes
@@ -72,16 +67,16 @@ Token Lexer::eat(bool go_to_next_line)
 	if (std::isalpha(code_line[i]))
 	{
 		std::string keyword;
-		while (i < code_line.length() && std::isalpha(code_line[i]))
+		while (i < code_line.length() && (std::isalpha(code_line[i]) || code_line[i] == '_'))
 		{
 			keyword += code_line[i];
 			++i;
 		}
 
-		if (auto it = keywords.find(keyword); it != keywords.end())
-			curr = { loc, it->second, keyword };
-		else
-			curr = { loc, TokenType::VAR, keyword };
+		auto it = keywords.find(keyword);
+		curr = it != keywords.end()
+			? Token{ loc, it->second,	  keyword }
+			: Token{ loc, TokenType::VAR, keyword };
 
 		return curr;
 	}
@@ -155,8 +150,7 @@ Token Lexer::eat(bool go_to_next_line)
 	throw night::error(
 		__FILE__, __LINE__, night::error_compile, loc,
 		std::string("unknown symbol '") + code_line[i] + "'",
-		code_line[i] == '"' ? "did you mean to use double quotations `\"`" : "",
-		night::learn_learn);
+		code_line[i] == '"' ? "did you mean to use double quotations `\"`" : "");
 }
 
 Token Lexer::get_curr() const

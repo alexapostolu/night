@@ -11,8 +11,8 @@
 #include <unordered_set>
 #include <functional>
 
-#define NIGHT_COMPILE_ERROR(msg, fix, link) \
-	night::error(__FILE__, __LINE__, night::error_compile, lexer.get_loc(), msg, fix, link)
+#define NIGHT_COMPILE_ERROR(msg, fix) \
+	night::error(__FILE__, __LINE__, night::error_compile, lexer.get_loc(), msg, fix)
 
 class Parser
 {
@@ -118,8 +118,7 @@ private:
 	std::vector<Stmt> parse_body(
 		ParserScope& scope,
 		std::string const& stmt_name,
-		std::string const& stmt_format,
-		std::string const& stmt_learn
+		std::string const& stmt_format
 	);
 
 	/*
@@ -130,8 +129,7 @@ private:
 	 */
 	std::shared_ptr<ExprNode> parse_condition(
 		ParserScope& scope,
-		std::string const& stmt_format,
-		std::string const& stmt_learn
+		std::string const& stmt_format
 	);
 
 	/*
