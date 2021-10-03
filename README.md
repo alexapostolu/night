@@ -14,7 +14,7 @@ Night provides compile time definition and type checking, in addition with stati
 
 Night comes in two parts, the interpreter (this repo) and [Dusk](https://github.com/firefish111/dusk) (the package manager).
 
-You can download the latest stable Windows binaries for Night in the Releases section. Linux binaries are comming soon :)
+You can download the latest stable Windows and Linux binaries for Night in the Releases section.
 
 You can also build Night from source.
 
