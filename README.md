@@ -6,7 +6,7 @@
 
 Night is an interpreted dynamically typed language with a strong control on types.
 
-Night provides compile time definition and type checking, in addition with static types. It can also treat types as first class citizens, allowing the user to have more control over compile time type checking.
+Night provides compile time definition and type checking, in addition with static types. It is also planned to treat types as first class citizens, allowing the user to have more control over compile time type checking.
 
 ---
 
