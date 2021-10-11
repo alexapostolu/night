@@ -245,6 +245,7 @@ std::unordered_map<std::string, TokenType> const Lexer::keywords{
 	{ "false", TokenType::BOOL_L },
 	{ "let", TokenType::LET },
 	{ "if", TokenType::IF },
+	{ "elif", TokenType::ELIF },
 	{ "else", TokenType::ELSE },
 	{ "while", TokenType::WHILE },
 	{ "for", TokenType::FOR },

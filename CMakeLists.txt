@@ -9,3 +9,4 @@ include_directories(${PROJECT_SOURCE_DIR})
 
 file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "code/src/*.cpp")
 add_executable(night ${SOURCES})
+target_link_libraries(night -static)

@@ -390,8 +390,7 @@ Stmt Parser::parse_stmt_if(ParserScope& scope)
 	Scope if_scope{ scope };
 	auto const body = parse_body(if_scope, "if conditional", night::format_if);
 
-	std::vector<Conditional> conditionals{
-		Conditional{ condition_expr, body } };
+	std::vector<Conditional> conditionals{ Conditional{ condition_expr, body } };
 
 	while (true)
 	{
@@ -399,21 +398,11 @@ Stmt Parser::parse_stmt_if(ParserScope& scope)
 		std::shared_ptr<ExprNode> condition_expr(nullptr);
 
 		if (lexer.get_curr().type == TokenType::ELIF)
-		{
 			condition_expr = parse_condition(scope, "else if statement");
-		}
-		else if (lexer.get_curr().type == TokenType::ELSE)
-		{
-			if (lexer.eat(true).type != TokenType::OPEN_CURLY) {
-				throw NIGHT_COMPILE_ERROR(
-					"unexpected token '" + lexer.get_curr().data + "' after else keyword",
-					"else keyword must be followed by an if keyword or an opening curly bracket");
-			}
-		}
-		else
-		{
+		else if (lexer.get_curr().type != TokenType::ELSE)
 			break;
-		}
+
+		lexer.eat(true);
 
 		conditionals.push_back(Conditional{
 			condition_expr,
