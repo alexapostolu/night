@@ -223,11 +223,11 @@ Stmt Parser::parse_stmt_var(ParserScope& scope)
 						night::format_method);
 				}
 
-				std::string const method_name = lexer.get_curr().data;
+				auto const method_name = lexer.get_curr().data;
 
 				if (lexer.eat(false).type != TokenType::OPEN_BRACKET) {
 					throw NIGHT_COMPILE_ERROR(
-						"expected open bracket after method '" + method_name + "'",
+						"expected open bracket after method `" + method_name + "`",
 						night::format_method);
 				}
 
@@ -271,7 +271,7 @@ Stmt Parser::parse_stmt_var(ParserScope& scope)
 
 				if (!ok) {
 					throw NIGHT_COMPILE_ERROR(
-						"no matching function call '" + method_name + "' in class method",
+						"no matching function call `" + method_name + "` in class method",
 						"methods have to be defined before they are used");
 				}
 
@@ -289,6 +289,14 @@ Stmt Parser::parse_stmt_var(ParserScope& scope)
 
 				auto const op_node =
 					std::make_shared<ExprNode>(lexer.get_loc(), ExprNode::BINARY_OP, op_expr);
+
+				if (var_expr->type == ExprNode::VARIABLE && method_name == "push")
+				{
+					TypeContainer& arr = scope.vars[std::get<ValueVar>(var_expr->data).name].types;
+					auto const& arr_t = std::ranges::find(arr, Type::ARR);
+					if (arr_t != arr.end())
+						arr_t->elem_types.insert(arr_t->elem_types.end(), arg_types.back().begin(), arg_types.back().end());
+				}
 
 				var_expr = op_node;
 			}
@@ -1247,8 +1255,11 @@ Parser::type_check_expr(
 			TypeContainer rtn_types;
 			if (night::contains(types, Type::STR))
 				rtn_types.insert(rtn_types.end(), Type::STR);
-			if (auto const pos = std::find(types.begin(), types.end(), Type::ARR); pos != types.end())
+			if (auto const pos = std::ranges::find(types, Type::ARR); pos != types.end())
+			{
 				rtn_types.insert(rtn_types.end(), pos->elem_types.begin(), pos->elem_types.end());
+				return rtn_types;
+			}
 
 			if (rtn_types.empty())
 				throw_unary_op_err(unary_op, types, "types 'str' or 'arr'");
@@ -1356,11 +1367,10 @@ Parser::type_check_expr(
 			if (binary_op.right->type != ExprNode::CALL) {
 				throw NIGHT_COMPILE_ERROR(
 					"expected method call to the right of dot operator",
-					"method calls must be in this format: `object.method()`");
+					night::format_method);
 			}
 
-			auto const& method =
-				std::get<ValueCall>(binary_op.right->data);
+			auto const& method = std::get<ValueCall>(binary_op.right->data);
 
 			// find required types and return types based on method
 
@@ -1412,13 +1422,13 @@ Parser::type_check_expr(
 					"methods have to be defined before they are used");
 			}
 
-			TypeContainer const obj_types = type_check_expr(
-				scope, binary_op.left, send_types);
+			auto const obj_types =
+				type_check_expr(scope, binary_op.left, send_types);
 
 			if (!night::contains(obj_types, Type::STR, Type::ARR)) {
 				throw NIGHT_COMPILE_ERROR(
-					"operator '" + binary_op.data + "' can only be used on types: 'str', 'arr', and 'obj'",
-					"left hand value of operator '" + binary_op.data + "' currently contains " + types_as_str(obj_types));
+					"operator `" + binary_op.data + "` can only be used on types: `str`, `arr`, and `obj`",
+					"left hand value of operator `" + binary_op.data + "` currently contains " + types_as_str(obj_types));
 			}
 
 			return rtn_types.empty()
@@ -1473,13 +1483,13 @@ Parser::types_as_str(TypeContainer const& var_types_set) const
 	std::string str_types = "";
 
 	for (std::size_t a = 0; a < var_types.size() - 1; ++a)
-		str_types += "'" + var_types[a].to_str() + "', ";
+		str_types += "`" + var_types[a].to_str() + "`, ";
 
 	str_types = var_types.size() > 1
 		? "types " + str_types + ", and "
 		: "type " + str_types;
 
-	str_types += "'" + var_types.back().to_str() + "'";
+	str_types += "`" + var_types.back().to_str() + "`";
 
 	return str_types;
 }
@@ -1495,7 +1505,6 @@ Parser::throw_binary_type_err(
 		side + " hand value of operator '" + op.data + "' currently contains " + types_as_str(types),
 		"operator '" + op.data + "' can only be used on " + used_types);
 }
-
 
 Parser::TypeContainer const Parser::all_types{
 	Type::BOOL, Type::INT, Type::FLOAT, Type::STR, Type::ARR };
