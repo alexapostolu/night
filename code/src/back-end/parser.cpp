@@ -925,9 +925,15 @@ Parser::parse_expression(
 			}
 			case TokenType::OPEN_SQUARE: {
 				ExprContainer arr_exprs;
+
+				bool once = true;
 				while (true)
 				{
 					lexer.eat(false);
+
+					if (once && lexer.get_curr().type == TokenType::CLOSE_SQUARE)
+						break;
+					once = false;
 
 					auto const expr = std::get<0>(parse_expression(scope));
 					if (expr == nullptr) {
