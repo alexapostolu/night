@@ -6,7 +6,7 @@
 
 Night is an interpreted dynamically typed language with a strong control on types.
 
-Night provides compile time definition and type checking, in addition with static types. It can also treat types as first class citizens, allowing the user to have more control over compile time type checking.
+Night provides compile time definition and type checking, in addition with static types. It is also planned to treat types as first class citizens, allowing the user to have more control over compile time type checking.
 
 ---
 
@@ -14,7 +14,7 @@ Night provides compile time definition and type checking, in addition with stati
 
 Night comes in two parts, the interpreter (this repo) and [Dusk](https://github.com/firefish111/dusk) (the package manager).
 
-You can download the latest stable Windows binaries for Night in the Releases section. Linux binaries are comming soon :)
+You can download the latest stable Windows and Linux binaries for Night in the Releases section.
 
 You can also build Night from source.
 
