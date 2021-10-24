@@ -58,7 +58,7 @@ std::string night::error::what() const
 {
 	std::stringstream output;
 
-	output << b_RED << "[ error ] -> " << u_RED << type << '\n';
+	output << b_RED << "[ " << type << b_RED << " error ]\n";
 
 	if (type == night::error_preprocess)
 	{

@@ -144,12 +144,14 @@ std::optional<Interpreter::Data> Interpreter::interpret_statements(
 std::optional<Interpreter::Data> Interpreter::interpret_statement(
 	InterpreterScope& scope, Stmt const& stmt)
 {
+	static std::pair<NightFunctionContainer::const_iterator, int> recursion_calls = { {}, -1 };
+
 	auto const& loc = stmt.loc;
 
 	switch (stmt.type)
 	{
 	case StmtType::INIT: {
-		StmtInit const& stmt_init = std::get<StmtInit>(stmt.data);
+		auto const& stmt_init = std::get<StmtInit>(stmt.data);
 		scope.vars[stmt_init.name] = { evaluate_expression(scope, stmt_init.expr) };
 		
 		return std::nullopt;
@@ -306,7 +308,23 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 		auto vars = interpret_arguments(scope,
 			night_func->second.params, stmt_call.args);
 
-		return interpret_statements(scope, night_func->second.body, vars);
+		if (recursion_calls.second == -1)
+		{
+			recursion_calls = { night_funcs.find(stmt_call.name), 1 };
+		}
+		else if (stmt_call.name == recursion_calls.first->first)
+		{
+			recursion_calls.second++;
+			if (recursion_calls.second > 100) {
+				throw NIGHT_RUNTIME_ERROR(
+					"function call `" + stmt_call.name + "` exceeds the recursion limit of 100",
+					"");
+			}
+		}
+
+		auto rtn_val = interpret_statements(scope, night_func->second.body, vars);
+		recursion_calls = { {}, -1 };
+		return rtn_val;
 	}
 	case StmtType::RETURN: {
 		auto& stmt_rtn = std::get<StmtReturn>(stmt.data);
@@ -338,10 +356,7 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 
 			// if body returns a value, stop the loop
 			if (rtn_val.has_value())
-			{
-				std::cout << "HI\n";
 				return rtn_val;
-			}
 		}
 
 		return std::nullopt;
@@ -661,21 +676,21 @@ Interpreter::Data Interpreter::evaluate_expression(
 			Data const start_d = evaluate_expression(scope, val.param_exprs.at(0));
 			if (start_d.type != Data::INT) {
 				throw NIGHT_RUNTIME_ERROR(
-					"function '" + val.name + "', argument 1, is type '" + start_d.to_str() + "'",
-					"argument can only be type 'int'");
+					"function `" + val.name + "`, argument 1, is type `" + start_d.to_str() + "`",
+					"argument can only be type `int`");
 			}
 
 			Data const end_d = evaluate_expression(scope, val.param_exprs.at(1));
 			if (end_d.type != Data::INT) {
 				throw NIGHT_RUNTIME_ERROR(
-					"function '" + val.name + "', argument 2, is type '" + end_d.to_str() + "'",
-					"argument can only be type 'int'");
+					"function `" + val.name + "`, argument 2, is type `" + end_d.to_str() + "`",
+					"argument can only be type `int`");
 			}
 
 			int const start = std::get<int>(start_d.val);
 			int const end	= std::get<int>(end_d.val);
 
-			std::vector<Data> elems(end - start + 1);
+			std::vector<Data> elems(end - start);
 			for (std::size_t a = 0; a < elems.size(); ++a)
 				elems[a] = Data{ Data::INT, (int)a + start };
 

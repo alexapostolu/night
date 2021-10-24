@@ -180,8 +180,8 @@ Stmt Parser::parse_stmt_var(ParserScope& scope)
 
 		if (arg_types.size() != check_func->second.param_types.size()) {
 			throw NIGHT_COMPILE_ERROR(
-				"function call '" + check_func->first + "' has '" + std::to_string(arg_types.size()) + "' arguments",
-				"function must be called with '" + std::to_string(check_func->second.param_types.size()) + "' arguments");
+				"function call `" + check_func->first + "` has " + std::to_string(arg_types.size()) + " argument(s)",
+				"function must be called with " + std::to_string(check_func->second.param_types.size()) + " argument(s)");
 		}
 
 		check_call_types(check_func->second.param_types,
@@ -751,7 +751,7 @@ Parser::parse_arguments(
 {
 	if (lexer.eat(false).type == TokenType::EOL) {
 		throw NIGHT_COMPILE_ERROR(
-			"for function call '" + std::string(func_name) + "': expected expression after open bracket",
+			"for function call	" + std::string(func_name) + "`: expected expression after open bracket",
 			night::format_call);
 	}
 
@@ -765,20 +765,19 @@ Parser::parse_arguments(
 		auto const token = lexer.get_curr();
 		if (token.type == TokenType::EOL) {
 			throw NIGHT_COMPILE_ERROR(
-				"for function call '" + std::string(func_name) + "', last argument: expected closing bracket after expression",
+				"for function call `" + std::string(func_name) + "`, last argument: expected closing bracket after expression",
 				night::format_call);
 		}
 
+		call_exprs.push_back(expr);
+		call_types.push_back(types);
+
 		if (token.type == TokenType::CLOSE_BRACKET)
 		{
-			// if function does contain arguments
-			if (expr != nullptr)
-			{
-				call_exprs.push_back(expr);
-				call_types.push_back(types);
-			}
-
-			return { call_exprs, call_types };
+			if (expr == nullptr)
+				return { {}, {} };
+			else
+				return { call_exprs, call_types };
 		}
 
 		if (token.type != TokenType::COMMA) {
