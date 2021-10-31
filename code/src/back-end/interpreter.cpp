@@ -144,6 +144,7 @@ std::optional<Interpreter::Data> Interpreter::interpret_statements(
 std::optional<Interpreter::Data> Interpreter::interpret_statement(
 	InterpreterScope& scope, Stmt const& stmt)
 {
+	static long long const recursion_limit = 111;
 	static std::pair<NightFunctionContainer::const_iterator, int> recursion_calls = { {}, -1 };
 
 	auto const& loc = stmt.loc;
@@ -315,9 +316,9 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 		else if (stmt_call.name == recursion_calls.first->first)
 		{
 			recursion_calls.second++;
-			if (recursion_calls.second > 100) {
+			if (recursion_calls.second > recursion_limit) {
 				throw NIGHT_RUNTIME_ERROR(
-					"function call `" + stmt_call.name + "` exceeds the recursion limit of 100",
+					"function call `" + stmt_call.name + "` exceeds the recursion limit of " + std::to_string(recursion_limit),
 					"");
 			}
 		}

@@ -125,7 +125,7 @@ private:
 	 * parses condition
 	 *   ex. conditionals, loops
 	 *
-	 * lexer should be at token before opening bracket; ends at closing bracket
+	 * lexer should be at token before opening bracket; ends at first token of body
 	 */
 	std::shared_ptr<ExprNode> parse_condition(
 		ParserScope& scope,

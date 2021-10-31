@@ -187,11 +187,13 @@ Stmt Parser::parse_stmt_var(ParserScope& scope)
 		check_call_types(check_func->second.param_types,
 			arg_types, check_func->first);
 
+		auto const loc = lexer.get_loc();
+
 		// move lexer to start of next statement
 		lexer.eat(true);
 
 		return Stmt{
-			lexer.get_loc(), StmtType::CALL,
+			loc, StmtType::CALL,
 			StmtCall{ check_func->first, arg_exprs }
 		};
 	}
@@ -393,8 +395,6 @@ Stmt Parser::parse_stmt_if(ParserScope& scope)
 
 	// parsing body
 
-	lexer.eat(true);
-
 	Scope if_scope{ scope };
 	auto const body = parse_body(if_scope, "if conditional", night::format_if);
 
@@ -409,8 +409,6 @@ Stmt Parser::parse_stmt_if(ParserScope& scope)
 			condition_expr = parse_condition(scope, "else if statement");
 		else if (lexer.get_curr().type != TokenType::ELSE)
 			break;
-
-		lexer.eat(true);
 
 		conditionals.push_back(Conditional{
 			condition_expr,
@@ -430,12 +428,6 @@ Stmt Parser::parse_stmt_if(ParserScope& scope)
 Stmt Parser::parse_stmt_while(ParserScope& scope)
 {
 	auto const condition_expr = parse_condition(scope, "while loop");
-
-	if (lexer.eat(true).type == TokenType::EOL) {
-		throw NIGHT_COMPILE_ERROR(
-			"expected statement(s) after closing bracket",
-			night::format_while);
-	}
 
 	ParserScope while_scope{ &scope };
 	auto const body = parse_body(while_scope, "while loop", night::format_while);
@@ -740,6 +732,13 @@ std::shared_ptr<ExprNode> Parser::parse_condition(
 		throw NIGHT_COMPILE_ERROR(
 			loop_name + " condition currently contains " + types_as_str(condition_types),
 			"condition must contain type 'bool'");
+	}
+
+	// move to start of body
+	if (lexer.eat(true).type == TokenType::_EOF) {
+		throw NIGHT_COMPILE_ERROR(
+			"expected statement(s) after closing bracket",
+			night::format_while);
 	}
 
 	return condition_expr;

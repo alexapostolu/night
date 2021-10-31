@@ -19,7 +19,6 @@ night::error::error(
 
 	std::ifstream code(loc.file);
 	assert(code.is_open());
-
 	for (int a = 0; a < loc.line; ++a)
 		getline(code, line);
 
