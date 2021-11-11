@@ -19,10 +19,6 @@ Parser::Parser(Lexer& lexer)
 	check_funcs = {
 		make_check_function("print", { all_types }),
 		make_check_function("input", {}, { Type::STR }),
-
-		make_check_function("range",
-			{ { Type::INT }, { Type::INT } },
-			{ Type::ARR }),
 			
 		make_check_function("int",
 			{ { Type::INT, Type::FLOAT, Type::STR } },
@@ -39,7 +35,7 @@ Parser::Parser(Lexer& lexer)
 		//),
 
 		make_check_function("system",
-			{ { Type::STR } })
+			{ { Type::STR } }, { Type::INT })
 	};
 
 	check_classes = {
@@ -794,6 +790,9 @@ Parser::parse_expression(
 	ParserScope& scope,
 	TypeContainer const& required_types)
 {
+	// there can only be one range per expression
+	int range_count = 0;
+
 	static std::unordered_map<std::string, UnaryOPNode::T> const unary_op_convers{
 		{ "-", UnaryOPNode::NEGATIVE }, { "!", UnaryOPNode::NOT } };
 
@@ -805,7 +804,7 @@ Parser::parse_expression(
 		{ ">=", BinaryOPNode::GREATER_EQ }, { "<=", BinaryOPNode::SMALLER_EQ },
 		{ "==", BinaryOPNode::EQUAL },		{ "!=", BinaryOPNode::NOT_EQUAL },
 		{ "||", BinaryOPNode::OR },			{ "&&", BinaryOPNode::AND },
-		{ ".", BinaryOPNode::DOT }
+		{ ".", BinaryOPNode::DOT },			{ "..", BinaryOPNode::RANGE }
 	};
 
 	std::shared_ptr<ExprNode> root(nullptr), protect(nullptr);
@@ -1010,7 +1009,7 @@ Parser::parse_expression(
 		{
 			if (curr == nullptr && token.type == TokenType::BINARY_OP) {
 				throw NIGHT_COMPILE_ERROR(
-					"expected value before operator '" + token.data + "'",
+					"expected value before operator `" + token.data + "`",
 					"");
 			}
 
@@ -1047,6 +1046,15 @@ Parser::parse_expression(
 				auto const op_type = binary_op_convers.find(token.data);
 				assert(op_type != binary_op_convers.end());
 
+				if (op_type->second == BinaryOPNode::RANGE)
+				{
+					range_count++;
+					if (range_count > 1) {
+						throw NIGHT_COMPILE_ERROR("there can only be one range per expression",
+							"");
+					}
+				}
+
 				op_node->type = ExprNode::BINARY_OP;
 				op_node->data = BinaryOPNode{ lexer.get_loc(), op_type->second, token.data, curr, nullptr };
 			}
@@ -1075,6 +1083,7 @@ Parser::higher_precedence(
 	std::string const& op2) const
 {
 	std::vector<std::unordered_set<std::string> > const operators{
+		{ ".." },
 		{ "||", "&&" },
 		{ "==", "!=" },
 		{ ">", "<", ">=", "<=" },
@@ -1166,13 +1175,13 @@ Parser::type_check_expr(
 
 		if (val.param_exprs.size() != check_func.param_types.size()) {
 			throw NIGHT_COMPILE_ERROR(
-				"function '" + val.name + "' is called with '" + std::to_string(val.param_exprs.size()) + "' argument(s)",
-				"function '" + val.name + "' can only be called with '" + std::to_string(check_func.param_types.size()) + "' argument(s)");
+				"function `" + val.name + "` is called with `" + std::to_string(val.param_exprs.size()) + "` argument(s)",
+				"function can only be called with `" + std::to_string(check_func.param_types.size()) + "` argument(s)");
 		}
 
 		if (check_func.is_void) {
 			throw NIGHT_COMPILE_ERROR(
-				"function '" + val.name + "' does not have a return value",
+				"function `" + val.name + "` does not have a return value",
 				"functions must have a return value to be used in expression");
 		}
 
@@ -1432,6 +1441,22 @@ Parser::type_check_expr(
 			return rtn_types.empty()
 				? required_types
 				: rtn_types;
+		}
+
+		case BinaryOPNode::RANGE: {
+			auto const left_types = type_check_expr(
+				scope, binary_op.left, { Type::INT, Type::FLOAT });
+
+			if (!night::contains(left_types, Type::INT, Type::FLOAT))
+				throw_binary_type_err(binary_op, left_types, "left", "types `int` or `float`");
+
+			auto const right_types = type_check_expr(
+				scope, binary_op.right, { Type::INT, Type::FLOAT });
+
+			if (!night::contains(right_types, Type::INT, Type::FLOAT))
+				throw_binary_type_err(binary_op, right_types, "right", "types `int` or `float`");
+
+			return TypeContainer{ Type{ Type::ARR, { Type::INT, Type::FLOAT } } };
 		}
 		}
 	}

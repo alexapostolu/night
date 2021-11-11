@@ -67,7 +67,7 @@ struct BinaryOPNode
 		PLUS, MINUS, TIMES, DIVIDE, MOD,
 		GREATER, GREATER_EQ, SMALLER, SMALLER_EQ,
 		AND, OR, EQUAL, NOT_EQUAL,
-		DOT
+		DOT, RANGE
 	} type;
 
 	std::string data;

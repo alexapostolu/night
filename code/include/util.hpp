@@ -28,4 +28,4 @@ template<
 		contains(container, val2...);
 }
 
-} // namespcae night
+} // namespace night

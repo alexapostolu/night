@@ -225,7 +225,7 @@ std::unordered_map<char, std::vector<std::pair<char, TokenType> > > const Lexer:
 	{ '&', { { '&', TokenType::BINARY_OP } } },
 	{ '!', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::UNARY_OP } } },
 
-	{ '.', { { '\0', TokenType::BINARY_OP } } },
+	{ '.', { { '.', TokenType::BINARY_OP }, { '\0', TokenType::BINARY_OP }}},
 
 	{ '=', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::ASSIGN } } },
 

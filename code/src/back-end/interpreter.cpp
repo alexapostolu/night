@@ -4,6 +4,7 @@
 #include "../../include/error.hpp"
 
 #include <iostream>
+#include <cstdlib>
 #include <stdexcept>
 #include <functional>
 #include <memory>
@@ -18,7 +19,6 @@ Interpreter::Interpreter()
 	night_funcs["int"] = {};
 	night_funcs["float"] = {};
 	night_funcs["str"] = {};
-	night_funcs["range"] = {};
 }
 
 bool Interpreter::Data::is_num() const
@@ -290,15 +290,15 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 		}
 		if (stmt_call.name == "system")
 		{
-			Data const arg = evaluate_expression(scope, stmt_call.args.at(0));
+			auto const arg = evaluate_expression(scope, stmt_call.args.at(0));
 
 			if (arg.type != Data::STR) {
 				throw NIGHT_RUNTIME_ERROR(
-					"function call 'system', argument number 1 must be type 'str'",
-					"argument is currently type '" + arg.to_str() + "'");
+					"function call `system`, argument number 1, must be type `str`",
+					"argument is currently type `" + arg.to_str() + "`");
 			}
 
-			system(std::get<std::string>(arg.val).c_str());
+			std::system(std::get<std::string>(arg.val).c_str());
 
 			return std::nullopt;
 		}
@@ -672,30 +672,20 @@ Interpreter::Data Interpreter::evaluate_expression(
 					"type 'arr' cannot be converted into type 'str'", "");
 			}
 		}
-		if (night_func->first == "range")
+		if (night_func->first == "system")
 		{
-			Data const start_d = evaluate_expression(scope, val.param_exprs.at(0));
-			if (start_d.type != Data::INT) {
+			auto const arg = evaluate_expression(scope, val.param_exprs.at(0));
+
+			if (arg.type != Data::STR) {
 				throw NIGHT_RUNTIME_ERROR(
-					"function `" + val.name + "`, argument 1, is type `" + start_d.to_str() + "`",
-					"argument can only be type `int`");
+					"function call `system`, argument number 1, must be type `str`",
+					"argument is currently type `" + arg.to_str() + "`");
 			}
 
-			Data const end_d = evaluate_expression(scope, val.param_exprs.at(1));
-			if (end_d.type != Data::INT) {
-				throw NIGHT_RUNTIME_ERROR(
-					"function `" + val.name + "`, argument 2, is type `" + end_d.to_str() + "`",
-					"argument can only be type `int`");
-			}
-
-			int const start = std::get<int>(start_d.val);
-			int const end	= std::get<int>(end_d.val);
-
-			std::vector<Data> elems(end - start);
-			for (std::size_t a = 0; a < elems.size(); ++a)
-				elems[a] = Data{ Data::INT, (int)a + start };
-
-			return Data{ Data::ARR, elems };
+			return Data{
+				Data::INT,
+				std::system(std::get<std::string>(arg.val).c_str())
+			};
 		}
 
 		auto vars = interpret_arguments(scope,
@@ -704,7 +694,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 		auto rtn_val = interpret_statements(scope, night_func->second.body, vars);
 		if (!rtn_val.has_value()) {
 			throw NIGHT_RUNTIME_ERROR(
-				"function call '" + val.name + "' does not return a value in expression",
+				"function call `" + val.name + "` does not return a value in expression",
 				"functions must return a value when used in an expression");
 		}
 
@@ -718,8 +708,8 @@ Interpreter::Data Interpreter::evaluate_expression(
 			Data const value = evaluate_expression(scope, unary_op.value);
 			if (!value.is_num()) {
 				throw NIGHT_RUNTIME_ERROR(
-					"left have value of operator '-' is currently type '" + value.to_str() + "'",
-					"unary operator '-' can only be used on types 'int' or 'float'");
+					"left have value of operator `-` is currently type `" + value.to_str() + "`",
+					"unary operator `-` can only be used on types `int or `float");
 			}
 
 			return value.type == Data::INT
@@ -951,6 +941,61 @@ Interpreter::Data Interpreter::evaluate_expression(
 			}
 
 			throw std::runtime_error("Interpreter::evaluate_expression(), missing dot operator method");
+		}
+
+		case BinaryOPNode::RANGE: {
+			auto const left  = evaluate_expression(scope, binary_op.left);
+			if (!left.is_num()) {
+				throw NIGHT_RUNTIME_ERROR(
+					"operator `..` can only be used on types `int` or `float`",
+					"left hand value of operator currently is type `" + left.to_str() + "`");
+			}
+
+			auto const right = evaluate_expression(scope, binary_op.right);
+			if (!right.is_num()) {
+				throw NIGHT_RUNTIME_ERROR(
+					"operator `..` can only be used on types `int` or `float`",
+					"right hand value of operator currently is type `" + right.to_str() + "`");
+			}
+
+
+
+
+
+
+			// don't return array,
+			// set a flag to interpreter for loop 
+
+
+
+
+
+			if (left.type == Data::STR && right.type == Data::STR)
+			{
+				return Data{ Data::STR,
+					std::get<std::string>(left.val) + std::get<std::string>(right.val) };
+			}
+
+			if (left.type == Data::INT && right.type == Data::INT)
+			{
+				return Data{ Data::INT,
+					std::get<int>(left.val) + std::get<int>(right.val) };
+			}
+			if (left.type == Data::FLOAT && right.type == Data::FLOAT)
+			{
+				return Data{ Data::FLOAT,
+					std::get<float>(left.val) + std::get<float>(right.val) };
+			}
+			if (left.type == Data::FLOAT)
+			{
+				return Data{ Data::FLOAT,
+					std::get<float>(left.val) + std::get<int>(right.val) };
+			}
+			if (right.type == Data::FLOAT)
+			{
+				return Data{ Data::FLOAT,
+					std::get<int>(left.val) + std::get<float>(right.val) };
+			}
 		}
 
 		default:
