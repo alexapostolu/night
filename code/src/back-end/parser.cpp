@@ -1,8 +1,8 @@
-#include "../../include/back-end/parser.hpp"
-#include "../../include/back-end/token.hpp"
-#include "../../include/back-end/stmt.hpp"
-#include "../../include/error.hpp"
-#include "../../include/util.hpp"
+#include "back-end/parser.hpp"
+#include "back-end/token.hpp"
+#include "back-end/stmt.hpp"
+#include "error.hpp"
+#include "util.hpp"
 
 #include <functional>
 #include <memory>

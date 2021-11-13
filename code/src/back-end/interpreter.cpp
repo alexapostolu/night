@@ -1,7 +1,7 @@
-#include "../../include/back-end/interpreter.hpp"
-#include "../../include/back-end/token.hpp"
-#include "../../include/back-end/stmt.hpp"
-#include "../../include/error.hpp"
+#include "back-end/interpreter.hpp"
+#include "back-end/token.hpp"
+#include "back-end/stmt.hpp"
+#include "error.hpp"
 
 #include <iostream>
 #include <cstdlib>
