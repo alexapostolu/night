@@ -109,7 +109,7 @@
 			<p class="desc">Conditionals in Night are similar to other languages. If there is only one statement nested in the conditional, curly bracket can be omitted.</p>
 
 			<p class="code">
-				<span class="key">let</span> num = <span class="func">"input</span>()<br><br>
+				<span class="key">let</span> <span class="var">num</span> = <span class="func">"input</span>()<br><br>
 
 				<span class="key">if</span> (<span class="var">num</span> > 50)<br>
 				{<br>
@@ -130,19 +130,19 @@
 			<p class="desc">Functions in Night support all five types, along with a <code>null</code> (void) type. Regular type functions must have a return value, while <code>null</code> type functions do not need a return value.</p>
 
 			<p class="code">
-				fn add(x, y)
-				{
-					return x + y
-				}
+				<span class="key">fn</span> <span class="func">add</span>(<span class="var">x</span>, <span class="var">y</span>)<br>
+				{<br>
+				&nbsp;&nbsp;return <span class="var">x</span> + <span class="var">y</span><br>
+				}<br><br>
 
-				fn sub(x: int, y: int mut)
-				{
-					y += 1
-					return x - y
-				}
+				<span class="key">fn</span> <span class="func">sub</span>(<span class="var">x</span>: <span class="key">int</span>, <span class="var">y</span>: <span class="key">int</span> <span class="key">mut</span>)<br>
+				{<br>
+				&nbsp;&nbsp;<span class="var">y</span> += 1<br>
+				&nbsp;&nbsp;<span class="key">return</span> <span class="var">x</span> - <span class="var">y</span><br>
+				}<br><br>
 
-				print(add(2, 3))
-				print(sub(9, 7))
+				<span class="func">print</span>(<span class="func">add</span>(2, 3))<br>
+				<span class="func">print</span>(<span class="func">sub</span>(9, 7))
 			</p>
 
 			<p class="desc">Note that functions have to be defined before they are used.</p>
@@ -152,12 +152,10 @@
 			<p class="desc">There are two types of loops in Night, the <code>while</code> and <code>for</code> loop. The <code>while</code> loop will only run if its condition evaluates to <code>true</code>, and the <code>for</code> loop will only run a prespecified amount of times.</p>
 
 			<p class="code">
-				let arr = [ 5, 6, 7 ]
-				for (x : arr)
-					print(str(x) + " ")
+				<span class="key">let</span> <span class="var">arr</span> = [ 5, 6, 7 ]<br>
+				<span class="key">for</span> (<span class="var">x</span> : <span class="var">arr</span>)<br>
+				&nbsp&nbsp<span class="func">print</span>(<span class="func">str</span>(<span class="var">x</span>) + <span class="str">" "</span>)
 			</p>
-
-			<p class="desc">Unlike the <code>while</code> loop, the <code>for</code> loop's condition is static and cannot change once it's set.</p>
 
 			<h2 id="arrays">Arrays</h2>
 
@@ -181,6 +179,7 @@
 				typed system.</p>
 
 			<p class="code">
+				&nbsp
 				<span class="key">let</span> <span class="var">var</span> = <span class="str">'s'</span> <span class="com"># 'var' contains type: 'str'</span><br>
 				<span class="var">var</span> = <span class="bool">true</span>   <span class="com"> # 'var' contains type: 'str', 'bool'</span><br><br>
 

@@ -25,12 +25,12 @@
 	color: rgb(0, 140, 255);
 }
 
-#main .code .func {
-	color: rgb(214, 175, 1);
+#main .code .param {
+	color: rgb(205, 205, 205);
 }
 
-#main .code .param {
-	color:rgb(190, 190, 190);
+#main .code .func {
+	color: rgb(214, 175, 1);
 }
 
 #main .code .meth {
