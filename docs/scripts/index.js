@@ -1,4 +1,4 @@
-let clr = 0, inc = 1;
+let inc = 0.005, time = 0;
 
 let stars = [];
 
@@ -8,12 +8,14 @@ class Star {
 		this.y = random(0, height);
 		this.brightness = random(0, 255);
 		this.inc = random(3, 5);
+		if (random() < 0.5)
+			this.inc *= -1;
 	}
 
 	display() {
 		fill(255, 255, 255, this.brightness);
 		noStroke();
-	  	circle(this.x, this.y, 1);
+	  	circle(this.x, this.y, 1.5);
 
 		this.brightness += this.inc;
 
@@ -29,8 +31,8 @@ class Star {
 }
 
 function setup() {
-  	createCanvas(windowWidth - 17, 500);
-	
+  createCanvas(windowWidth - 17, 500);
+
 	for (let a = 0; a < 50; ++a)
 		stars.push(new Star());
 }
@@ -40,20 +42,20 @@ function draw() {
 
 	clear();
 
+	fill(0);
+	rect(0, 0, width, height);
+
 	noStroke();
-	for (let a = 0; a < height / 5; ++a) {
-		for (let b = 0; b < width / 5; ++b) {
-			fill((150 + clr) - dist(b, a, 0, 0));
-			rect(b * 5, a * 5, 5, 5);
-		}
+
+	let clr = (Math.sin(time) * 50) + 10;
+	for (let d = (clr + 150); d >= 0; d -= 1) {
+		fill(128 - (d / (clr + 150)) * 128);
+		circle(0, 0, d * (height / 50));
 	}
 
-	if (clr >= 60 || clr <= -40)
-		inc *= -1;
+	time += inc;
 
-	clr += inc;
-
-	// stars
+	// stars and cursor lines
 
 	for (let a = 0; a < stars.length; ++a) {
 		stars[a].display();
