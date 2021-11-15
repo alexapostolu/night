@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../error.hpp"
+#include "error.hpp"
 
 #include <iostream>
 #include <variant>
@@ -12,8 +12,6 @@
 struct ExprNode;
 
 using ExprContainer = std::vector<std::shared_ptr<ExprNode> >;
-
-
 
 struct ValueLiteral
 {
