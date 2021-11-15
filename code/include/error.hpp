@@ -15,21 +15,21 @@ struct Location
 
 namespace night {
 
-const char format_array[] = "arrays must be in this format: `[elem1, elem2]`";
-const char format_subscript[] = "subscript operators must be in this format: `array[index]`";
-const char format_init[] = "variable initializations must be in this format: `let variable = expression`";
-const char format_if[] = "if conditionals must be in this format: `if (condition) {}`";
-const char format_elif[] = "elif conditionals must be in this format: `elif (condition) {}`";
-const char format_else[] = "else conditionals must be in this format: `else {}`";
-const char format_while[] = "while loops must be in this format: `while (condition) {}`";
-const char format_for[] = "for loops must be in this format: `for (iterator : range) {}`";
-const char format_fn[] = "function definitions must be in this format: `fn function(parameters) {}`";
-const char format_call[] = "function calls must be in this format: `function(parameters)`";
-const char format_method[] = "method calls must be in this format: `object.method(parameters)`";
+static const char format_array[] = "arrays must be in this format: `[elem1, elem2]`";
+static const char format_subscript[] = "subscript operators must be in this format: `array[index]`";
+static const char format_init[] = "variable initializations must be in this format: `let variable = expression`";
+static const char format_if[] = "if conditionals must be in this format: `if (condition) {}`";
+static const char format_elif[] = "elif conditionals must be in this format: `elif (condition) {}`";
+static const char format_else[] = "else conditionals must be in this format: `else {}`";
+static const char format_while[] = "while loops must be in this format: `while (condition) {}`";
+static const char format_for[] = "for loops must be in this format: `for (iterator : range) {}`";
+static const char format_fn[] = "function definitions must be in this format: `fn function(parameters) {}`";
+static const char format_call[] = "function calls must be in this format: `function(parameters)`";
+static const char format_method[] = "method calls must be in this format: `object.method(parameters)`";
 
-const char error_preprocess[] = "preprocessor";
-const char error_compile[] = "compile";
-const char error_runtime[] = "runtime";
+static const char error_preprocess[] = "preprocessor";
+static const char error_compile[] = "compile";
+static const char error_runtime[] = "runtime";
 
 class error
 {
