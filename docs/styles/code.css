@@ -1,50 +1,51 @@
-@import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Source+Code+Pro&display=swap");
 
 #main .code {
-	background-color: black;
+  background-color: black;
 
-	color: rgb(129, 129, 129);
+  color: rgb(129, 129, 129);
 
-    margin-bottom: 60px;
+  margin-bottom: 60px;
 
-	border: solid;
-	border-color: rgb(150, 150, 150);
+  border: solid;
+  border-color: rgb(150, 150, 150);
 
-	padding: 20px;
+  padding: 20px;
 
-	font-family: 'Source Code Pro', monospace;
+  font-family: "Source Code Pro", monospace;
 
-	box-shadow: 10px 10px rgb(170, 170, 170);
+  box-shadow: 10px 10px rgb(170, 170, 170);
 }
 
 #main .code .com {
-	color: rgb(2, 185, 2);
+  color: rgb(2, 185, 2);
 }
 
 #main .code .key {
-	color: rgb(0, 140, 255);
+  color: rgb(0, 140, 255);
 }
 
 #main .code .param {
-	color: rgb(205, 205, 205);
+  color: rgb(205, 205, 205);
 }
 
 #main .code .func {
-	color: rgb(214, 175, 1);
+  color: rgb(214, 175, 1);
 }
 
 #main .code .meth {
-	color:rgb(174, 0, 255);
+  color: rgb(174, 0, 255);
 }
 
 #main .code .var {
-	color:rgb(197, 197, 197);
+  color: rgb(197, 197, 197);
 }
 
 #main .code .bool {
-	color:rgb(0, 204, 255);
+  color: rgb(0, 204, 255);
 }
 
 #main .code .str {
-    color: rgb(255, 136, 0);
+  color: rgb(255, 136, 0);
 }
+

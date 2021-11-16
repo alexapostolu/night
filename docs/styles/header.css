@@ -1,101 +1,102 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Anonymous+Pro&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Montserrat&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Anonymous+Pro&display=swap");
 
 canvas {
-	position: absolute;
-	top: 0px;
-	left: 0px;
-	z-index: -2;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  z-index: -2;
 }
 
 #header img {
-	display: block;
+  display: block;
 
-	margin-top: 100px;
-	margin-left: auto;
-	margin-right: auto;
+  margin-top: 100px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 #header h1 {
-	color: #eee;
+  color: #eee;
 
-	text-align: center;
+  text-align: center;
 
-	font-size: 50px;
-	font-family: 'Montserrat';
+  font-size: 50px;
+  font-family: "Montserrat";
 }
 
 #header hr {
-	background-color: gray;
-	
-	position: relative;
-	z-index: -1;
-	
-	border: solid;
-	border-color: gray;
-	border-width: 3px;
-	border-radius: 5px;
-	
-	top: 88px;
+  background-color: gray;
+
+  position: relative;
+  z-index: -1;
+
+  border: solid;
+  border-color: gray;
+  border-width: 3px;
+  border-radius: 5px;
+
+  top: 88px;
 }
 
 #header #tag {
-    background-color: #eee;
-	color: gray;
-	
-    width: 27%;
+  background-color: #eee;
+  color: gray;
 
-	margin: auto;
-	margin-top: 68px;
-	
-	border: solid;
-	border-color: black;
-	border-radius: 10px;
-	
-	padding-top: 5px;
-	padding-bottom: 5px;
-	
-	text-align: center;
-	font-family: 'Anonymous Pro';
+  width: 27%;
+
+  margin: auto;
+  margin-top: 68px;
+
+  border: solid;
+  border-color: black;
+  border-radius: 10px;
+
+  padding-top: 5px;
+  padding-bottom: 5px;
+
+  text-align: center;
+  font-family: "Anonymous Pro";
 }
 
 #header #tag b {
-	color: black;
+  color: black;
 }
 
 #header #actions {
-	display: flex;
+  display: flex;
 
-	color: #eee;
-	
-	margin: 50px 12% 50px 12%;
+  color: #eee;
+
+  margin: 50px 12% 50px 12%;
 }
 
 #header #actions a {
-	color: #eee;
-	text-decoration: none;
+  color: #eee;
+  text-decoration: none;
 }
 
 #header #actions h2 {
-	margin: 0 20% 0 20%;
-	
-	border: solid;
-	border-radius: 25px;
-	
-	padding-top: 8%;
-	padding-bottom: 8%;
-	
-	text-align: center;
-	font-family: 'Montserrat';
+  margin: 0 20% 0 20%;
 
-	transition-duration: 0.6s;
+  border: solid;
+  border-radius: 25px;
+
+  padding-top: 8%;
+  padding-bottom: 8%;
+
+  text-align: center;
+  font-family: "Montserrat";
+
+  transition-duration: 0.6s;
 }
 
 #header .action {
-    flex: 1;
+  flex: 1;
 }
 
 #header .action h2:hover {
-	background-color: #eee;
-	color: black;
+  background-color: #eee;
+  color: black;
 }
+

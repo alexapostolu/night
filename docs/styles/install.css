@@ -1,19 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Work+Sans&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Anonymous+Pro&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Montserrat&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Work+Sans&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Anonymous+Pro&display=swap");
 
 #main h3 {
-    color: gray;
+  color: gray;
 
-    margin-top: 30px;
+  margin-top: 30px;
 
-    font-size: 18px;
-    font-family: 'Work Sans';
+  font-size: 18px;
+  font-family: "Work Sans";
 }
 
 #main ul li {
-	color: gray;
+  color: gray;
 
-	font-size: 17px;
-	font-family: 'Work Sans';
+  font-size: 17px;
+  font-family: "Work Sans";
 }
+
