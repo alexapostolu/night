@@ -1,69 +1,90 @@
-let inc = 0.005, time = 0;
+const cv = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-let stars = [];
+cv.width = window.innerWidth - 17;
+cv.height = 500;
 
 class Star {
 	constructor() {
-		this.x = random(0, width);
-		this.y = random(0, height);
-		this.brightness = random(0, 255);
-		this.inc = random(3, 5);
-		if (random() < 0.5)
+		this.x = Math.random() * cv.width;
+		this.y = Math.random() * cv.height;
+		this.brightness = Math.random();
+		this.inc = Math.random() * (0.05 - 0.01) + 0.01;
+		if (Math.random() < 0.5)
 			this.inc *= -1;
 	}
 
 	display() {
-		fill(255, 255, 255, this.brightness);
-		noStroke();
-	  	circle(this.x, this.y, 1.5);
+		ctx.fillStyle = "rgba(255, 255, 255, " + this.brightness + ")";
+
+		ctx.beginPath();
+		ctx.arc(this.x, this.y, 1.5, 0, 2 * Math.PI);
+		ctx.fill();
 
 		this.brightness += this.inc;
 
-		if (this.brightness >= 255) {
+		if (this.brightness >= 1) {
 			this.inc *= -1;
 		}
 		else if (this.brightness <= 0) {
 			this.inc *= -1;
-			this.x = random(0, width);
-			this.y = random(0, height);
+			this.x = Math.random() * cv.width;
+			this.y = Math.random() * cv.height;
 		}
 	}
 }
 
-function setup() {
-  createCanvas(windowWidth - 17, 500);
+let time = 0;
 
-	for (let a = 0; a < 50; ++a)
-		stars.push(new Star());
-}
+let stars = [];
+for (let a = 0; a < 50; ++a)
+	stars.push(new Star());
+
+
 
 function draw() {
+	//ctx.clearRect(0, 0, cv.width, cv.height);
+
 	// background
 
-	clear();
-
-	fill(0);
-	rect(0, 0, width, height);
-
-	noStroke();
-
 	let clr = (Math.sin(time) * 50) + 10;
-	for (let d = (clr + 150); d >= 0; d -= 1) {
-		fill(128 - (d / (clr + 150)) * 128);
-		circle(0, 0, d * (height / 50));
-	}
+	time += 0.005;
 
-	time += inc;
+	for (let d = (clr + 150); d >= 0; d -= 1) {
+		let v = 128 - (d / (clr + 150)) * 128;
+		ctx.fillStyle = "rgb(" + v + ", " + v + ", " + v + ")";
+
+		ctx.beginPath();
+		ctx.arc(0, 0, d * (cv.height / 50), 0, 2 * Math.PI);
+		ctx.fill();
+	}
 
 	// stars and cursor lines
 
 	for (let a = 0; a < stars.length; ++a) {
 		stars[a].display();
 
-		if (a % 2 == 0 && dist(stars[a].x, stars[a].y, mouseX, mouseY) < 200) {
-			stroke(255);
-			strokeWeight(2);
-			line(stars[a].x, stars[a].y, mouseX, mouseY);
+		if (a % 2 == 0 && dist(stars[a].x, stars[a].y, x, y) < 200) {
+			ctx.strokeStyle = "rgb(255, 255, 255)";
+			ctx.lineWidth = 2;
+			ctx.beginPath();
+			ctx.moveTo(stars[a].x, stars[a].y);
+			ctx.lineTo(x, y);
+			ctx.stroke();
 		}
 	}
 }
+
+let x, y;
+function updateMouse(e) {
+    x = e.clientX;
+    y = e.clientY;
+}
+
+function dist(x1, y1, x2, y2) {
+	return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+}
+
+
+
+setInterval(draw, 20);
