@@ -1,5 +1,4 @@
-let inc = 0.005, time = 0;
-
+let time = 0;
 let stars = [];
 
 class Star {
@@ -53,13 +52,13 @@ function draw() {
 		circle(0, 0, d * (height / 50));
 	}
 
-	time += inc;
+	time += 0.005;
 
 	// stars and cursor lines
 
 	for (let a = 0; a < stars.length; ++a) {
 		stars[a].display();
-
+		
 		if (a % 2 == 0 && dist(stars[a].x, stars[a].y, mouseX, mouseY) < 200) {
 			stroke(255);
 			strokeWeight(2);
