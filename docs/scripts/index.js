@@ -1,8 +1,13 @@
+<<<<<<< HEAD
 const cv = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
 cv.width = window.innerWidth - 17;
 cv.height = 500;
+=======
+let time = 0;
+let stars = [];
+>>>>>>> df41ad0b388f527b9b98d864e25172ab862a3f56
 
 class Star {
 	constructor() {
@@ -50,6 +55,7 @@ function draw() {
 	let clr = (Math.sin(time) * 50) + 10;
 	time += 0.005;
 
+<<<<<<< HEAD
 	for (let d = (clr + 150); d >= 0; d -= 1) {
 		let v = 128 - (d / (clr + 150)) * 128;
 		ctx.fillStyle = "rgb(" + v + ", " + v + ", " + v + ")";
@@ -58,11 +64,15 @@ function draw() {
 		ctx.arc(0, 0, d * (cv.height / 50), 0, 2 * Math.PI);
 		ctx.fill();
 	}
+=======
+	time += 0.005;
+>>>>>>> df41ad0b388f527b9b98d864e25172ab862a3f56
 
 	// stars and cursor lines
 
 	for (let a = 0; a < stars.length; ++a) {
 		stars[a].display();
+<<<<<<< HEAD
 
 		if (a % 2 == 0 && dist(stars[a].x, stars[a].y, x, y) < 200) {
 			ctx.strokeStyle = "rgb(255, 255, 255)";
@@ -71,6 +81,13 @@ function draw() {
 			ctx.moveTo(stars[a].x, stars[a].y);
 			ctx.lineTo(x, y);
 			ctx.stroke();
+=======
+		
+		if (a % 2 == 0 && dist(stars[a].x, stars[a].y, mouseX, mouseY) < 200) {
+			stroke(255);
+			strokeWeight(2);
+			line(stars[a].x, stars[a].y, mouseX, mouseY);
+>>>>>>> df41ad0b388f527b9b98d864e25172ab862a3f56
 		}
 	}
 }

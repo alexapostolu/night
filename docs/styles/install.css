@@ -2,13 +2,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Work+Sans&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Anonymous+Pro&display=swap');
 
+body {
+    background-color: rgb(10, 10, 10);
+}
+
 #main h3 {
-    color: gray;
+	color: gray;
 
-    margin-top: 30px;
+	margin-top: 30px;
 
-    font-size: 18px;
-    font-family: 'Work Sans';
+	font-size: 18px;
+	font-family: 'Work Sans';
 }
 
 #main ul li {
