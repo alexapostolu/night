@@ -34,7 +34,7 @@ git clone --recurse-submodules https://github.com/DynamicSquid/night.git
 cd night
 ```
 
-Or if you want to clone Night but not Dusk:
+If you want to clone Night but not Dusk:
 
 ```
 git clone https://github.com/DynamicSquid/night.git
