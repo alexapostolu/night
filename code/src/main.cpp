@@ -8,11 +8,11 @@
 int main(int argc, char* argv[])
 {
 	std::string const more_info = "for more info, run: night --help\n";
-
+	
 	if (argc != 2)
 	{
 		std::cout << "invalid number of arguments\n" << more_info;
-		return;
+		return 0;
 	}
 
 	if (argv[1][0] == '-')
@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
 					  << "options:\n"
 					  << "    --help     displays this message and exit\n"
 					  << "    --version  displays night's current version\n";
-			return;
+			return 0;
 		}
 		if (!(std::strcmp(argv[1], "--version") && std::strcmp(argv[1], "-v")))
 		{
@@ -31,11 +31,11 @@ int main(int argc, char* argv[])
 					  << night_VERSION_MAJOR << '.'
 					  << night_VERSION_MINOR << '.'
 					  << night_VERSION_PATCH << '\n';
-			return;
+			return 0;
 		}
 
 		std::cout << "unknown option: " << argv[1] << '\n' << more_info;
-		return;
+		return 0;
 	}
 
 	try {

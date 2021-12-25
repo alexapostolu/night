@@ -10,7 +10,7 @@
 struct Location
 {
 	std::string file;
-	int line, col;
+	std::size_t line, col;
 };
 
 namespace night {
