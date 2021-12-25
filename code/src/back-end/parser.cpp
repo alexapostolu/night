@@ -387,14 +387,16 @@ Stmt Parser::parse_stmt_var(ParserScope& scope)
 
 Stmt Parser::parse_stmt_if(ParserScope& scope)
 {
-	auto const condition_expr = parse_condition(scope, "if statement");
+	// parsing if statement
 
-	// parsing body
+	auto const if_expr = parse_condition(scope, "if statement");
 
 	Scope if_scope{ scope };
 	auto const body = parse_body(if_scope, "if conditional", night::format_if);
 
-	std::vector<Conditional> conditionals{ Conditional{ condition_expr, body } };
+	// parsing next conditional statements
+
+	std::vector<Conditional> conditionals{ Conditional{ if_expr, body } };
 
 	while (true)
 	{
@@ -405,6 +407,8 @@ Stmt Parser::parse_stmt_if(ParserScope& scope)
 			condition_expr = parse_condition(scope, "else if statement");
 		else if (lexer.get_curr().type != TokenType::ELSE)
 			break;
+		else
+			lexer.eat(true);
 
 		conditionals.push_back(Conditional{
 			condition_expr,
