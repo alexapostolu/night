@@ -405,10 +405,10 @@ Stmt Parser::parse_stmt_if(ParserScope& scope)
 
 		if (lexer.get_curr().type == TokenType::ELIF)
 			condition_expr = parse_condition(scope, "else if statement");
-		else if (lexer.get_curr().type != TokenType::ELSE)
-			break;
-		else
+		else if (lexer.get_curr().type == TokenType::ELSE)
 			lexer.eat(true);
+		else
+			break;
 
 		conditionals.push_back(Conditional{
 			condition_expr,

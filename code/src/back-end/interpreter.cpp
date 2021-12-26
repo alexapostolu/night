@@ -821,7 +821,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 
 			throw NIGHT_RUNTIME_ERROR(
 				"operator `+` can only be used on types `int`, `float`, or two types both of `str`",
-				"left hand value of operator `+` currently is type `" + left.to_str() + "`, and right hand value is type `" + right.to_str() + "`");
+				"left hand value of the operator is currently type `" + left.to_str() + "`, and right hand value is currently type `" + right.to_str() + "`");
 		}
 
 		case BinaryOPNode::MINUS:

@@ -8,6 +8,7 @@
 #include <map>
 #include <unordered_map>
 
+// one lexer for each file
 class Lexer
 {
 public:

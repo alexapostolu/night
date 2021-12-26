@@ -19,11 +19,21 @@ night::error::error(
 
 	std::ifstream code(loc.file);
 	assert(code.is_open());
+
 	for (int a = 0; a < loc.line; ++a)
 		getline(code, line);
 
+	// trim leading whitespace
+
+	auto str_begin = line.find_first_not_of(" ");
+	if (str_begin != std::string::npos)
+		line = line.substr(str_begin, line.size() - str_begin + 1);
+	str_begin = line.find_first_not_of("\t");
+	if (str_begin != std::string::npos)
+		line = line.substr(str_begin, line.size() - str_begin + 1);
+
 	// remove absolute file path so only local path is displayed
-	for (int a = loc.file.length() - 1; a >= 0; --a)
+	for (int a = (int)loc.file.length() - 1; a >= 0; --a)
 	{
 		if (loc.file[a] == '\\' || loc.file[a] == '/')
 		{
