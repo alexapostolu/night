@@ -1,6 +1,7 @@
 #include "back-end/parser.hpp"
 #include "back-end/token.hpp"
 #include "back-end/stmt.hpp"
+#include "back-end/check.hpp"
 #include "error.hpp"
 #include "util.hpp"
 
@@ -506,7 +507,7 @@ Stmt Parser::parse_stmt_for(ParserScope& scope)
 	};
 }
 
-Stmt Parser::parse_stmt_fn(ParserScope& scope, CheckFunctionContainer::iterator& in_func)
+Stmt Parser::parse_stmt_fn(ParserScope& scope, CheckFunctionContainer::iterator &in_func)
 {
 	// validating statement
 
@@ -633,7 +634,7 @@ Stmt Parser::parse_stmt_fn(ParserScope& scope, CheckFunctionContainer::iterator&
 	};
 }
 
-Stmt Parser::parse_stmt_rtn(ParserScope& scope, CheckFunctionContainer::iterator& in_func)
+Stmt Parser::parse_stmt_rtn(ParserScope& scope, CheckFunctionContainer::iterator &in_func)
 {
 	if (in_func == Parser::check_funcs.end()) {
 		throw NIGHT_COMPILE_ERROR(
@@ -744,7 +745,7 @@ std::shared_ptr<ExprNode> Parser::parse_condition(
 	return condition_expr;
 }
 
-std::pair<ExprContainer, std::vector<Parser::TypeContainer> >
+std::pair<ExprContainer, std::vector<TypeContainer> >
 Parser::parse_arguments(
 	ParserScope& scope, std::string_view func_name)
 {
@@ -789,7 +790,7 @@ Parser::parse_arguments(
 	}
 }
 
-std::tuple<std::shared_ptr<ExprNode>, Parser::TypeContainer>
+std::tuple<std::shared_ptr<ExprNode>, TypeContainer>
 Parser::parse_expression(
 	ParserScope& scope,
 	TypeContainer const& required_types)
@@ -1110,7 +1111,7 @@ Parser::higher_precedence(
 	return pre1 > pre2;
 }
 
-Parser::TypeContainer
+TypeContainer
 Parser::type_check_expr(
 	ParserScope&					 scope,
 	std::shared_ptr<ExprNode> const& expr,
@@ -1533,54 +1534,5 @@ Parser::throw_binary_type_err(
 		"operator '" + op.data + "' can only be used on " + used_types);
 }
 
-Parser::TypeContainer const Parser::all_types{
+TypeContainer const Parser::all_types{
 	Type::BOOL, Type::INT, Type::FLOAT, Type::STR, Type::ARR };
-
-std::pair<std::string const, Parser::CheckFunction> Parser::make_check_function(
-	std::string const& name,
-	std::vector<TypeContainer> const& params,
-	TypeContainer			   const& rtn_types)
-{
-	return { name, { params, rtn_types } };
-}
-
-std::pair<std::string const, Parser::CheckClass> Parser::make_check_class(
-	std::string const& name,
-
-	CheckVariableContainer const& vars,
-	CheckFunctionContainer const& methods)
-{
-	return { name, { vars, methods } };
-}
-
-
-
-Parser::Type::Type(T _type)
-	: type(_type) {}
-
-Parser::Type::Type(T _type, TypeContainer const& _elem_types)
-	: type(_type), elem_types(_elem_types) {}
-
-std::string Parser::Type::to_str() const
-{
-	switch (type)
-	{
-	case T::BOOL:
-		return "bool";
-	case T::INT:
-		return "int";
-	case T::FLOAT:
-		return "float";
-	case T::STR:
-		return "str";
-	case T::ARR:
-		return "arr";
-	}
-
-	throw std::runtime_error("Parser::Type::to_str(), missing type to string conversion");
-}
-
-bool Parser::Type::operator==(Type _t) const
-{
-	return type == _t.type;
-}

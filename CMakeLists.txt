@@ -13,5 +13,5 @@ configure_file(
 )
 
 file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "code/src/*.cpp")
-add_executable(night ${SOURCES})
+add_executable(night ${SOURCES} "code/src/back-end/check.cpp")
 target_link_libraries(night -static)

@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <cstring>
 
 int main(int argc, char* argv[])
 {
