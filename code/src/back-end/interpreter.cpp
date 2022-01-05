@@ -366,8 +366,25 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 		auto& stmt_for = std::get<StmtFor>(stmt.data);
 
 		Data const range = evaluate_expression(scope, stmt_for.range);
-		
-		if (range.type == Data::STR)
+
+		if (pair_range.has_value())
+		{
+			for (int a = pair_range->first; a < pair_range->second; ++a)
+			{
+				// create iterator variable
+				NightVariableContainer it_var;
+				it_var[stmt_for.it_name] = { Data{ Data::INT, a } };
+
+				auto rtn_val = interpret_statements(scope, stmt_for.body, it_var);
+
+				// if body returns a value, stop the loop
+				if (rtn_val.has_value())
+					return rtn_val;
+			}
+
+			pair_range = std::nullopt;
+		}
+		else if (range.type == Data::STR)
 		{
 			auto& str_arr = std::get<std::string>(range.val);
 
@@ -375,7 +392,7 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 			{
 				// create iterator variable
 				NightVariableContainer it_var;
-				it_var[stmt_for.it_name] = { Data::STR, std::string(1, range_value) };
+				it_var[stmt_for.it_name] = { Data{ Data::STR, std::string(1, range_value) } };
 
 				auto rtn_val = interpret_statements(scope, stmt_for.body, it_var);
 
@@ -404,7 +421,7 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 		else
 		{
 			throw NIGHT_RUNTIME_ERROR(
-				"for loop range must be type 'str' or 'arr'",
+				"for loop range must be type 'range', 'str', or 'arr'",
 				"range is currently type '" + range.to_str() + "'");
 		}
 
@@ -958,18 +975,6 @@ Interpreter::Data Interpreter::evaluate_expression(
 					"right hand value of operator currently is type `" + right.to_str() + "`");
 			}
 
-
-
-
-
-
-			// don't return array,
-			// set a flag to interpreter for loop 
-
-
-
-
-
 			if (left.type == Data::STR && right.type == Data::STR)
 			{
 				return Data{ Data::STR,
@@ -978,21 +983,25 @@ Interpreter::Data Interpreter::evaluate_expression(
 
 			if (left.type == Data::INT && right.type == Data::INT)
 			{
+				pair_range = { std::get<int>(left.val), std::get<int>(right.val) };
 				return Data{ Data::INT,
 					std::get<int>(left.val) + std::get<int>(right.val) };
 			}
 			if (left.type == Data::FLOAT && right.type == Data::FLOAT)
 			{
+				pair_range = { std::get<float>(left.val), std::get<float>(right.val) };
 				return Data{ Data::FLOAT,
 					std::get<float>(left.val) + std::get<float>(right.val) };
 			}
 			if (left.type == Data::FLOAT)
 			{
+				pair_range = { std::get<float>(left.val), std::get<int>(right.val) };
 				return Data{ Data::FLOAT,
 					std::get<float>(left.val) + std::get<int>(right.val) };
 			}
 			if (right.type == Data::FLOAT)
 			{
+				pair_range = { std::get<int>(left.val), std::get<float>(right.val) };
 				return Data{ Data::FLOAT,
 					std::get<int>(left.val) + std::get<float>(right.val) };
 			}
@@ -1085,3 +1094,5 @@ bool Interpreter::eval_expr_binary_comp(
 
 	return Data::compare_data(left, right);
 }
+
+std::optional<std::pair<int, int> > Interpreter::pair_range = std::nullopt;

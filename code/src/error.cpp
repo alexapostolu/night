@@ -10,9 +10,8 @@ night::error::error(
 	Location const& _loc, std::string const& _msg, std::string const& _fix)
 	: loc(_loc), type(_type), msg(_msg), fix(_fix)
 {
-#ifdef _DEBUG // Visual Studio specific macro
-	std::cout << debug_file << '\n' << debug_line << "\n\n";
-#endif
+	if (DEBUG)
+		std::cout << debug_file << '\n' << debug_line << "\n\n";
 
 	if (type == night::error_preprocess)
 		return;
@@ -85,3 +84,6 @@ std::string night::error::what() const
 
 	return output.str();
 }
+
+
+bool night::error::DEBUG = false;

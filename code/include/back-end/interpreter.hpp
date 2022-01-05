@@ -123,4 +123,5 @@ private:
 
 private:
 	NightFunctionContainer night_funcs;
+	static std::optional<std::pair<int, int> > pair_range;
 };

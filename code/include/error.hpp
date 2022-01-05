@@ -48,6 +48,9 @@ public:
 public:
 	std::string what() const;
 
+public:
+	static bool DEBUG;
+
 private:
 	std::string type;
 
@@ -69,11 +72,6 @@ private:
 	const std::string u_WHITE = "\033[0;4;37m";
 	const std::string bu_RED = "\033[0;1;4;31m";
 	const std::string bu_WHITE = "\033[0;1;4;37m";
-};
-
-struct error_wrapper
-{
-	const std::string type;
 };
 
 } // namespace night
