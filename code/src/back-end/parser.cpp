@@ -1144,8 +1144,17 @@ Parser::type_check_expr(
 		for (auto const& elem_expr : val.elem_exprs)
 		{
 			auto elem_types = type_check_expr(scope, elem_expr);
-			elems_types.insert(elems_types.end(),
-				elem_types.begin(), elem_types.end());
+			if (night::contains(elem_types, Type::RNG))
+			{
+				assert(elem_types.size() == 1);
+				elems_types.insert(elems_types.end(), Type::INT);
+				elems_types.insert(elems_types.end(), Type::FLOAT);
+			}
+			else
+			{
+				elems_types.insert(elems_types.end(),
+					elem_types.begin(), elem_types.end());
+			}
 		}
 
 		return { Type(Type::ARR, elems_types) };
@@ -1283,8 +1292,6 @@ Parser::type_check_expr(
 	case ExprNode::BINARY_OP: {
 		auto const& binary_op = std::get<BinaryOPNode>(expr->data);
 
-		TypeContainer rtn_num_types;
-
 		switch (binary_op.type)
 		{
 		case BinaryOPNode::PLUS: {
@@ -1306,9 +1313,22 @@ Parser::type_check_expr(
 		case BinaryOPNode::MINUS:
 		case BinaryOPNode::TIMES:
 		case BinaryOPNode::DIVIDE:
-		case BinaryOPNode::MOD:
-			rtn_num_types = { Type::INT, Type::FLOAT };
+		case BinaryOPNode::MOD: {
+			auto const left_types = type_check_expr(
+				scope, binary_op.left, { Type::INT, Type::FLOAT });
 
+			if (!night::contains(left_types, Type::INT, Type::FLOAT))
+				throw_binary_type_err(binary_op, left_types, "left", "types 'int' or 'float'");
+
+			auto const right_types = type_check_expr(
+				scope, binary_op.right, { Type::INT, Type::FLOAT });
+
+			if (!night::contains(right_types, Type::INT, Type::FLOAT))
+				throw_binary_type_err(binary_op, right_types, "right", "types 'int' or 'float'");
+
+			return TypeContainer{ Type::INT, Type::FLOAT };
+		}
+		
 		case BinaryOPNode::GREATER:
 		case BinaryOPNode::GREATER_EQ:
 		case BinaryOPNode::SMALLER:
@@ -1325,9 +1345,7 @@ Parser::type_check_expr(
 			if (!night::contains(right_types, Type::INT, Type::FLOAT))
 				throw_binary_type_err(binary_op, right_types, "right", "types 'int' or 'float'");
 
-			return rtn_num_types.empty()
-				? TypeContainer{ Type::BOOL }
-				: rtn_num_types;
+			return TypeContainer{ Type::BOOL };
 		}
 
 		case BinaryOPNode::AND:
@@ -1461,7 +1479,7 @@ Parser::type_check_expr(
 			if (!night::contains(right_types, Type::INT, Type::FLOAT))
 				throw_binary_type_err(binary_op, right_types, "right", "types `int` or `float`");
 
-			return TypeContainer{ Type{ Type::ARR, { Type::INT, Type::FLOAT } } };
+			return TypeContainer{ Type::RNG };
 		}
 		}
 	}

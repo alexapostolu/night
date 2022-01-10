@@ -589,8 +589,27 @@ Interpreter::Data Interpreter::evaluate_expression(
 		auto& arr = std::get<ValueArray>(expr->data);
 
 		std::vector<Data> elem_data(arr.elem_exprs.size());
-		for (std::size_t a = 0; a < elem_data.size(); ++a)
-			elem_data[a] = evaluate_expression(scope, arr.elem_exprs[a]);
+		for (std::size_t i = 0; i < elem_data.size(); ++i)
+		{
+			elem_data[i] = evaluate_expression(scope, arr.elem_exprs[i]);
+			if (pair_range.has_value())
+			{
+				elem_data.erase(elem_data.begin() + i);
+
+				if (pair_range->first < pair_range->second)
+				{
+					for (int j = pair_range->first; j < pair_range->second; ++j, ++i)
+						elem_data.insert(elem_data.begin() + i, Data{ Data::INT, j });
+				}
+				else
+				{
+					for (int j = pair_range->first - 1; j >= pair_range->second; --j, ++i)
+						elem_data.insert(elem_data.begin() + i, Data{ Data::INT, j });
+				}
+
+				pair_range = std::nullopt;
+			}
+		}
 
 		return { Data::ARR, elem_data };
 	}
@@ -975,36 +994,16 @@ Interpreter::Data Interpreter::evaluate_expression(
 					"right hand value of operator currently is type `" + right.to_str() + "`");
 			}
 
-			if (left.type == Data::STR && right.type == Data::STR)
-			{
-				return Data{ Data::STR,
-					std::get<std::string>(left.val) + std::get<std::string>(right.val) };
-			}
-
 			if (left.type == Data::INT && right.type == Data::INT)
-			{
 				pair_range = { std::get<int>(left.val), std::get<int>(right.val) };
-				return Data{ Data::INT,
-					std::get<int>(left.val) + std::get<int>(right.val) };
-			}
 			if (left.type == Data::FLOAT && right.type == Data::FLOAT)
-			{
 				pair_range = { std::get<float>(left.val), std::get<float>(right.val) };
-				return Data{ Data::FLOAT,
-					std::get<float>(left.val) + std::get<float>(right.val) };
-			}
 			if (left.type == Data::FLOAT)
-			{
 				pair_range = { std::get<float>(left.val), std::get<int>(right.val) };
-				return Data{ Data::FLOAT,
-					std::get<float>(left.val) + std::get<int>(right.val) };
-			}
 			if (right.type == Data::FLOAT)
-			{
 				pair_range = { std::get<int>(left.val), std::get<float>(right.val) };
-				return Data{ Data::FLOAT,
-					std::get<int>(left.val) + std::get<float>(right.val) };
-			}
+
+			return Data{};
 		}
 
 		default:

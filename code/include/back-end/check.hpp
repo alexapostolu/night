@@ -10,7 +10,7 @@ struct Type
 		BOOL,
 		INT, FLOAT,
 		STR, ARR,
-		//TYPE
+		RNG
 	} type;
 
 	Type(T _type);
