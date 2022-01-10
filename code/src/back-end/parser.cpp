@@ -1147,8 +1147,7 @@ Parser::type_check_expr(
 			if (night::contains(elem_types, Type::RNG))
 			{
 				assert(elem_types.size() == 1);
-				elems_types.insert(elems_types.end(), Type::INT);
-				elems_types.insert(elems_types.end(), Type::FLOAT);
+				elems_types.insert(elems_types.end(), { Type::INT, Type::FLOAT });
 			}
 			else
 			{
@@ -1483,9 +1482,9 @@ Parser::type_check_expr(
 		}
 		}
 	}
+	default:
+		throw std::runtime_error("Parser::type_check_expr(), missing node");
 	}
-
-	throw std::runtime_error("Parser::type_check_expr(), missing node");
 }
 
 void

@@ -586,12 +586,12 @@ Interpreter::Data Interpreter::evaluate_expression(
 		}
 	}
 	case ExprNode::ARRAY: {
-		auto& arr = std::get<ValueArray>(expr->data);
+		auto const& arr = std::get<ValueArray>(expr->data);
 
 		std::vector<Data> elem_data(arr.elem_exprs.size());
-		for (std::size_t i = 0; i < elem_data.size(); ++i)
+		for (std::size_t i = 0, k = 0; k < arr.elem_exprs.size(); ++i, ++k)
 		{
-			elem_data[i] = evaluate_expression(scope, arr.elem_exprs[i]);
+			elem_data[i] = evaluate_expression(scope, arr.elem_exprs[k]);
 			if (pair_range.has_value())
 			{
 				elem_data.erase(elem_data.begin() + i);
@@ -607,6 +607,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 						elem_data.insert(elem_data.begin() + i, Data{ Data::INT, j });
 				}
 
+				--i;
 				pair_range = std::nullopt;
 			}
 		}
