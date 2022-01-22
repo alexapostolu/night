@@ -74,15 +74,15 @@
 
 			<h2 id="variables">Variables</h2>
 
-			<p class="desc">Night is dynamically typed, meaning you don't have to worry about the types of a variable. Night also supports many common expressions. It's best to assign types to variables when possible, and leave then immutable.</p>
+			<p class="desc">Night is gradually typed, and all variables are immutable by default. Night supports many common expressions, including string concatenation. It's best to assign types to variables when possible, and to leave then immutable.</p>
 
 			<p class="code">
-				<span class="key">let</span> <span class="var">var</span> = 5<br>
-				<span class="var">var</span> = <span class="str">"squid"</span><br><br>
+				<span class="key">let</span> <span class="var">var</span> = 2 + 3<br>
+				<span class="var">var</span> = <span class="str">"squ"</span> + <span class="str">"id"</span><br><br>
 
-				<span class="com"># you can specifiy a specific type for a variable</span><br>
-				<span class="key">let</span> <span class="var">is_god</span>:&nbsp&nbsp&nbsp<span class="key">bool</span>&nbsp&nbsp&nbsp&nbsp&nbsp= <span class="bool">true</span><br>
-				<span class="key">let</span> <span class="var">light_on</span>: <span class="key">bool mut</span> = <span class="bool">true</span><br><br>
+				<span class="com"># 'float' and 'str' are also supported types</span><br>
+				<span class="key">let</span> <span class="var">can_swim</span>: <span class="key">bool</span>&nbsp;&nbsp;&nbsp;&nbsp;= <span class="bool">true</span><br>
+				<span class="key">let</span> <span class="var">distance</span>: <span class="key">int mut</span>&nbsp= 100<br><br>
 				
 			</p>
 
@@ -106,16 +106,16 @@
 
 				<span class="key">if</span> (<span class="var">num</span> > 50)<br>
 				{<br>
-					<span class="func">print</span>(<span class="str">"too big!"</span>)<br>
-					<span class="func">exit()</span><br>
+					&nbsp;&nbsp;&nbsp;&nbsp;<span class="func">print</span>(<span class="str">"too big!"</span>)<br>
+					&nbsp;&nbsp;&nbsp;&nbsp;<span class="func">exit</span>()<br>
 				}<br><br>
 
 				<span class="key">if</span> (<span class="var">num</span> < 0)<br>
-					<span class="func">print</span>(<span class="str">"neg"</span>)<br>
+					&nbsp;&nbsp;&nbsp;&nbsp;<span class="func">print</span>(<span class="str">"neg"</span>)<br>
 				<span class="key">elif</span> (<span class="var">num</span> == 0)<br>
-					<span class="func">print</span>(<span class="str">"zero"</span>)<br>
+					&nbsp;&nbsp;&nbsp;&nbsp;<span class="func">print</span>(<span class="str">"zero"</span>)<br>
 				<span class="key">else</span><br>
-					<span class="func">print</span>(<span class="str">"pos"</span>);<br>
+					&nbsp;&nbsp;&nbsp;&nbsp;<span class="func">print</span>(<span class="str">"pos"</span>);<br>
 			</p>
 
 			<h2 id="functions">Functions</h2>
@@ -125,13 +125,13 @@
 			<p class="code">
 				<span class="key">fn</span> <span class="func">add</span>(<span class="var">x</span>, <span class="var">y</span>)<br>
 				{<br>
-				&nbsp;&nbsp;return <span class="var">x</span> + <span class="var">y</span><br>
+					&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">return</span> <span class="var">x</span> + <span class="var">y</span><br>
 				}<br><br>
 
 				<span class="key">fn</span> <span class="func">sub</span>(<span class="var">x</span>: <span class="key">int</span>, <span class="var">y</span>: <span class="key">int</span> <span class="key">mut</span>)<br>
 				{<br>
-				&nbsp;&nbsp;<span class="var">y</span> += 1<br>
-				&nbsp;&nbsp;<span class="key">return</span> <span class="var">x</span> - <span class="var">y</span><br>
+					&nbsp;&nbsp;&nbsp;&nbsp;<span class="var">y</span> += 1<br>
+					&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">return</span> <span class="var">x</span> - <span class="var">y</span><br>
 				}<br><br>
 
 				<span class="func">print</span>(<span class="func">add</span>(2, 3))<br>
@@ -147,7 +147,7 @@
 			<p class="code">
 				<span class="key">let</span> <span class="var">arr</span> = [ 5, 6, 7 ]<br>
 				<span class="key">for</span> (<span class="var">x</span> : <span class="var">arr</span>)<br>
-				&nbsp&nbsp<span class="func">print</span>(<span class="func">str</span>(<span class="var">x</span>) + <span class="str">" "</span>)
+				&nbsp;&nbsp;&nbsp;&nbsp;<span class="func">print</span>(<span class="func">str</span>(<span class="var">x</span>) + <span class="str">" "</span>)
 			</p>
 
 			<h2 id="arrays">Arrays</h2>
@@ -172,7 +172,6 @@
 				typed system.</p>
 
 			<p class="code">
-				&nbsp
 				<span class="key">let</span> <span class="var">var</span> = <span class="str">'s'</span> <span class="com"># 'var' contains type: 'str'</span><br>
 				<span class="var">var</span> = <span class="bool">true</span>   <span class="com"> # 'var' contains type: 'str', 'bool'</span><br><br>
 
