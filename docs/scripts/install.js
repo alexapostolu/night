@@ -1,43 +1,31 @@
-class Node {
-	constructor() {
-		this.x = random(0, width);
-		this.y = random(0, height);
-		fill(255);
-		circle(this.x, this.y, 2);
+let cells = [];
+
+class Point
+{
+	constructor(x, y)
+	{
+		this.x = x;
+		this.y = y;
 	}
 }
 
-let nodes = []
-
-function setup() {
+function setup()
+{
 	createCanvas(windowWidth - 17, 500);
-	background(0);
-
-	for (let a = 0; a < 100; ++a) {
-		nodes.push(new Node());
-	}
 }
 
-function draw() {
-}
+function draw()
+{
+	for (let i = 0; i < 50; i += 3.5)
+	{
+		for (let j = 0; j < 50; j += 2)
+		{
+			let x = j * (width / 50) + 17;
+			let y = i * (height / 50) + 17;
 
-function mousePressed() {
-	let node1 = nodes[0], node2 = nodes[1], node3 = nodes[2];
-	for (let a = 2; a < nodes.length; ++a) {
-		if (dist(nodes[a].x, nodes[a].y, mouseX, mouseY) < dist(node1.x, node1.y, mouseX, mouseY)) {
-			node3 = node2;
-			node2 = node1;
-			node1 = nodes[a];
-		}
-		else if (dist(nodes[a].x, nodes[a].y, mouseX, mouseY) < dist(node2.x, node2.y, mouseX, mouseY)) {
-			node3 = node2;
-			node2 = nodes[a];
-		}
-		else if (dist(nodes[a].x, nodes[a].y, mouseX, mouseY) < dist(node3.x, node3.y, mouseX, mouseY)) {
-			node3 = nodes[a];
+			strokeWeight(10);
+			stroke(dist(mouseX, mouseY, x, y));
+			point(x, y);
 		}
 	}
-
-	fill(255);
-	triangle(node1.x, node1.y, node2.x, node2.y, node3.x, node3.y);
 }
