@@ -478,10 +478,10 @@ Stmt Parser::parse_stmt_for(ParserScope& scope)
 			night::format_for);
 	}
 
-	if (!night::contains(range_types, Type::STR, Type::ARR)) {
+	if (!night::contains(range_types, Type::STR, Type::ARR, Type::RNG)) {
 		throw NIGHT_COMPILE_ERROR(
 			"range currently contains " + types_as_str(range_types),
-			"for loop range must contain type 'str' or 'arr'");
+			"for loop range must contain type 'str', 'arr', or 'rng'");
 	}
 
 	// parsing statement

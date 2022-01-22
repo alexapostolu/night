@@ -43,9 +43,12 @@ std::string Type::to_str() const
 		return "str";
 	case T::ARR:
 		return "arr";
+	case T::RNG:
+		return "rng";
+	default:
+		throw std::runtime_error("Type::to_str(), missing type to string conversion");
 	}
 
-	throw std::runtime_error("Parser::Type::to_str(), missing type to string conversion");
 }
 
 bool Type::operator==(Type _t) const
