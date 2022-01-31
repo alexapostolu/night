@@ -43,8 +43,7 @@ public:
 	Stmt parse_stmt_if(ParserScope& scope);
 	Stmt parse_stmt_fn(ParserScope& scope, CheckFunctionContainer::iterator &in_func);
 	Stmt parse_stmt_rtn(ParserScope& scope, CheckFunctionContainer::iterator &in_func);
-	Stmt parse_stmt_while(ParserScope& scope);
-	Stmt parse_stmt_for(ParserScope& scope);
+	Stmt parse_stmt_loop(ParserScope& scope);
 
 private:
 	/*

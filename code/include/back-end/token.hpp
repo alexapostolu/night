@@ -28,7 +28,7 @@ enum class TokenType
 
 	IF, ELIF, ELSE,
 
-	WHILE, FOR,
+	LOOP,
 
 	FN,
 	RETURN,

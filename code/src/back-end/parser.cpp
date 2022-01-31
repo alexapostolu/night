@@ -75,10 +75,8 @@ Stmt Parser::parse_statement(ParserScope& scope)
 	case TokenType::IF:
 		return parse_stmt_if(scope);
 
-	case TokenType::WHILE:
-		return parse_stmt_while(scope);
-	case TokenType::FOR:
-		return parse_stmt_for(scope);
+	case TokenType::LOOP:
+		return parse_stmt_loop(scope);
 
 	case TokenType::FN:
 		return parse_stmt_fn(scope, in_func);
@@ -294,7 +292,7 @@ Stmt Parser::parse_stmt_var(ParserScope& scope)
 					TypeContainer& arr = scope.vars[std::get<ValueVar>(var_expr->data).name].types;
 					auto const& arr_t = std::ranges::find(arr, Type::ARR);
 					if (arr_t != arr.end())
-						arr_t->elem_types.insert(arr_t->elem_types.end(), arg_types.back().begin(), arg_types.back().end());
+						night::insert(arr_t->elem_types, arg_types.back());
 				}
 
 				var_expr = op_node;
@@ -397,7 +395,7 @@ Stmt Parser::parse_stmt_if(ParserScope& scope)
 
 	// parsing next conditional statements
 
-	std::vector<Conditional> conditionals{ Conditional{ if_expr, body } };
+	std::vector<StmtIfConditional> conditionals{ StmtIfConditional{ if_expr, body } };
 
 	while (true)
 	{
@@ -411,7 +409,7 @@ Stmt Parser::parse_stmt_if(ParserScope& scope)
 		else
 			break;
 
-		conditionals.push_back(Conditional{
+		conditionals.push_back(StmtIfConditional{
 			condition_expr,
 			parse_body(condition_scope, "conditional", night::format_elif)
 		});
@@ -426,84 +424,144 @@ Stmt Parser::parse_stmt_if(ParserScope& scope)
 	};
 }
 
-Stmt Parser::parse_stmt_while(ParserScope& scope)
+Stmt Parser::parse_stmt_loop(ParserScope& scope)
 {
-	auto const condition_expr = parse_condition(scope, "while loop");
-
-	ParserScope while_scope{ &scope };
-	auto const body = parse_body(while_scope, "while loop", night::format_while);
-
-	return Stmt{
-		lexer.get_loc(), StmtType::WHILE,
-		StmtWhile{ condition_expr, body }
-	};
-}
-
-Stmt Parser::parse_stmt_for(ParserScope& scope)
-{
-	// validating statement
-
 	if (lexer.eat(false).type != TokenType::OPEN_BRACKET) {
 		throw NIGHT_COMPILE_ERROR(
 			"expected opening bracket after 'for' keyword",
-			night::format_for);
-	}
-	if (lexer.eat(false).type != TokenType::VAR) {
-		throw NIGHT_COMPILE_ERROR(
-			"expected iterator after opening bracket",
-			night::format_for);
+			night::format_loop);
 	}
 
-	auto const it_name = lexer.get_curr().data;
+	std::vector<StmtLoopSection> sections;
+	ParserScope loop_scope{ &scope };
 
-	if (lexer.eat(false).type != TokenType::COLON) {
-		throw NIGHT_COMPILE_ERROR(
-			"expected colon after iterator",
-			night::format_for);
+	bool once = false;
+	while (true)
+	{
+		auto tok = lexer.eat(false);
+
+		if (tok.type == TokenType::VAR && (lexer.peek(false).type == TokenType::COLON ||
+			lexer.peek(false).type == TokenType::ASSIGN))
+		{
+			auto const it_name = tok.data;
+
+			std::shared_ptr<ExprNode> expr(nullptr);
+			TypeContainer types;
+			StmtLoopSectionType t;
+
+			tok = lexer.eat(false);
+			if (tok.type == TokenType::COLON)
+			{
+				if (lexer.eat(false).type == TokenType::EOL) {
+					throw NIGHT_COMPILE_ERROR(
+						"expected range after colon",
+						night::format_loop);
+				}
+
+				auto tup = parse_expression(scope,
+					{ Type::STR, Type{ Type::ARR, Parser::all_types }, Type::RNG });
+				expr = std::get<0>(tup);
+				types = std::get<1>(tup);
+
+				if (!night::contains(types, Type::STR, Type::ARR, Type::RNG)) {
+					throw NIGHT_COMPILE_ERROR(
+						"range currently contains " + types_as_str(types),
+						"for loop range must contain type 'str', 'arr', or 'rng'");
+				}
+
+				TypeContainer it_types;
+				if (night::contains(types, Type::STR))
+					it_types.push_back(Type::STR);
+				if (auto it = std::ranges::find(types, Type::ARR); it != types.end())
+					night::insert(it_types, it->elem_types);
+				if (night::contains(types, Type::RNG))
+					night::insert(it_types, { Type::INT, Type::FLOAT });
+
+				types = it_types;
+
+				t = StmtLoopSectionType::RANGE;
+			}
+			else if (tok.type == TokenType::ASSIGN)
+			{
+				if (lexer.eat(false).type == TokenType::EOL) {
+					throw NIGHT_COMPILE_ERROR(
+						"expected expression after assignment operator",
+						night::format_loop);
+				}
+
+				auto tup = parse_expression(scope, all_types);
+				expr = std::get<0>(tup);
+				types = std::get<1>(tup);
+
+				t = StmtLoopSectionType::INIT;
+			}
+			else
+			{
+				throw NIGHT_COMPILE_ERROR(
+					"expected colon or assignment after iterator",
+					night::format_loop);
+			}
+
+			if (auto var = scope.get_var(it_name); var != nullptr)
+			{
+				night::insert(var->second.types, types);
+			}
+			else
+			{
+				if (check_funcs.contains(it_name)) {
+					throw NIGHT_COMPILE_ERROR(
+						"iterator '" + it_name + "' has the same name as a function",
+						"iterator and function names must be unique");
+				}
+				if (check_classes.contains(it_name)) {
+					throw NIGHT_COMPILE_ERROR(
+						"iterator '" + it_name + "' has the same name as a class",
+						"iterator and class names must be unique");
+				}
+
+				loop_scope.vars[it_name] = CheckVariable{ types };
+			}
+
+			sections.push_back(StmtLoopSection{ t, it_name, expr });
+		}
+		else
+		{
+			if (tok.type == TokenType::EOL) {
+				throw NIGHT_COMPILE_ERROR(
+					"expected initialization, range, or condition in loop",
+					night::format_loop);
+			}
+
+			auto [expr, types] = parse_expression(loop_scope, { Type::BOOL });
+			if (!night::contains(types, Type::BOOL)) {
+				throw NIGHT_COMPILE_ERROR(
+					"loop condition must contain bool",
+					night::format_loop);
+			}
+
+			sections.push_back(StmtLoopSection{ StmtLoopSectionType::CONDITIONAL, "", expr });
+		}
+
+		if (lexer.get_curr().type == TokenType::CLOSE_BRACKET)
+		{
+			break;
+		}
+
+		if (lexer.get_curr().type != TokenType::COMMA) {
+			throw NIGHT_COMPILE_ERROR(
+				"expected comma or closing bracket in loop",
+				night::format_loop);
+		}
+
+		once = true;
 	}
-	if (lexer.eat(false).type == TokenType::EOL) {
-		throw NIGHT_COMPILE_ERROR(
-			"expected range after colon",
-			night::format_for);
-	}
 
-	// parsing iterator and range
-
-	auto [range_expr, range_types] = parse_expression(
-		scope, { Type::STR, Type{ Type::ARR, Parser::all_types } });
-
-	if (lexer.get_curr().type != TokenType::CLOSE_BRACKET) {
-		throw NIGHT_COMPILE_ERROR(
-			"expected closing bracket at the end of expression",
-			night::format_for);
-	}
-
-	if (!night::contains(range_types, Type::STR, Type::ARR, Type::RNG)) {
-		throw NIGHT_COMPILE_ERROR(
-			"range currently contains " + types_as_str(range_types),
-			"for loop range must contain type 'str', 'arr', or 'rng'");
-	}
-
-	// parsing statement
-
-	if (lexer.eat(true).type == TokenType::EOL) {
-		throw NIGHT_COMPILE_ERROR(
-			"expected statement(s) after closing bracket",
-			night::format_for);
-	}
-
-	ParserScope for_scope{ &scope };
-
-	for_scope.vars[it_name] = CheckVariable();
-	if (night::contains(range_types, Type::STR))
-		for_scope.vars[it_name].types.push_back(Type::STR);
-	if (auto it = std::ranges::find(range_types, Type::ARR); it != range_types.end())
-		for_scope.vars[it_name].types.insert(for_scope.vars[it_name].types.end(), it->elem_types.begin(), it->elem_types.end());
+	lexer.eat(true);
 
 	return Stmt{
-		lexer.get_loc(), StmtType::FOR,
-		StmtFor{ it_name, range_expr,
-				 parse_body(for_scope, "for loop", night::format_for) }
+		lexer.get_loc(), StmtType::LOOP,
+		StmtLoop{ sections,
+				  parse_body(loop_scope, "loop", night::format_loop) }
 	};
 }
 
@@ -646,9 +704,7 @@ Stmt Parser::parse_stmt_rtn(ParserScope& scope, CheckFunctionContainer::iterator
 
 	auto const [expr, types] = parse_expression(scope);
 
-	in_func->second.rtn_types.insert(
-		in_func->second.rtn_types.end(),
-		types.begin(), types.end());
+	night::insert(in_func->second.rtn_types, types);
 
 	lexer.eat(true);
 
@@ -739,7 +795,7 @@ std::shared_ptr<ExprNode> Parser::parse_condition(
 	if (lexer.eat(true).type == TokenType::_EOF) {
 		throw NIGHT_COMPILE_ERROR(
 			"expected statement(s) after closing bracket",
-			night::format_while);
+			night::format_loop);
 	}
 
 	return condition_expr;
@@ -1143,17 +1199,11 @@ Parser::type_check_expr(
 		TypeContainer elems_types;
 		for (auto const& elem_expr : val.elem_exprs)
 		{
-			auto elem_types = type_check_expr(scope, elem_expr);
-			if (night::contains(elem_types, Type::RNG))
-			{
-				assert(elem_types.size() == 1);
-				elems_types.insert(elems_types.end(), { Type::INT, Type::FLOAT });
-			}
+			auto const types = type_check_expr(scope, elem_expr);
+			if (night::contains(types, Type::RNG))
+				night::insert(elems_types, { Type::INT, Type::FLOAT });
 			else
-			{
-				elems_types.insert(elems_types.end(),
-					elem_types.begin(), elem_types.end());
-			}
+				night::insert(elems_types, types );
 		}
 
 		return { Type(Type::ARR, elems_types) };
@@ -1274,10 +1324,11 @@ Parser::type_check_expr(
 
 			TypeContainer rtn_types;
 			if (night::contains(types, Type::STR))
-				rtn_types.insert(rtn_types.end(), Type::STR);
+				rtn_types.push_back(Type::STR);
+
 			if (auto const pos = std::ranges::find(types, Type::ARR); pos != types.end())
 			{
-				rtn_types.insert(rtn_types.end(), pos->elem_types.begin(), pos->elem_types.end());
+				night::insert(rtn_types, pos->elem_types);
 				return rtn_types;
 			}
 
@@ -1437,12 +1488,11 @@ Parser::type_check_expr(
 				// find required types
 
 				if (check_class.first == "array")
-					send_types.insert(send_types.end(), Type::ARR);
+					send_types.push_back(Type::ARR);
 				else if (check_class.first == "string")
-					send_types.insert(send_types.end(), Type::STR);
+					send_types.push_back(Type::STR);
 
-				rtn_types.insert(rtn_types.end(),
-					it->second.rtn_types.begin(), it->second.rtn_types.end());
+				night::insert(rtn_types, it->second.rtn_types);
 			}
 
 			if (send_types.empty()) {

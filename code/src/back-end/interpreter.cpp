@@ -127,13 +127,17 @@ bool Interpreter::Data::compare_array(Data const& data1, Data const& data2)
 
 std::optional<Interpreter::Data> Interpreter::interpret_statements(
 	InterpreterScope& upper_scope, std::vector<Stmt> const& stmts,
-	NightVariableContainer const& add_vars)
+	NightVariableContainer* add_vars)
 {
-	InterpreterScope scope{ &upper_scope, add_vars };
+	InterpreterScope scope{ &upper_scope };
+	scope.vars = add_vars == nullptr ? NightVariableContainer{} : *add_vars;
 
-	for (auto& stmt : stmts)
+	for (auto const& stmt : stmts)
 	{
-		std::optional<Data> rtn_val = interpret_statement(scope, stmt);
+		auto const rtn_val = interpret_statement(scope, stmt);
+		if (add_vars != nullptr)
+			*add_vars = scope.vars;
+
 		if (rtn_val.has_value())
 			return rtn_val;
 	}
@@ -323,7 +327,7 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 			}
 		}
 
-		auto rtn_val = interpret_statements(scope, night_func->second.body, vars);
+		auto rtn_val = interpret_statements(scope, night_func->second.body, &vars);
 		recursion_calls = { {}, -1 };
 		return rtn_val;
 	}
@@ -334,97 +338,83 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 			? std::optional<Data>{ evaluate_expression(scope, stmt_rtn.expr) }
 			: std::optional<Data>{ std::nullopt };
 	}
-	case StmtType::WHILE: {
-		StmtWhile const& stmt_while = std::get<StmtWhile>(stmt.data);
-
-		while (true)
+	case StmtType::LOOP: {
+		auto const& stmt_loop = std::get<StmtLoop>(stmt.data);
+		
+		InterpreterScope loop_scope{ &scope };
+		for (auto const& section : stmt_loop.sections)
 		{
-			// evaluate condition
-			Data const condition =
-				evaluate_expression(scope, stmt_while.condition);
+			if (section.type == StmtLoopSectionType::INIT)
+			{
+				NightVariable const night_var{ evaluate_expression(scope, section.expr) };
+				if (scope.get_var(section.it_name) != nullptr)
+					scope.vars[section.it_name] = night_var;
+				else
+					loop_scope.vars[section.it_name] = night_var;
+			}
+		}
 
-			if (condition.type != Data::BOOL) {
-				throw NIGHT_RUNTIME_ERROR(
-					"while loop condition must be type 'bool'",
-					"condition is currently type '" + condition.to_str() + "'");
+		for (int i = 0; true; ++i)
+		{
+			for (auto const& section : stmt_loop.sections)
+			{
+				if (section.type == StmtLoopSectionType::CONDITIONAL)
+				{
+					auto const condition = evaluate_expression(loop_scope, section.expr);
+					if (condition.type != Data::BOOL) {
+						throw NIGHT_RUNTIME_ERROR(
+							"loop condition must be type 'bool'",
+							"condition is currently type '" + condition.to_str() + "'");
+					}
+
+					if (!std::get<bool>(condition.val))
+						goto STOP_LOOP;
+				}
+				else if (section.type == StmtLoopSectionType::RANGE)
+				{
+					auto const range = evaluate_expression(loop_scope, section.expr);
+					if (range.type == Data::RNG)
+					{
+						if (pair_range->first + i == pair_range->second)
+							goto STOP_LOOP;
+
+						loop_scope.vars[section.it_name] = { Data{ Data::INT, pair_range->first + i } };
+					}
+					else if (range.type == Data::STR)
+					{
+						auto& str = std::get<std::string>(range.val);
+
+						if (i == str.length())
+							goto STOP_LOOP;
+
+						loop_scope.vars[section.it_name] = { Data{ Data::STR, std::string(1, str[i]) } };
+					}
+					else if (range.type == Data::ARR)
+					{
+						auto& arr = std::get<std::vector<Data> >(range.val);
+
+						if (i == arr.size())
+							goto STOP_LOOP;
+
+						loop_scope.vars[section.it_name] = { arr[i] };
+					}
+					else
+					{
+						throw NIGHT_RUNTIME_ERROR(
+							"loop range must be type 'str', 'arr', or 'rng'",
+							"range is currently type '" + range.to_str() + "'");
+					}
+				}
 			}
 
-			// break if condition is false
-			if (!std::get<bool>(condition.val))
-				break;
-
-			auto rtn_val = interpret_statements(scope, stmt_while.body);
+			auto rtn_val = interpret_statements(scope, stmt_loop.body, &loop_scope.vars);
 
 			// if body returns a value, stop the loop
 			if (rtn_val.has_value())
 				return rtn_val;
 		}
 
-		return std::nullopt;
-	}
-	case StmtType::FOR: {
-		auto& stmt_for = std::get<StmtFor>(stmt.data);
-
-		Data const range = evaluate_expression(scope, stmt_for.range);
-
-		if (pair_range.has_value())
-		{
-			for (int a = pair_range->first; a < pair_range->second; ++a)
-			{
-				// create iterator variable
-				NightVariableContainer it_var;
-				it_var[stmt_for.it_name] = { Data{ Data::INT, a } };
-
-				auto rtn_val = interpret_statements(scope, stmt_for.body, it_var);
-
-				// if body returns a value, stop the loop
-				if (rtn_val.has_value())
-					return rtn_val;
-			}
-
-			pair_range = std::nullopt;
-		}
-		else if (range.type == Data::STR)
-		{
-			auto& str_arr = std::get<std::string>(range.val);
-
-			for (char range_value : str_arr)
-			{
-				// create iterator variable
-				NightVariableContainer it_var;
-				it_var[stmt_for.it_name] = { Data{ Data::STR, std::string(1, range_value) } };
-
-				auto rtn_val = interpret_statements(scope, stmt_for.body, it_var);
-
-				// if body returns a value, stop the loop
-				if (rtn_val.has_value())
-					return rtn_val;
-			}
-		}
-		else if (range.type == Data::ARR)
-		{
-			auto& vec_arr = std::get<std::vector<Data> >(range.val);
-
-			for (Data const& range_value : vec_arr)
-			{
-				// create iterator variable
-				NightVariableContainer it_var;
-				it_var[stmt_for.it_name] = { range_value };
-
-				auto rtn_val = interpret_statements(scope, stmt_for.body, it_var);
-
-				// if body returns a value, stop the loop
-				if (rtn_val.has_value())
-					return rtn_val;
-			}
-		}
-		else
-		{
-			throw NIGHT_RUNTIME_ERROR(
-				"for loop range must be type 'range', 'str', or 'arr'",
-				"range is currently type '" + range.to_str() + "'");
-		}
-
+		STOP_LOOP:;
 		return std::nullopt;
 	}
 	case StmtType::METHOD: {
@@ -592,7 +582,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 		for (std::size_t i = 0, k = 0; k < arr.elem_exprs.size(); ++i, ++k)
 		{
 			elem_data[i] = evaluate_expression(scope, arr.elem_exprs[k]);
-			if (pair_range.has_value())
+			if (elem_data[i].type == Data::RNG)
 			{
 				elem_data.erase(elem_data.begin() + i);
 
@@ -608,7 +598,6 @@ Interpreter::Data Interpreter::evaluate_expression(
 				}
 
 				--i;
-				pair_range = std::nullopt;
 			}
 		}
 
@@ -728,7 +717,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 		auto vars = interpret_arguments(scope,
 			night_func->second.params, val.param_exprs);
 
-		auto rtn_val = interpret_statements(scope, night_func->second.body, vars);
+		auto rtn_val = interpret_statements(scope, night_func->second.body, &vars);
 		if (!rtn_val.has_value()) {
 			throw NIGHT_RUNTIME_ERROR(
 				"function call `" + val.name + "` does not return a value in expression",
@@ -997,14 +986,14 @@ Interpreter::Data Interpreter::evaluate_expression(
 
 			if (left.type == Data::INT && right.type == Data::INT)
 				pair_range = { std::get<int>(left.val), std::get<int>(right.val) };
-			if (left.type == Data::FLOAT && right.type == Data::FLOAT)
-				pair_range = { std::get<float>(left.val), std::get<float>(right.val) };
-			if (left.type == Data::FLOAT)
-				pair_range = { std::get<float>(left.val), std::get<int>(right.val) };
-			if (right.type == Data::FLOAT)
-				pair_range = { std::get<int>(left.val), std::get<float>(right.val) };
+			//if (left.type == Data::FLOAT && right.type == Data::FLOAT)
+				//pair_range = { std::get<float>(left.val), std::get<float>(right.val) };
+			//if (left.type == Data::FLOAT)
+				//pair_range = { std::get<float>(left.val), std::get<int>(right.val) };
+			//if (right.type == Data::FLOAT)
+				//pair_range = { std::get<int>(left.val), std::get<float>(right.val) };
 
-			return Data{};
+			return Data{ Data::RNG };
 		}
 
 		default:

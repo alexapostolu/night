@@ -3,6 +3,7 @@
 #include "token.hpp"
 
 #include <fstream>
+#include <optional>
 #include <string>
 #include <vector>
 #include <map>
@@ -16,6 +17,7 @@ public:
 
 public:
 	Token eat(bool go_to_next_line);
+	Token peek(bool go_to_next_line);
 
 	Token get_curr() const;
 	Location get_loc() const;

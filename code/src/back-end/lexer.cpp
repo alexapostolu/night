@@ -150,7 +150,24 @@ Token Lexer::eat(bool go_to_next_line)
 	throw night::error(
 		__FILE__, __LINE__, night::error_compile, loc,
 		std::string("unknown symbol '") + code_line[i] + "'",
-		code_line[i] == '"' ? "did you mean to use double quotations `\"`" : "");
+		code_line[i] == '\'' ? "did you mean to use double quotations `\"`" : "");
+}
+
+Token Lexer::peek(bool go_to_next_line)
+{
+	auto const tmp_loc = loc;
+	auto const tmp_code_ln = code_line;
+	auto const tmp_i = i;
+	auto const tmp_curr = curr;
+
+	auto const next = eat(go_to_next_line);
+
+	loc = tmp_loc;
+	code_line = tmp_code_ln;
+	i = tmp_i;
+	curr = tmp_curr;
+
+	return next;
 }
 
 Token Lexer::get_curr() const
@@ -247,8 +264,7 @@ std::unordered_map<std::string, TokenType> const Lexer::keywords{
 	{ "if", TokenType::IF },
 	{ "elif", TokenType::ELIF },
 	{ "else", TokenType::ELSE },
-	{ "while", TokenType::WHILE },
-	{ "for", TokenType::FOR },
+	{ "loop", TokenType::LOOP },
 	{ "fn", TokenType::FN },
 	{ "return", TokenType::RETURN }
 };

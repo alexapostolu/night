@@ -17,10 +17,11 @@ private:
 	struct Data
 	{
 		enum T {
-			//in_CHAR, // for internal use only - makes type checking string operations easier :)
+			//in_CHAR,
 			BOOL,
 			INT, FLOAT, // DOUBLE, INT4, INT16, INT32
-			STR, ARR
+			STR, ARR,
+			RNG
 		} type;
 
 		std::variant<
@@ -53,7 +54,7 @@ public:
 	std::optional<Data> interpret_statements(
 		InterpreterScope& upper_scope,
 		std::vector<Stmt> const& stmts,
-		NightVariableContainer const& vars = {}
+		NightVariableContainer* vars = nullptr // if the caller wants the extra variables to be modified like in loop stmts
 	);
 
 	std::optional<Data> interpret_statement(

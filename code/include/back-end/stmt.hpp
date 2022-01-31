@@ -129,7 +129,7 @@ struct StmtMethod
 	std::shared_ptr<ExprNode> assign_expr;
 };
 
-struct Conditional
+struct StmtIfConditional
 {
 	std::shared_ptr<ExprNode> condition;
 	std::vector<Stmt> body;
@@ -137,7 +137,7 @@ struct Conditional
 
 struct StmtIf
 {
-	std::vector<Conditional> chains;
+	std::vector<StmtIfConditional> chains;
 };
 
 struct StmtFn
@@ -158,17 +158,22 @@ struct StmtReturn
 	std::shared_ptr<ExprNode> expr;
 };
 
-struct StmtWhile
+enum class StmtLoopSectionType
 {
-	std::shared_ptr<ExprNode> condition;
-	std::vector<Stmt> body;
+	INIT, RANGE, CONDITIONAL
 };
 
-struct StmtFor
+struct StmtLoopSection
 {
-	std::string const it_name;
-	std::shared_ptr<ExprNode> range;
+	StmtLoopSectionType type;
 
+	std::string it_name;
+	std::shared_ptr<ExprNode> expr;
+};
+
+struct StmtLoop
+{
+	std::vector<StmtLoopSection> sections;
 	std::vector<Stmt> body;
 };
 
@@ -181,14 +186,13 @@ enum class StmtType
 	FN,
 	CALL,
 	RETURN,
-	WHILE,
-	FOR
+	LOOP
 };
 
 struct Stmt
 {
-	Location const loc;
-	StmtType const type;
+	Location loc;
+	StmtType type;
 
 	std::variant<
 		StmtInit,
@@ -198,8 +202,7 @@ struct Stmt
 		StmtFn,
 		StmtCall,
 		StmtReturn,
-		StmtWhile,
-		StmtFor
+		StmtLoop
 	> data;
 };
 
