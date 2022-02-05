@@ -116,17 +116,17 @@ Stmt Parser::parse_stmt_let(ParserScope& scope)
 
 	if (scope.get_var(var_name) != nullptr) {
 		throw NIGHT_COMPILE_ERROR(
-			"variable '" + var_name + "' has already been defined",
+			"variable `" + var_name + "` has already been defined",
 			"variables can only be defined once, regardless of their scope");
 	}
 	if (check_funcs.contains(var_name)) {
 		throw NIGHT_COMPILE_ERROR(
-			"variable '" + var_name + "' has the same name as a function",
+			"variable `" + var_name + "` has the same name as a function",
 			"variable and function names must be unique");
 	}
 	if (check_classes.contains(var_name)) {
 		throw NIGHT_COMPILE_ERROR(
-			"variable '" + var_name + "' has the same name as a class",
+			"variable `" + var_name + "` has the same name as a class",
 			"variable and class names must be unique");
 	}
 
@@ -142,7 +142,7 @@ Stmt Parser::parse_stmt_let(ParserScope& scope)
 	}
 	if (lexer.get_curr().type != TokenType::EOL) {
 		throw NIGHT_COMPILE_ERROR(
-			"unexpected token '" + lexer.get_curr().data + "' after expression",
+			"unexpected token `" + lexer.get_curr().data + "` after expression",
 			night::format_init);
 	}
 
@@ -440,69 +440,85 @@ Stmt Parser::parse_stmt_loop(ParserScope& scope)
 	{
 		auto tok = lexer.eat(false);
 
-		if (tok.type == TokenType::VAR && (lexer.peek(false).type == TokenType::COLON ||
-			lexer.peek(false).type == TokenType::ASSIGN))
+		if (tok.type == TokenType::LET)
 		{
-			auto const it_name = tok.data;
-
-			std::shared_ptr<ExprNode> expr(nullptr);
-			TypeContainer types;
-			StmtLoopSectionType t;
-
-			tok = lexer.eat(false);
-			if (tok.type == TokenType::COLON)
-			{
-				if (lexer.eat(false).type == TokenType::EOL) {
-					throw NIGHT_COMPILE_ERROR(
-						"expected range after colon",
-						night::format_loop);
-				}
-
-				auto tup = parse_expression(scope,
-					{ Type::STR, Type{ Type::ARR, Parser::all_types }, Type::RNG });
-				expr = std::get<0>(tup);
-				types = std::get<1>(tup);
-
-				if (!night::contains(types, Type::STR, Type::ARR, Type::RNG)) {
-					throw NIGHT_COMPILE_ERROR(
-						"range currently contains " + types_as_str(types),
-						"for loop range must contain type 'str', 'arr', or 'rng'");
-				}
-
-				TypeContainer it_types;
-				if (night::contains(types, Type::STR))
-					it_types.push_back(Type::STR);
-				if (auto it = std::ranges::find(types, Type::ARR); it != types.end())
-					night::insert(it_types, it->elem_types);
-				if (night::contains(types, Type::RNG))
-					night::insert(it_types, { Type::INT, Type::FLOAT });
-
-				types = it_types;
-
-				t = StmtLoopSectionType::RANGE;
-			}
-			else if (tok.type == TokenType::ASSIGN)
-			{
-				if (lexer.eat(false).type == TokenType::EOL) {
-					throw NIGHT_COMPILE_ERROR(
-						"expected expression after assignment operator",
-						night::format_loop);
-				}
-
-				auto tup = parse_expression(scope, all_types);
-				expr = std::get<0>(tup);
-				types = std::get<1>(tup);
-
-				t = StmtLoopSectionType::INIT;
-			}
-			else
-			{
+			if (tok = lexer.eat(false); tok.type != TokenType::VAR) {
 				throw NIGHT_COMPILE_ERROR(
-					"expected colon or assignment after iterator",
+					"expected variable name after `let` keyword",
+					night::format_init);
+			}
+			
+			auto const var_name = tok.data;
+			
+			if (lexer.eat(false).type != TokenType::ASSIGN) {
+				throw NIGHT_COMPILE_ERROR(
+					"expected assignment after variable name",
+					night::format_init);
+			}
+			if (lexer.eat(false).type == TokenType::EOL) {
+				throw NIGHT_COMPILE_ERROR(
+					"expected expression after assignment operator",
 					night::format_loop);
 			}
 
-			if (auto var = scope.get_var(it_name); var != nullptr)
+			auto [expr, types] = parse_expression(loop_scope, all_types);
+			if (expr == nullptr) {
+				throw NIGHT_COMPILE_ERROR(
+					"expected expression after assignment operator",
+					night::format_init);
+			}
+			
+			if (loop_scope.get_var(var_name) != nullptr) {
+				throw NIGHT_COMPILE_ERROR(
+					"variable `" + var_name + "` has already been defined",
+					"variables can only be defined once, regardless of their scope");
+			}
+			if (check_funcs.contains(var_name)) {
+				throw NIGHT_COMPILE_ERROR(
+					"variable `" + var_name + "` has the same name as a function",
+					"variable and function names must be unique");
+			}
+			if (check_classes.contains(var_name)) {
+				throw NIGHT_COMPILE_ERROR(
+					"variable `" + var_name + "` has the same name as a class",
+					"variable and class names must be unique");
+			}
+
+			loop_scope.vars[var_name] = CheckVariable{ types };
+
+			sections.push_back(StmtLoopSection{ StmtLoopSectionType::INIT, var_name, expr });
+		}
+		else if (tok.type == TokenType::VAR && lexer.peek(false).type == TokenType::COLON)
+		{
+			auto const it_name = tok.data;
+
+			lexer.eat(false);
+			if (lexer.eat(false).type == TokenType::EOL) {
+				throw NIGHT_COMPILE_ERROR(
+					"expected range after colon",
+					night::format_loop);
+			}
+
+			auto [expr, types] = parse_expression(loop_scope,
+				{ Type::STR, Type{ Type::ARR, Parser::all_types }, Type::RNG });
+
+			if (!night::contains(types, Type::STR, Type::ARR, Type::RNG)) {
+				throw NIGHT_COMPILE_ERROR(
+					"range currently contains " + types_as_str(types),
+					"for loop range must contain type 'str', 'arr', or 'rng'");
+			}
+
+			TypeContainer it_types;
+			if (night::contains(types, Type::STR))
+				it_types.push_back(Type::STR);
+			if (auto it = std::ranges::find(types, Type::ARR); it != types.end())
+				night::insert(it_types, it->elem_types);
+			if (night::contains(types, Type::RNG))
+				night::insert(it_types, { Type::INT, Type::FLOAT });
+
+			types = it_types;
+
+			if (auto var = loop_scope.get_var(it_name); var != nullptr)
 			{
 				night::insert(var->second.types, types);
 			}
@@ -522,7 +538,7 @@ Stmt Parser::parse_stmt_loop(ParserScope& scope)
 				loop_scope.vars[it_name] = CheckVariable{ types };
 			}
 
-			sections.push_back(StmtLoopSection{ t, it_name, expr });
+			sections.push_back(StmtLoopSection{ StmtLoopSectionType::RANGE, it_name, expr });
 		}
 		else
 		{

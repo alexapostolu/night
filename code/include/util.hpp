@@ -31,7 +31,7 @@ template<
 template<typename Container>
 void insert(Container& container1, Container const& container2)
 {
-	assert(!container2.empty());
+	//assert(!container2.empty());
 	container1.insert(container1.end(), container2.begin(), container2.end());
 }
 
