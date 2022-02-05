@@ -74,9 +74,3 @@ Linux:
 ```
 
 And you're done!
-
----
-
-## Contributing
-
-Contributions are always welcome! Reporting bugs you find, refactoring spaghetti, and writing tutorials on the website are just a few of the ways you can contribute.
