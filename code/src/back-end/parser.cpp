@@ -388,7 +388,7 @@ Stmt Parser::parse_stmt_if(ParserScope& scope)
 {
 	// parsing if statement
 
-	auto const if_expr = parse_condition(scope, "if statement");
+	auto const if_expr = parse_condition(scope, night::format_if);
 
 	Scope if_scope{ scope };
 	auto const body = parse_body(if_scope, "if conditional", night::format_if);
@@ -403,7 +403,7 @@ Stmt Parser::parse_stmt_if(ParserScope& scope)
 		std::shared_ptr<ExprNode> condition_expr(nullptr);
 
 		if (lexer.get_curr().type == TokenType::ELIF)
-			condition_expr = parse_condition(scope, "else if statement");
+			condition_expr = parse_condition(scope, night::format_elif);
 		else if (lexer.get_curr().type == TokenType::ELSE)
 			lexer.eat(true);
 		else
@@ -440,21 +440,11 @@ Stmt Parser::parse_stmt_loop(ParserScope& scope)
 	{
 		auto tok = lexer.eat(false);
 
-		if (tok.type == TokenType::LET)
+		if (tok.type == TokenType::VAR && lexer.peek(false).type == TokenType::ASSIGN)
 		{
-			if (tok = lexer.eat(false); tok.type != TokenType::VAR) {
-				throw NIGHT_COMPILE_ERROR(
-					"expected variable name after `let` keyword",
-					night::format_init);
-			}
-			
 			auto const var_name = tok.data;
 			
-			if (lexer.eat(false).type != TokenType::ASSIGN) {
-				throw NIGHT_COMPILE_ERROR(
-					"expected assignment after variable name",
-					night::format_init);
-			}
+			lexer.eat(false);
 			if (lexer.eat(false).type == TokenType::EOL) {
 				throw NIGHT_COMPILE_ERROR(
 					"expected expression after assignment operator",
@@ -793,17 +783,21 @@ std::shared_ptr<ExprNode> Parser::parse_condition(
 
 	// parsing condition
 
-	auto [condition_expr, condition_types] =
-		parse_expression(scope, { Type::BOOL });
+	auto [expr, types] = parse_expression(scope, { Type::BOOL });
+	if (expr == nullptr) {
+		throw NIGHT_COMPILE_ERROR(
+			"expected expression after opening bracket",
+			stmt_format);
+	}
 
 	if (lexer.get_curr().type != TokenType::CLOSE_BRACKET) {
 		throw NIGHT_COMPILE_ERROR(
 			"expected closing bracket after " + loop_name + " condition",
 			stmt_format);
 	}
-	if (!night::contains(condition_types, Type::BOOL)) {
+	if (!night::contains(types, Type::BOOL)) {
 		throw NIGHT_COMPILE_ERROR(
-			loop_name + " condition currently contains " + types_as_str(condition_types),
+			loop_name + " condition currently contains " + types_as_str(types),
 			"condition must contain type 'bool'");
 	}
 
@@ -814,7 +808,7 @@ std::shared_ptr<ExprNode> Parser::parse_condition(
 			night::format_loop);
 	}
 
-	return condition_expr;
+	return expr;
 }
 
 std::pair<ExprContainer, std::vector<TypeContainer> >
