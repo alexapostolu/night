@@ -877,12 +877,51 @@ Interpreter::Data Interpreter::evaluate_expression(
 			return eval_expr_binary_num(scope, binary_op,
 				[]<typename T>(T x, T y) { return x <= y; }, false);
 
-		case BinaryOPNode::OR:
-			return eval_expr_binary_bool(scope, binary_op,
-				[](bool left, bool right) { return left || right; });
-		case BinaryOPNode::AND:
-			return eval_expr_binary_bool(scope, binary_op,
-				[](bool left, bool right) { return left && right; });
+		case BinaryOPNode::OR: {
+			auto const& loc = binary_op.loc;
+
+			auto const left = evaluate_expression(scope, binary_op.left);
+			if (left.type != Data::BOOL) {
+				throw NIGHT_RUNTIME_ERROR(
+					"left hand value of operator '" + binary_op.data + "' has type '" + left.to_str() + "'",
+					"operator can only be used on type 'bool'");
+			}
+
+			if (std::get<bool>(left.val))
+				return Data{ Data::BOOL, true };
+
+			auto const right = evaluate_expression(scope, binary_op.right);
+			if (right.type != Data::BOOL) {
+				throw NIGHT_RUNTIME_ERROR(
+					"right hand value of operator '" + binary_op.data + "' has type '" + right.to_str() + "'",
+					"operator can only be used on type 'bool'");
+			}
+
+			return Data{ Data::BOOL, std::get<bool>(right.val) };
+
+		}
+		case BinaryOPNode::AND: {
+			auto const& loc = binary_op.loc;
+
+			auto const left = evaluate_expression(scope, binary_op.left);
+			if (left.type != Data::BOOL) {
+				throw NIGHT_RUNTIME_ERROR(
+					"left hand value of operator '" + binary_op.data + "' has type '" + left.to_str() + "'",
+					"operator can only be used on type 'bool'");
+			}
+
+			if (!std::get<bool>(left.val))
+				return Data{ Data::BOOL, false };
+
+			auto const right = evaluate_expression(scope, binary_op.right);
+			if (right.type != Data::BOOL) {
+				throw NIGHT_RUNTIME_ERROR(
+					"right hand value of operator '" + binary_op.data + "' has type '" + right.to_str() + "'",
+					"operator can only be used on type 'bool'");
+			}
+
+			return Data{ Data::BOOL, std::get<bool>(right.val) };
+		}
 
 		case BinaryOPNode::EQUAL:
 			return { Data::BOOL, eval_expr_binary_comp(scope, binary_op) };
