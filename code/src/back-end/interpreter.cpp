@@ -319,7 +319,6 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 		}
 		else if (stmt_call.name == recursion_calls.first->first)
 		{
-			std::cout << recursion_calls.second << ' ';
 			recursion_calls.second++;
 			if (recursion_calls.second > recursion_limit) {
 				throw NIGHT_RUNTIME_ERROR(
@@ -330,14 +329,14 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 
 		auto rtn_val = interpret_statements(scope, night_func->second.body, &vars);
 		recursion_calls = { {}, -1 };
-		return rtn_val;
+		return std::nullopt;
 	}
 	case StmtType::RETURN: {
 		auto& stmt_rtn = std::get<StmtReturn>(stmt.data);
 
 		return stmt_rtn.expr != nullptr
 			? std::optional<Data>{ evaluate_expression(scope, stmt_rtn.expr) }
-			: std::optional<Data>{ std::nullopt };
+			: std::optional<Data>{ Data{} };
 	}
 	case StmtType::LOOP: {
 		auto const& stmt_loop = std::get<StmtLoop>(stmt.data);
