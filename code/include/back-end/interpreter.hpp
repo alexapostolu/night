@@ -57,12 +57,25 @@ public:
 		NightVariableContainer* vars = nullptr // if the caller wants the extra variables to be modified like in loop stmts
 	);
 
+	/* returns
+	     `std::nullopt`				   if the statement isn't a return statement
+	     `Data{ <return expression> }` if the statement is a return statement
+	     `Data{}`					   if the statement is an empty return statement
+	*/
 	std::optional<Data> interpret_statement(
 		InterpreterScope& scope,
 		Stmt const& stmt
 	);
 
 private:
+	/* returns
+	     `std::nullopt`	if the subscript points to a character of a string
+	     `{ <data of subscript>, <assigned data> }` other
+
+		note
+		  if subscript points to a charcter in a string, it will be handeled by
+		    this function, not the caller
+	*/
 	std::optional<std::pair<Data*, Data>> interpret_subscript_chain(
 		InterpreterScope& scope,
 		StmtAssign const& stmt_assign,

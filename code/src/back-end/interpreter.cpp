@@ -135,6 +135,9 @@ std::optional<Interpreter::Data> Interpreter::interpret_statements(
 	for (auto const& stmt : stmts)
 	{
 		auto const rtn_val = interpret_statement(scope, stmt);
+
+		// any new variables created in `interpret_statement` gets added to
+		// `add_vars` to be used by the caller
 		if (add_vars != nullptr)
 			*add_vars = scope.vars;
 
@@ -164,11 +167,7 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 	case StmtType::ASSIGN: {
 		auto const& stmt_assign = std::get<StmtAssign>(stmt.data);
 
-		// get data produced by subscript chain
 		auto chain = interpret_subscript_chain(scope, stmt_assign, loc);
-
-		// 'interpret_subscript_chain' already handles assignments involving
-		// string characters, and if that's the case no value will be returned
 		if (!chain.has_value())
 			return std::nullopt;
 
@@ -313,6 +312,7 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 		auto vars = interpret_arguments(scope,
 			night_func->second.params, stmt_call.args);
 
+		// count number of recursive calls
 		if (recursion_calls.second == -1)
 		{
 			recursion_calls = { night_funcs.find(stmt_call.name), 1 };
@@ -329,6 +329,7 @@ std::optional<Interpreter::Data> Interpreter::interpret_statement(
 
 		auto rtn_val = interpret_statements(scope, night_func->second.body, &vars);
 		recursion_calls = { {}, -1 };
+		
 		return std::nullopt;
 	}
 	case StmtType::RETURN: {
@@ -464,7 +465,7 @@ std::optional<std::pair<Interpreter::Data*, Interpreter::Data> > Interpreter::in
 		// special case for strings
 		if (curr_data->type == Data::STR)
 		{
-			std::string& var_str = std::get<std::string>(curr_data->val);
+			auto& var_str = std::get<std::string>(curr_data->val);
 
 			if (index >= (int)var_str.length()) {
 				throw NIGHT_RUNTIME_ERROR(
@@ -476,7 +477,7 @@ std::optional<std::pair<Interpreter::Data*, Interpreter::Data> > Interpreter::in
 					"single characters in string can only be used with assignment operator", "");
 			}
 
-			std::string const& assign_str = std::get<std::string>(assign_data.val);
+			auto const& assign_str = std::get<std::string>(assign_data.val);
 
 			if (assign_str.length() != 1) {
 				throw NIGHT_RUNTIME_ERROR(
@@ -495,7 +496,7 @@ std::optional<std::pair<Interpreter::Data*, Interpreter::Data> > Interpreter::in
 				"operator is currently used on type '" + curr_data->to_str() + "'");
 		}
 
-		std::vector<Data>& var_arr = std::get<std::vector<Data> >(curr_data->val);
+		auto& var_arr = std::get<std::vector<Data> >(curr_data->val);
 
 		// check is index is out of bounds
 		if (index >= (int)var_arr.size()) {
