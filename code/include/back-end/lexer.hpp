@@ -3,32 +3,30 @@
 #include "token.hpp"
 
 #include <fstream>
-#include <optional>
 #include <string>
 #include <vector>
-#include <map>
 #include <unordered_map>
 
 // one lexer for each file
 class Lexer
 {
 public:
-	Lexer(std::string_view file_name, bool main_file);
+	Lexer(std::string_view file_name, const bool main_file);
 
 public:
-	Token eat(bool go_to_next_line);
-	Token peek(bool go_to_next_line);
+	Token eat(const bool go_to_next_line);
+	Token peek(const bool go_to_next_line);
 
-	Token get_curr() const;
-	Location get_loc() const;
+	Token get_curr() const noexcept;
+	Location get_loc() const noexcept;
 	
 private:
-	bool next_token(bool go_to_next_line);
-	bool next_line();
+	bool next_token(const bool go_to_next_line) noexcept;
+	bool next_line() noexcept;
 
 	// when a string token has been scanned, this function is called to replace
 	// escape strings with escape characters
-	void replace_escape_chars(std::string& token) const;
+	void replace_escape_chars(std::string& token) const noexcept;
 
 private:
 	std::fstream code_file;

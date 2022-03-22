@@ -2,15 +2,13 @@
 #include "back-end/token.hpp"
 #include "error.hpp"
 
-#include <iostream>
 #include <cctype>
 #include <string>
 #include <vector>
-#include <map>
 #include <unordered_map>
 
-Lexer::Lexer(std::string_view file_name, bool main_file)
-	: code_file(file_name.data()), loc({ file_name.data(), 1 }), i(0)
+Lexer::Lexer(std::string_view file_name, const bool main_file [[maybe_unused]])
+	: code_file(file_name.data()), loc({ file_name.data(), 1, 0 }), i(0)
 {
 	if (!code_file.is_open())
 		throw NIGHT_PREPROCESS_ERROR("file '" + loc.file + "' could not be opened");
@@ -18,13 +16,10 @@ Lexer::Lexer(std::string_view file_name, bool main_file)
 	getline(code_file, code_line);
 }
 
-Token Lexer::eat(bool go_to_next_line)
+Token Lexer::eat(const bool go_to_next_line)
 {
 	if (!next_token(go_to_next_line))
-	{
-		curr = go_to_next_line ? Token::_EOF : Token::_EOL;
-		return curr;
-	}
+		return curr = go_to_next_line ? Token::_EOF : Token::_EOL;
 
 	loc.col = i;
 
@@ -43,24 +38,19 @@ Token Lexer::eat(bool go_to_next_line)
 			}
 
 			// account for backslash quotes
-			if (i < code_line.length() - 1 && code_line[i] == '\\' && code_line[i] == '"')
+			if (i < code_line.length() - 1 && code_line[i] == '\\' && code_line[i + 1] == '"')
 			{
-				str += "\"";
+				str.push_back('\"');
 				i += 2;
 			}
-			else
-			{
-				str += code_line[i];
-				++i;
-			}
+			else str += code_line[i++];
 		}
 
 		++i;
 
 		replace_escape_chars(str);
 
-		curr = { loc, TokenType::STR_L, str };
-		return curr;
+		return curr = { loc, TokenType::STR_L, str };
 	}
 
 	// scan keywords
@@ -68,17 +58,12 @@ Token Lexer::eat(bool go_to_next_line)
 	{
 		std::string keyword;
 		while (i < code_line.length() && (std::isalpha(code_line[i]) || code_line[i] == '_'))
-		{
-			keyword += code_line[i];
-			++i;
-		}
+			keyword += code_line[i++];
 
 		auto it = keywords.find(keyword);
-		curr = it != keywords.end()
+		return curr = it != keywords.end()
 			? Token{ loc, it->second,	  keyword }
 			: Token{ loc, TokenType::VAR, keyword };
-
-		return curr;
 	}
 
 	// scan numbers
@@ -86,30 +71,22 @@ Token Lexer::eat(bool go_to_next_line)
 	{
 		std::string number;
 		while (i < code_line.length() && std::isdigit(code_line[i]))
-		{
-			number += code_line[i];
-			++i;
-		}
+			number += code_line[i++];
 
 		// scan decimal points
 		if (i < code_line.length() - 1 && code_line[i] == '.' &&
 			std::isdigit(code_line[i + 1]))
 		{
-			number += ".";
+			number.push_back('.');
 
 			++i;
 			while (i < code_line.length() && std::isdigit(code_line[i]))
-			{
-				number += code_line[i];
-				++i;
-			}
+				number += code_line[i++];
 
-			curr = { loc, TokenType::FLOAT_L, number };
-			return curr;
+			return curr = { loc, TokenType::FLOAT_L, number };
 		}
 
-		curr = { loc, TokenType::INT_L, number };
-		return curr;
+		return curr = { loc, TokenType::INT_L, number };
 	}
 
 	// scan negative
@@ -117,8 +94,7 @@ Token Lexer::eat(bool go_to_next_line)
 	{
 		++i;
 
-		curr = { loc, TokenType::UNARY_OP, "-" };
-		return curr;
+		return curr = { loc, TokenType::UNARY_OP, "-" };
 	}
 
 	// scan symbols	
@@ -126,23 +102,16 @@ Token Lexer::eat(bool go_to_next_line)
 	{
 		for (auto& [c, tok_type] : symbol->second)
 		{
-			if (c == '\0')
-			{
-				std::string tok_data(1, code_line[i]);
+			if (!c)
+				return curr = { loc, tok_type, std::string(1, code_line[i++]) };
 
-				++i;
-
-				curr = { loc, tok_type, tok_data };
-				return curr;
-			}
 			if (i < code_line.length() - 1 && code_line[i + 1] == c)
 			{
 				std::string tok_data = std::string(1, code_line[i]) + c;
 
 				i += 2;
 
-				curr = { loc, tok_type, tok_data };
-				return curr;
+				return curr = { loc, tok_type, tok_data };
 			}
 		}
 	}
@@ -153,7 +122,7 @@ Token Lexer::eat(bool go_to_next_line)
 		code_line[i] == '\'' ? "did you mean to use double quotations `\"`" : "");
 }
 
-Token Lexer::peek(bool go_to_next_line)
+Token Lexer::peek(const bool go_to_next_line)
 {
 	auto const tmp_loc = loc;
 	auto const tmp_code_ln = code_line;
@@ -170,17 +139,11 @@ Token Lexer::peek(bool go_to_next_line)
 	return next;
 }
 
-Token Lexer::get_curr() const
-{
-	return curr;
-}
+Token Lexer::get_curr() const noexcept { return curr; }
 
-Location Lexer::get_loc() const
-{
-	return loc;
-}
+Location Lexer::get_loc() const noexcept { return loc; }
 
-bool Lexer::next_line()
+bool Lexer::next_line() noexcept
 {
 	if (!std::getline(code_file, code_line))
 		return false;
@@ -191,7 +154,7 @@ bool Lexer::next_line()
 	return true;
 }
 
-bool Lexer::next_token(bool go_to_next_line)
+bool Lexer::next_token(const bool go_to_next_line) noexcept
 {
 	while (i < code_line.length() && std::isspace(code_line[i]))
 		++i;
@@ -199,8 +162,8 @@ bool Lexer::next_token(bool go_to_next_line)
 	assert(i <= code_line.length());
 	if (i == code_line.length() || code_line[i] == '#')
 	{
-		if (go_to_next_line)
-			return next_line() ? next_token(true) : false;
+		if (go_to_next_line && next_line())
+			return next_token(true);
 		else
 			return false;
 	}
@@ -208,24 +171,37 @@ bool Lexer::next_token(bool go_to_next_line)
 	return true;
 }
 
-void Lexer::replace_escape_chars(std::string& token) const
+void Lexer::replace_escape_chars(std::string& token) const noexcept
 {
-	static std::unordered_map<std::string, char> const esc_chars{
-		{ "\\a", '\a' }, { "\\b", '\b' }, { "\\f", '\f' }, { "\\n", '\n' },
-		{ "\\r", '\r' }, { "\\t", '\t' }, { "\\v", '\v' }, { "\\\\", '\\' },
-		{ "\\'", '\'' }
-	};
-
-	std::size_t pos = token.find("\\");
+	std::size_t pos = token.find('\\');
 	while (pos < token.size() - 1)
 	{
-		std::string esc{ '\\', token[pos + 1] };
+		char c = token[pos + 1];
 
-		if (auto it = esc_chars.find(esc); it != esc_chars.end())
-			token.replace(pos, 2, std::string(1, it->second));
+		switch (c)
+		{
+#define CASE(x, s) case x: c = s; break
+			CASE('a', '\a');
+			CASE('b', '\b');
+			CASE('f', '\f');
+			CASE('n', '\n');
+			CASE('r', '\r');
+			CASE('t', '\t');
+			CASE('v', '\v');
+			case '\\':
+			case '\'':
+				token.erase(pos, 1);
+				[[fallthrough]];
+			default:
+				c = 0;
+				break;
+		}
+#undef CASE
+		if (c) token.replace(pos, 2, 1, c);
 
-		pos = token.find("\\", pos + 1);
+		pos = token.find('\\', pos + 1);
 	}
+
 }
 
 std::unordered_map<char, std::vector<std::pair<char, TokenType> > > const Lexer::symbols{
