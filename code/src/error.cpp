@@ -8,9 +8,9 @@
 night::error::error(
 	std::string_view debug_file, int const debug_line, std::string const& _type,
 	Location const& _loc, std::string const& _msg, std::string const& _fix)
-	: loc(_loc), type(_type), msg(_msg), fix(_fix)
+	: type(_type), loc(_loc), msg(_msg), fix(_fix)
 {
-	if (DEBUG)
+	if (this->DEBUG)
 		std::cout << debug_file << '\n' << debug_line << "\n\n";
 
 	if (type == night::error_preprocess)
@@ -19,8 +19,8 @@ night::error::error(
 	std::ifstream code(loc.file);
 	assert(code.is_open());
 
-	for (int a = 0; a < loc.line; ++a)
-		getline(code, line);
+	for (std::size_t a = 0; a < loc.line; ++a)
+		std::getline(code, line);
 
 	// trim leading whitespace
 
@@ -32,7 +32,7 @@ night::error::error(
 		line = line.substr(str_begin, line.size() - str_begin + 1);
 
 	// remove absolute file path so only local path is displayed
-	for (int a = (int)loc.file.length() - 1; a >= 0; --a)
+	for (std::size_t a = loc.file.length() - 1; a >= 0; --a)
 	{
 		if (loc.file[a] == '\\' || loc.file[a] == '/')
 		{
