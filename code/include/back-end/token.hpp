@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../error.hpp"
+#include "error.hpp"
 
 #include <string>
 
@@ -43,8 +43,15 @@ struct Token
 	TokenType type;
 	std::string data;
 
-	bool is_value() const;
-	bool is_operator() const;
+	constexpr bool is_value() const noexcept
+	{
+		return type == TokenType::BOOL_L  || type == TokenType::INT_L ||
+			   type == TokenType::FLOAT_L || type == TokenType::STR_L ||
+			   type == TokenType::VAR     || type == TokenType::OPEN_SQUARE;
+	}
+
+	constexpr bool is_operator() const noexcept
+	{ return type == TokenType::UNARY_OP || type == TokenType::BINARY_OP; }
 
 	static Token const _EOL;
 	static Token const _EOF;
