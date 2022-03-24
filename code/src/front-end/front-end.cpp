@@ -15,7 +15,7 @@ void front_end(std::string_view file_name)
 	Lexer lexer(file_name, true);
 	Parser parser(lexer);
 
-	Parser::ParserScope global_scope{ nullptr };
+	Parser::ParserScope global_scope{ nullptr, {} };
 
 	std::vector<Stmt> stmts;
 
@@ -28,7 +28,7 @@ void front_end(std::string_view file_name)
 			lexer.eat(true);
 	}
 
-	Interpreter::InterpreterScope interpret_scope{ nullptr };
+	Interpreter::InterpreterScope interpret_scope{ nullptr, {} };
 
 	Interpreter interpreter;
 	interpreter.interpret_statements(interpret_scope, stmts);
