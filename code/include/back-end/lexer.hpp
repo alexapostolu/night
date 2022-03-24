@@ -15,7 +15,7 @@ public:
 
 public:
 	Token eat(const bool go_to_next_line);
-	Token peek(const bool go_to_next_line);
+	Token peek(const bool go_to_next_line) noexcept;
 
 	Token get_curr() const noexcept;
 	Location get_loc() const noexcept;

@@ -102,12 +102,11 @@ Token Lexer::eat(const bool go_to_next_line)
 	{
 		for (auto& [c, tok_type] : symbol->second)
 		{
-			if (!c)
-				return curr = { loc, tok_type, std::string(1, code_line[i++]) };
+			if (!c) return curr = { loc, tok_type, std::string(1, code_line[i++]) };
 
 			if (i < code_line.length() - 1 && code_line[i + 1] == c)
 			{
-				std::string tok_data = std::string(1, code_line[i]) + c;
+				std::string tok_data({ code_line[i], c });
 
 				i += 2;
 
@@ -119,10 +118,10 @@ Token Lexer::eat(const bool go_to_next_line)
 	throw night::error(
 		__FILE__, __LINE__, night::error_compile, loc,
 		std::string("unknown symbol '") + code_line[i] + "'",
-		code_line[i] == '\'' ? "did you mean to use double quotations `\"`" : "");
+		code_line[i] == '\'' ? "did you mean to use double quotations `\"`?" : "");
 }
 
-Token Lexer::peek(const bool go_to_next_line)
+Token Lexer::peek(const bool go_to_next_line) noexcept
 {
 	auto const tmp_loc = loc;
 	auto const tmp_code_ln = code_line;
@@ -131,9 +130,9 @@ Token Lexer::peek(const bool go_to_next_line)
 
 	auto const next = eat(go_to_next_line);
 
-	loc = tmp_loc;
-	code_line = tmp_code_ln;
-	i = tmp_i;
+	loc = tmp_loc,
+	code_line = tmp_code_ln,
+	i = tmp_i,
 	curr = tmp_curr;
 
 	return next;
@@ -162,10 +161,9 @@ bool Lexer::next_token(const bool go_to_next_line) noexcept
 	assert(i <= code_line.length());
 	if (i == code_line.length() || code_line[i] == '#')
 	{
-		if (go_to_next_line && next_line())
-			return next_token(true);
-		else
-			return false;
+		return (go_to_next_line && next_line())
+			? next_token(true)
+			: false;
 	}
 
 	return true;
@@ -174,7 +172,7 @@ bool Lexer::next_token(const bool go_to_next_line) noexcept
 void Lexer::replace_escape_chars(std::string& token) const noexcept
 {
 	std::size_t pos = token.find('\\');
-	while (pos < token.size() - 1)
+	while (pos < token.length() - 1)
 	{
 		char c = token[pos + 1];
 
@@ -189,12 +187,8 @@ void Lexer::replace_escape_chars(std::string& token) const noexcept
 			CASE('t', '\t');
 			CASE('v', '\v');
 			case '\\':
-			case '\'':
-				token.erase(pos, 1);
-				[[fallthrough]];
-			default:
-				c = 0;
-				break;
+			case '\'': token.erase(pos, 1); [[fallthrough]];
+			default: c = 0; break;
 		}
 #undef CASE
 		if (c) token.replace(pos, 2, 1, c);
