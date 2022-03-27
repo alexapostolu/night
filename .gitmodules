@@ -1,3 +1,4 @@
 [submodule "dusk"]
 	path = dusk
 	url = https://github.com/firefish111/dusk.git
+	branch = master

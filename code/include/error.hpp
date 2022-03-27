@@ -48,7 +48,7 @@ public:
 	std::string what() const;
 
 public:
-	static bool DEBUG;
+	static bool debug_flag;
 
 private:
 	std::string type;

@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
 	if (argc == 2 || (argc == 3 && argv[2][0] == '-'))
 	{
 		if (argv_s[2] == "-debug")
-			night::error::DEBUG = true;
+			night::error::debug_flag = true;
 
 		try {
 			front_end(argv[1]);

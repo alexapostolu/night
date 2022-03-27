@@ -3,21 +3,19 @@
 #include "token.hpp"
 
 #include <fstream>
-#include <optional>
 #include <string>
 #include <vector>
-#include <map>
 #include <unordered_map>
 
 // one lexer for each file
 class Lexer
 {
 public:
-	Lexer(std::string_view file_name, bool main_file);
+	Lexer(std::string_view file_name, bool const main_file);
 
 public:
-	Token eat(bool go_to_next_line);
-	Token peek(bool go_to_next_line);
+	Token eat(bool const go_to_next_line);
+	Token peek(bool const go_to_next_line);
 
 	Token get_curr() const;
 	Location get_loc() const;

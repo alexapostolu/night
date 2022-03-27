@@ -2,14 +2,12 @@
 #include "back-end/token.hpp"
 #include "error.hpp"
 
-#include <iostream>
 #include <cctype>
 #include <string>
 #include <vector>
-#include <map>
 #include <unordered_map>
 
-Lexer::Lexer(std::string_view file_name, bool main_file)
+Lexer::Lexer(std::string_view file_name, bool const main_file)
 	: code_file(file_name.data()), loc({ file_name.data(), 1 }), i(0)
 {
 	if (!code_file.is_open())
@@ -18,7 +16,7 @@ Lexer::Lexer(std::string_view file_name, bool main_file)
 	getline(code_file, code_line);
 }
 
-Token Lexer::eat(bool go_to_next_line)
+Token Lexer::eat(bool const go_to_next_line)
 {
 	if (!next_token(go_to_next_line))
 	{
@@ -43,7 +41,7 @@ Token Lexer::eat(bool go_to_next_line)
 			}
 
 			// account for backslash quotes
-			if (i < code_line.length() - 1 && code_line[i] == '\\' && code_line[i] == '"')
+			if (i < code_line.length() - 1 && code_line[i] == '\\' && code_line[i + 1] == '"')
 			{
 				str += "\"";
 				i += 2;
@@ -153,7 +151,7 @@ Token Lexer::eat(bool go_to_next_line)
 		code_line[i] == '\'' ? "did you mean to use double quotations `\"`" : "");
 }
 
-Token Lexer::peek(bool go_to_next_line)
+Token Lexer::peek(bool const go_to_next_line)
 {
 	auto const tmp_loc = loc;
 	auto const tmp_code_ln = code_line;
