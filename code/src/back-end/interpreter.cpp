@@ -40,6 +40,8 @@ std::string Interpreter::Data::to_str() const
 		return "str";
 	case T::ARR:
 		return "arr";
+	default:
+		break;
 	}
 
 	throw std::runtime_error("Interpreter::Data::to_str(), missing type to string conversion");
@@ -81,6 +83,9 @@ void Interpreter::Data::print(Data const& data)
 
 		break;
 	}
+
+	default: 
+		break;
 	}
 
 	std::cout.flush();
@@ -697,6 +702,9 @@ Interpreter::Data Interpreter::evaluate_expression(
 			case Data::ARR:
 				throw NIGHT_RUNTIME_ERROR(
 					"type 'arr' cannot be converted into type 'str'", "");
+			case Data::RNG:
+				throw NIGHT_RUNTIME_ERROR(
+					"type 'rng' cannot be converted into type 'str'", "");
 			}
 		}
 		if (night_func->first == "system")
@@ -979,7 +987,7 @@ Interpreter::Data Interpreter::evaluate_expression(
 					obj_arr.pop_back();
 					return object;
 				}
-				if (method.name == "pop" && !method.param_exprs.size() == 1)
+				if (method.name == "pop" && (!method.param_exprs.size()) == 1)
 				{
 					Data const index = evaluate_expression(scope, method.param_exprs[0]);
 					if (index.type != Data::INT) {
