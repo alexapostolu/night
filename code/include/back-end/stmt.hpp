@@ -78,19 +78,26 @@ struct ExprNode
 {
 	Location loc;
 
-	enum {
+	enum ExNTypes {
 		LITERAL, ARRAY, VARIABLE, CALL,
 		UNARY_OP, BINARY_OP
 	} type;
 
-	std::variant<
+	typedef std::variant<
 		ValueCall,
 		ValueVar,
 		ValueArray,
 		ValueLiteral,
 		UnaryOPNode,
 		BinaryOPNode
-	> data;
+	> ExNDataTypes;
+
+	ExNDataTypes data;
+
+	ExprNode() = default;
+
+	ExprNode(Location _loc, ExNTypes _type, ExNDataTypes _data)
+		: loc(_loc), type(_type), data(_data) {}
 
 	// returns right or value of expr_node
 	std::shared_ptr<ExprNode>& travel_ast();

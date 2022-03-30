@@ -232,6 +232,8 @@ Stmt Parser::parse_stmt_var(ParserScope& scope)
 
 				auto const [arg_exprs, arg_types] =
 					parse_arguments(scope, method_name);
+				
+				auto const argx_size = arg_exprs.size();
 
 				// definition checking method call based on name and argument types
 
@@ -246,7 +248,7 @@ Stmt Parser::parse_stmt_var(ParserScope& scope)
 						check_class.second.methods,
 						[&](auto const& method) {
 							return method.first == method_name &&
-								method.second.param_types.size() == arg_exprs.size();
+								method.second.param_types.size() == argx_size;
 						}
 					);
 
@@ -956,7 +958,7 @@ Parser::parse_expression(
 						parse_arguments(scope, var_name);
 
 					curr->type = ExprNode::CALL;
-					curr->data = ValueCall(var_name, arg_exprs);
+					curr->data = ValueCall({var_name, arg_exprs});
 				}
 				else if (token.type == TokenType::OPEN_SQUARE)
 				{	
