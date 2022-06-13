@@ -46,8 +46,8 @@ int main(int argc, char* argv[])
 			std::cout << e.what();
 		}
 		catch (std::exception const& e) {
-			std::cout << "Oh no! We've come across an unexpected error:\n\n    " << e.what() <<
-				"\n\nPlease submit an issue on the GitHub page:\nhttps://github.com/dynamicsquid/night\n";
+			std::cout << "oh no! we've come across an unexpected error:\n\n    " << e.what() <<
+				"\n\nplease submit an issue on the github page:\nhttps://github.com/dynamicsquid/night\n";
 		}
 
 		return 0;
