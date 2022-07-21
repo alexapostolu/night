@@ -8,6 +8,7 @@
 
 int main(int argc, char* argv[])
 {
+
 	std::string const more_info = "for more info, run: night --help\n";
 	std::vector<std::string_view> const argv_s(argv, argv + argc);
 
