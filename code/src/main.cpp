@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
 
 	if (argc == 2 && argv[1][0] == '-')
 	{
-		if (argv_s[1] == "--help"	 || argv_s[1] == "-h")
+		if (argv_s[1] == "--help" || argv_s[1] == "-h")
 		{
 			std::cout << "usage: night <file>|<options>\n"
 					  << "options:\n"
