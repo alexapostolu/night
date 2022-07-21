@@ -3,9 +3,8 @@
 #include "cmakedef.hpp"
 
 #include <iostream>
-#include <stdexcept>
-#include <string>
 #include <vector>
+#include <string>
 
 int main(int argc, char* argv[])
 {
@@ -28,6 +27,7 @@ int main(int argc, char* argv[])
 					  << night_VERSION_MAJOR << '.'
 					  << night_VERSION_MINOR << '.'
 					  << night_VERSION_PATCH << '\n';
+
 			return 0;
 		}
 
