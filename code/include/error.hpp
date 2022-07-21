@@ -1,7 +1,5 @@
 #pragma once
 
-#include <stdexcept>
-#include <cassert>
 #include <string>
 
 #define NIGHT_PREPROCESS_ERROR(msg) \

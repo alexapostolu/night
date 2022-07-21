@@ -8,52 +8,55 @@
 
 int main(int argc, char* argv[])
 {
-
-	std::string const more_info = "for more info, run: night --help\n";
 	std::vector<std::string_view> const argv_s(argv, argv + argc);
+	std::string const more_info = "for more info, run: night --help\n";
 
-	if (argc == 2 && argv[1][0] == '-')
+	if (argv_s.size() == 2)
 	{
-		if (argv_s[1] == "--help" || argv_s[1] == "-h")
+		if (argv_s[1][0] == '-')
 		{
-			std::cout << "usage: night <file>|<options>\n"
-					  << "options:\n"
-					  << "    --help     displays this message and exit\n"
-					  << "    --version  displays night's current version\n";
-			return 0;
+			if (argv_s[1] == "--help")
+			{
+				std::cout << "usage: night <file>|<options>\n"
+					<< "options:\n"
+					<< "    --help     displays this message\n"
+					<< "    --version  displays the version\n";
+			}
+			else if (argv_s[1] == "--version")
+			{
+				std::cout << "night v"
+					<< night_VERSION_MAJOR << '.'
+					<< night_VERSION_MINOR << '.'
+					<< night_VERSION_PATCH << '\n';
+			}
+			else
+			{
+				std::cout << "unknown option: " << argv[1] << '\n' << more_info;
+			}
 		}
-		if (argv_s[1] == "--version" || argv_s[1] == "-v")
+		else
 		{
-			std::cout << "night v"
-					  << night_VERSION_MAJOR << '.'
-					  << night_VERSION_MINOR << '.'
-					  << night_VERSION_PATCH << '\n';
-
-			return 0;
+			try {
+				front_end(argv[1]);
+			}
+			catch (night::error const& e) {
+				std::cout << e.msg();
+			}
+			catch (std::exception const& e) {
+				std::cout << "oh no! we've come across an unexpected error:\n\n    " << e.what() <<
+					"\n\nplease submit an issue on the github page:\nhttps://github.com/dynamicsquid/night\n";
+			}
 		}
-
-		std::cout << "unknown option: " << argv[1] << '\n' << more_info;
-		return 0;
 	}
+
 	if (argc == 2 || (argc == 3 && argv[2][0] == '-'))
 	{
 		if (argv_s[2] == "-debug")
 			night::error::debug_flag = true;
 
-		try {
-			front_end(argv[1]);
-		}
-		catch (night::error const& e) {
-			std::cout << e.what();
-		}
-		catch (std::exception const& e) {
-			std::cout << "oh no! we've come across an unexpected error:\n\n    " << e.what() <<
-				"\n\nplease submit an issue on the github page:\nhttps://github.com/dynamicsquid/night\n";
-		}
-
-		return 0;
 	}
-
-	std::cout << "invalid number of arguments\n" << more_info;
-	return 0;
+	else
+	{
+		std::cout << "invalid number of arguments\n" << more_info;
+	}
 }
