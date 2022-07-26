@@ -1,5 +1,8 @@
 /.git
 
+# cmake files
+/out
+
 # visual studio files
 CMakeSettings.json
 /.vs
