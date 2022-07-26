@@ -1,16 +1,13 @@
-#include "front-end/front-end.hpp"
-#include "back-end/interpreter.hpp"
-#include "back-end/parser.hpp"
-#include "back-end/lexer.hpp"
-#include "back-end/token.hpp"
-#include "error.hpp"
+#include "parse_file.hpp"
+#include "interpreter.hpp"
+#include "parser.hpp"
+#include "lexer.hpp"
+#include "token.hpp"
 
-#include <iostream>
 #include <string>
-#include <cstring>
 #include <vector>
 
-void front_end(std::string_view file_name)
+void parse_file(std::string_view file_name)
 {
 	Lexer lexer(file_name, true);
 	Parser parser(lexer);

@@ -43,6 +43,12 @@ public:
 	);
 
 public:
+	void add_warning() const;
+	void add_error() const;
+	void add_fatal_error() const;
+
+	void display_errors() const;
+
 	std::string what() const;
 
 public:

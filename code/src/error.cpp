@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <cassert>
 
 night::error::error(
 	std::string_view debug_file, int const debug_line, std::string const& _type,
@@ -32,7 +33,7 @@ night::error::error(
 		line = line.substr(str_begin, line.size() - str_begin + 1);
 
 	// remove absolute file path so only local path is displayed
-	for (std::size_t a = loc.file.length() - 1; a >= 0; --a)
+	for (int a = loc.file.length() - 1; a >= 0; --a)
 	{
 		if (loc.file[a] == '\\' || loc.file[a] == '/')
 		{
@@ -83,6 +84,21 @@ std::string night::error::what() const
 	output << RESET;
 
 	return output.str();
+}
+
+void night::error::add_warning() const
+{
+
+}
+
+void night::error::add_error() const
+{
+
+}
+
+void night::error::add_fatal_error() const
+{
+
 }
 
 
