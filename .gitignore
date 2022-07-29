@@ -1,5 +1,5 @@
 # code files
-source.night
+*.night
 
 # git files
 /.git
