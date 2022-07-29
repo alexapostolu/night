@@ -1,3 +1,0 @@
-C:/dev/repos/night/out/build/Mingw64-Debug/CMakeFiles/night.dir
-C:/dev/repos/night/out/build/Mingw64-Debug/CMakeFiles/edit_cache.dir
-C:/dev/repos/night/out/build/Mingw64-Debug/CMakeFiles/rebuild_cache.dir
