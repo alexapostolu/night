@@ -1,9 +1,8 @@
 #git files
 /.git
 
-# cmake files
-/out
-
 # visual studio files
 CMakeSettings.json
 /.vs
+/out
+/Mingw64-Debug
