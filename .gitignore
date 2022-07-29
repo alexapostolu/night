@@ -4,5 +4,4 @@
 # visual studio files
 CMakeSettings.json
 /.vs
-/out
-/Mingw64-Debug
+/out/build/Mingw64-Debug
