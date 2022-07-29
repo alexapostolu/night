@@ -1,15 +1,46 @@
-#include "../version/version.hpp"
+#include "parse_args.hpp"
+#include "lexer.hpp"
+#include "parser.hpp"
+#include "interpreter.hpp"
 
 #include <iostream>
 #include <vector>
 #include <string>
 
-int main()
+/*
+struct Stmt
 {
-	std::cout << "Hello Night!\n";
+	std::variant stmt;
+}
 
-	std::cout << "night v"
-			  << NIGHT_vMAJOR << '.'
-			  << NIGHT_vMINOR << '.'
-			  << NIGHT_vPATCH << '\n';
+struct File
+{
+	std:::vector<std::string> deps;
+	std::string_view file_name;
+	bool is_interpreted;
+	std::vector<Stmt> stms;
+}
+*/
+
+int main(int argc, char* argv[])
+{
+	std::vector<std::string_view> args(argv, argv + argc);
+	auto main_file = parse_args(args);
+
+	// catch fatal compile errors
+	try {
+		Lexer lexer(main_file);
+		Parser parser(lexer);
+	}
+	catch (...) {
+
+	}
+
+	// catch fatal runtime errors
+	try {
+		Interpreter interpreter(main_file);
+	}
+	catch (...) {
+
+	}
 }
