@@ -12,7 +12,10 @@ my_var int mut;
 
 my_var = 7;
 
-if ()
+if (my_var)
+	print(5)
+
+if (my_var) {}
 
 # no templates for now
 # check all the methods my_param (auto) uses, and see if the variable passes in calls match up

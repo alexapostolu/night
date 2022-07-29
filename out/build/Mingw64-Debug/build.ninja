@@ -56,6 +56,20 @@ build CMakeFiles/night.dir/code/src/error.cpp.obj: CXX_COMPILER__night_Debug C$:
   OBJECT_DIR = CMakeFiles\night.dir
   OBJECT_FILE_DIR = CMakeFiles\night.dir\code\src
 
+build CMakeFiles/night.dir/code/src/interpreter.cpp.obj: CXX_COMPILER__night_Debug C$:/dev/repos/night/code/src/interpreter.cpp || cmake_object_order_depends_target_night
+  DEP_FILE = CMakeFiles\night.dir\code\src\interpreter.cpp.obj.d
+  FLAGS = -g -std=gnu++20
+  INCLUDES = -IC:/dev/repos/night/code/version -IC:/dev/repos/night/code/include
+  OBJECT_DIR = CMakeFiles\night.dir
+  OBJECT_FILE_DIR = CMakeFiles\night.dir\code\src
+
+build CMakeFiles/night.dir/code/src/lexer.cpp.obj: CXX_COMPILER__night_Debug C$:/dev/repos/night/code/src/lexer.cpp || cmake_object_order_depends_target_night
+  DEP_FILE = CMakeFiles\night.dir\code\src\lexer.cpp.obj.d
+  FLAGS = -g -std=gnu++20
+  INCLUDES = -IC:/dev/repos/night/code/version -IC:/dev/repos/night/code/include
+  OBJECT_DIR = CMakeFiles\night.dir
+  OBJECT_FILE_DIR = CMakeFiles\night.dir\code\src
+
 build CMakeFiles/night.dir/code/src/main.cpp.obj: CXX_COMPILER__night_Debug C$:/dev/repos/night/code/src/main.cpp || cmake_object_order_depends_target_night
   DEP_FILE = CMakeFiles\night.dir\code\src\main.cpp.obj.d
   FLAGS = -g -std=gnu++20
@@ -70,6 +84,13 @@ build CMakeFiles/night.dir/code/src/parse_args.cpp.obj: CXX_COMPILER__night_Debu
   OBJECT_DIR = CMakeFiles\night.dir
   OBJECT_FILE_DIR = CMakeFiles\night.dir\code\src
 
+build CMakeFiles/night.dir/code/src/parser.cpp.obj: CXX_COMPILER__night_Debug C$:/dev/repos/night/code/src/parser.cpp || cmake_object_order_depends_target_night
+  DEP_FILE = CMakeFiles\night.dir\code\src\parser.cpp.obj.d
+  FLAGS = -g -std=gnu++20
+  INCLUDES = -IC:/dev/repos/night/code/version -IC:/dev/repos/night/code/include
+  OBJECT_DIR = CMakeFiles\night.dir
+  OBJECT_FILE_DIR = CMakeFiles\night.dir\code\src
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target night
@@ -78,7 +99,7 @@ build CMakeFiles/night.dir/code/src/parse_args.cpp.obj: CXX_COMPILER__night_Debu
 #############################################
 # Link the executable night.exe
 
-build night.exe: CXX_EXECUTABLE_LINKER__night_Debug CMakeFiles/night.dir/code/src/error.cpp.obj CMakeFiles/night.dir/code/src/main.cpp.obj CMakeFiles/night.dir/code/src/parse_args.cpp.obj
+build night.exe: CXX_EXECUTABLE_LINKER__night_Debug CMakeFiles/night.dir/code/src/error.cpp.obj CMakeFiles/night.dir/code/src/interpreter.cpp.obj CMakeFiles/night.dir/code/src/lexer.cpp.obj CMakeFiles/night.dir/code/src/main.cpp.obj CMakeFiles/night.dir/code/src/parse_args.cpp.obj CMakeFiles/night.dir/code/src/parser.cpp.obj
   FLAGS = -g
   LINK_LIBRARIES = -static  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\night.dir

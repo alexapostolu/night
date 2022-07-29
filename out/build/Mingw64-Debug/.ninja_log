@@ -1,5 +1,10 @@
 # ninja log v5
 3	121	6807572095639280	CMakeFiles/night.dir/code/src/error.cpp.obj	8f8c65b7e5c900a2
-2	623	6807572388997430	CMakeFiles/night.dir/code/src/main.cpp.obj	a830e0b2bc357017
-625	1327	6807572396026567	night.exe	173830f4cc7c8909
+12	1055	6808171936170574	CMakeFiles/night.dir/code/src/main.cpp.obj	a830e0b2bc357017
+613	1396	6808172925453630	night.exe	7a4f44a3d89bdae5
 6	744	6807572101731597	CMakeFiles/night.dir/code/src/parse_args.cpp.obj	5e00c2ff8d0cf259
+4	1666	6808170421697979	CMakeFiles/night.dir/code/src/interpreter.cpp.obj	ce3764cde36aa662
+10	612	6808172917728039	CMakeFiles/night.dir/code/src/parser.cpp.obj	fa07faf55aedffd8
+4	717	6808171689218265	CMakeFiles/night.dir/code/src/lexer.cpp.obj	a9ff2399cf4fe243
+4	719	6808174070525665	CMakeFiles/night.dir/code/src/lexer.cpp.obj	a9ff2399cf4fe243
+724	1616	6808174079511026	night.exe	7a4f44a3d89bdae5
