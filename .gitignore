@@ -1,4 +1,7 @@
-#git files
+# code files
+source.night
+
+# git files
 /.git
 
 # cmake files
