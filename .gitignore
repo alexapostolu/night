@@ -1,12 +1,12 @@
-# code files
+# code
 *.night
 
-# git files
+# git
 /.git
 
-# cmake files
+# cmake
 /out
 
-# visual studio files
+# visual studio
 CMakeSettings.json
 /.vs
