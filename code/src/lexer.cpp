@@ -5,6 +5,8 @@
 #include <iostream>
 #include <cctype>
 #include <string>
+#include <vector>
+#include <unordered_map>
 
 Lexer::Lexer(std::string_view file_name)
 	: file(file_name.data()), i(0)
@@ -20,121 +22,177 @@ Token Lexer::eat()
 	while (i < file_line.size() && std::isspace(file_line[i]))
 		++i;
 
-	if (i == file_line.size())
+	if (i == file_line.size() || file_line[i] == '#')
 		return eat_new_line();
 
-	if (file_line[i] == '#')
-		return eat_new_line();
 
-	// scan strings
+	if (std::isdigit(file_line[i]))
+		return eat_number();
+
 	if (file_line[i] == '"')
+		return eat_string();
+
+	if (std::isalpha(file_line[i]) || file_line[i] == '_')
+		return eat_keyword();
+
+	return eat_symbol();
+}
+
+Token Lexer::eat_string()
+{
+	++i;
+
+	std::string str;
+
+	while (true)
 	{
+		if (i == file_line.size() && !new_line())
+			std::cout << "expected closing quotes for string '" + str + "'";
+
+		if (file_line[i] == '"')
+			break;
+
+		bool match = false;
+		char ch;
+
+		if (i < file_line.length() - 1 && file_line[i] == '\\')
+		{
+			match = true;
+
+			switch (file_line[i + 1])
+			{
+			case '\\': ch = '\\'; break;
+			case '"':  ch = '\"'; break;
+			case 'n':  ch = '\n'; break;
+			case 't':  ch = '\t'; break;
+			default:
+				match = false;
+			}
+		}
+
+		
+		if (!match)
+		{
+			str += file_line[i];
+			++i;
+		}
+		else
+		{
+			str += ch;
+			i += 2;
+		}
+	}
+
+	++i;
+	return { TokenType::STR_LIT, str };
+}
+
+Token Lexer::eat_keyword()
+{
+	static std::unordered_map<std::string, TokenType> const keywords{
+		{ "true", TokenType::BOOL_LIT },
+		{ "false", TokenType::BOOL_LIT },
+		{ "bool", TokenType::FOR },
+		{ "char", TokenType::FOR },
+		{ "int", TokenType::FOR },
+		{ "str", TokenType::FOR },
+		{ "if", TokenType::IF },
+		{ "elif", TokenType::ELIF },
+		{ "else", TokenType::ELSE },
+		{ "for", TokenType::FOR },
+		{ "while", TokenType::WHILE },
+		{ "return", TokenType::RETURN }
+	};
+
+	std::string keyword;
+
+	do {
+		keyword += file_line[i];
+		++i;
+	} while (i < file_line.length() && (std::isalpha(file_line[i]) || file_line[i] == '_'));
+
+	if (auto it = keywords.find(keyword); it != keywords.end())
+		return Token{ it->second, keyword };
+	else
+		return Token{ TokenType::VARIABLE, keyword };
+}
+
+Token Lexer::eat_number()
+{
+	std::string number;
+
+	do {
+		number += file_line[i];
+		++i;
+	} while (i < file_line.length() && std::isdigit(file_line[i]));
+
+	// floats
+	if (file_line[i] == '.' && i < file_line.length() - 1 &&
+		std::isdigit(file_line[i + 1]))
+	{
+		number += ".";
 		++i;
 
-		std::string str;
-		while (true)
-		{
-			if (i == file_line.size() && !new_line())
-				std::cout << "expected closing quotes for string '" + str + "'";
-
-			if (file_line[i] == '"')
-				break;
-
-			if (i < file_line.length() - 1 && file_line[i] == '\\' && file_line[i + 1] == '"')
-			{
-				str += "\"";
-				i += 2;
-			}
-			else
-			{
-				str += file_line[i];
-				++i;
-			}
-
-		}
-	}
-
-	// scan keywords
-	if (std::isalpha(code_line[i]))
-	{
-		std::string keyword;
-		while (i < code_line.length() && (std::isalpha(code_line[i]) || code_line[i] == '_'))
-		{
-			keyword += code_line[i];
+		do {
+			number += file_line[i];
 			++i;
-		}
+		} while (i < file_line.length() && std::isdigit(file_line[i]));
 
-		auto it = keywords.find(keyword);
-		curr = it != keywords.end()
-			? Token{ loc, it->second,	  keyword }
-		: Token{ loc, TokenType::VAR, keyword };
-
-		return curr;
+		return { TokenType::FLOAT_LIT, number };
 	}
 
-	// scan numbers
-	if (std::isdigit(code_line[i]))
+	return { TokenType::INT_LIT, number };
+}
+
+Token Lexer::eat_symbol()
+{
+	static std::unordered_map<char, std::vector<std::pair<char, TokenType> > > const symbols{
+		{ '+', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },
+		{ '-', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },
+		{ '*', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },
+		{ '/', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },
+		{ '%', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },
+
+		{ '>', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::BINARY_OP } } },
+		{ '<', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::BINARY_OP } } },
+
+		{ '|', { { '|', TokenType::BINARY_OP } } },
+		{ '&', { { '&', TokenType::BINARY_OP } } },
+		{ '!', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::UNARY_OP } } },
+
+		{ '.', { { '.', TokenType::BINARY_OP }, { '\0', TokenType::BINARY_OP }}},
+
+		{ '=', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::ASSIGN } } },
+
+		{ '(', { { '\0', TokenType::OPEN_BRACKET } } },
+		{ ')', { { '\0', TokenType::CLOSE_BRACKET } } },
+		{ '[', { { '\0', TokenType::OPEN_SQUARE } } },
+		{ ']', { { '\0', TokenType::CLOSE_SQUARE } } },
+		{ '{', { { '\0', TokenType::OPEN_CURLY } } },
+		{ '}', { { '\0', TokenType::CLOSE_CURLY } } },
+
+		{ ':', { { '\0', TokenType::COLON } } },
+		{ ',', { { '\0', TokenType::COMMA } } }
+	};
+
+	auto symbol = symbols.find(file_line[i]);
+	if (symbol == symbols.end())
 	{
-		std::string number;
-		while (i < code_line.length() && std::isdigit(code_line[i]))
+		std::cout << "error\n";
+	}
+
+	for (auto& [c, tok_type] : symbol->second)
+	{
+		if (c == '\0')
 		{
-			number += code_line[i];
 			++i;
+			return { tok_type, std::string(1, file_line[i]) };
 		}
 
-		// scan decimal points
-		if (i < code_line.length() - 1 && code_line[i] == '.' &&
-			std::isdigit(code_line[i + 1]))
+		if (i < file_line.length() - 1 && file_line[i + 1] == c)
 		{
-			number += ".";
-
-			++i;
-			while (i < code_line.length() && std::isdigit(code_line[i]))
-			{
-				number += code_line[i];
-				++i;
-			}
-
-			curr = { loc, TokenType::FLOAT_L, number };
-			return curr;
-		}
-
-		curr = { loc, TokenType::INT_L, number };
-		return curr;
-	}
-
-	// scan negative
-	if (i < code_line.length() - 1 && code_line[i] == '-' && std::isdigit(code_line[i + 1]))
-	{
-		++i;
-
-		curr = { loc, TokenType::UNARY_OP, "-" };
-		return curr;
-	}
-
-	// scan symbols	
-	if (auto symbol = symbols.find(code_line[i]); symbol != symbols.end())
-	{
-		for (auto& [c, tok_type] : symbol->second)
-		{
-			if (c == '\0')
-			{
-				std::string tok_data(1, code_line[i]);
-
-				++i;
-
-				curr = { loc, tok_type, tok_data };
-				return curr;
-			}
-			if (i < code_line.length() - 1 && code_line[i + 1] == c)
-			{
-				std::string tok_data = std::string(1, code_line[i]) + c;
-
-				i += 2;
-
-				curr = { loc, tok_type, tok_data };
-				return curr;
-			}
+			i += 2;
+			return { tok_type, std::string(1, file_line[i]) + c };;
 		}
 	}
 }
@@ -151,3 +209,4 @@ Token Lexer::eat_new_line()
 		return { TokenType::END_OF_FILE, "end of file" };
 
 	return eat();
+}
