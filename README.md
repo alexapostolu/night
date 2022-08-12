@@ -9,3 +9,13 @@ Night is an static, bytecode interpreted language with a strong and safe control
 ---
 
 Under Development
+
+
+Build:
+
+
+```
+
+cmake -G "MinGW Makefiles" .
+cmake --build .
+```
