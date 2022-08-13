@@ -15,7 +15,8 @@ Build:
 
 
 ```
-
 cmake -G "MinGW Makefiles" .
 cmake --build .
+
+night source.night
 ```
