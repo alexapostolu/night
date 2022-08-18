@@ -17,7 +17,6 @@ Right now you can only build Night from source.
 1. Install Dependancies
 
 `g++` (version 10+)
-
 `cmake` (version 3+)
 
 2. Clone Repository
