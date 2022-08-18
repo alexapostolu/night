@@ -4,25 +4,20 @@
 
 # Night
 
-Night is an interpreted dynamically typed language with a strong control on types.
+Under development.
 
-Night provides compile time definition and type checking, in addition with static types. It is also planned to treat types as first class citizens, allowing the user to have more control over compile time type checking.
+Night is an interpreted dynamically typed language with a strong control on types.
 
 ---
 
 ## Getting Started
 
-Night comes in two parts, the interpreter (this repo) and [Dusk](https://github.com/firefish111/dusk) (the package manager).
-
-You can download the latest stable Windows and Linux binaries for Night in the Releases section.
-
-You can also build Night from source.
-
-### Building from Source
+Right now you can only build Night from source.
 
 1. Install Dependancies
 
-`g++` (version 10+)<br>
+`g++` (version 10+)
+
 `cmake` (version 3+)
 
 2. Clone Repository
