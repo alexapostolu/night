@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/DynamicSquid/night/blob/master/docs/media/night-logo-black.png"/>
+  <img src="https://github.com/DynamicSquid/night-web/blob/master/docs/media/night-logo-black.png"/>
 </p>
 
 # Night
