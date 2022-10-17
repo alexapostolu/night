@@ -1,9 +1,9 @@
 #pragma once
 
-#include <string>
+#include "bytecode.hpp"
 
 class Interpreter
 {
 public:
-	Interpreter(std::string_view file);
+	Interpreter(bytecodes_t const& bytecodes);
 };

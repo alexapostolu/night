@@ -2,6 +2,7 @@
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "interpreter.hpp"
+#include "scope.hpp"
 #include "bytecode.hpp"
 
 #include <iostream>
@@ -29,12 +30,13 @@ int main(int argc, char* argv[])
 	std::vector<std::string_view> args(argv, argv + argc);
 	auto main_file = parse_args(args);
 
+	Scope global_scope;
 	bytecodes_t bytecodes;
 
 	// catch fatal compile errors
 	try {
 		Lexer lexer(main_file);
-		Parser parser(lexer, bytecodes);
+		bytecodes = parse_stmts(lexer, global_scope);
 	}
 	catch (...) {
 
@@ -42,7 +44,7 @@ int main(int argc, char* argv[])
 
 	// catch fatal runtime errors
 	try {
-		Interpreter interpreter(main_file);
+		Interpreter interpreter(bytecodes);
 	}
 	catch (...) {
 

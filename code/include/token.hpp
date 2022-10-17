@@ -15,6 +15,7 @@ enum class TokenType
 	OPEN_CURLY,
 	CLOSE_CURLY,
 	COLON,
+	SEMICOLON,
 	COMMA,
 
 	BOOL_LIT,

@@ -8,8 +8,8 @@
 #include <vector>
 #include <unordered_map>
 
-Lexer::Lexer(std::string_view file_name)
-	: file(file_name.data()), i(0)
+Lexer::Lexer(std::string_view _file_name)
+	: file_name(file_name), file(file_name.data()), i(0)
 {
 	if (!file.is_open())
 		std::cout << "file not open\n";
@@ -23,19 +23,19 @@ Token Lexer::eat()
 		++i;
 
 	if (i == file_line.size() || file_line[i] == '#')
-		return eat_new_line();
+		return curr_tok = eat_new_line();
 
 
 	if (std::isdigit(file_line[i]))
-		return eat_number();
+		return curr_tok = eat_number();
 
 	if (file_line[i] == '"')
-		return eat_string();
+		return curr_tok = eat_string();
 
 	if (std::isalpha(file_line[i]) || file_line[i] == '_')
-		return eat_keyword();
+		return curr_tok = eat_keyword();
 
-	return eat_symbol();
+	return curr_tok = eat_symbol();
 }
 
 Token Lexer::eat_string()
@@ -186,13 +186,13 @@ Token Lexer::eat_symbol()
 		if (c == '\0')
 		{
 			++i;
-			return { tok_type, std::string(1, file_line[i]) };
+			return { tok_type, std::string(1, file_line[i - 1]) };
 		}
 
 		if (i < file_line.length() - 1 && file_line[i + 1] == c)
 		{
 			i += 2;
-			return { tok_type, std::string(1, file_line[i]) + c };;
+			return { tok_type, std::string(1, file_line[i - 2]) + std::string(1, c) };;
 		}
 	}
 }
