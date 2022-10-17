@@ -21,15 +21,6 @@ Right now you can only build Night from source.
 
 2. Clone Repository
 
-If you would like to clone Night and Dusk (recommend), be sure to fetch it's submodule:
-
-```
-git clone --recurse-submodules https://github.com/DynamicSquid/night.git
-cd night
-```
-
-If you want to clone Night but not Dusk:
-
 ```
 git clone https://github.com/DynamicSquid/night.git
 cd night
