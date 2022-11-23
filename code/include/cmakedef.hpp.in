@@ -1,3 +1,0 @@
-#define night_VERSION_MAJOR @night_VERSION_MAJOR@
-#define night_VERSION_MINOR @night_VERSION_MINOR@
-#define night_VERSION_PATCH @night_VERSION_PATCH@

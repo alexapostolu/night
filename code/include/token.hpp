@@ -1,51 +1,49 @@
 #pragma once
 
-#include "error.hpp"
-
 #include <string>
 
 enum class TokenType
 {
-	UNARY_OP, BINARY_OP,
-
-	OPEN_BRACKET, CLOSE_BRACKET,
-	OPEN_SQUARE, CLOSE_SQUARE,
-	OPEN_CURLY, CLOSE_CURLY,
+	UNARY_OP,
+	BINARY_OP,
 
 	ASSIGN,
+	OPEN_BRACKET,
+	CLOSE_BRACKET,
+	OPEN_SQUARE,
+	CLOSE_SQUARE,
+	OPEN_CURLY,
+	CLOSE_CURLY,
+	COLON,
+	SEMICOLON,
+	COMMA,
 
-	COLON, COMMA,
+	BOOL_LIT,
+	INT_LIT,
+	FLOAT_LIT,
+	STR_LIT,
 
-	// literals
-	BOOL_L, INT_L, FLOAT_L, STR_L,
+	VARIABLE,
 
-	VAR,
+	BOOL_TYPE,
+	CHAR_TYPE,
+	INT_TYPE,
+	STR_TYPE,
 
-	LET,
+	IF,
+	ELIF,
+	ELSE,
 
-	// types
-	BOOL_T, INT_T, FLOAT_T, STR_T,
+	FOR,
+	WHILE,
 
-	IF, ELIF, ELSE,
-
-	LOOP,
-
-	FN,
 	RETURN,
 
-	EOL, _EOF
+	END_OF_FILE
 };
 
 struct Token
 {
-	Location loc;
-
 	TokenType type;
-	std::string data;
-
-	bool is_value() const;
-	bool is_operator() const;
-
-	static Token const _EOL;
-	static Token const _EOF;
+	std::string val;
 };

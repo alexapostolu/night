@@ -4,39 +4,33 @@
 
 #include <fstream>
 #include <string>
-#include <vector>
-#include <unordered_map>
 
-// one lexer for each file
 class Lexer
 {
 public:
-	Lexer(std::string_view file_name, bool const main_file);
+	Lexer(std::string_view _file_name);
 
 public:
-	Token eat(bool const go_to_next_line);
-	Token peek(bool const go_to_next_line);
-
-	Token get_curr() const;
-	Location get_loc() const;
-	
-private:
-	bool next_token(bool go_to_next_line);
-	bool next_line();
-
-	// when a string token has been scanned, this function is called to replace
-	// escape strings with escape characters
-	void replace_escape_chars(std::string& token) const;
+	Token eat();
+	Token curr();
 
 private:
-	std::fstream code_file;
-	Location loc;
+	Token eat_string();
+	Token eat_keyword();
+	Token eat_number();
+	Token eat_symbol();
 
-	std::string code_line;
-	std::size_t i;
-	
-	Token curr;
+	// returns false when it reaches end of file
+	bool new_line();
+	Token eat_new_line();
 
-	static std::unordered_map<char, std::vector<std::pair<char, TokenType> > > const symbols;
-	static std::unordered_map<std::string, TokenType> const keywords;
+public:
+	std::string file_name;
+
+private:
+	std::fstream file;
+	std::string file_line;
+	std::size_t i; // file line index
+
+	Token curr_tok;
 };

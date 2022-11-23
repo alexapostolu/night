@@ -1,4 +1,0 @@
-let var: int = 2 + (3)
-let var1: mut = 9
-
-var1 = 8
