@@ -4,26 +4,26 @@
 #include "interpreter.hpp"
 #include "scope.hpp"
 #include "bytecode.hpp"
+#include "error.hpp"
 
 #include <iostream>
 #include <string>
 #include <vector>
-#include <unordered_map>
+#include <functional>
 
-/*
-struct Stmt
+void run_section(std::function<void()> const& f)
 {
-	std::variant stmt;
+	try {
+		f();
+	}
+	catch (night::fatal_error const& e) {
+		std::cout << e.what();
+	}
+	catch (...) {
+		std::cout << "oops!we've come across and unexpected error!\n"
+					 "please submit an issue on github: https://github.com/DynamicSquid/night";
+	}
 }
-
-struct File
-{
-	std:::vector<std::string> deps;
-	std::string_view file_name;
-	bool is_interpreted;
-	std::vector<Stmt> stms;
-}
-*/
 
 int main(int argc, char* argv[])
 {
@@ -33,20 +33,12 @@ int main(int argc, char* argv[])
 	Scope global_scope;
 	bytecodes_t bytecodes;
 
-	// catch fatal compile errors
-	try {
+	run_section([&]() {
 		Lexer lexer(main_file);
 		bytecodes = parse_stmts(lexer, global_scope);
-	}
-	catch (...) {
+	});
 
-	}
-
-	// catch fatal runtime errors
-	try {
+	run_section([&]() {
 		Interpreter interpreter(bytecodes);
-	}
-	catch (...) {
-
-	}
+	});
 }
