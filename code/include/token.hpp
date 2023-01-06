@@ -19,6 +19,7 @@ enum class TokenType
 	COMMA,
 
 	BOOL_LIT,
+	CHAR_LIT,
 	INT_LIT,
 	FLOAT_LIT,
 	STR_LIT,
@@ -45,5 +46,5 @@ enum class TokenType
 struct Token
 {
 	TokenType type;
-	std::string val;
+	std::string str;
 };

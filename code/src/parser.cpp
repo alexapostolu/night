@@ -2,6 +2,8 @@
 #include "lexer.hpp"
 #include "scope.hpp"
 #include "bytecode.hpp"
+#include "expression.hpp"
+#include "error.hpp"
 
 #include <iostream>
 
@@ -24,7 +26,7 @@ bytecodes_t parse_stmts(Lexer& lexer, Scope& scope)
 		switch (tok.type)
 		{
 		case TokenType::VARIABLE:
-			bytecode = parse_stmt_var(lexer, scope);
+			bytecode = parse_var(lexer, scope);
 			break;
 
 		case TokenType::IF:
@@ -33,61 +35,152 @@ bytecodes_t parse_stmts(Lexer& lexer, Scope& scope)
 
 		case TokenType::ELIF:
 		case TokenType::ELSE:
-			throw NIGHT_COMPILE_ERROR(
-				lexer.get_curr().data + " statement does not precede an if or elif statement",
-				lexer.get_curr().data + " statements must come after an if or an elif statement");
+			throw night::error::get().create_fatal_error(
+				lexer.curr().val + " statement does not precede an if or elif statement");
 
 		case TokenType::FOR:
-			bytecode = parse_stmt_for(lexer, scope);
+			bytecode = parse_for(lexer, scope);
 			break;
 
 		case TokenType::WHILE:
-			bytecode = parse_stmt_while(lexer, scope);
+			bytecode = parse_while(lexer, scope);
 			break;
 
 		case TokenType::RETURN:
-			bytecode = parse_stmt_rtn(lexer, scope);
+			bytecode = parse_rtn(lexer, scope);
 			break;
 
 		case TokenType::END_OF_FILE:
 			return bytecodes;
 
 		default:
-			throw NIGHT_COMPILE_ERROR(
-				"unknown syntax",
-				"no clue what you did here sorry :/");
+			throw night::error::get().create_fatal_error("unknown syntax");
 		}
 
-		bytecodes.insert(std::end(bytecodes), std::begin(bytecode), std::begin(bytecode));
+		bytecodes.insert(std::end(bytecodes), std::begin(bytecode), std::end(bytecode));
 	}
 }
 
-bytecodes_t parse_stmt_var(Lexer& lexer, Scope& scope)
+bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 {
 	bytecodes_t codes;
-	
-	codes.push_back(std::make_shared<Bytecode>(BytecodeType::VARIABLE, lexer.curr().val));
 
-	if (lexer.eat().type == TokenType::END_OF_FILE) {
-		throw Error;
-	}
-	if (lexer.curr().type != TokenType::BOOL_TYPE) {
-		throw Error;
-	}
+	std::string var_name = lexer.curr().val;
+	CreateVariableType var_type;
+	std::variant<char, int> var_val;
 
-	codes.push_back(std::make_shared<Bytecode>(BytecodeType::VALUE));
-
-	if (lexer.curr().type == TokenType::ASSIGN)
+	switch (lexer.eat().type)
 	{
+	case TokenType::CHAR_TYPE:
+		var_type = CreateVariableType::CHAR;
+		var_val = 0;
+		break;
+	case TokenType::INT_TYPE:
+		var_type = CreateVariableType::INT;
+		var_val = 0;
+		break;
 
-	}
-	
-	if (lexer.eat().type != TokenType::SEMICOLON) {
-		throw Error;
+	case TokenType::END_OF_FILE:
+		throw night::error::get().create_fatal_error("");
+	default:
+		throw night::error::get().create_fatal_error("");
 	}
 
-	codes.push_back(std::make_shared<Bytecode>(BytecodeType::VALUE));
-	
+	switch (lexer.eat().type)
+	{
+	case TokenType::SEMICOLON:
+		codes.push_back(std::make_shared<CreateVariable>(var_type, var_name));
+		codes.push_back(std::make_shared<PushConstant>(var_val));
+		break;
+	case TokenType::ASSIGN: {
+		expr_p head(nullptr);
+
+		while (true)
+		{
+			switch (lexer.eat().type)
+			{
+			case TokenType::CHAR_LIT: {
+				expr_p curr(nullptr);
+
+				if (!head)
+				{
+					curr = head;
+				}
+				else
+				{
+					while (curr->next())
+						curr = curr->next();
+				}
+
+				curr->next() = std::make_shared<Expr>(lexer.eat().val[0]);
+
+				break;
+			}
+			case TokenType::INT_LIT: {
+				expr_p curr(nullptr);
+
+				if (!head)
+				{
+					curr = head;
+				}
+				else
+				{
+					while (curr->next())
+						curr = curr->next();
+				}
+
+				curr->next() = std::make_shared<Expr>(std::stoi(lexer.eat().val));
+
+				break;
+			}
+			case TokenType::UNARY_OP: {
+				expr_p curr(nullptr);
+
+				if (!head)
+				{
+					curr = head;
+				}
+				else
+				{
+					while (curr->next())
+						curr = curr->next();
+				}
+
+				curr = std::make_shared<ExprUnary>(lexer.eat().val, nullptr);
+
+				break;
+			}
+			case TokenType::BINARY_OP: {
+				expr_p curr(nullptr);
+
+				if (!head->next())
+				{
+					head = std::make_shared<ExprBinary>(lexer.curr().str, head, nullptr);
+				}
+				else
+				{
+					while (curr->next()->next())
+						curr = curr->next();
+
+					curr->next() = std::make_shared<ExprBinary>(lexer.curr().str, curr->next(), nullptr);
+				}
+
+				break;
+			}
+			default:
+				break;
+			}
+		}
+
+		break;
+	}
+
+	case TokenType::END_OF_FILE:
+		throw night::error::get().create_fatal_error("");
+	default:
+		throw night::error::get().create_fatal_error("");
+	}
+
 	return codes;
 }
 

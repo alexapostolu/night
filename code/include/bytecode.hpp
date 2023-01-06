@@ -1,18 +1,15 @@
 #pragma once
 
 #include <memory>
+#include <variant>
 #include <string>
 #include <vector>
-#include <unordered_map>
 
-struct Bytecode;
-
-using bytecodes_t = std::vector<std::shared_ptr<Bytecode>>;
-
-enum class BytecodeType
+enum struct BytecodeType
 {
-	VARIABLE,
-	VALUE
+	CREATE_CONSTANT,
+	CREATE_VARIABLE,
+	PUSH_CONSTANT
 };
 
 struct Bytecode
@@ -20,12 +17,22 @@ struct Bytecode
 	BytecodeType type;
 };
 
-struct BytecodeVariable : public Bytecode
+struct PushConstant : Bytecode
 {
+	std::variant<char, int> val;
+};
+
+enum struct CreateVariableType
+{
+	CHAR,
+	INT
+};
+
+struct CreateVariable : Bytecode
+{
+	CreateVariableType type;
 	std::string name;
 };
 
-struct BytecodeValue : public Bytecode
-{
-	std::string name;
-};
+using bytecode_t  = std::shared_ptr<Bytecode>;
+using bytecodes_t = std::vector<bytecode_t>;
