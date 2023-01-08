@@ -6,6 +6,9 @@
 #include "error.hpp"
 
 #include <iostream>
+#include <string>
+#include <assert.h>
+#include <unordered_map>
 
 bytecodes_t parse_stmts(Lexer& lexer, Scope& scope)
 {
@@ -13,7 +16,7 @@ bytecodes_t parse_stmts(Lexer& lexer, Scope& scope)
 	Token tok;
 	do {
 		tok = lexer.eat();
-		std::cout << (int)tok.type << ": " << tok.val << " :\n";
+		std::cout << (int)tok.type << ": " << tok.str << " :\n";
 	} while (tok.type != TokenType::END_OF_FILE);
 
 	bytecodes_t bytecodes;
@@ -36,7 +39,7 @@ bytecodes_t parse_stmts(Lexer& lexer, Scope& scope)
 		case TokenType::ELIF:
 		case TokenType::ELSE:
 			throw night::error::get().create_fatal_error(
-				lexer.curr().val + " statement does not precede an if or elif statement");
+				lexer.curr().str + " statement does not precede an if or elif statement");
 
 		case TokenType::FOR:
 			bytecode = parse_for(lexer, scope);
@@ -65,7 +68,7 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 {
 	bytecodes_t codes;
 
-	std::string var_name = lexer.curr().val;
+	std::string var_name = lexer.curr().str;
 	CreateVariableType var_type;
 	std::variant<char, int> var_val;
 
@@ -89,88 +92,10 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 	switch (lexer.eat().type)
 	{
 	case TokenType::SEMICOLON:
-		codes.push_back(std::make_shared<CreateVariable>(var_type, var_name));
-		codes.push_back(std::make_shared<PushConstant>(var_val));
 		break;
-	case TokenType::ASSIGN: {
-		expr_p head(nullptr);
-
-		while (true)
-		{
-			switch (lexer.eat().type)
-			{
-			case TokenType::CHAR_LIT: {
-				expr_p curr(nullptr);
-
-				if (!head)
-				{
-					curr = head;
-				}
-				else
-				{
-					while (curr->next())
-						curr = curr->next();
-				}
-
-				curr->next() = std::make_shared<Expr>(lexer.eat().val[0]);
-
-				break;
-			}
-			case TokenType::INT_LIT: {
-				expr_p curr(nullptr);
-
-				if (!head)
-				{
-					curr = head;
-				}
-				else
-				{
-					while (curr->next())
-						curr = curr->next();
-				}
-
-				curr->next() = std::make_shared<Expr>(std::stoi(lexer.eat().val));
-
-				break;
-			}
-			case TokenType::UNARY_OP: {
-				expr_p curr(nullptr);
-
-				if (!head)
-				{
-					curr = head;
-				}
-				else
-				{
-					while (curr->next())
-						curr = curr->next();
-				}
-
-				curr = std::make_shared<ExprUnary>(lexer.eat().val, nullptr);
-
-				break;
-			}
-			case TokenType::BINARY_OP: {
-				expr_p curr(nullptr);
-
-				if (!head->next())
-				{
-					head = std::make_shared<ExprBinary>(lexer.curr().str, head, nullptr);
-				}
-				else
-				{
-					while (curr->next()->next())
-						curr = curr->next();
-
-					curr->next() = std::make_shared<ExprBinary>(lexer.curr().str, curr->next(), nullptr);
-				}
-
-				break;
-			}
-			default:
-				break;
-			}
-		}
+	case TokenType::ASSIGN:
+	{
+		auto expr = parse_expr(lexer, scope);
 
 		break;
 	}
@@ -181,10 +106,170 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 		throw night::error::get().create_fatal_error("");
 	}
 
+	codes.push_back(std::make_shared<CreateVariable>(var_type, var_name));
+	codes.push_back(std::make_shared<PushConstant>(var_val));
+
 	return codes;
 }
 
 bytecodes_t parse_stmt_if(Lexer& lexer, Scope& scope)
 {
 
+}
+
+expr_p parse_expr(Lexer& lexer, Scope& scope)
+{
+	expr_p head(nullptr);
+	bool open_bracket = false;
+
+	while (true)
+	{
+		switch (lexer.eat().type)
+		{
+		case TokenType::CHAR_LIT:
+		{
+			auto val = std::make_shared<ExprValue>(
+				ExprValueType::CONSTANT,
+				ExprConstant{ ExprConstantType::CHAR, lexer.eat().str[0] });
+
+			if (!head)
+			{
+				head = val;
+			}
+			else
+			{
+				expr_p curr(head);
+				while (curr->next())
+					curr = curr->next();
+
+				curr->next() = val;
+			}
+
+			break;
+		}
+		case TokenType::INT_LIT:
+		{
+			auto val = std::make_shared<ExprValue>(
+				ExprValueType::CONSTANT,
+				ExprConstant{ ExprConstantType::INT, std::stoi(lexer.eat().str) });
+
+			if (!head)
+			{
+				head = val;
+			}
+			else
+			{
+				expr_p curr(head);
+				while (curr->next())
+					curr = curr->next();
+
+				curr->next() = val;
+			}
+
+			break;
+		}
+		case TokenType::UNARY_OP:
+		{
+			auto val = std::make_shared<ExprUnary>(
+				str_to_unary_type(lexer.eat().str), nullptr);
+
+			if (!head)
+			{
+				head = val;
+			}
+			else
+			{
+				auto tok_type = str_to_unary_type(lexer.eat().str);
+
+				expr_p curr(head);
+				while (curr->next() && (int)tok_type > (int)curr->prec())
+					curr = curr->next();
+
+				curr->next() = val;
+			}
+
+			break;
+		}
+		case TokenType::BINARY_OP:
+		{
+			expr_p curr(nullptr);
+
+			auto tok_type = str_to_binary_type(lexer.curr().str);
+
+			assert(head);
+			if (!head->next())
+			{
+				head = std::make_shared<ExprBinary>(tok_type, head, nullptr);
+			}
+			else
+			{
+				assert(curr->next());
+				while (curr->next()->next() && (int)tok_type > (int)curr->prec())
+					curr = curr->next();
+
+				curr->next() = std::make_shared<ExprBinary>(tok_type, curr->next(), nullptr);
+			}
+
+			break;
+		}
+		case TokenType::OPEN_BRACKET:
+		{
+			open_bracket = true;
+
+			auto val = std::make_shared<ExprValue>(
+				ExprValueType::EXPRESSION,
+				parse_expr(lexer, scope));
+
+			if (!head)
+			{
+				head = val;
+			}
+			else
+			{
+				expr_p curr(head);
+				while (curr->next())
+					curr = curr->next();
+
+				curr->next() = val;
+			}
+
+			break;
+		}
+		case TokenType::CLOSE_BRACKET:
+		{
+			if (!open_bracket)
+			{
+				throw night::fatal_error("your mom fat");
+			}
+
+			open_bracket = false;
+
+			break;
+		}
+		default:
+			break;
+		}
+	}
+}
+
+ExprUnaryType str_to_unary_type(std::string_view str)
+{
+	if (str == "!")
+		return ExprUnaryType::NOT;
+
+	throw std::runtime_error("tf");
+}
+
+ExprBinaryType str_to_binary_type(std::string_view str)
+{
+	if (str == "+")
+		return ExprBinaryType::ADD;
+	if (str == "-")
+		return ExprBinaryType::SUB;
+	if (str == "*")
+		return ExprBinaryType::MULT;
+	if (str == "/")
+		return ExprBinaryType::DIV;
+
+	throw std::runtime_error("tf");
 }
