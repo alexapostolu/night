@@ -14,11 +14,15 @@ enum struct BytecodeType
 
 struct Bytecode
 {
+	Bytecode(BytecodeType _type);
+
 	BytecodeType type;
 };
 
 struct PushConstant : Bytecode
 {
+	PushConstant(std::variant<char, int> const& _val);
+
 	std::variant<char, int> val;
 };
 
@@ -30,6 +34,8 @@ enum struct CreateVariableType
 
 struct CreateVariable : Bytecode
 {
+	CreateVariable(CreateVariableType _type, std::string const& _name);
+
 	CreateVariableType type;
 	std::string name;
 };

@@ -3,36 +3,31 @@
 Expr::Expr(ExprType _type)
 	: type(_type) {}
 
+std::optional<std::shared_ptr<Expr>&> Expr::next()
+{
+	return std::nullopt;
+}
+
+int Expr::prec() const
+{
+	return -1;
+}
+
 ExprValue::ExprValue(ExprValueType _type, std::variant<ExprConstant, expr_p> const& _val)
 	: Expr(ExprType::VALUE), type(_type), val(_val) {}
-
-expr_p& ExprValue::next()
-{
-	return nullptr;
-}
-
-int ExprValue::prec() const
-{
-	return 0;
-}
 
 ExprUnary::ExprUnary(ExprUnaryType _type, expr_p const& _val)
 	: Expr(ExprType::UNARY), type(_type), val(_val) {}
 
-expr_p& ExprUnary::next()
+std::optional<expr_p&> ExprUnary::next()
 {
 	return val;
 }
 
-int ExprUnary::prec() const
-{
-	return (int)type;
-}
+ExprBinary::ExprBinary(ExprBinaryType _type, expr_p const& _lhs, expr_p const& _rhs)
+	: Expr(ExprType::BINARY), type(_type), lhs(_lhs), rhs(_rhs) {}
 
-ExprBinary::ExprBinary(ExprBinaryType _type, std::vector<expr_p> const& _lhs, std::vector<expr_p> const& _rhs)
-	: Expr(ExprType::Binary), type(_type), lhs(_lhs), rhs(_rhs) {}
-
-expr_p& ExprBinary::next()
+std::optional<expr_p&> ExprBinary::next()
 {
 	return rhs;
 }

@@ -1,5 +1,8 @@
+#pragma once
+
 #include <memory>
 #include <variant>
+#include <optional>
 
 enum class ExprType
 {
@@ -12,8 +15,9 @@ struct Expr
 {
 	Expr(ExprType _type);
 
-	virtual expr_p& next() = 0;
-	virtual int prec() const = 0;
+	virtual std::optional<std::shared_ptr<Expr>&> next();
+	virtual int prec() const;
+	virtual bool gaurd() const;
 
 	ExprType type;
 };
@@ -46,9 +50,6 @@ struct ExprValue : public Expr
 {
 	ExprValue(ExprValueType _type, std::variant<ExprConstant, expr_p> const& _val);
 
-	expr_p& next();
-	int prec() const;
-
 	ExprValueType type;
 	std::variant<ExprConstant, expr_p> val;
 };
@@ -57,15 +58,14 @@ struct ExprValue : public Expr
 
 enum class ExprUnaryType
 {
-	NOT = 1
+	NOT
 };
 
 struct ExprUnary : public Expr
 {
 	ExprUnary(ExprUnaryType _type, expr_p const& _val);
 
-	expr_p& next();
-	int prec() const;
+	std::optional<expr_p&> next();
 
 	ExprUnaryType type;
 	expr_p val;
@@ -83,14 +83,16 @@ enum class ExprBinaryType
 
 struct ExprBinary : public Expr
 {
-	ExprBinary(ExprBinaryType _type, std::vector<expr_p> const& _lhs, std::vector<expr_p> const& _rhs);
+	ExprBinary(ExprBinaryType _type, expr_p const& _lhs, expr_p const& _rhs);
 	
-	expr_p& next();
+	std::optional<expr_p&> next();
 	int prec() const;
+	bool gaurd() const;
 
 	ExprBinaryType type;
 
-	// we use std::vector for brackets
-	std::vector<expr_p> lhs;
-	std::vector<expr_p> rhs;
+	bool guard;
+
+	expr_p lhs;
+	expr_p rhs;
 };

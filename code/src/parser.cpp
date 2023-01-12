@@ -33,7 +33,7 @@ bytecodes_t parse_stmts(Lexer& lexer, Scope& scope)
 			break;
 
 		case TokenType::IF:
-			bytecode = parse_stmt_if(lexer, scope);
+			bytecode = parse_if(lexer, scope);
 			break;
 
 		case TokenType::ELIF:
@@ -112,12 +112,12 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 	return codes;
 }
 
-bytecodes_t parse_stmt_if(Lexer& lexer, Scope& scope)
+bytecodes_t parse_if(Lexer& lexer, Scope& scope)
 {
 
 }
 
-expr_p parse_expr(Lexer& lexer, Scope& scope)
+expr_p parse_expr(Lexer& lexer, Scope& scope, bool bracket)
 {
 	expr_p head(nullptr);
 	bool open_bracket = false;
@@ -130,7 +130,7 @@ expr_p parse_expr(Lexer& lexer, Scope& scope)
 		{
 			auto val = std::make_shared<ExprValue>(
 				ExprValueType::CONSTANT,
-				ExprConstant{ ExprConstantType::CHAR, lexer.eat().str[0] });
+				ExprConstant{ ExprConstantType::CHAR, (char)lexer.eat().str[0] });
 
 			if (!head)
 			{
@@ -140,9 +140,9 @@ expr_p parse_expr(Lexer& lexer, Scope& scope)
 			{
 				expr_p curr(head);
 				while (curr->next())
-					curr = curr->next();
+					curr = *curr->next();
 
-				curr->next() = val;
+				*curr->next() = val;
 			}
 
 			break;
@@ -151,7 +151,7 @@ expr_p parse_expr(Lexer& lexer, Scope& scope)
 		{
 			auto val = std::make_shared<ExprValue>(
 				ExprValueType::CONSTANT,
-				ExprConstant{ ExprConstantType::INT, std::stoi(lexer.eat().str) });
+				ExprConstant{ ExprConstantType::INT, (int)std::stoi(lexer.eat().str) });
 
 			if (!head)
 			{
@@ -161,9 +161,9 @@ expr_p parse_expr(Lexer& lexer, Scope& scope)
 			{
 				expr_p curr(head);
 				while (curr->next())
-					curr = curr->next();
+					curr = *curr->next();
 
-				curr->next() = val;
+				*curr->next() = val;
 			}
 
 			break;
@@ -179,13 +179,11 @@ expr_p parse_expr(Lexer& lexer, Scope& scope)
 			}
 			else
 			{
-				auto tok_type = str_to_unary_type(lexer.eat().str);
-
 				expr_p curr(head);
-				while (curr->next() && (int)tok_type > (int)curr->prec())
-					curr = curr->next();
+				while (curr->next())
+					curr = *curr->next();
 
-				curr->next() = val;
+				*curr->next() = val;
 			}
 
 			break;
@@ -205,20 +203,18 @@ expr_p parse_expr(Lexer& lexer, Scope& scope)
 			{
 				assert(curr->next());
 				while (curr->next()->next() && (int)tok_type > (int)curr->prec())
-					curr = curr->next();
+					curr = *curr->next();
 
-				curr->next() = std::make_shared<ExprBinary>(tok_type, curr->next(), nullptr);
+				*curr->next() = std::make_shared<ExprBinary>(tok_type, curr->next(), nullptr);
 			}
 
 			break;
 		}
 		case TokenType::OPEN_BRACKET:
 		{
-			open_bracket = true;
-
 			auto val = std::make_shared<ExprValue>(
 				ExprValueType::EXPRESSION,
-				parse_expr(lexer, scope));
+				parse_expr(lexer, scope, true));
 
 			if (!head)
 			{
@@ -228,21 +224,19 @@ expr_p parse_expr(Lexer& lexer, Scope& scope)
 			{
 				expr_p curr(head);
 				while (curr->next())
-					curr = curr->next();
+					curr = *curr->next();
 
-				curr->next() = val;
+				*curr->next() = val;
 			}
 
 			break;
 		}
 		case TokenType::CLOSE_BRACKET:
 		{
-			if (!open_bracket)
+			if (!bracket)
 			{
 				throw night::fatal_error("your mom fat");
 			}
-
-			open_bracket = false;
 
 			break;
 		}
@@ -250,6 +244,8 @@ expr_p parse_expr(Lexer& lexer, Scope& scope)
 			break;
 		}
 	}
+
+	return head;
 }
 
 ExprUnaryType str_to_unary_type(std::string_view str)
@@ -271,5 +267,5 @@ ExprBinaryType str_to_binary_type(std::string_view str)
 	if (str == "/")
 		return ExprBinaryType::DIV;
 
-	throw std::runtime_error("tf");
+	throw std::runtime_error("bruh");
 }

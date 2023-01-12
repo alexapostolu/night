@@ -2,7 +2,7 @@
 
 #include <string>
 
-Interpreter::Interpreter(std::string_view file)
+Interpreter::Interpreter(bytecodes_t const& bytecodes)
 {
 
 }
