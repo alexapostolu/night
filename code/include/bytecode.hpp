@@ -1,5 +1,7 @@
 #pragma once
 
+#include "type.hpp"
+
 #include <memory>
 #include <variant>
 #include <string>
@@ -9,7 +11,8 @@ enum struct BytecodeType
 {
 	CREATE_CONSTANT,
 	CREATE_VARIABLE,
-	PUSH_CONSTANT
+	PUSH_CONSTANT,
+	OPERATION
 };
 
 struct Bytecode
@@ -19,6 +22,22 @@ struct Bytecode
 	BytecodeType type;
 };
 
+struct CreateConstant : Bytecode
+{
+	CreateConstant(ValueType _type, std::variant<char, int> const& _val);
+
+	ValueType type;
+	std::variant<char, int> val;
+};
+
+struct CreateVariable : Bytecode
+{
+	CreateVariable(ValueType _type, std::string const& _name);
+
+	ValueType type;
+	std::string name;
+};
+
 struct PushConstant : Bytecode
 {
 	PushConstant(std::variant<char, int> const& _val);
@@ -26,18 +45,18 @@ struct PushConstant : Bytecode
 	std::variant<char, int> val;
 };
 
-enum struct CreateVariableType
+enum struct OperationType
 {
-	CHAR,
-	INT
+	NOT,
+	ADD,
+	SUB
 };
 
-struct CreateVariable : Bytecode
+struct Operation : Bytecode
 {
-	CreateVariable(CreateVariableType _type, std::string const& _name);
+	Operation(OperationType _type);
 
-	CreateVariableType type;
-	std::string name;
+	OperationType type;
 };
 
 using bytecode_t  = std::shared_ptr<Bytecode>;

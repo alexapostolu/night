@@ -38,6 +38,11 @@ Token Lexer::eat()
 	return curr_tok = eat_symbol();
 }
 
+Token Lexer::curr()
+{
+	return curr_tok;
+}
+
 Token Lexer::eat_string()
 {
 	++i;

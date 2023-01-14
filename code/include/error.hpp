@@ -8,7 +8,7 @@ namespace night {
 
 struct fatal_error
 {
-	std::string const& what() const;
+	std::string const& what() const noexcept;
 	std::string msg;
 };
 

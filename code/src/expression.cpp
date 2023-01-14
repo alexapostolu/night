@@ -1,38 +1,86 @@
 #include "expression.hpp"
+#include "bytecode.hpp"
 
-Expr::Expr(ExprType _type)
-	: type(_type) {}
+#include <memory>
 
-std::optional<std::shared_ptr<Expr>&> Expr::next()
+Expr::Expr(ExprType _type, expr_p const& _lhs, expr_p const& _rhs)
+	: type(_type), lhs(_lhs), rhs(_rhs) {}
+
+expr_p& Expr::next() { return lhs; }
+int Expr::prec() const { return -1; }
+
+
+
+ExprValue::ExprValue(ValueType _type, std::variant<char, int> const& _val)
+	: Expr(ExprType::VALUE, nullptr, nullptr), type(_type), val(_val) {}
+
+bytecode_t ExprValue::to_bytecode() const
 {
-	return std::nullopt;
+	return std::make_shared<CreateConstant>(type, val);
 }
 
-int Expr::prec() const
-{
-	return -1;
-}
 
-ExprValue::ExprValue(ExprValueType _type, std::variant<ExprConstant, expr_p> const& _val)
-	: Expr(ExprType::VALUE), type(_type), val(_val) {}
 
 ExprUnary::ExprUnary(ExprUnaryType _type, expr_p const& _val)
-	: Expr(ExprType::UNARY), type(_type), val(_val) {}
+	: Expr(ExprType::UNARY, nullptr, nullptr), type(_type), val(_val) {}
 
-std::optional<expr_p&> ExprUnary::next()
+expr_p& ExprUnary::next()
 {
-	return val;
+	return lhs;
 }
 
-ExprBinary::ExprBinary(ExprBinaryType _type, expr_p const& _lhs, expr_p const& _rhs)
-	: Expr(ExprType::BINARY), type(_type), lhs(_lhs), rhs(_rhs) {}
+bytecode_t ExprUnary::to_bytecode() const
+{
+	OperationType op_type;
+	switch (type)
+	{
+	case ExprUnaryType::NOT:
+		op_type = OperationType::NOT;
+		break;
+	}
 
-std::optional<expr_p&> ExprBinary::next()
+	return std::make_shared<Operation>(op_type);
+}
+
+
+
+ExprBinary::ExprBinary(ExprBinaryType _type, expr_p const& _lhs, expr_p const& _rhs)
+	: Expr(ExprType::BINARY, lhs, rhs), type(_type) {}
+
+bytecode_t ExprBinary::to_bytecode() const
+{
+	OperationType op_type;
+	switch (type)
+	{
+	case ExprBinaryType::ADD:
+		op_type = OperationType::ADD;
+		break;
+	case ExprBinaryType::SUB:
+		op_type = OperationType::SUB;
+		break;
+	}
+
+	return std::make_shared<Operation>(op_type);
+}
+
+expr_p& ExprBinary::next()
 {
 	return rhs;
 }
 
 int ExprBinary::prec() const
 {
-	return (int)type;
+	switch (type)
+	{
+	case ExprBinaryType::ADD:
+	case ExprBinaryType::SUB:
+		return 1;
+
+	case ExprBinaryType::MULT:
+	case ExprBinaryType::DIV:
+		return 2;
+
+	default:
+		throw "eyyy no";
+	}
 }

@@ -4,7 +4,7 @@
 
 # Night
 
-Night is an static, bytecode interpreted language with strong management on types and memory.
+Night is a static, bytecode interpreted language with strong management on types and memory.
 
 ---
 

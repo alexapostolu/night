@@ -1,5 +1,10 @@
 #include "error.hpp"
 
+std::string const& night::fatal_error::what() const noexcept
+{
+	return msg;
+}
+
 night::error::error()
 	: debug_flag(false) {}
 

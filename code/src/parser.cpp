@@ -69,17 +69,17 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 	bytecodes_t codes;
 
 	std::string var_name = lexer.curr().str;
-	CreateVariableType var_type;
+	ValueType var_type;
 	std::variant<char, int> var_val;
 
 	switch (lexer.eat().type)
 	{
 	case TokenType::CHAR_TYPE:
-		var_type = CreateVariableType::CHAR;
+		var_type = ValueType::CHAR;
 		var_val = 0;
 		break;
 	case TokenType::INT_TYPE:
-		var_type = CreateVariableType::INT;
+		var_type = ValueType::INT;
 		var_val = 0;
 		break;
 
@@ -95,7 +95,7 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 		break;
 	case TokenType::ASSIGN:
 	{
-		auto expr = parse_expr(lexer, scope);
+		parse_expr(parse_toks(lexer, scope), codes);
 
 		break;
 	}
@@ -117,9 +117,25 @@ bytecodes_t parse_if(Lexer& lexer, Scope& scope)
 
 }
 
-expr_p parse_expr(Lexer& lexer, Scope& scope, bool bracket)
+bytecodes_t parse_for(Lexer& lexer, Scope& scope)
+{
+
+}
+
+bytecodes_t parse_while(Lexer& lexer, Scope& scope)
+{
+
+}
+
+bytecodes_t parse_rtn(Lexer& lexer, Scope& scope)
+{
+
+}
+
+expr_p parse_toks(Lexer& lexer, Scope& scope, bool bracket)
 {
 	expr_p head(nullptr);
+	expr_p guard(nullptr);
 	bool open_bracket = false;
 
 	while (true)
@@ -127,67 +143,20 @@ expr_p parse_expr(Lexer& lexer, Scope& scope, bool bracket)
 		switch (lexer.eat().type)
 		{
 		case TokenType::CHAR_LIT:
-		{
-			auto val = std::make_shared<ExprValue>(
-				ExprValueType::CONSTANT,
-				ExprConstant{ ExprConstantType::CHAR, (char)lexer.eat().str[0] });
-
-			if (!head)
-			{
-				head = val;
-			}
-			else
-			{
-				expr_p curr(head);
-				while (curr->next())
-					curr = *curr->next();
-
-				*curr->next() = val;
-			}
+			parse_expr_single(head, std::make_shared<ExprValue>(
+				ValueType::CHAR, (char)lexer.eat().str[0]));
 
 			break;
-		}
 		case TokenType::INT_LIT:
-		{
-			auto val = std::make_shared<ExprValue>(
-				ExprValueType::CONSTANT,
-				ExprConstant{ ExprConstantType::INT, (int)std::stoi(lexer.eat().str) });
-
-			if (!head)
-			{
-				head = val;
-			}
-			else
-			{
-				expr_p curr(head);
-				while (curr->next())
-					curr = *curr->next();
-
-				*curr->next() = val;
-			}
+			parse_expr_single(head, std::make_shared<ExprValue>(
+				ValueType::CHAR, std::stoi(lexer.eat().str)));
 
 			break;
-		}
 		case TokenType::UNARY_OP:
-		{
-			auto val = std::make_shared<ExprUnary>(
-				str_to_unary_type(lexer.eat().str), nullptr);
-
-			if (!head)
-			{
-				head = val;
-			}
-			else
-			{
-				expr_p curr(head);
-				while (curr->next())
-					curr = *curr->next();
-
-				*curr->next() = val;
-			}
+			parse_expr_single(head, std::make_shared<ExprUnary>(
+				str_to_unary_type(lexer.eat().str), nullptr));
 
 			break;
-		}
 		case TokenType::BINARY_OP:
 		{
 			expr_p curr(nullptr);
@@ -202,31 +171,31 @@ expr_p parse_expr(Lexer& lexer, Scope& scope, bool bracket)
 			else
 			{
 				assert(curr->next());
-				while (curr->next()->next() && (int)tok_type > (int)curr->prec())
-					curr = *curr->next();
+				while (curr->next()->next() && (int)tok_type > (int)curr->prec() && curr->next() != guard)
+					curr = curr->next();
 
-				*curr->next() = std::make_shared<ExprBinary>(tok_type, curr->next(), nullptr);
+				curr->next() = std::make_shared<ExprBinary>(tok_type, curr->next(), nullptr);
 			}
 
 			break;
 		}
 		case TokenType::OPEN_BRACKET:
 		{
-			auto val = std::make_shared<ExprValue>(
-				ExprValueType::EXPRESSION,
-				parse_expr(lexer, scope, true));
+			expr_p val = parse_toks(lexer, scope, true);
 
 			if (!head)
 			{
 				head = val;
+				guard = head;
 			}
 			else
 			{
 				expr_p curr(head);
 				while (curr->next())
-					curr = *curr->next();
+					curr = curr->next();
 
-				*curr->next() = val;
+				curr->next() = val;
+				guard = curr;
 			}
 
 			break;
@@ -246,6 +215,42 @@ expr_p parse_expr(Lexer& lexer, Scope& scope, bool bracket)
 	}
 
 	return head;
+}
+
+void parse_expr(expr_p const& expr, bytecodes_t& bytes)
+{
+	bytes.push_back(expr->to_bytecode());
+
+	switch (expr->type)
+	{
+	case ExprType::VALUE:
+		break;
+	case ExprType::UNARY:
+		parse_expr(expr->lhs, bytes);
+		break;
+	case ExprType::BINARY:
+		parse_expr(expr->lhs, bytes);
+		parse_expr(expr->rhs, bytes);
+		break;
+	default:
+		throw "fuck";
+	}
+}
+
+void parse_expr_single(expr_p& head, expr_p const& val)
+{
+	if (!head)
+	{
+		head = val;
+	}
+	else
+	{
+		expr_p curr(head);
+		while (curr->next())
+			curr = curr->next();
+
+		curr->next() = val;
+	}
 }
 
 ExprUnaryType str_to_unary_type(std::string_view str)
