@@ -8,7 +8,7 @@
 class Lexer
 {
 public:
-	Lexer(std::string_view _file_name);
+	Lexer(std::string const& _file_name);
 
 public:
 	Token eat();

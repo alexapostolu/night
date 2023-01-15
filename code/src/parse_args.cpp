@@ -52,7 +52,7 @@ std::string parse_args(std::vector<std::string_view> const& args)
 
 	for (std::size_t i = 1; i < args.size(); ++i)
 	{
-		if (args[i].find(".night"))
+		if (args[i].length() >= 6 && args[i].substr(args[i].length() - 6) == ".night")
 		{
 			if (!run_file.empty())
 			{

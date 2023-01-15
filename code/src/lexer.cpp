@@ -1,5 +1,6 @@
 #include "lexer.hpp"
 #include "token.hpp"
+#include "error.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -8,11 +9,11 @@
 #include <vector>
 #include <unordered_map>
 
-Lexer::Lexer(std::string_view _file_name)
-	: file_name(file_name), file(file_name.data()), i(0)
+Lexer::Lexer(std::string const& _file_name)
+	: file_name(_file_name), file(_file_name), i(0)
 {
 	if (!file.is_open())
-		std::cout << "file not open\n";
+		throw NIGHT_CREATE_FATAL("file '" + file_name + "' could not be found/opened");
 
 	std::getline(file, file_line);
 }
@@ -97,10 +98,8 @@ Token Lexer::eat_keyword()
 	static std::unordered_map<std::string, TokenType> const keywords{
 		{ "true", TokenType::BOOL_LIT },
 		{ "false", TokenType::BOOL_LIT },
-		{ "bool", TokenType::FOR },
-		{ "char", TokenType::FOR },
-		{ "int", TokenType::FOR },
-		{ "str", TokenType::FOR },
+		{ "char", TokenType::CHAR_TYPE },
+		{ "int", TokenType::INT_TYPE },
 		{ "if", TokenType::IF },
 		{ "elif", TokenType::ELIF },
 		{ "else", TokenType::ELSE },
@@ -158,8 +157,8 @@ Token Lexer::eat_symbol()
 		{ '/', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },
 		{ '%', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },
 
-		{ '>', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::BINARY_OP } } },
-		{ '<', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::BINARY_OP } } },
+		{ '>', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },
+		{ '<', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },
 
 		{ '|', { { '|', TokenType::BINARY_OP } } },
 		{ '&', { { '&', TokenType::BINARY_OP } } },
@@ -176,14 +175,15 @@ Token Lexer::eat_symbol()
 		{ '{', { { '\0', TokenType::OPEN_CURLY } } },
 		{ '}', { { '\0', TokenType::CLOSE_CURLY } } },
 
+		{ ',', { { '\0', TokenType::COMMA } } },
 		{ ':', { { '\0', TokenType::COLON } } },
-		{ ',', { { '\0', TokenType::COMMA } } }
+		{ ';', { { '\0', TokenType::SEMICOLON } } }
 	};
 
 	auto symbol = symbols.find(file_line[i]);
 	if (symbol == symbols.end())
 	{
-		std::cout << "error\n";
+		throw NIGHT_CREATE_FATAL("unknown symbol '" + std::string(1, file_line[i]) + "'");
 	}
 
 	for (auto& [c, tok_type] : symbol->second)
@@ -200,6 +200,8 @@ Token Lexer::eat_symbol()
 			return { tok_type, std::string(1, file_line[i - 2]) + std::string(1, c) };;
 		}
 	}
+
+	throw std::runtime_error("bruhh");
 }
 
 bool Lexer::new_line()

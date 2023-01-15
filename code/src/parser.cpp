@@ -12,13 +12,6 @@
 
 bytecodes_t parse_stmts(Lexer& lexer, Scope& scope)
 {
-	// testing!!
-	Token tok;
-	do {
-		tok = lexer.eat();
-		std::cout << (int)tok.type << ": " << tok.str << " :\n";
-	} while (tok.type != TokenType::END_OF_FILE);
-
 	bytecodes_t bytecodes;
 
 	while (true)
@@ -38,7 +31,7 @@ bytecodes_t parse_stmts(Lexer& lexer, Scope& scope)
 
 		case TokenType::ELIF:
 		case TokenType::ELSE:
-			throw night::error::get().create_fatal_error(
+			throw NIGHT_CREATE_FATAL(
 				lexer.curr().str + " statement does not precede an if or elif statement");
 
 		case TokenType::FOR:
@@ -57,10 +50,16 @@ bytecodes_t parse_stmts(Lexer& lexer, Scope& scope)
 			return bytecodes;
 
 		default:
-			throw night::error::get().create_fatal_error("unknown syntax");
+			throw NIGHT_CREATE_FATAL("unknown syntax");
 		}
 
 		bytecodes.insert(std::end(bytecodes), std::begin(bytecode), std::end(bytecode));
+	}
+
+	std::cout << "parsing tokens\n";
+	for (auto code : bytecodes)
+	{
+		std::cout << code->to_str() << '\n';
 	}
 }
 
@@ -76,7 +75,7 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 	{
 	case TokenType::CHAR_TYPE:
 		var_type = ValueType::CHAR;
-		var_val = 0;
+		var_val = '\0';
 		break;
 	case TokenType::INT_TYPE:
 		var_type = ValueType::INT;
@@ -84,52 +83,54 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 		break;
 
 	case TokenType::END_OF_FILE:
-		throw night::error::get().create_fatal_error("");
+		throw NIGHT_CREATE_FATAL("end of file reached, expected variable type");
 	default:
-		throw night::error::get().create_fatal_error("");
+		throw NIGHT_CREATE_FATAL("'" + lexer.curr().str + "' found, expected variable type");
 	}
 
 	switch (lexer.eat().type)
 	{
 	case TokenType::SEMICOLON:
+		codes.push_back(std::make_shared<CreateConstant>(var_type, var_val));
 		break;
 	case TokenType::ASSIGN:
 	{
-		parse_expr(parse_toks(lexer, scope), codes);
+		auto expr = parse_toks(lexer, scope);
+		parse_expr(expr, codes);
 
 		break;
 	}
 
 	case TokenType::END_OF_FILE:
-		throw night::error::get().create_fatal_error("");
+		throw NIGHT_CREATE_FATAL("end of file reached, expected semicolon or assignment");
 	default:
-		throw night::error::get().create_fatal_error("");
+		throw NIGHT_CREATE_FATAL("'" + lexer.curr().str + "' found, expected semicolon or assignment");
 	}
 
 	codes.push_back(std::make_shared<CreateVariable>(var_type, var_name));
-	codes.push_back(std::make_shared<PushConstant>(var_val));
+	codes.push_back(std::make_shared<StoreConstant>(var_name));
 
 	return codes;
 }
 
 bytecodes_t parse_if(Lexer& lexer, Scope& scope)
 {
-
+	return {};
 }
 
 bytecodes_t parse_for(Lexer& lexer, Scope& scope)
 {
-
+	return {};
 }
 
 bytecodes_t parse_while(Lexer& lexer, Scope& scope)
 {
-
+	return {};
 }
 
 bytecodes_t parse_rtn(Lexer& lexer, Scope& scope)
 {
-
+	return {};
 }
 
 expr_p parse_toks(Lexer& lexer, Scope& scope, bool bracket)
@@ -144,17 +145,17 @@ expr_p parse_toks(Lexer& lexer, Scope& scope, bool bracket)
 		{
 		case TokenType::CHAR_LIT:
 			parse_expr_single(head, std::make_shared<ExprValue>(
-				ValueType::CHAR, (char)lexer.eat().str[0]));
+				ValueType::CHAR, (char)lexer.curr().str[0]));
 
 			break;
 		case TokenType::INT_LIT:
 			parse_expr_single(head, std::make_shared<ExprValue>(
-				ValueType::CHAR, std::stoi(lexer.eat().str)));
+				ValueType::INT, std::stoi(lexer.curr().str)));
 
 			break;
 		case TokenType::UNARY_OP:
 			parse_expr_single(head, std::make_shared<ExprUnary>(
-				str_to_unary_type(lexer.eat().str), nullptr));
+				str_to_unary_type(lexer.curr().str), nullptr));
 
 			break;
 		case TokenType::BINARY_OP:
@@ -204,17 +205,15 @@ expr_p parse_toks(Lexer& lexer, Scope& scope, bool bracket)
 		{
 			if (!bracket)
 			{
-				throw night::fatal_error("your mom fat");
+				throw NIGHT_CREATE_FATAL("missing bracket");
 			}
 
 			break;
 		}
 		default:
-			break;
+			return head;
 		}
 	}
-
-	return head;
 }
 
 void parse_expr(expr_p const& expr, bytecodes_t& bytes)

@@ -6,6 +6,7 @@
 #include "error.hpp"
 
 #include <iostream>
+#include <exception>
 #include <string>
 #include <vector>
 
@@ -14,13 +15,19 @@ int main(int argc, char* argv[])
 	std::vector<std::string_view> args(argv, argv + argc);
 	auto main_file = parse_args(args);
 
+	if (main_file.empty())
+		return 0;
+
 	try {
 		Lexer lexer(main_file);
-		
+
 		Scope global_scope;
 		Interpreter interpreter(parse_stmts(lexer, global_scope));
 	}
 	catch (night::fatal_error const& e) {
+		std::cout << e.what();
+	}
+	catch (std::exception const& e) {
 		std::cout << e.what();
 	}
 	catch (...) {

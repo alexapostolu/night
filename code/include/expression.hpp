@@ -63,7 +63,7 @@ enum class ExprBinaryType
 	ADD,
 	SUB,
 	MULT,
-	DIV,
+	DIV
 };
 
 struct ExprBinary : public Expr
