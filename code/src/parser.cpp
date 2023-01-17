@@ -12,7 +12,10 @@
 
 bytecodes_t parse_stmts(Lexer& lexer, Scope& scope)
 {
+	static bool curly_bracket = false;
+
 	bytecodes_t bytecodes;
+	bool if_stmt = false;
 
 	while (true)
 	{
@@ -22,31 +25,65 @@ bytecodes_t parse_stmts(Lexer& lexer, Scope& scope)
 		switch (tok.type)
 		{
 		case TokenType::VARIABLE:
+			if_stmt = false;
 			bytecode = parse_var(lexer, scope);
 			break;
 
 		case TokenType::IF:
-			bytecode = parse_if(lexer, scope);
+			if_stmt = true;
+			bytecode = parse_if(lexer, scope, false);
 			break;
 
 		case TokenType::ELIF:
+			if (!if_stmt)
+				throw NIGHT_CREATE_FATAL("elif statement must precede an if or elif statement");
+
+			bytecode = parse_if(lexer, scope, true);
+			break;
+
 		case TokenType::ELSE:
-			throw NIGHT_CREATE_FATAL(
-				lexer.curr().str + " statement does not precede an if or elif statement");
+			if (!if_stmt)
+				throw NIGHT_CREATE_FATAL("else statement does not precede an if or elif statement");
+
+			if_stmt = false;
+			break;
 
 		case TokenType::FOR:
+			if_stmt = false;
 			bytecode = parse_for(lexer, scope);
 			break;
 
 		case TokenType::WHILE:
+			if_stmt = false;
 			bytecode = parse_while(lexer, scope);
 			break;
 
 		case TokenType::RETURN:
+			if_stmt = false;
 			bytecode = parse_rtn(lexer, scope);
 			break;
 
+		case TokenType::OPEN_CURLY:
+			curly_bracket = true;
+			while (true)
+			{
+				auto bytes = parse_stmts(lexer, scope);
+				if (!curly_bracket)
+					break;
+
+				bytecode.insert(std::end(bytecode), std::begin(bytes), std::end(bytes));
+			}
+
+			break;
+
+		case TokenType::CLOSE_CURLY:
+			curly_bracket = false;
+			break;
+
 		case TokenType::END_OF_FILE:
+			if (curly_bracket)
+				throw NIGHT_CREATE_FATAL("found end of file, expected closing curly bracket");
+
 			return bytecodes;
 
 		default:
@@ -54,12 +91,6 @@ bytecodes_t parse_stmts(Lexer& lexer, Scope& scope)
 		}
 
 		bytecodes.insert(std::end(bytecodes), std::begin(bytecode), std::end(bytecode));
-	}
-
-	std::cout << "parsing tokens\n";
-	for (auto code : bytecodes)
-	{
-		std::cout << code->to_str() << '\n';
 	}
 }
 
@@ -85,7 +116,7 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 	case TokenType::END_OF_FILE:
 		throw NIGHT_CREATE_FATAL("end of file reached, expected variable type");
 	default:
-		throw NIGHT_CREATE_FATAL("'" + lexer.curr().str + "' found, expected variable type");
+		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected variable type");
 	}
 
 	switch (lexer.eat().type)
@@ -104,7 +135,7 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 	case TokenType::END_OF_FILE:
 		throw NIGHT_CREATE_FATAL("end of file reached, expected semicolon or assignment");
 	default:
-		throw NIGHT_CREATE_FATAL("'" + lexer.curr().str + "' found, expected semicolon or assignment");
+		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected semicolon or assignment");
 	}
 
 	codes.push_back(std::make_shared<CreateVariable>(var_type, var_name));
@@ -113,9 +144,34 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 	return codes;
 }
 
-bytecodes_t parse_if(Lexer& lexer, Scope& scope)
+bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif)
 {
-	return {};
+	if (lexer.eat().type != TokenType::OPEN_BRACKET)
+	{
+		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected open bracket");
+	}
+
+	bytecodes_t codes;
+
+	auto expr = parse_toks(lexer, scope);
+	auto type = parse_expr(expr, codes);
+
+	codes.push_back(std::make_shared<Bytecode>(
+		 is_elif ? BytecodeType::ELIF : BytecodeType::IF));
+
+	if (lexer.curr().type != TokenType::CLOSE_BRACKET)
+	{
+		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected closing bracket");
+	}
+
+	Scope stmt_scope{ scope.vars };
+
+	auto stmt_bytes = parse_stmts(lexer, stmt_scope);
+	codes.insert(std::end(codes), std::begin(stmt_bytes), std::end(stmt_bytes));
+
+	codes.push_back(std::make_shared<Bytecode>(BytecodeType::END_IF));
+
+	return codes;
 }
 
 bytecodes_t parse_for(Lexer& lexer, Scope& scope)
@@ -216,7 +272,7 @@ expr_p parse_toks(Lexer& lexer, Scope& scope, bool bracket)
 	}
 }
 
-void parse_expr(expr_p const& expr, bytecodes_t& bytes)
+ValueType parse_expr(expr_p const& expr, bytecodes_t& bytes)
 {
 	bytes.push_back(expr->to_bytecode());
 
@@ -232,7 +288,7 @@ void parse_expr(expr_p const& expr, bytecodes_t& bytes)
 		parse_expr(expr->rhs, bytes);
 		break;
 	default:
-		throw "fuck";
+		throw std::runtime_error("unhandled case");
 	}
 }
 

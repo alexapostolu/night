@@ -2,6 +2,7 @@
 #include "bytecode.hpp"
 
 #include <memory>
+#include <stdexcept>
 
 Expr::Expr(ExprType _type, expr_p const& _lhs, expr_p const& _rhs)
 	: type(_type), lhs(_lhs), rhs(_rhs) {}
@@ -31,15 +32,15 @@ expr_p& ExprUnary::next()
 
 bytecode_t ExprUnary::to_bytecode() const
 {
-	OperationType op_type;
+	BytecodeType op_type;
 	switch (type)
 	{
 	case ExprUnaryType::NOT:
-		op_type = OperationType::NOT;
+		op_type = BytecodeType::NOT;
 		break;
 	}
 
-	return std::make_shared<Operation>(op_type);
+	return std::make_shared<Bytecode>(op_type);
 }
 
 
@@ -49,18 +50,24 @@ ExprBinary::ExprBinary(ExprBinaryType _type, expr_p const& _lhs, expr_p const& _
 
 bytecode_t ExprBinary::to_bytecode() const
 {
-	OperationType op_type;
+	BytecodeType op_type;
 	switch (type)
 	{
 	case ExprBinaryType::ADD:
-		op_type = OperationType::ADD;
+		op_type = BytecodeType::ADD;
 		break;
 	case ExprBinaryType::SUB:
-		op_type = OperationType::SUB;
+		op_type = BytecodeType::SUB;
+		break;
+	case ExprBinaryType::MULT:
+		op_type = BytecodeType::MULT;
+		break;
+	case ExprBinaryType::DIV:
+		op_type = BytecodeType::DIV;
 		break;
 	}
 
-	return std::make_shared<Operation>(op_type);
+	return std::make_shared<Bytecode>(op_type);
 }
 
 expr_p& ExprBinary::next()
@@ -81,6 +88,6 @@ int ExprBinary::prec() const
 		return 2;
 
 	default:
-		throw "eyyy no";
+		throw std::runtime_error("unhandled case");
 	}
 }

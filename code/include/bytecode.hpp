@@ -12,13 +12,21 @@ enum struct BytecodeType
 	CREATE_CONSTANT,
 	CREATE_VARIABLE,
 	STORE_CONSTANT,
-	OPERATION
+	IF,
+	ELIF,
+	ELSE,
+	END_IF,
+	NOT,
+	ADD,
+	SUB,
+	MULT,
+	DIV
 };
 
 struct Bytecode
 {
 	Bytecode(BytecodeType _type);
-	virtual std::string to_str() const = 0;
+	virtual std::string to_str() const;
 
 	BytecodeType type;
 };
@@ -47,23 +55,6 @@ struct StoreConstant : Bytecode
 	std::string to_str() const override;
 
 	std::string name;
-};
-
-enum struct OperationType
-{
-	NOT,
-	ADD,
-	SUB,
-	MULT,
-	DIV
-};
-
-struct Operation : Bytecode
-{
-	Operation(OperationType _type);
-	std::string to_str() const override;
-
-	OperationType type;
 };
 
 using bytecode_t  = std::shared_ptr<Bytecode>;

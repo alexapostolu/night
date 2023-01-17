@@ -11,6 +11,33 @@ Bytecode::Bytecode(BytecodeType _type)
 
 }
 
+std::string Bytecode::to_str() const
+{
+	switch (type)
+	{
+	case BytecodeType::IF:
+		return "IF";
+	case BytecodeType::ELIF:
+		return "ELIF";
+	case BytecodeType::ELSE:
+		return "ELSE";
+	case BytecodeType::END_IF:
+		return "END_IF";
+	case BytecodeType::NOT:
+		return "NOT";
+	case BytecodeType::ADD:
+		return "ADD";
+	case BytecodeType::SUB:
+		return "SUB";
+	case BytecodeType::MULT:
+		return "MULT";
+	case BytecodeType::DIV:
+		return "DIV";
+	default:
+		throw std::runtime_error("unhandled case");
+	}
+}
+
 CreateConstant::CreateConstant(ValueType _type, std::variant<char, int> const& _val)
 	: Bytecode(BytecodeType::CREATE_CONSTANT), type(_type), val(_val)
 {
@@ -42,29 +69,4 @@ StoreConstant::StoreConstant(std::string const& _name)
 std::string StoreConstant::to_str() const
 {
 	return "STORE_CONSTANT " + name;
-}
-
-Operation::Operation(OperationType _type)
-	: Bytecode(BytecodeType::OPERATION), type(_type)
-{
-
-}
-
-std::string Operation::to_str() const
-{
-	switch (type)
-	{
-	case OperationType::NOT:
-		return "NOT";
-	case OperationType::ADD:
-		return "ADD";
-	case OperationType::SUB:
-		return "SUB";
-	case OperationType::MULT:
-		return "MULT";
-	case OperationType::DIV:
-		return "DIV";
-	default:
-		throw std::runtime_error("unhandled case");
-	}
 }

@@ -28,10 +28,12 @@ int main(int argc, char* argv[])
 		std::cout << e.what();
 	}
 	catch (std::exception const& e) {
-		std::cout << e.what();
+		std::cout << "oops! we've come across and unexpected error!\n"
+				  << "    " << e.what()
+				  << "please submit an issue on github: https://github.com/DynamicSquid/night";
 	}
 	catch (...) {
 		std::cout << "oops! we've come across and unexpected error!\n"
-			"please submit an issue on github: https://github.com/DynamicSquid/night";
+				  << "please submit an issue on github: https://github.com/DynamicSquid/night";
 	}
 }
