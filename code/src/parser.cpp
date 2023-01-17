@@ -114,7 +114,7 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 		break;
 
 	case TokenType::END_OF_FILE:
-		throw NIGHT_CREATE_FATAL("end of file reached, expected variable type");
+		throw NIGHT_CREATE_FATAL("reached end of file, expected variable type");
 	default:
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected variable type");
 	}
@@ -133,7 +133,7 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 	}
 
 	case TokenType::END_OF_FILE:
-		throw NIGHT_CREATE_FATAL("end of file reached, expected semicolon or assignment");
+		throw NIGHT_CREATE_FATAL("reached end of file, expected semicolon or assignment");
 	default:
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected semicolon or assignment");
 	}
@@ -146,8 +146,7 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 
 bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif)
 {
-	if (lexer.eat().type != TokenType::OPEN_BRACKET)
-	{
+	if (lexer.eat().type != TokenType::OPEN_BRACKET) {
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected open bracket");
 	}
 
@@ -159,8 +158,7 @@ bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif)
 	codes.push_back(std::make_shared<Bytecode>(
 		 is_elif ? BytecodeType::ELIF : BytecodeType::IF));
 
-	if (lexer.curr().type != TokenType::CLOSE_BRACKET)
-	{
+	if (lexer.curr().type != TokenType::CLOSE_BRACKET) {
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected closing bracket");
 	}
 
@@ -176,7 +174,14 @@ bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif)
 
 bytecodes_t parse_for(Lexer& lexer, Scope& scope)
 {
-	return {};
+	if (lexer.eat().type != TokenType::OPEN_BRACKET) {
+		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected open bracket");
+	}
+
+	bytecodes_t codes;
+
+	auto bytes = parse_var(lexer, scope);
+	codes.push_back(std::beign(arse))
 }
 
 bytecodes_t parse_while(Lexer& lexer, Scope& scope)
