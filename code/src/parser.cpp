@@ -12,85 +12,90 @@
 
 bytecodes_t parse_stmts(Lexer& lexer, Scope& scope)
 {
-	static bool curly_bracket = false;
+	bool curly_bracket = false;
 
 	bytecodes_t bytecodes;
-	bool if_stmt = false;
 
 	while (true)
 	{
-		bytecodes_t bytecode;
-		auto tok = lexer.eat();
-
-		switch (tok.type)
+		switch (lexer.eat().type)
 		{
-		case TokenType::VARIABLE:
-			if_stmt = false;
-			bytecode = parse_var(lexer, scope);
-			break;
-
-		case TokenType::IF:
-			if_stmt = true;
-			bytecode = parse_if(lexer, scope, false);
-			break;
-
-		case TokenType::ELIF:
-			if (!if_stmt)
-				throw NIGHT_CREATE_FATAL("elif statement must precede an if or elif statement");
-
-			bytecode = parse_if(lexer, scope, true);
-			break;
-
-		case TokenType::ELSE:
-			if (!if_stmt)
-				throw NIGHT_CREATE_FATAL("else statement does not precede an if or elif statement");
-
-			if_stmt = false;
-			break;
-
-		case TokenType::FOR:
-			if_stmt = false;
-			bytecode = parse_for(lexer, scope);
-			break;
-
-		case TokenType::WHILE:
-			if_stmt = false;
-			bytecode = parse_while(lexer, scope);
-			break;
-
-		case TokenType::RETURN:
-			if_stmt = false;
-			bytecode = parse_rtn(lexer, scope);
-			break;
-
-		case TokenType::OPEN_CURLY:
-			curly_bracket = true;
-			while (true)
-			{
-				auto bytes = parse_stmts(lexer, scope);
-				if (!curly_bracket)
-					break;
-
-				bytecode.insert(std::end(bytecode), std::begin(bytes), std::end(bytes));
+		case TokenType::CLOSE_CURLY:
+		{
+			if (!curly_bracket) {
+				throw NIGHT_CREATE_FATAL("found close curly bracket, missing opening curly bracket");
 			}
 
-			break;
-
-		case TokenType::CLOSE_CURLY:
-			curly_bracket = false;
-			break;
-
-		case TokenType::END_OF_FILE:
-			if (curly_bracket)
-				throw NIGHT_CREATE_FATAL("found end of file, expected closing curly bracket");
-
 			return bytecodes;
-
-		default:
-			throw NIGHT_CREATE_FATAL("unknown syntax");
 		}
+		case TokenType::OPEN_CURLY:
+		{
+			curly_bracket = true;
+			lexer.eat();
+		}
+		default:
+		{
+			auto bytecode = parse_stmt(lexer, scope);
+			bytecodes.insert(std::end(bytecodes), std::begin(bytecode), std::end(bytecode));
 
-		bytecodes.insert(std::end(bytecodes), std::begin(bytecode), std::end(bytecode));
+			break;
+		}
+		}
+	}
+}
+
+bytecodes_t parse_stmt(Lexer& lexer, Scope& scope)
+{
+	bool if_stmt = false;
+	bytecodes_t bytecodes;
+	auto tok = lexer.curr();
+
+	switch (tok.type)
+	{
+	case TokenType::VARIABLE:
+		if_stmt = false;
+		bytecodes = parse_var(lexer, scope);
+		break;
+
+	case TokenType::IF:
+		if_stmt = true;
+		bytecodes = parse_if(lexer, scope, false);
+		break;
+
+	case TokenType::ELIF:
+		if (!if_stmt)
+			throw NIGHT_CREATE_FATAL("elif statement must precede an if or elif statement");
+
+		bytecodes = parse_if(lexer, scope, true);
+		break;
+
+	case TokenType::ELSE:
+		if (!if_stmt)
+			throw NIGHT_CREATE_FATAL("else statement does not precede an if or elif statement");
+
+		if_stmt = false;
+		break;
+
+	case TokenType::FOR:
+		if_stmt = false;
+		bytecodes = parse_for(lexer, scope);
+		break;
+
+	case TokenType::WHILE:
+		if_stmt = false;
+		bytecodes = parse_while(lexer, scope);
+		break;
+
+	case TokenType::RETURN:
+		if_stmt = false;
+		bytecodes = parse_rtn(lexer, scope);
+		break;
+
+	case TokenType::END_OF_FILE:
+		return bytecodes;
+
+	default:
+		throw NIGHT_CREATE_FATAL("unknown syntax");
 	}
 }
 
@@ -181,7 +186,11 @@ bytecodes_t parse_for(Lexer& lexer, Scope& scope)
 	bytecodes_t codes;
 
 	auto bytes = parse_var(lexer, scope);
-	codes.push_back(std::beign(arse))
+	codes.insert(std::end(codes), std::begin(bytes), std::end(bytes));
+
+	if (lexer.curr().type != TokenType::SEMICOLON) {
+		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected semicolon");
+	}
 }
 
 bytecodes_t parse_while(Lexer& lexer, Scope& scope)

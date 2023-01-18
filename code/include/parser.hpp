@@ -7,6 +7,7 @@
 #include "type.hpp"
 
 bytecodes_t parse_stmts(Lexer& lexer, Scope& scope);
+bytecodes_t parse_stmt(Lexer& lexer, Scope& scope);
 
 bytecodes_t parse_var(Lexer& lexer, Scope& scope);
 bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif);
