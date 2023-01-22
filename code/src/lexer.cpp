@@ -113,7 +113,7 @@ Token Lexer::eat_keyword()
 	do {
 		keyword += file_line[i];
 		++i;
-	} while (i < file_line.length() && (std::isalpha(file_line[i]) || file_line[i] == '_'));
+	} while (i < file_line.length() && (std::isalpha(file_line[i]) || std::isdigit(file_line[i]) || file_line[i] == '_'));
 
 	if (auto it = keywords.find(keyword); it != keywords.end())
 		return Token{ it->second, keyword };

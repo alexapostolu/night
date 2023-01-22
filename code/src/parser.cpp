@@ -32,6 +32,19 @@ bytecodes_t parse_stmts(Lexer& lexer, Scope& scope)
 		{
 			curly_bracket = true;
 			lexer.eat();
+
+			auto bytecode = parse_stmt(lexer, scope);
+			bytecodes.insert(std::end(bytecodes), std::begin(bytecode), std::end(bytecode));
+
+			break;
+		}
+		case TokenType::END_OF_FILE:
+		{
+			if (curly_bracket) {
+				throw NIGHT_CREATE_FATAL("found close end of file, missing opening curly bracket");
+			}
+
+			return bytecodes;
 		}
 		default:
 		{
@@ -46,53 +59,35 @@ bytecodes_t parse_stmts(Lexer& lexer, Scope& scope)
 
 bytecodes_t parse_stmt(Lexer& lexer, Scope& scope)
 {
-	bool if_stmt = false;
 	bytecodes_t bytecodes;
-	auto tok = lexer.curr();
 
-	switch (tok.type)
+	switch (lexer.curr().type)
 	{
 	case TokenType::VARIABLE:
-		if_stmt = false;
-		bytecodes = parse_var(lexer, scope);
-		break;
+		return parse_var(lexer, scope);
 
 	case TokenType::IF:
-		if_stmt = true;
-		bytecodes = parse_if(lexer, scope, false);
-		break;
+		return parse_if(lexer, scope, false);
 
 	case TokenType::ELIF:
-		if (!if_stmt)
-			throw NIGHT_CREATE_FATAL("elif statement must precede an if or elif statement");
-
-		bytecodes = parse_if(lexer, scope, true);
-		break;
+		return parse_if(lexer, scope, true);
 
 	case TokenType::ELSE:
-		if (!if_stmt)
-			throw NIGHT_CREATE_FATAL("else statement does not precede an if or elif statement");
-
-		if_stmt = false;
-		break;
+		return parse_else(lexer, scope);
 
 	case TokenType::FOR:
-		if_stmt = false;
 		bytecodes = parse_for(lexer, scope);
 		break;
 
 	case TokenType::WHILE:
-		if_stmt = false;
 		bytecodes = parse_while(lexer, scope);
 		break;
 
 	case TokenType::RETURN:
-		if_stmt = false;
-		bytecodes = parse_rtn(lexer, scope);
-		break;
+		return parse_rtn(lexer, scope);
 
 	case TokenType::END_OF_FILE:
-		return bytecodes;
+		throw std::runtime_error("EOF handled in parse_stmts(), not here");
 
 	default:
 		throw NIGHT_CREATE_FATAL("unknown syntax");
@@ -104,9 +99,11 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 	bytecodes_t codes;
 
 	std::string var_name = lexer.curr().str;
+
 	ValueType var_type;
 	std::variant<char, int> var_val;
 
+	// type and default value
 	switch (lexer.eat().type)
 	{
 	case TokenType::CHAR_TYPE:
@@ -124,15 +121,26 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected variable type");
 	}
 
+	// assignment
 	switch (lexer.eat().type)
 	{
 	case TokenType::SEMICOLON:
+	{
 		codes.push_back(std::make_shared<CreateConstant>(var_type, var_val));
 		break;
+	}
 	case TokenType::ASSIGN:
 	{
+		bytecodes_t bytes;
 		auto expr = parse_toks(lexer, scope);
-		parse_expr(expr, codes);
+		auto expr_type = parse_expr(expr, bytes);
+		codes.insert(std::end(codes), std::rbegin(bytes), std::rend(bytes));
+
+		if (var_type != expr_type)
+		{
+			NIGHT_CREATE_MINOR("variable '" + var_name + "' assigned expression of type '" + val_type_to_str(expr_type) +
+				"', but has type '" + val_type_to_str(var_type) + "'");
+		}
 
 		break;
 	}
@@ -151,7 +159,8 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 
 bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif)
 {
-	if (lexer.eat().type != TokenType::OPEN_BRACKET) {
+	if (lexer.eat().type != TokenType::OPEN_BRACKET)
+	{
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected open bracket");
 	}
 
@@ -163,7 +172,8 @@ bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif)
 	codes.push_back(std::make_shared<Bytecode>(
 		 is_elif ? BytecodeType::ELIF : BytecodeType::IF));
 
-	if (lexer.curr().type != TokenType::CLOSE_BRACKET) {
+	if (lexer.curr().type != TokenType::CLOSE_BRACKET)
+	{
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected closing bracket");
 	}
 
@@ -175,6 +185,12 @@ bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif)
 	codes.push_back(std::make_shared<Bytecode>(BytecodeType::END_IF));
 
 	return codes;
+}
+
+bytecodes_t parse_else(Lexer& lexer, Scope& scope)
+{
+	Scope else_scope{ scope.vars };
+	return parse_stmts(lexer, else_scope);
 }
 
 bytecodes_t parse_for(Lexer& lexer, Scope& scope)
@@ -230,8 +246,6 @@ expr_p parse_toks(Lexer& lexer, Scope& scope, bool bracket)
 			break;
 		case TokenType::BINARY_OP:
 		{
-			expr_p curr(nullptr);
-
 			auto tok_type = str_to_binary_type(lexer.curr().str);
 
 			assert(head);
@@ -241,11 +255,16 @@ expr_p parse_toks(Lexer& lexer, Scope& scope, bool bracket)
 			}
 			else
 			{
+				expr_p curr(head);
+
 				assert(curr->next());
-				while (curr->next()->next() && (int)tok_type > (int)curr->prec() && curr->next() != guard)
+				while (curr->next()->next() && prec(tok_type) > curr->prec() && curr->next() != guard)
 					curr = curr->next();
 
-				curr->next() = std::make_shared<ExprBinary>(tok_type, curr->next(), nullptr);
+				if (curr == head && curr->prec() > prec(tok_type))
+					head = std::make_shared<ExprBinary>(tok_type, head, nullptr);
+				else
+					curr->next() = std::make_shared<ExprBinary>(tok_type, curr->next(), nullptr);
 			}
 
 			break;
@@ -288,6 +307,7 @@ expr_p parse_toks(Lexer& lexer, Scope& scope, bool bracket)
 
 ValueType parse_expr(expr_p const& expr, bytecodes_t& bytes)
 {
+	assert(expr);
 	bytes.push_back(expr->to_bytecode());
 
 	switch (expr->type)

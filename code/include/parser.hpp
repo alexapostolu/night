@@ -11,6 +11,7 @@ bytecodes_t parse_stmt(Lexer& lexer, Scope& scope);
 
 bytecodes_t parse_var(Lexer& lexer, Scope& scope);
 bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif);
+bytecodes_t parse_else(Lexer& lexer, Scope& scope);
 bytecodes_t parse_for(Lexer& lexer, Scope& scope);
 bytecodes_t parse_while(Lexer& lexer, Scope& scope);
 bytecodes_t parse_rtn(Lexer& lexer, Scope& scope);

@@ -22,7 +22,12 @@ int main(int argc, char* argv[])
 		Lexer lexer(main_file);
 
 		Scope global_scope;
-		Interpreter interpreter(parse_stmts(lexer, global_scope));
+		auto bytecodes = parse_stmts(lexer, global_scope);
+
+		for (auto code : bytecodes)
+			std::cout << code->to_str() << '\n';
+
+		Interpreter interpreter(bytecodes);
 	}
 	catch (night::fatal_error const& e) {
 		std::cout << e.what();

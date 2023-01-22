@@ -53,7 +53,6 @@ struct ExprUnary : public Expr
 	bytecode_t to_bytecode() const override;
 
 	ExprUnaryType type;
-	expr_p val;
 };
 
 
@@ -76,3 +75,5 @@ struct ExprBinary : public Expr
 
 	ExprBinaryType type;
 };
+
+int prec(ExprBinaryType type);

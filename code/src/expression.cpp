@@ -23,7 +23,7 @@ bytecode_t ExprValue::to_bytecode() const
 
 
 ExprUnary::ExprUnary(ExprUnaryType _type, expr_p const& _val)
-	: Expr(ExprType::UNARY, nullptr, nullptr), type(_type), val(_val) {}
+	: Expr(ExprType::UNARY, _val, nullptr), type(_type) {}
 
 expr_p& ExprUnary::next()
 {
@@ -46,7 +46,7 @@ bytecode_t ExprUnary::to_bytecode() const
 
 
 ExprBinary::ExprBinary(ExprBinaryType _type, expr_p const& _lhs, expr_p const& _rhs)
-	: Expr(ExprType::BINARY, lhs, rhs), type(_type) {}
+	: Expr(ExprType::BINARY, _lhs, _rhs), type(_type) {}
 
 bytecode_t ExprBinary::to_bytecode() const
 {
@@ -76,6 +76,23 @@ expr_p& ExprBinary::next()
 }
 
 int ExprBinary::prec() const
+{
+	switch (type)
+	{
+	case ExprBinaryType::ADD:
+	case ExprBinaryType::SUB:
+		return 1;
+
+	case ExprBinaryType::MULT:
+	case ExprBinaryType::DIV:
+		return 2;
+
+	default:
+		throw std::runtime_error("unhandled case");
+	}
+}
+
+int prec(ExprBinaryType type)
 {
 	switch (type)
 	{
