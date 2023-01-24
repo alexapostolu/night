@@ -16,7 +16,7 @@ bytecodes_t parse_for(Lexer& lexer, Scope& scope);
 bytecodes_t parse_while(Lexer& lexer, Scope& scope);
 bytecodes_t parse_rtn(Lexer& lexer, Scope& scope);
 
-expr_p parse_toks(Lexer& lexer, Scope& scope, bool bracket = false);
+expr_p parse_expr_toks(Lexer& lexer, Scope& scope, bool bracket = false);
 ValueType parse_expr(expr_p const& expr, bytecodes_t& bytes);
 void parse_expr_single(expr_p& head, expr_p const& val);
 

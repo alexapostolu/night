@@ -21,6 +21,7 @@ struct Expr
 	virtual std::shared_ptr<Expr>& next();
 	virtual bytecode_t to_bytecode() const = 0;
 	virtual int prec() const;
+	virtual void set_guard();
 
 	ExprType type;
 	std::shared_ptr<Expr> lhs, rhs;
@@ -72,8 +73,10 @@ struct ExprBinary : public Expr
 	bytecode_t to_bytecode() const override;
 
 	int prec() const override;
+	void set_guard() override;
 
 	ExprBinaryType type;
+	bool guard;
 };
 
 int prec(ExprBinaryType type);

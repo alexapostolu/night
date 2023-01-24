@@ -132,7 +132,7 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 	case TokenType::ASSIGN:
 	{
 		bytecodes_t bytes;
-		auto expr = parse_toks(lexer, scope);
+		auto expr = parse_expr_toks(lexer, scope);
 		auto expr_type = parse_expr(expr, bytes);
 		codes.insert(std::end(codes), std::rbegin(bytes), std::rend(bytes));
 
@@ -166,7 +166,7 @@ bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif)
 
 	bytecodes_t codes;
 
-	auto expr = parse_toks(lexer, scope);
+	auto expr = parse_expr_toks(lexer, scope);
 	auto type = parse_expr(expr, codes);
 
 	codes.push_back(std::make_shared<Bytecode>(
@@ -219,31 +219,35 @@ bytecodes_t parse_rtn(Lexer& lexer, Scope& scope)
 	return {};
 }
 
-expr_p parse_toks(Lexer& lexer, Scope& scope, bool bracket)
+expr_p parse_expr_toks(Lexer& lexer, Scope& scope, bool bracket)
 {
 	expr_p head(nullptr);
-	expr_p guard(nullptr);
-	bool open_bracket = false;
 
 	while (true)
 	{
 		switch (lexer.eat().type)
 		{
 		case TokenType::CHAR_LIT:
-			parse_expr_single(head, std::make_shared<ExprValue>(
-				ValueType::CHAR, (char)lexer.curr().str[0]));
+		{
+			auto val = std::make_shared<ExprValue>(ValueType::CHAR, lexer.curr().str[0]);
+			parse_expr_single(head, val);
 
 			break;
+		}
 		case TokenType::INT_LIT:
-			parse_expr_single(head, std::make_shared<ExprValue>(
-				ValueType::INT, std::stoi(lexer.curr().str)));
+		{
+			auto val = std::make_shared<ExprValue>(ValueType::INT, std::stoi(lexer.curr().str));
+			parse_expr_single(head, val);
 
 			break;
+		}
 		case TokenType::UNARY_OP:
-			parse_expr_single(head, std::make_shared<ExprUnary>(
-				str_to_unary_type(lexer.curr().str), nullptr));
+		{
+			auto val = std::make_shared<ExprUnary>(str_to_unary_type(lexer.curr().str), nullptr);
+			parse_expr_single(head, val);
 
 			break;
+		}
 		case TokenType::BINARY_OP:
 		{
 			auto tok_type = str_to_binary_type(lexer.curr().str);
@@ -258,7 +262,7 @@ expr_p parse_toks(Lexer& lexer, Scope& scope, bool bracket)
 				expr_p curr(head);
 
 				assert(curr->next());
-				while (curr->next()->next() && prec(tok_type) > curr->prec() && curr->next() != guard)
+				while (curr->next()->next() && prec(tok_type) > curr->prec())
 					curr = curr->next();
 
 				if (curr == head && curr->prec() > prec(tok_type))
@@ -271,22 +275,10 @@ expr_p parse_toks(Lexer& lexer, Scope& scope, bool bracket)
 		}
 		case TokenType::OPEN_BRACKET:
 		{
-			expr_p val = parse_toks(lexer, scope, true);
+			auto val = parse_expr_toks(lexer, scope, true);
+			val->set_guard();
 
-			if (!head)
-			{
-				head = val;
-				guard = head;
-			}
-			else
-			{
-				expr_p curr(head);
-				while (curr->next())
-					curr = curr->next();
-
-				curr->next() = val;
-				guard = curr;
-			}
+			parse_expr_single(head, val);
 
 			break;
 		}
@@ -297,7 +289,7 @@ expr_p parse_toks(Lexer& lexer, Scope& scope, bool bracket)
 				throw NIGHT_CREATE_FATAL("missing bracket");
 			}
 
-			break;
+			return head;
 		}
 		default:
 			return head;
@@ -318,8 +310,8 @@ ValueType parse_expr(expr_p const& expr, bytecodes_t& bytes)
 		parse_expr(expr->lhs, bytes);
 		break;
 	case ExprType::BINARY:
-		parse_expr(expr->lhs, bytes);
 		parse_expr(expr->rhs, bytes);
+		parse_expr(expr->lhs, bytes);
 		break;
 	default:
 		throw std::runtime_error("unhandled case");

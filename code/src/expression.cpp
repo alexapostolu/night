@@ -9,6 +9,7 @@ Expr::Expr(ExprType _type, expr_p const& _lhs, expr_p const& _rhs)
 
 expr_p& Expr::next() { return lhs; }
 int Expr::prec() const { return -1; }
+void Expr::set_guard() {};
 
 
 
@@ -46,7 +47,7 @@ bytecode_t ExprUnary::to_bytecode() const
 
 
 ExprBinary::ExprBinary(ExprBinaryType _type, expr_p const& _lhs, expr_p const& _rhs)
-	: Expr(ExprType::BINARY, _lhs, _rhs), type(_type) {}
+	: Expr(ExprType::BINARY, _lhs, _rhs), type(_type), guard(false) {}
 
 bytecode_t ExprBinary::to_bytecode() const
 {
@@ -77,6 +78,9 @@ expr_p& ExprBinary::next()
 
 int ExprBinary::prec() const
 {
+	if (guard)
+		return 100;
+
 	switch (type)
 	{
 	case ExprBinaryType::ADD:
@@ -90,6 +94,13 @@ int ExprBinary::prec() const
 	default:
 		throw std::runtime_error("unhandled case");
 	}
+}
+
+void ExprBinary::set_guard()
+{
+	// guard is set when this expr contains brackets
+	// nothing has higher precedence than brackets, so we guard this expr
+	guard = true;
 }
 
 int prec(ExprBinaryType type)
