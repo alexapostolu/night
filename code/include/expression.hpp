@@ -52,6 +52,7 @@ struct ExprUnary : public Expr
 	ExprUnary(ExprUnaryType _type, expr_p const& _val);
 	expr_p& next() override;
 	bytecode_t to_bytecode() const override;
+	int prec() const override;
 
 	ExprUnaryType type;
 };

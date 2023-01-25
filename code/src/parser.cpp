@@ -34,6 +34,12 @@ bytecodes_t parse_stmts(Lexer& lexer, Scope& scope)
 			lexer.eat();
 
 			auto bytecode = parse_stmt(lexer, scope);
+			if (bytecode.empty())
+			{
+				// empty indicates empty curlys
+				return bytecodes;
+			}
+
 			bytecodes.insert(std::end(bytecodes), std::begin(bytecode), std::end(bytecode));
 
 			break;
@@ -41,7 +47,7 @@ bytecodes_t parse_stmts(Lexer& lexer, Scope& scope)
 		case TokenType::END_OF_FILE:
 		{
 			if (curly_bracket) {
-				throw NIGHT_CREATE_FATAL("found close end of file, missing opening curly bracket");
+				throw NIGHT_CREATE_FATAL("found end of file, missing opening curly bracket");
 			}
 
 			return bytecodes;
@@ -86,11 +92,15 @@ bytecodes_t parse_stmt(Lexer& lexer, Scope& scope)
 	case TokenType::RETURN:
 		return parse_rtn(lexer, scope);
 
+	case TokenType::CLOSE_CURLY:
+		assert(bytecodes.empty() && "close curly bracket indicates empty curlys");
+		return {};
+
 	case TokenType::END_OF_FILE:
 		throw std::runtime_error("EOF handled in parse_stmts(), not here");
 
 	default:
-		throw NIGHT_CREATE_FATAL("unknown syntax");
+		throw NIGHT_CREATE_FATAL("unknown syntax, " + lexer.curr().str);
 	}
 }
 
@@ -134,6 +144,7 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 		bytecodes_t bytes;
 		auto expr = parse_expr_toks(lexer, scope);
 		auto expr_type = parse_expr(expr, bytes);
+
 		codes.insert(std::end(codes), std::rbegin(bytes), std::rend(bytes));
 
 		if (var_type != expr_type)
@@ -262,10 +273,10 @@ expr_p parse_expr_toks(Lexer& lexer, Scope& scope, bool bracket)
 				expr_p curr(head);
 
 				assert(curr->next());
-				while (curr->next()->next() && prec(tok_type) > curr->prec())
+				while (curr->next()->next() && prec(tok_type) >= curr->next()->prec())
 					curr = curr->next();
 
-				if (curr == head && curr->prec() > prec(tok_type))
+				if (curr == head && curr->prec() >= prec(tok_type))
 					head = std::make_shared<ExprBinary>(tok_type, head, nullptr);
 				else
 					curr->next() = std::make_shared<ExprBinary>(tok_type, curr->next(), nullptr);
@@ -284,11 +295,6 @@ expr_p parse_expr_toks(Lexer& lexer, Scope& scope, bool bracket)
 		}
 		case TokenType::CLOSE_BRACKET:
 		{
-			if (!bracket)
-			{
-				throw NIGHT_CREATE_FATAL("missing bracket");
-			}
-
 			return head;
 		}
 		default:
@@ -299,7 +305,8 @@ expr_p parse_expr_toks(Lexer& lexer, Scope& scope, bool bracket)
 
 ValueType parse_expr(expr_p const& expr, bytecodes_t& bytes)
 {
-	assert(expr);
+	assert(expr && "nullptr 'expr' should be handled by the caller");
+
 	bytes.push_back(expr->to_bytecode());
 
 	switch (expr->type)

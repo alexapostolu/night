@@ -44,6 +44,11 @@ bytecode_t ExprUnary::to_bytecode() const
 	return std::make_shared<Bytecode>(op_type);
 }
 
+int ExprUnary::prec() const
+{
+	return 100;
+}
+
 
 
 ExprBinary::ExprBinary(ExprBinaryType _type, expr_p const& _lhs, expr_p const& _rhs)
