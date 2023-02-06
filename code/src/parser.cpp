@@ -6,6 +6,7 @@
 #include "error.hpp"
 
 #include <iostream>
+#include <variant>
 #include <string>
 #include <assert.h>
 #include <unordered_map>
@@ -82,11 +83,11 @@ bytecodes_t parse_stmt(Lexer& lexer, Scope& scope)
 		return parse_else(lexer, scope);
 
 	case TokenType::FOR:
-		bytecodes = parse_for(lexer, scope);
+		return parse_for(lexer, scope);
 		break;
 
 	case TokenType::WHILE:
-		bytecodes = parse_while(lexer, scope);
+		return parse_while(lexer, scope);
 		break;
 
 	case TokenType::RETURN:
@@ -97,10 +98,10 @@ bytecodes_t parse_stmt(Lexer& lexer, Scope& scope)
 		return {};
 
 	case TokenType::END_OF_FILE:
-		throw std::runtime_error("EOF handled in parse_stmts(), not here");
+		throw std::runtime_error("EOF should be handled in caller");
 
 	default:
-		throw NIGHT_CREATE_FATAL("unknown syntax, " + lexer.curr().str);
+		throw NIGHT_CREATE_FATAL("unknown syntax '" + lexer.curr().str + "'");
 	}
 }
 
@@ -108,6 +109,7 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 {
 	bytecodes_t codes;
 
+	assert(lexer.curr().type == TokenType::VARIABLE && "variable type should be handled by the caller");
 	std::string var_name = lexer.curr().str;
 
 	ValueType var_type;
@@ -143,6 +145,12 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 	{
 		bytecodes_t bytes;
 		auto expr = parse_expr_toks(lexer, scope);
+
+		if (lexer.curr().type != TokenType::SEMICOLON)
+		{
+			throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "' at end of expression, expected semicolon")
+		}
+
 		auto expr_type = parse_expr(expr, bytes);
 
 		codes.insert(std::end(codes), std::rbegin(bytes), std::rend(bytes));
@@ -206,18 +214,49 @@ bytecodes_t parse_else(Lexer& lexer, Scope& scope)
 
 bytecodes_t parse_for(Lexer& lexer, Scope& scope)
 {
-	if (lexer.eat().type != TokenType::OPEN_BRACKET) {
+	if (lexer.eat().type != TokenType::OPEN_BRACKET)
+	{
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected open bracket");
 	}
 
 	bytecodes_t codes;
 
+	lexer.eat();
 	auto bytes = parse_var(lexer, scope);
 	codes.insert(std::end(codes), std::begin(bytes), std::end(bytes));
 
-	if (lexer.curr().type != TokenType::SEMICOLON) {
+	if (lexer.curr().type != TokenType::SEMICOLON)
+	{
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected semicolon");
 	}
+
+	auto expr = parse_expr_toks(lexer, scope);
+	bytecodes_t expr_codes;
+	auto expr_type = parse_expr(expr, expr_codes);
+	codes.insert(std::end(codes), std::begin(expr_codes), std::end(expr_codes));
+
+	// if (expr_type != ValueType::BOOL) {}
+
+	if (lexer.curr().type != TokenType::SEMICOLON)
+	{
+		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected semicolon");
+	}
+
+	lexer.eat();
+	auto increment_codes = parse_var(lexer, scope);
+	codes.insert(std::end(codes), std::begin(increment_codes), std::end(increment_codes));
+
+	if (lexer.curr().type != TokenType::CLOSE_BRACKET)
+	{
+		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected closing bracket");
+	}
+
+	Scope else_scope{ scope.vars };
+	auto stmt_codes = parse_stmts(lexer, else_scope);
+
+	codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
+
+	return codes;
 }
 
 bytecodes_t parse_while(Lexer& lexer, Scope& scope)
@@ -248,6 +287,13 @@ expr_p parse_expr_toks(Lexer& lexer, Scope& scope, bool bracket)
 		case TokenType::INT_LIT:
 		{
 			auto val = std::make_shared<ExprValue>(ValueType::INT, std::stoi(lexer.curr().str));
+			parse_expr_single(head, val);
+
+			break;
+		}
+		case TokenType::VARIABLE:
+		{
+			auto val = std::make_shared<ExprVar>(lexer.curr().str);
 			parse_expr_single(head, val);
 
 			break;

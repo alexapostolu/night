@@ -6,6 +6,7 @@
 #include <memory>
 #include <variant>
 #include <optional>
+#include <string>
 
 enum class ExprType
 {
@@ -38,6 +39,14 @@ struct ExprValue : public Expr
 
 	ValueType type;
 	std::variant<char, int> val;
+};
+
+struct ExprVar : public Expr
+{
+	ExprVar(std::string const& _name);
+	bytecode_t to_bytecode() const override;
+
+	std::string name;
 };
 
 

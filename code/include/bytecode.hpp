@@ -9,7 +9,8 @@
 
 enum struct BytecodeType
 {
-	CREATE_CONSTANT,
+	CONSTANT,
+	VARIABLE,
 	CREATE_VARIABLE,
 	STORE_CONSTANT,
 	IF,
@@ -31,13 +32,21 @@ struct Bytecode
 	BytecodeType type;
 };
 
-struct CreateConstant : Bytecode
+struct Constant : Bytecode
 {
-	CreateConstant(ValueType _type, std::variant<char, int> const& _val);
+	Constant(ValueType _type, std::variant<char, int> const& _val);
 	std::string to_str() const override;
 
 	ValueType type;
 	std::variant<char, int> val;
+};
+
+struct Variable : Bytecode
+{
+	Variable(std::string const& _name);
+	std::string to_str() const override;
+
+	std::string name;
 };
 
 struct CreateVariable : Bytecode

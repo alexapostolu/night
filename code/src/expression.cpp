@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <stdexcept>
+#include <string>
 
 Expr::Expr(ExprType _type, expr_p const& _lhs, expr_p const& _rhs)
 	: type(_type), lhs(_lhs), rhs(_rhs) {}
@@ -18,7 +19,15 @@ ExprValue::ExprValue(ValueType _type, std::variant<char, int> const& _val)
 
 bytecode_t ExprValue::to_bytecode() const
 {
-	return std::make_shared<CreateConstant>(type, val);
+	return std::make_shared<Constant>(type, val);
+}
+
+ExprVar::ExprVar(std::string const& _name)
+	: Expr(ExprType::VALUE, nullptr, nullptr), name(_name) {}
+
+bytecode_t ExprVar::to_bytecode() const
+{
+	return std::make_shared<Bytecode>(BytecodeType::VARIABLE);
 }
 
 

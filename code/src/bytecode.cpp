@@ -38,15 +38,26 @@ std::string Bytecode::to_str() const
 	}
 }
 
-CreateConstant::CreateConstant(ValueType _type, std::variant<char, int> const& _val)
-	: Bytecode(BytecodeType::CREATE_CONSTANT), type(_type), val(_val)
+Constant::Constant(ValueType _type, std::variant<char, int> const& _val)
+	: Bytecode(BytecodeType::CONSTANT), type(_type), val(_val)
 {
 
 }
 
-std::string CreateConstant::to_str() const
+std::string Constant::to_str() const
 {
-	return "CREATE_CONSTANT " + val_type_to_str(type) + " " + val_to_str(type, val);
+	return "CONSTANT " + val_type_to_str(type) + " " + val_to_str(type, val);
+}
+
+Variable::Variable(std::string const& _name)
+	: Bytecode(BytecodeType::CONSTANT), name(_name)
+{
+
+}
+
+std::string Variable::to_str() const
+{
+	return "VARIABLE " + name;
 }
 
 CreateVariable::CreateVariable(ValueType _type, std::string const& _name)
