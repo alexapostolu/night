@@ -21,7 +21,11 @@ enum struct BytecodeType
 	ADD,
 	SUB,
 	MULT,
-	DIV
+	DIV,
+	ADD_ASSIGN,
+	SUB_ASSIGN,
+	MULT_ASSIGN,
+	DIV_ASSIGN
 };
 
 struct Bytecode

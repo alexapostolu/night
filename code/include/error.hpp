@@ -7,6 +7,9 @@
 #define NIGHT_CREATE_MINOR(msg)	  night::error::get().create_minor_error(msg, __FILE__, __LINE__);
 #define NIGHT_CREATE_FATAL(msg)   night::error::get().create_fatal_error(msg, __FILE__, __LINE__);
 
+// used for internal errors
+#define NIGHT_INTERNAL_ERROR(msg) std::runtime_error(std::string(__FILE__) + "\n" + std::to_string(__LINE__) + "\n\n" + msg);
+
 namespace night {
 
 
