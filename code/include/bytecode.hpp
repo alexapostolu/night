@@ -23,11 +23,7 @@ enum struct BytecodeType
 	SUB,
 	MULT,
 	DIV,
-	ASSIGN,
-	ADD_ASSIGN,
-	SUB_ASSIGN,
-	MULT_ASSIGN,
-	DIV_ASSIGN
+	ASSIGN
 };
 
 struct Bytecode
@@ -36,6 +32,24 @@ struct Bytecode
 	virtual std::string to_str() const;
 
 	BytecodeType type;
+};
+
+enum struct AssignType
+{
+	ASSIGN,
+	ADD_ASSIGN,
+	SUB_ASSIGN,
+	MULT_ASSIGN,
+	DIV_ASSIGN
+};
+
+struct Assign : Bytecode
+{
+	Assign(AssignType _type);
+	std::string to_str() const override;
+
+	AssignType type;
+	std::string var_name;
 };
 
 struct Constant : Bytecode

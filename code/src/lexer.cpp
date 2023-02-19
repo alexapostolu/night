@@ -9,6 +9,12 @@
 #include <vector>
 #include <unordered_map>
 
+Lexer::Lexer()
+	: file_name("testing file"), i(0)
+{
+
+}
+
 Lexer::Lexer(std::string const& _file_name)
 	: file_name(_file_name), file(_file_name), i(0)
 {
@@ -17,6 +23,8 @@ Lexer::Lexer(std::string const& _file_name)
 
 	std::getline(file, file_line);
 }
+
+Lexer::~Lexer() {}
 
 Token Lexer::eat()
 {
@@ -42,6 +50,13 @@ Token Lexer::eat()
 Token Lexer::curr()
 {
 	return curr_tok;
+}
+
+void Lexer::scan_code(std::string const& code)
+{
+	i = 0;
+	file_line = code;
+	eat();
 }
 
 Token Lexer::eat_string()
@@ -164,7 +179,7 @@ Token Lexer::eat_symbol()
 		{ '&', { { '&', TokenType::BINARY_OP } } },
 		{ '!', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::UNARY_OP } } },
 
-		{ '.', { { '.', TokenType::BINARY_OP }, { '\0', TokenType::BINARY_OP }}},
+		{ '.', { { '.', TokenType::BINARY_OP }, { '\0', TokenType::BINARY_OP } } },
 
 		{ '=', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::ASSIGN } } },
 
@@ -201,13 +216,16 @@ Token Lexer::eat_symbol()
 		}
 	}
 
-	throw std::runtime_error("bruhh");
+	throw NIGHT_CREATE_FATAL("unknown symbol '" + file_line.substr(i, 2) + "'");
 }
 
 bool Lexer::new_line()
 {
 	i = 0;
-	return (bool)std::getline(file, file_line);
+
+	if (is_file)
+		return (bool)std::getline(file, file_line);
+	return (bool)std::getline(code, file_line);
 }
 
 Token Lexer::eat_new_line()

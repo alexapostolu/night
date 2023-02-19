@@ -278,7 +278,7 @@ void parse_var_assign(Lexer& lexer, Scope& scope, bytecodes_t& codes, std::strin
 	BytecodeType assign_type;
 	if (lexer.curr().str == "=")
 	{
-
+		assign_type = BytecodeType::ASSIGN;
 	}
 	else if (lexer.curr().str == "+=")
 	{
@@ -298,7 +298,7 @@ void parse_var_assign(Lexer& lexer, Scope& scope, bytecodes_t& codes, std::strin
 	}
 	else
 	{
-		throw NIGHT_INTERNAL_ERROR("unhandled case");
+		throw std::runtime_error("unhandled case in parse_var_assign");
 	}
 
 	codes.push_back(std::make_shared<Variable>(var_name));

@@ -8,11 +8,16 @@
 class Lexer
 {
 public:
+	Lexer();
 	Lexer(std::string const& _file_name);
+	~Lexer();
 
 public:
 	Token eat();
 	Token curr();
+
+	// testing
+	void scan_code(std::string const& code);
 
 private:
 	Token eat_string();
@@ -29,6 +34,7 @@ public:
 
 private:
 	std::fstream file;
+
 	std::string file_line;
 	std::size_t i; // file line index
 
