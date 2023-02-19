@@ -12,6 +12,7 @@ enum struct BytecodeType
 	CONSTANT,
 	VARIABLE,
 	CREATE_VARIABLE,
+	STORE_VARIABLE,
 	STORE_CONSTANT,
 	IF,
 	ELIF,
@@ -22,6 +23,7 @@ enum struct BytecodeType
 	SUB,
 	MULT,
 	DIV,
+	ASSIGN,
 	ADD_ASSIGN,
 	SUB_ASSIGN,
 	MULT_ASSIGN,
@@ -72,3 +74,5 @@ struct StoreConstant : Bytecode
 
 using bytecode_t  = std::shared_ptr<Bytecode>;
 using bytecodes_t = std::vector<bytecode_t>;
+
+std::string bytecode_to_str(BytecodeType type);

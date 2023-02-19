@@ -115,6 +115,22 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 	ValueType var_type;
 	std::variant<char, int> var_val;
 
+	lexer.eat();
+
+	if (lexer.curr().type == TokenType::ASSIGN)
+	{
+		parse_var_assign(lexer, scope, codes, var_name);
+
+		if (lexer.curr().type != TokenType::SEMICOLON)
+		{
+
+		}
+	}
+	else if (lexer.curr().type == TokenType::SEMICOLON)
+	{
+		codes.push_back(std::make_shared<Constant>(var_type, var_val));
+	}
+
 	if (lexer.eat().type != TokenType::ASSIGN)
 	{
 		// type and default value
@@ -139,23 +155,7 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 	}
 	else
 	{
-		bytecodes_t bytes;
-		auto expr = parse_expr_toks(lexer, scope);
-
-		if (lexer.curr().type != TokenType::SEMICOLON)
-		{
-			throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "' at end of expression, expected semicolon")
-		}
-
-		auto expr_type = parse_expr(expr, bytes);
-
-		codes.insert(std::end(codes), std::rbegin(bytes), std::rend(bytes));
-
-		if (var_type != expr_type)
-		{
-			NIGHT_CREATE_MINOR("variable '" + var_name + "' assigned expression of type '" + val_type_to_str(expr_type) +
-				"', but has type '" + val_type_to_str(var_type) + "'");
-		}
+		parse_var_assign(lexer, scope, codes, var_name);
 	}
 
 	codes.push_back(std::make_shared<CreateVariable>(var_type, var_name));
@@ -230,9 +230,19 @@ bytecodes_t parse_for(Lexer& lexer, Scope& scope)
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected semicolon");
 	}
 
-	lexer.eat();
-	auto increment_codes = parse_var(lexer, scope);
-	codes.insert(std::end(codes), std::begin(increment_codes), std::end(increment_codes));
+	// increment
+
+	if (lexer.eat().type != TokenType::VARIABLE)
+	{
+		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected variable");
+	}
+	
+	if (lexer.eat().type != TokenType::ASSIGN)
+	{
+		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected assignment");
+	}
+
+	parse_var_assign(lexer, scope, codes, var_name);
 
 	if (lexer.curr().type != TokenType::CLOSE_BRACKET)
 	{
@@ -261,15 +271,16 @@ bytecodes_t parse_rtn(Lexer& lexer, Scope& scope)
 	return {};
 }
 
-bytecodes_t parse_var_assign(Lexer& lexer, Scope& scope, std::string const& var_name)
+void parse_var_assign(Lexer& lexer, Scope& scope, bytecodes_t& codes, std::string const& var_name)
 {
 	assert(lexer.curr().type == TokenType::ASSIGN);
 	
-
-	bytecodes_t codes;
-
 	BytecodeType assign_type;
-	if (lexer.curr().str == "+=")
+	if (lexer.curr().str == "=")
+	{
+
+	}
+	else if (lexer.curr().str == "+=")
 	{
 		assign_type = BytecodeType::ADD_ASSIGN;
 	}
@@ -306,9 +317,6 @@ bytecodes_t parse_var_assign(Lexer& lexer, Scope& scope, std::string const& var_
 	type_check::var_undefined(scope, var_name);
 	type_check::var_assign_type(scope, var_name, assign_type);
 	type_check::var_expr_type(scope, var_name, expr_type);
-
-
-	return codes;
 }
 
 expr_p parse_expr_toks(Lexer& lexer, Scope& scope, bool bracket)
@@ -429,7 +437,7 @@ void parse_expr_single(expr_p& head, expr_p const& val)
 	}
 }
 
-ExprUnaryType str_to_unary_type(std::string_view str)
+ExprUnaryType str_to_unary_type(std::string const& str)
 {
 	if (str == "!")
 		return ExprUnaryType::NOT;
@@ -437,7 +445,7 @@ ExprUnaryType str_to_unary_type(std::string_view str)
 	throw std::runtime_error("tf");
 }
 
-ExprBinaryType str_to_binary_type(std::string_view str)
+ExprBinaryType str_to_binary_type(std::string const& str)
 {
 	if (str == "+")
 		return ExprBinaryType::ADD;

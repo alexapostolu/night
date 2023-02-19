@@ -18,7 +18,7 @@ bytecodes_t parse_for(Lexer& lexer, Scope& scope);
 bytecodes_t parse_while(Lexer& lexer, Scope& scope);
 bytecodes_t parse_rtn(Lexer& lexer, Scope& scope);
 
-bytecodes_t parse_var_assign(Lexer& lexer, Scope& scope, std::string const& var_name);
+void parse_var_assign(Lexer& lexer, Scope& scope, bytecodes_t& codes, std::string const& var_name);
 
 // turns tokens into AST
 // 'bracket' is for internal use only
@@ -28,8 +28,8 @@ expr_p parse_expr_toks(Lexer& lexer, Scope& scope, bool bracket = false);
 ValueType parse_expr(expr_p const& expr, bytecodes_t& bytes);
 void parse_expr_single(expr_p& head, expr_p const& val);
 
-ExprUnaryType  str_to_unary_type(std::string_view str);
-ExprBinaryType str_to_binary_type(std::string_view str);
+ExprUnaryType  str_to_unary_type(std::string const& str);
+ExprBinaryType str_to_binary_type(std::string const& str);
 
 // type check functions should generally throw minor errors
 namespace type_check {
