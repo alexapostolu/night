@@ -1,14 +1,13 @@
 #pragma once
 
+#include "lexer.hpp"
 #include <string>
 #include <vector>
 
 #define NIGHT_CREATE_WARNING(msg) night::error::get().create_warning(msg, __FILE__, __LINE__);
 #define NIGHT_CREATE_MINOR(msg)	  night::error::get().create_minor_error(msg, __FILE__, __LINE__);
-#define NIGHT_CREATE_FATAL(msg)   night::error::get().create_fatal_error(msg, __FILE__, __LINE__);
-
-// used for internal errors
-#define NIGHT_INTERNAL_ERROR(msg) std::runtime_error(std::string(__FILE__) + "\n" + std::to_string(__LINE__) + "\n\n" + msg);
+#define NIGHT_CREATE_FATAL(msg)   night::error::get().create_fatal_error(msg, lexer, __FILE__, __LINE__);
+#define NIGHT_CREATE_FATAL_LEXER(msg) night::error::get().create_fatal_error(msg, *this, __FILE__, __LINE__);
 
 namespace night {
 
@@ -30,7 +29,7 @@ public:
 
 	void create_warning(std::string const& msg, std::string const& file, int line) noexcept;
 	void create_minor_error(std::string const& msg, std::string const& file, int line) noexcept;
-	fatal_error create_fatal_error(std::string const& msg, std::string const& file, int line) noexcept;
+	fatal_error create_fatal_error(std::string const& msg, Lexer const& lexer, std::string const& file, int line) noexcept;
 
 public:
 	void operator=(error const&) = delete;
@@ -45,6 +44,5 @@ private:
 	std::vector<std::string> warnings,
 							 minor_error;
 };
-
 
 }

@@ -24,9 +24,9 @@ void night::error::create_minor_error(std::string const& msg, std::string const&
 	minor_error.push_back("");
 }
 
-night::fatal_error night::error::create_fatal_error(std::string const& msg, std::string const& file, int line) noexcept
+night::fatal_error night::error::create_fatal_error(std::string const& msg, Lexer const& lexer, std::string const& file, int line) noexcept
 {
 	if (debug_flag)
-		return fatal_error{ "[error]\n" + file + '\n' + std::to_string(line) + '\n' + msg + '\n' };
-	return fatal_error{ msg };
+		return fatal_error{ "[ error ]\n" + file + '\n' + std::to_string(line) + '\n' + msg + '\n' };
+	return fatal_error{ "[ error ]\n" + lexer.file_name + " (" + std::to_string(lexer.line) + ":" + std::to_string(lexer.i) + ")\n" + msg + '\n'};
 }

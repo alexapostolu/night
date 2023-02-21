@@ -11,8 +11,10 @@
 #include <assert.h>
 #include <unordered_map>
 
-bytecodes_t parse_stmts(Lexer& lexer, Scope& scope)
+bytecodes_t parse_stmts(Lexer& lexer, Scope& upper_scope)
 {
+	Scope scope{ upper_scope.vars };
+
 	bool curly_bracket = false;
 
 	bytecodes_t bytecodes;
@@ -66,8 +68,6 @@ bytecodes_t parse_stmts(Lexer& lexer, Scope& scope)
 
 bytecodes_t parse_stmt(Lexer& lexer, Scope& scope)
 {
-	bytecodes_t bytecodes;
-
 	switch (lexer.curr().type)
 	{
 	case TokenType::VARIABLE:
@@ -84,21 +84,18 @@ bytecodes_t parse_stmt(Lexer& lexer, Scope& scope)
 
 	case TokenType::FOR:
 		return parse_for(lexer, scope);
-		break;
 
 	case TokenType::WHILE:
 		return parse_while(lexer, scope);
-		break;
 
 	case TokenType::RETURN:
 		return parse_rtn(lexer, scope);
 
 	case TokenType::CLOSE_CURLY:
-		assert(bytecodes.empty() && "close curly bracket indicates empty curlys");
-		return {};
+		throw std::runtime_error("in parse_stmt: close curly bracket indicates empty curlys");
 
 	case TokenType::END_OF_FILE:
-		throw std::runtime_error("EOF should be handled in caller");
+		throw std::runtime_error("in parse_stmt: EOF should be handled in caller");
 
 	default:
 		throw NIGHT_CREATE_FATAL("unknown syntax '" + lexer.curr().str + "'");
@@ -184,9 +181,7 @@ bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif)
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected closing bracket");
 	}
 
-	Scope stmt_scope{ scope.vars };
-
-	auto stmt_bytes = parse_stmts(lexer, stmt_scope);
+	auto stmt_bytes = parse_stmts(lexer, scope);
 	codes.insert(std::end(codes), std::begin(stmt_bytes), std::end(stmt_bytes));
 
 	codes.push_back(std::make_shared<Bytecode>(BytecodeType::END_IF));
@@ -196,18 +191,22 @@ bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif)
 
 bytecodes_t parse_else(Lexer& lexer, Scope& scope)
 {
-	Scope else_scope{ scope.vars };
-	return parse_stmts(lexer, else_scope);
+	bytecodes_t codes;
+	codes.push_back(std::make_shared<Bytecode>(BytecodeType::ELSE));
+
+	auto stmt_codes = parse_stmts(lexer, scope);
+	codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
+
+	codes.push_back(std::make_shared<Bytecode>(BytecodeType::END_IF));
+
+	return codes;
 }
 
 bytecodes_t parse_for(Lexer& lexer, Scope& scope)
 {
 	assert(lexer.curr().type == TokenType::FOR);
 
-	if (lexer.eat().type != TokenType::OPEN_BRACKET)
-	{
-		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected open bracket");
-	}
+	lexer.expect(TokenType::OPEN_BRACKET);
 
 	bytecodes_t codes;
 
@@ -215,47 +214,32 @@ bytecodes_t parse_for(Lexer& lexer, Scope& scope)
 	auto bytes = parse_var(lexer, scope);
 	codes.insert(std::end(codes), std::begin(bytes), std::end(bytes));
 
-	if (lexer.curr().type != TokenType::SEMICOLON)
-	{
-		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected semicolon");
-	}
+	lexer.expect(TokenType::SEMICOLON);
 
 	auto expr = parse_expr_toks(lexer, scope);
 	auto expr_type = parse_expr(expr, codes);
 
-	// if (expr_type != ValueType::BOOL) {}
-
-	if (lexer.curr().type != TokenType::SEMICOLON)
-	{
-		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected semicolon");
-	}
+	lexer.expect(TokenType::SEMICOLON);
 
 	// increment
 
-	if (lexer.eat().type != TokenType::VARIABLE)
-	{
-		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected variable");
-	}
-	
-	if (lexer.eat().type != TokenType::ASSIGN)
-	{
-		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected assignment");
-	}
+	lexer.expect(TokenType::VARIABLE);
+	lexer.expect(TokenType::ASSIGN);
 
 	parse_var_assign(lexer, scope, codes, var_name);
 
-	if (lexer.curr().type != TokenType::CLOSE_BRACKET)
-	{
-		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected closing bracket");
-	}
+	lexer.expect(TokenType::CLOSE_BRACKET);
 
-	Scope else_scope{ scope.vars };
-	auto stmt_codes = parse_stmts(lexer, else_scope);
-
+	auto stmt_codes = parse_stmts(lexer, scope);
 	codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
 
 
 	type_check::var_defined(scope, var_name);
+
+	if (expr_type != ValueType::BOOL)
+	{
+		NIGHT_CREATE_MINOR("found '" + val_type_to_str(expr_type) + "' expression, expected boolean expression");
+	}
 
 
 	return codes;
@@ -268,7 +252,14 @@ bytecodes_t parse_while(Lexer& lexer, Scope& scope)
 
 bytecodes_t parse_rtn(Lexer& lexer, Scope& scope)
 {
-	return {};
+	bytecodes_t codes;
+
+	auto expr = parse_expr_toks(lexer, scope);
+	auto type = parse_expr(expr, codes);
+
+	codes.push_back(std::make_shared<Bytecode>(BytecodeType::RETURN));
+
+	return codes;
 }
 
 void parse_var_assign(Lexer& lexer, Scope& scope, bytecodes_t& codes, std::string const& var_name)

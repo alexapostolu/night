@@ -10,16 +10,16 @@
 #include <unordered_map>
 
 Lexer::Lexer()
-	: file_name("testing file"), i(0)
+	: file_name("testing file"), line(1), i(0)
 {
 
 }
 
 Lexer::Lexer(std::string const& _file_name)
-	: file_name(_file_name), file(_file_name), i(0)
+	: file_name(_file_name), file(_file_name), line(1), i(0)
 {
 	if (!file.is_open())
-		throw NIGHT_CREATE_FATAL("file '" + file_name + "' could not be found/opened");
+		throw NIGHT_CREATE_FATAL_LEXER("file '" + file_name + "' could not be found/opened");
 
 	std::getline(file, file_line);
 }
@@ -50,6 +50,14 @@ Token Lexer::eat()
 Token Lexer::curr()
 {
 	return curr_tok;
+}
+
+void Lexer::expect(TokenType type, std::string const& err)
+{
+	eat();
+
+	if (curr().type != type)
+		throw NIGHT_CREATE_FATAL_LEXER("found '" + curr().str + "', expected " + tok_type_to_str(type) + err);
 }
 
 void Lexer::scan_code(std::string const& code)
@@ -198,7 +206,7 @@ Token Lexer::eat_symbol()
 	auto symbol = symbols.find(file_line[i]);
 	if (symbol == symbols.end())
 	{
-		throw NIGHT_CREATE_FATAL("unknown symbol '" + std::string(1, file_line[i]) + "'");
+		throw NIGHT_CREATE_FATAL_LEXER("unknown symbol '" + std::string(1, file_line[i]) + "'");
 	}
 
 	for (auto& [c, tok_type] : symbol->second)
@@ -216,16 +224,15 @@ Token Lexer::eat_symbol()
 		}
 	}
 
-	throw NIGHT_CREATE_FATAL("unknown symbol '" + file_line.substr(i, 2) + "'");
+	throw NIGHT_CREATE_FATAL_LEXER("unknown symbol '" + file_line.substr(i, 2) + "'");
 }
 
 bool Lexer::new_line()
 {
+	++line;
 	i = 0;
 
-	if (is_file)
-		return (bool)std::getline(file, file_line);
-	return (bool)std::getline(code, file_line);
+	return (bool)std::getline(file, file_line);
 }
 
 Token Lexer::eat_new_line()

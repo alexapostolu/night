@@ -18,6 +18,7 @@ enum struct BytecodeType
 	ELIF,
 	ELSE,
 	END_IF,
+	RETURN,
 	NOT,
 	ADD,
 	SUB,

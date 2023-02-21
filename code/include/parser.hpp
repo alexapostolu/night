@@ -8,7 +8,7 @@
 
 #include <string>
 
-bytecodes_t parse_stmts(Lexer& lexer, Scope& scope);
+bytecodes_t parse_stmts(Lexer& lexer, Scope const& scope);
 bytecodes_t parse_stmt(Lexer& lexer, Scope& scope);
 
 bytecodes_t parse_var(Lexer& lexer, Scope& scope);
@@ -18,6 +18,7 @@ bytecodes_t parse_for(Lexer& lexer, Scope& scope);
 bytecodes_t parse_while(Lexer& lexer, Scope& scope);
 bytecodes_t parse_rtn(Lexer& lexer, Scope& scope);
 
+// token starts at assign
 void parse_var_assign(Lexer& lexer, Scope& scope, bytecodes_t& codes, std::string const& var_name);
 
 // turns tokens into AST

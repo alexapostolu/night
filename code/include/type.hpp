@@ -5,6 +5,7 @@
 
 enum class ValueType
 {
+	BOOL,
 	CHAR,
 	INT
 };

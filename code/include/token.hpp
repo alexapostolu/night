@@ -48,3 +48,5 @@ struct Token
 	TokenType type;
 	std::string str;
 };
+
+std::string tok_type_to_str(TokenType type);

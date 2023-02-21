@@ -64,8 +64,3 @@ void test_parse_var(Lexer& lexer)
 	night_assert_expect_bytecode(6, BytecodeType::CONSTANT);
 	night_assert_expect_bytecode(7, BytecodeType::ASSIGN);
 }
-
-void scan_code(std::string const& code)
-{
-
-}

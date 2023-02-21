@@ -1,6 +1,7 @@
 #pragma once
 
 #include "token.hpp"
+#include "error.hpp"
 
 #include <fstream>
 #include <string>
@@ -15,6 +16,7 @@ public:
 public:
 	Token eat();
 	Token curr();
+	void expect(TokenType type, std::string const& err = "\n");
 
 	// testing
 	void scan_code(std::string const& code);
@@ -33,9 +35,13 @@ public:
 	std::string file_name;
 
 private:
+	friend night::fatal_error create_fatal_error(std::string const& msg, Lexer const& lexer, std::string const& file, int line) noexcept;
+
 	std::fstream file;
 
 	std::string file_line;
+
+	int line;
 	std::size_t i; // file line index
 
 	Token curr_tok;
