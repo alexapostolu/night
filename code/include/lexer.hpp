@@ -34,15 +34,13 @@ private:
 public:
 	std::string file_name;
 
-private:
-	friend night::fatal_error create_fatal_error(std::string const& msg, Lexer const& lexer, std::string const& file, int line) noexcept;
+	int line;
+	std::size_t i; // file line index
 
+private:
 	std::fstream file;
 
 	std::string file_line;
-
-	int line;
-	std::size_t i; // file line index
 
 	Token curr_tok;
 };

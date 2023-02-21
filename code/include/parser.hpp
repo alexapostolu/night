@@ -8,7 +8,7 @@
 
 #include <string>
 
-bytecodes_t parse_stmts(Lexer& lexer, Scope const& scope);
+bytecodes_t parse_stmts(Lexer& lexer, Scope& scope);
 bytecodes_t parse_stmt(Lexer& lexer, Scope& scope);
 
 bytecodes_t parse_var(Lexer& lexer, Scope& scope);
