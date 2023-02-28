@@ -163,12 +163,9 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 
 bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif)
 {
-	if (lexer.eat().type != TokenType::OPEN_BRACKET)
-	{
-		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected open bracket");
-	}
-
 	bytecodes_t codes;
+
+	lexer.expect(TokenType::OPEN_BRACKET);
 
 	auto expr = parse_expr_toks(lexer, scope);
 	auto type = parse_expr(expr, codes);
@@ -176,10 +173,7 @@ bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif)
 	codes.push_back(std::make_shared<Bytecode>(
 		 is_elif ? BytecodeType::ELIF : BytecodeType::IF));
 
-	if (lexer.curr().type != TokenType::CLOSE_BRACKET)
-	{
-		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected closing bracket");
-	}
+	lexer.expect(TokenType::CLOSE_BRACKET);
 
 	auto stmt_bytes = parse_stmts(lexer, scope);
 	codes.insert(std::end(codes), std::begin(stmt_bytes), std::end(stmt_bytes));
@@ -247,7 +241,26 @@ bytecodes_t parse_for(Lexer& lexer, Scope& scope)
 
 bytecodes_t parse_while(Lexer& lexer, Scope& scope)
 {
-	return {};
+	assert(lexer.curr().type == TokenType::WHILE);
+
+	bytecodes_t codes;
+
+	lexer.expect(TokenType::OPEN_BRACKET);
+
+	auto cond_expr = parse_expr_toks(lexer, scope);
+	auto cond_type = parse_expr(cond_expr, codes);
+
+	lexer.expect(TokenType::CLOSE_BRACKET);
+
+	auto stmt_codes = parse_stmts(lexer, scope);
+	codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
+
+	if (cond_type != ValueType::BOOL)
+	{
+		NIGHT_CREATE_MINOR("found '" + val_type_to_str(cond_type) + "' expression, expected boolean expression");
+	}
+
+	return codes;
 }
 
 bytecodes_t parse_rtn(Lexer& lexer, Scope& scope)
