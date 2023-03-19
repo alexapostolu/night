@@ -25,9 +25,10 @@ int main(int argc, char* argv[])
 		auto bytecodes = parse_stmts(lexer, global_scope);
 
 		for (auto code : bytecodes)
-			std::cout << code->to_str() << '\n';
+			std::cout << code.to_str() << '\n';
 
 		Interpreter interpreter(bytecodes);
+		interpreter.parse_bytecode();
 	}
 	catch (night::fatal_error const& e) {
 		std::cout << e.what();

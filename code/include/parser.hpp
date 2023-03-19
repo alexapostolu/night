@@ -18,7 +18,8 @@ bytecodes_t parse_for(Lexer& lexer, Scope& scope);
 bytecodes_t parse_while(Lexer& lexer, Scope& scope);
 bytecodes_t parse_rtn(Lexer& lexer, Scope& scope);
 
-// token starts at assign
+// token starts at assign, ends at last statement of assignment
+// caller's responsibility to check curr token after function call finishes
 void parse_var_assign(Lexer& lexer, Scope& scope, bytecodes_t& codes, std::string const& var_name);
 
 // turns tokens into AST
@@ -42,7 +43,7 @@ void var_defined(Scope const& scope, std::string const& var_name);
 void var_undefined(Scope const& scope, std::string const& var_name);
 
 // var type compatable with assignment type
-void var_assign_type(Scope& scope, std::string const& var_name, BytecodeType assign_type);
+void var_assign_type(Scope& scope, std::string const& var_name, AssignType assign_type);
 
 // var type compatable with expr type
 void var_expr_type(Scope& scope, std::string const& var_name, ValueType expr_type);

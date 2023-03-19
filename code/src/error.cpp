@@ -16,12 +16,12 @@ night::error& night::error::get()
 
 void night::error::create_warning(std::string const& msg, std::string const& file, int line) noexcept
 {
-	warnings.push_back("");
+	warnings.push_back(msg);
 }
 
-void night::error::create_minor_error(std::string const& msg, std::string const& file, int line) noexcept
+void night::error::create_minor_error(std::string const& msg, int line, int col, std::string const& debug_file, int debug_line) noexcept
 {
-	minor_error.push_back("");
+	minor_error.push_back(msg);
 }
 
 night::fatal_error night::error::create_fatal_error(std::string const& msg, Lexer const& lexer, std::string const& file, int line) noexcept

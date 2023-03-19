@@ -8,18 +8,23 @@
 
 std::string parse_args(std::vector<std::string_view> const& args)
 {
-	std::string const more_info = "for more info, type:\n"
-								  "    night --help\n\n";
+	std::string more_info = "for more info, type:\n"
+							"    night --help\n\n";
 
-	std::string const help = "usage:\n"
-							 "    night <file>\n"
-							 "    night <file> <flag..>\n"
-							 "    night <option>\n"
-							 "flags:\n"
-							 "    -d           shows debug info for compiler source code (for developers)\n"
-							 "options:\n"
-							 "    --help       displays this message\n"
-							 "    --version    displays the version\n\n";
+	// make sure to use SPACES not tabs when formatting console output
+	// different consoles will format tabs differently!
+	// fuck 8 space tabs fuck 8 space tabs fuck 8 space tabs so much
+	// 4 space tab superiority
+	std::string help = "usage:\n"
+					   "    night <file>\n"
+					   "    night <file> <flag..>\n"
+					   "    night <option>\n"
+					   "flags:\n"
+					   "    -b           generates a bytecode file for each source file\n"
+					   "    -d           shows debug info for compiler source code (for developers)\n"
+					   "options:\n"
+					   "    --help       displays this message\n"
+					   "    --version    displays the version\n\n";
 
 	if (args.size() == 1)
 	{
