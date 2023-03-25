@@ -1,13 +1,24 @@
 #pragma once
 
-#include "type.hpp"
+#include "value.hpp"
 
 #include <string>
-#include <unordered_map>
+#include <map>
+#include <vector>
 
-using type_container = std::unordered_map<std::string, ValueType>;
+struct Function;
+
+using var_container  = std::map<std::string, ValueType>;
+using func_container = std::map<std::string, Function>;
+
+struct Function
+{
+	std::vector<ValueType> params;
+	std::vector<Bytecode>  codes;
+};
 
 struct Scope
 {
-	type_container vars;
+	var_container  vars;
+	func_container funcs;
 };

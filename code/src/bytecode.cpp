@@ -7,9 +7,6 @@
 #include <string>
 #include <assert.h>
 
-Bytecode::Bytecode(BytecodeType _type)
-	: type(_type) {}
-
 std::string Bytecode::to_str() const
 {
 	return bytecode_to_str(type);
@@ -50,8 +47,6 @@ std::string bytecode_to_str(BytecodeType type)
 		return "ELIF";
 	case BytecodeType::ELSE:
 		return "ELSE";
-	case BytecodeType::END_IF:
-		return "END_IF";
 
 	case BytecodeType::RETURN:
 		return "RETURN";

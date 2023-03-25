@@ -33,9 +33,7 @@ private:
 
 public:
 	std::string file_name;
-
-	int line;
-	std::size_t i; // file line index
+	Location loc;
 
 private:
 	std::fstream file;

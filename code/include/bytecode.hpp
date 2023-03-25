@@ -2,6 +2,7 @@
 
 #include "interpreter.hpp"
 #include "value.hpp"
+#include "error.hpp"
 
 #include <memory>
 #include <string>
@@ -9,42 +10,46 @@
 #include <optional>
 #include <queue>
 
+// comments indicate the corresponding integer value in the Bytecode
 enum struct BytecodeType
 {
-	CONSTANT,
-	VARIABLE,
+	CONSTANT,				// value
+	VARIABLE,				// variable id
 
-	NOT,
-	ADD,
-	SUB,
-	MULT,
-	DIV,
+	NOT,					//
+	ADD,					//
+	SUB,					//
+	MULT,					//
+	DIV,					//
 
-	ASSIGN,
-	ADD_ASSIGN,
-	SUB_ASSIGN,
-	MULT_ASSIGN,
-	DIV_ASSIGN,
+	BOOL_ASSIGN,			// variable id
+	CHAR_ASSIGN,			// variable id
+	INT_ASSIGN,				// variable id
 
-	IF,
-	ELIF,
-	ELSE,
-	END_IF,
+	ADD_ASSIGN,				// variable id
+	SUB_ASSIGN,				// variable id
+	MULT_ASSIGN,			// variable id
+	DIV_ASSIGN,				// variable id
 
-	RETURN
+	IF,						// index of last if bytecode
+	ELIF,					// index of last elif bytecode
+	ELSE,					// index of last else bytecode
+
+	FUNC,					// number of parameters
+	RETURN,					// return value
+	END_FUNC				//
 };
 
 using op_type = BytecodeType;
 
 struct Bytecode
 {
-	Bytecode(BytecodeType _type);
 	std::string to_str() const;
+
+	Location loc; // for error messages
 
 	BytecodeType type;
 	int val; // optional
-
-	int line, col; // for error messages
 };
 
 using bytecodes_t = std::vector<Bytecode>;

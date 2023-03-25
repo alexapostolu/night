@@ -4,7 +4,7 @@
 #include "bytecode.hpp"
 #include "scope.hpp"
 #include "expression.hpp"
-#include "type.hpp"
+#include "value.hpp"
 
 #include <string>
 

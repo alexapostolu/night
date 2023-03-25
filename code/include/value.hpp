@@ -13,7 +13,7 @@ enum class ValueType
 struct Value
 {
 	ValueType type;
-	std::variant<bool, char, int> val;
+	int val;
 };
 
 std::string val_type_to_str(ValueType type);

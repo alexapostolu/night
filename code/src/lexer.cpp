@@ -10,13 +10,13 @@
 #include <unordered_map>
 
 Lexer::Lexer()
-	: file_name("testing file"), line(1), i(0)
+	: file_name("testing file"), loc({ 1, 0 })
 {
 
 }
 
 Lexer::Lexer(std::string const& _file_name)
-	: file_name(_file_name), file(_file_name), line(1), i(0)
+	: file_name(_file_name), file(_file_name), loc({ 1, 0 })
 {
 	if (!file.is_open())
 		throw NIGHT_CREATE_FATAL_LEXER("file '" + file_name + "' could not be found/opened");
@@ -28,20 +28,20 @@ Lexer::~Lexer() {}
 
 Token Lexer::eat()
 {
-	while (i < file_line.size() && std::isspace(file_line[i]))
-		++i;
+	while (loc.col < file_line.size() && std::isspace(file_line[loc.col]))
+		++loc.col;
 
-	if (i == file_line.size() || file_line[i] == '#')
+	if (loc.col == file_line.size() || file_line[loc.col] == '#')
 		return curr_tok = eat_new_line();
 
 
-	if (std::isdigit(file_line[i]))
+	if (std::isdigit(file_line[loc.col]))
 		return curr_tok = eat_number();
 
-	if (file_line[i] == '"')
+	if (file_line[loc.col] == '"')
 		return curr_tok = eat_string();
 
-	if (std::isalpha(file_line[i]) || file_line[i] == '_')
+	if (std::isalpha(file_line[loc.col]) || file_line[loc.col] == '_')
 		return curr_tok = eat_keyword();
 
 	return curr_tok = eat_symbol();
@@ -62,33 +62,33 @@ void Lexer::expect(TokenType type, std::string const& err)
 
 void Lexer::scan_code(std::string const& code)
 {
-	i = 0;
+	loc.col = 0;
 	file_line = code;
 	eat();
 }
 
 Token Lexer::eat_string()
 {
-	++i;
+	++loc.col;
 
 	std::string str;
 
 	while (true)
 	{
-		if (i == file_line.size() && !new_line())
+		if (loc.col == file_line.size() && !new_line())
 			std::cout << "expected closing quotes for string '" + str + "'";
 
-		if (file_line[i] == '"')
+		if (file_line[loc.col] == '"')
 			break;
 
 		bool match = false;
 		char ch;
 
-		if (i < file_line.length() - 1 && file_line[i] == '\\')
+		if (loc.col < file_line.length() - 1 && file_line[loc.col] == '\\')
 		{
 			match = true;
 
-			switch (file_line[i + 1])
+			switch (file_line[loc.col + 1])
 			{
 			case '\\': ch = '\\'; break;
 			case '"':  ch = '\"'; break;
@@ -102,17 +102,17 @@ Token Lexer::eat_string()
 		
 		if (!match)
 		{
-			str += file_line[i];
-			++i;
+			str += file_line[loc.col];
+			++loc.col;
 		}
 		else
 		{
 			str += ch;
-			i += 2;
+			loc.col += 2;
 		}
 	}
 
-	++i;
+	++loc.col;
 	return { TokenType::STR_LIT, str };
 }
 
@@ -134,9 +134,9 @@ Token Lexer::eat_keyword()
 	std::string keyword;
 
 	do {
-		keyword += file_line[i];
-		++i;
-	} while (i < file_line.length() && (std::isalpha(file_line[i]) || std::isdigit(file_line[i]) || file_line[i] == '_'));
+		keyword += file_line[loc.col];
+		++loc.col;
+	} while (loc.col < file_line.length() && (std::isalpha(file_line[loc.col]) || std::isdigit(file_line[loc.col]) || file_line[loc.col] == '_'));
 
 	if (auto it = keywords.find(keyword); it != keywords.end())
 		return Token{ it->second, keyword };
@@ -149,21 +149,21 @@ Token Lexer::eat_number()
 	std::string number;
 
 	do {
-		number += file_line[i];
-		++i;
-	} while (i < file_line.length() && std::isdigit(file_line[i]));
+		number += file_line[loc.col];
+		++loc.col;
+	} while (loc.col < file_line.length() && std::isdigit(file_line[loc.col]));
 
 	// floats
-	if (file_line[i] == '.' && i < file_line.length() - 1 &&
-		std::isdigit(file_line[i + 1]))
+	if (file_line[loc.col] == '.' && loc.col < file_line.length() - 1 &&
+		std::isdigit(file_line[loc.col + 1]))
 	{
 		number += ".";
-		++i;
+		++loc.col;
 
 		do {
-			number += file_line[i];
-			++i;
-		} while (i < file_line.length() && std::isdigit(file_line[i]));
+			number += file_line[loc.col];
+			++loc.col;
+		} while (loc.col < file_line.length() && std::isdigit(file_line[loc.col]));
 
 		return { TokenType::FLOAT_LIT, number };
 	}
@@ -203,34 +203,34 @@ Token Lexer::eat_symbol()
 		{ ';', { { '\0', TokenType::SEMICOLON } } }
 	};
 
-	auto symbol = symbols.find(file_line[i]);
+	auto symbol = symbols.find(file_line[loc.col]);
 	if (symbol == symbols.end())
 	{
-		throw NIGHT_CREATE_FATAL_LEXER("unknown symbol '" + std::string(1, file_line[i]) + "'");
+		throw NIGHT_CREATE_FATAL_LEXER("unknown symbol '" + std::string(1, file_line[loc.col]) + "'");
 	}
 
 	for (auto& [c, tok_type] : symbol->second)
 	{
 		if (c == '\0')
 		{
-			++i;
-			return { tok_type, std::string(1, file_line[i - 1]) };
+			++loc.col;
+			return { tok_type, std::string(1, file_line[loc.col - 1]) };
 		}
 
-		if (i < file_line.length() - 1 && file_line[i + 1] == c)
+		if (loc.col < file_line.length() - 1 && file_line[loc.col + 1] == c)
 		{
-			i += 2;
-			return { tok_type, std::string(1, file_line[i - 2]) + std::string(1, c) };;
+			loc.col += 2;
+			return { tok_type, std::string(1, file_line[loc.col - 2]) + std::string(1, c) };;
 		}
 	}
 
-	throw NIGHT_CREATE_FATAL_LEXER("unknown symbol '" + file_line.substr(i, 2) + "'");
+	throw NIGHT_CREATE_FATAL_LEXER("unknown symbol '" + file_line.substr(loc.col, 2) + "'");
 }
 
 bool Lexer::new_line()
 {
-	++line;
-	i = 0;
+	++loc.line;
+	loc.col = 0;
 
 	return (bool)std::getline(file, file_line);
 }

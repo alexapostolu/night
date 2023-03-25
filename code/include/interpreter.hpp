@@ -11,7 +11,7 @@
 
 // debugging with asserts
 #define assert_assignment() \
-	assert(scope.vars.contains(code.val) \
+	assert(scope.vars.contains(code->val) \
 		&& "variable definitions should be checked in parser"); \
 	assert(!s.empty() \
 		&& "the stack should not be empty when assigning, should be checked in parser");
@@ -27,16 +27,15 @@ struct InterpreterScope
 class Interpreter
 {
 public:
-	Interpreter(bytecodes_t const& _bytecodes);
+	Interpreter(bytecodes_t const& bytecodes);
 
 public:
-	void parse_bytecode();
+	void parse_bytecodes(bytecodes_t const& codes);
 
 private:
 	// wrapper for stack.pop()
 	int pop(expr_stack& s);
 
 private:
-	bytecodes_t bytecodes;
 	InterpreterScope scope;
 };

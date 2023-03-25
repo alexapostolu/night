@@ -110,25 +110,30 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 	bytecodes_t codes;
 	std::string var_name = lexer.curr().str;
 
-	ValueType var_type;
-	std::variant<char, int> var_val;
 
 	lexer.eat();
 
 	// default values
 
-	if (lexer.curr().type == TokenType::CHAR_TYPE ||
+	if (lexer.curr().type == TokenType::BOOL_TYPE ||
+		lexer.curr().type == TokenType::CHAR_TYPE ||
 		lexer.curr().type == TokenType::INT_TYPE)
 	{
+		BytecodeType var_type;
+		ValueType val_type;
 		switch (lexer.curr().type)
 		{
+		case TokenType::BOOL_TYPE:
+			var_type = BytecodeType::BOOL_ASSIGN;
+			val_type = ValueType::BOOL;
+			break;
 		case TokenType::CHAR_TYPE:
-			var_type = ValueType::CHAR;
-			var_val = '\0';
+			var_type = BytecodeType::CHAR_ASSIGN;
+			val_type = ValueType::CHAR;
 			break;
 		case TokenType::INT_TYPE:
-			var_type = ValueType::INT;
-			var_val = 0;
+			var_type = BytecodeType::INT_ASSIGN;
+			val_type = ValueType::INT;
 			break;
 		default:
 			throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected variable type or assignment");
@@ -138,8 +143,12 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 
 		if (lexer.curr().type == TokenType::SEMICOLON)
 		{
-			codes.push_back(std::make_shared<Constant>(var_type, var_val));
-			codes.push_back(std::make_shared<Assign>(AssignType::ASSIGN, var_name));
+			scope.vars[var_name] = val_type;
+
+			codes.push_back({ lexer.loc, BytecodeType::CONSTANT, 0 });
+			codes.push_back({ lexer.loc, var_type, (int)std::distance(std::begin(scope.vars), scope.vars.find(var_name)) });
+
+			type_check::var_defined(scope, var_name);
 		}
 		else if (lexer.curr().type == TokenType::ASSIGN)
 		{
@@ -176,28 +185,29 @@ bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif)
 	auto expr = parse_expr_toks(lexer, scope);
 	auto type = parse_expr(expr, codes);
 
-	codes.push_back(std::make_shared<Bytecode>(
-		 is_elif ? BytecodeType::ELIF : BytecodeType::IF));
-
 	lexer.expect(TokenType::CLOSE_BRACKET);
 
-	auto stmt_bytes = parse_stmts(lexer, scope);
-	codes.insert(std::end(codes), std::begin(stmt_bytes), std::end(stmt_bytes));
+	auto stmt_codes = parse_stmts(lexer, scope);
 
-	codes.push_back(std::make_shared<Bytecode>(BytecodeType::END_IF));
+	codes.push_back({ lexer.loc, is_elif ? BytecodeType::ELIF : BytecodeType::IF, (int)stmt_codes.size() });
+	codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
+
+	if (type != ValueType::BOOL)
+	{
+		NIGHT_CREATE_MINOR("found '" + val_type_to_str(type) + "' condition, expected boolean condition");
+	}
 
 	return codes;
 }
 
 bytecodes_t parse_else(Lexer& lexer, Scope& scope)
-{
+{	
 	bytecodes_t codes;
-	codes.push_back(std::make_shared<Bytecode>(BytecodeType::ELSE));
 
 	auto stmt_codes = parse_stmts(lexer, scope);
-	codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
 
-	codes.push_back(std::make_shared<Bytecode>(BytecodeType::END_IF));
+	codes.push_back({ lexer.loc, BytecodeType::ELSE, (int)stmt_codes.size() });
+	codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
 
 	return codes;
 }
@@ -275,7 +285,7 @@ bytecodes_t parse_rtn(Lexer& lexer, Scope& scope)
 	auto expr = parse_expr_toks(lexer, scope);
 	auto type = parse_expr(expr, codes);
 
-	codes.push_back(std::make_shared<Bytecode>(BytecodeType::RETURN));
+	codes.push_back({ lexer.loc, BytecodeType::RETURN });
 
 	return codes;
 }
@@ -284,30 +294,35 @@ void parse_var_assign(Lexer& lexer, Scope& scope, bytecodes_t& codes, std::strin
 {
 	assert(lexer.curr().type == TokenType::ASSIGN);
 	
-	AssignType assign_type;
+	BytecodeType assign_type;
 	if (lexer.curr().str == "=")
 	{
-		assign_type = AssignType::ASSIGN;
+		if (scope.vars[var_name] == ValueType::BOOL)
+			assign_type = BytecodeType::BOOL_ASSIGN;
+		if (scope.vars[var_name] == ValueType::CHAR)
+			assign_type = BytecodeType::CHAR_ASSIGN;
+		if (scope.vars[var_name] == ValueType::INT)
+			assign_type = BytecodeType::INT_ASSIGN;
 	}
 	else if (lexer.curr().str == "+=")
 	{
-		assign_type = AssignType::ADD_ASSIGN;
+		assign_type = BytecodeType::ADD_ASSIGN;
 	}
 	else if (lexer.curr().str == "-=")
 	{
-		assign_type = AssignType::SUB_ASSIGN;
+		assign_type = BytecodeType::SUB_ASSIGN;
 	}
 	else if (lexer.curr().str == "*=")
 	{
-		assign_type = AssignType::MULT_ASSIGN;
+		assign_type = BytecodeType::MULT_ASSIGN;
 	}
 	else if (lexer.curr().str == "/=")
 	{
-		assign_type = AssignType::DIV_ASSIGN;
+		assign_type = BytecodeType::DIV_ASSIGN;
 	}
 	else
 	{
-		throw std::runtime_error("unhandled case in parse_var_assign");
+		throw std::runtime_error("parse_var_assign unhandled case " + lexer.curr().str);
 	}
 
 	auto expr = parse_expr_toks(lexer, scope);
@@ -318,7 +333,7 @@ void parse_var_assign(Lexer& lexer, Scope& scope, bytecodes_t& codes, std::strin
 
 	auto expr_type = parse_expr(expr, codes);
 
-	codes.push_back(std::make_shared<Assign>(assign_type, var_name));
+	codes.push_back({ lexer.loc, BytecodeType::ADD_ASSIGN, (int)std::distance(std::begin(scope.vars), scope.vars.find(var_name)) });
 
 
 	type_check::var_undefined(scope, var_name);
