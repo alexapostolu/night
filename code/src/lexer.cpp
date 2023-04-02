@@ -62,9 +62,10 @@ void Lexer::expect(TokenType type, std::string const& err)
 
 void Lexer::scan_code(std::string const& code)
 {
-	loc.col = 0;
-	file_line = code;
-	eat();
+	Lexer lexer;
+	lexer.loc.col = 0;
+	lexer.file_line = code;
+	lexer.eat();
 }
 
 Token Lexer::eat_string()

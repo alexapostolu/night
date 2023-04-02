@@ -3,16 +3,20 @@
 #include <assert.h>
 #include <stdexcept>
 
+// debugging with asserts
+#define assert_assignment() \
+	assert(scope.vars.contains(code->val) \
+		&& "variable definitions should be checked in parser"); \
+	assert(!s.empty() \
+		&& "the stack should not be empty when assigning, should be checked in parser");
+
 Interpreter::Interpreter(bytecodes_t const& bytecodes)
 {
-	parse_bytecodes(bytecodes);
+	interpret_bytecodes(bytecodes);
 }
 
-void Interpreter::parse_bytecodes(bytecodes_t const& codes)
+void Interpreter::interpret_bytecodes(bytecodes_t const& codes)
 {
-	bool skip_cond_stmt = false;
-	expr_stack s;
-
 	for (auto code = std::begin(codes); code != std::end(codes); ++code)
 	{
 		switch (code->type)
@@ -28,34 +32,39 @@ void Interpreter::parse_bytecodes(bytecodes_t const& codes)
 
 		case BytecodeType::BOOL_ASSIGN:
 			assert_assignment();
-			scope.vars[code->val] = pop(s);
+			scope.vars[code->val] = { ValueType::BOOL, pop(s) };
+			break;
+		case BytecodeType::CHAR_ASSIGN:
+			assert_assignment();
+			scope.vars[code->val] = { ValueType::CHAR, pop(s) };
+			break;
+		case BytecodeType::INT_ASSIGN:
+			assert_assignment();
+			scope.vars[code->val] = { ValueType::INT, pop(s) };
 			break;
 
 		case BytecodeType::ADD_ASSIGN:
 			assert_assignment();
-			scope.vars[code->val] += pop(s);
+			scope.vars[code->val].val += pop(s);
 			break;
-
 		case BytecodeType::SUB_ASSIGN:
 			assert_assignment();
-			scope.vars[code->val] -= pop(s);
+			scope.vars[code->val].val -= pop(s);
 			break;
-
 		case BytecodeType::MULT_ASSIGN:
 			assert_assignment();
-			scope.vars[code->val] *= pop(s);
+			scope.vars[code->val].val *= pop(s);
 			break;
-
 		case BytecodeType::DIV_ASSIGN:
 			assert_assignment();
-			scope.vars[code->val] /= pop(s);
+			scope.vars[code->val].val /= pop(s);
 			break;
 
 		case BytecodeType::IF:
 		case BytecodeType::ELIF:
 			if (code->val)
 			{
-				parse_bytecodes(bytecodes_t(++code, std::next(code, code->val + 1)));
+				interpret_bytecodes(bytecodes_t(++code, std::next(code, code->val + 1)));
 				std::advance(code, code->val + 1);
 
 				while (code != std::end(codes) && (code->type == BytecodeType::ELIF || code->type == BytecodeType::ELSE))
@@ -69,7 +78,7 @@ void Interpreter::parse_bytecodes(bytecodes_t const& codes)
 			break;
 		case BytecodeType::ELSE:
 			if (code->val)
-				parse_bytecodes(bytecodes_t(++code, std::next(code, code->val + 1)));
+				interpret_bytecodes(bytecodes_t(++code, std::next(code, code->val + 1)));
 			else
 				std::advance(code, code->val);
 			break;

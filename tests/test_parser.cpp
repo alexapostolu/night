@@ -6,6 +6,8 @@
 
 #include <iostream>
 
+#define night_assert_expect_bytecode(i, _type) night_assert("expected " + bytecode_to_str(_type), codes[(i)].type == (_type));
+
 void test_parser()
 {
 	std::clog << "testing parser\n\n";
@@ -21,16 +23,16 @@ void test_parse_var()
 	Scope scope;
 	bytecodes_t codes;
 
-	std::clog << " - variable initialization without assignment\n";
-	lexer.scan_code("var1 int;");
+	std::clog << " - variable declaration\n";
+	lexer.scan_code("var1 bool;");
 
 	codes = parse_var(lexer, scope);
 
 	night_assert_expect_bytecode(0, BytecodeType::CONSTANT);
-	night_assert_expect_bytecode(1, BytecodeType::ASSIGN);
+	night_assert_expect_bytecode(1, BytecodeType::BOOL_ASSIGN);
 
 
-	std::clog << " - variable initialization with assignment\n";
+	std::clog << " - variable initialization\n";
 	lexer.scan_code("var2 int = 2 + 3");
 
 	codes = parse_var(lexer, scope);
@@ -38,25 +40,25 @@ void test_parse_var()
 	night_assert_expect_bytecode(0, BytecodeType::CONSTANT);
 	night_assert_expect_bytecode(1, BytecodeType::CONSTANT);
 	night_assert_expect_bytecode(2, BytecodeType::ADD);
-	night_assert_expect_bytecode(3, BytecodeType::ASSIGN);
+	night_assert_expect_bytecode(3, BytecodeType::INT_ASSIGN);
 
 
-	std::clog << " - variable assign\n";
+	std::clog << " - variable assignment\n";
 	lexer.scan_code("var2 = 2;");
 
 	codes = parse_var(lexer, scope);
 
 	night_assert_expect_bytecode(0, BytecodeType::CONSTANT);
-	night_assert_expect_bytecode(1, BytecodeType::ASSIGN);
+	night_assert_expect_bytecode(1, BytecodeType::INT_ASSIGN);
 
 
-	std::clog << " - variable add assign\n";
+	std::clog << " - variable add assignment\n";
 	lexer.scan_code("var2 += 2;");
 
 	codes = parse_var(lexer, scope);
 
 	night_assert_expect_bytecode(0, BytecodeType::CONSTANT);
-	night_assert_expect_bytecode(1, BytecodeType::ASSIGN);
+	night_assert_expect_bytecode(1, BytecodeType::ADD_ASSIGN);
 }
 
 void test_parse_if()
@@ -74,9 +76,10 @@ void test_parse_if()
 
 	night_assert_expect_bytecode(0, BytecodeType::CONSTANT);
 	night_assert_expect_bytecode(1, BytecodeType::IF);
-	night_assert_expect_bytecode(2, BytecodeType::END_IF);
+	night_assert("bytecode 'if' has the wrong identifier", codes[1].val = 1);
 
-	std::clog << " - if statement with statement";
+
+	std::clog << " - if statement with body";
 	lexer.scan_code("if (true) { var int; }");
 
 	codes = parse_else(lexer, scope);
@@ -84,8 +87,7 @@ void test_parse_if()
 	night_assert_expect_bytecode(0, BytecodeType::CONSTANT);
 	night_assert_expect_bytecode(0, BytecodeType::IF);
 	night_assert_expect_bytecode(1, BytecodeType::CONSTANT);
-	night_assert_expect_bytecode(2, BytecodeType::ASSIGN);
-	night_assert_expect_bytecode(3, BytecodeType::END_IF);
+	night_assert_expect_bytecode(2, BytecodeType::INT_ASSIGN);
 }
 
 void test_parse_else()
@@ -102,7 +104,6 @@ void test_parse_else()
 	codes = parse_else(lexer, scope);
 
 	night_assert_expect_bytecode(0, BytecodeType::ELSE);
-	night_assert_expect_bytecode(1, BytecodeType::END_IF);
 
 	std::clog << " - else statement with statement";
 	lexer.scan_code("else { var int; }");
@@ -111,6 +112,5 @@ void test_parse_else()
 
 	night_assert_expect_bytecode(0, BytecodeType::ELSE);
 	night_assert_expect_bytecode(1, BytecodeType::CONSTANT);
-	night_assert_expect_bytecode(2, BytecodeType::ASSIGN);
-	night_assert_expect_bytecode(3, BytecodeType::END_IF);
+	night_assert_expect_bytecode(2, BytecodeType::INT_ASSIGN);
 }

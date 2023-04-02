@@ -35,9 +35,11 @@ enum struct BytecodeType
 	ELIF,					// index of last elif bytecode
 	ELSE,					// index of last else bytecode
 
+	WHILE,					// index of last while bytecode
+	FOR,					// index of lats for bytecode
+
 	FUNC,					// number of parameters
 	RETURN,					// return value
-	END_FUNC				//
 };
 
 using op_type = BytecodeType;

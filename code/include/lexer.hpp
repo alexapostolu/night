@@ -18,7 +18,7 @@ public:
 	Token curr();
 	void expect(TokenType type, std::string const& err = "\n");
 
-	// testing
+	// used for testing
 	void scan_code(std::string const& code);
 
 private:

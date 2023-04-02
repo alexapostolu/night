@@ -220,14 +220,18 @@ bytecodes_t parse_for(Lexer& lexer, Scope& scope)
 
 	bytecodes_t codes;
 
+	// variable
+
 	std::string var_name = lexer.eat().str;
 	auto bytes = parse_var(lexer, scope);
 	codes.insert(std::end(codes), std::begin(bytes), std::end(bytes));
 
 	lexer.expect(TokenType::SEMICOLON);
+	
+	// condition
 
-	auto expr = parse_expr_toks(lexer, scope);
-	auto expr_type = parse_expr(expr, codes);
+	auto cond = parse_expr_toks(lexer, scope);
+	auto cond_type = parse_expr(cond, codes);
 
 	lexer.expect(TokenType::SEMICOLON);
 
@@ -240,15 +244,20 @@ bytecodes_t parse_for(Lexer& lexer, Scope& scope)
 
 	lexer.expect(TokenType::CLOSE_BRACKET);
 
+	// statements
+
 	auto stmt_codes = parse_stmts(lexer, scope);
+
+	codes.push_back({ lexer.loc, BytecodeType::FOR, (int)stmt_codes.size() });
 	codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
 
+	// type checks
 
 	type_check::var_defined(scope, var_name);
 
-	if (expr_type != ValueType::BOOL)
+	if (cond_type != ValueType::BOOL)
 	{
-		NIGHT_CREATE_MINOR("found '" + val_type_to_str(expr_type) + "' expression, expected boolean expression");
+		NIGHT_CREATE_MINOR("found '" + val_type_to_str(cond_type) + "' expression, expected boolean expression");
 	}
 
 	return codes;
@@ -266,6 +275,8 @@ bytecodes_t parse_while(Lexer& lexer, Scope& scope)
 	auto cond_type = parse_expr(cond_expr, codes);
 
 	lexer.expect(TokenType::CLOSE_BRACKET);
+
+	// statements
 
 	auto stmt_codes = parse_stmts(lexer, scope);
 	codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
