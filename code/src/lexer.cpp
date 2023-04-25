@@ -26,7 +26,7 @@ Lexer::Lexer(std::string const& _file_name)
 
 Lexer::~Lexer() {}
 
-Token Lexer::eat()
+Token const& Lexer::eat()
 {
 	while (loc.col < file_line.size() && std::isspace(file_line[loc.col]))
 		++loc.col;
@@ -47,25 +47,26 @@ Token Lexer::eat()
 	return curr_tok = eat_symbol();
 }
 
-Token Lexer::curr()
+Token const& Lexer::curr() const
 {
 	return curr_tok;
 }
 
-void Lexer::expect(TokenType type, std::string const& err)
+Token const& Lexer::expect(TokenType type, std::string const& err)
 {
 	eat();
 
 	if (curr().type != type)
 		throw NIGHT_CREATE_FATAL_LEXER("found '" + curr().str + "', expected " + tok_type_to_str(type) + err);
+
+	return curr();
 }
 
 void Lexer::scan_code(std::string const& code)
 {
-	Lexer lexer;
-	lexer.loc.col = 0;
-	lexer.file_line = code;
-	lexer.eat();
+	loc.col = 0;
+	file_line = code;
+	eat();
 }
 
 Token Lexer::eat_string()

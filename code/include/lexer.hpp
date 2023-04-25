@@ -14,9 +14,9 @@ public:
 	~Lexer();
 
 public:
-	Token eat();
-	Token curr();
-	void expect(TokenType type, std::string const& err = "\n");
+	Token const& eat();
+	Token const& curr() const;
+	Token const& expect(TokenType type, std::string const& err = "\n");
 
 	// used for testing
 	void scan_code(std::string const& code);

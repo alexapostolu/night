@@ -114,3 +114,22 @@ void test_parse_else()
 	night_assert_expect_bytecode(1, BytecodeType::CONSTANT);
 	night_assert_expect_bytecode(2, BytecodeType::INT_ASSIGN);
 }
+
+void test_parse_for()
+{
+	std::clog << "testing parse_for\n";
+
+	Lexer lexer;
+	Scope scope;
+	bytecodes_t codes;
+
+	std::clog << " - for statement\n";
+	lexer.scan_code("for (int i = 0; i < 5; i += 1) {}");
+
+	codes = parse_else(lexer, scope);
+
+	night_assert_expect_bytecode(0, BytecodeType::FOR);
+}
+
+void test_parse_while();
+void test_parse_rtn();

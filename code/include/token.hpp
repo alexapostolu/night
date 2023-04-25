@@ -38,6 +38,7 @@ enum class TokenType
 	FOR,
 	WHILE,
 
+	DEF,
 	RETURN,
 
 	END_OF_FILE

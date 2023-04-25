@@ -8,22 +8,31 @@
 
 #include <string>
 
-bytecodes_t parse_stmts(Lexer& lexer, Scope& scope);
+// lexer starts at token before statements,
+// ends at last token of statements
+bytecodes_t parse_stmts(Lexer& lexer, Scope& scope, bool require_curly = false);
 bytecodes_t parse_stmt(Lexer& lexer, Scope& scope);
 
+// tokens start at first token of statement
 bytecodes_t parse_var(Lexer& lexer, Scope& scope);
 bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif);
 bytecodes_t parse_else(Lexer& lexer, Scope& scope);
 bytecodes_t parse_for(Lexer& lexer, Scope& scope);
 bytecodes_t parse_while(Lexer& lexer, Scope& scope);
+bytecodes_t parse_func(Lexer& lexer, Scope& scope);
 bytecodes_t parse_rtn(Lexer& lexer, Scope& scope);
 
+void parse_var_def(Lexer& lexer, Scope& scope, bytecodes_t& codes, std::string const& var_name);
 // token starts at assign, ends at last statement of assignment
 // caller's responsibility to check curr token after function call finishes
 void parse_var_assign(Lexer& lexer, Scope& scope, bytecodes_t& codes, std::string const& var_name);
 
+// token starts at open bracket
+// ends at close bracket
+void parse_comma_sep_stmts(Lexer& lexer, Scope& scope, bytecodes_t& codes);
+
 // turns tokens into AST
-// 'bracket' is for internal use only
+// 'bracket' is for recursive call only
 // if return value is null, you have problem
 // lexer.curr starts token before expr, ends at token after expression
 expr_p parse_expr_toks(Lexer& lexer, Scope& scope, bool bracket = false);
@@ -37,15 +46,15 @@ ExprBinaryType str_to_binary_type(std::string const& str);
 namespace type_check {
 
 // var already defined
-void var_defined(Scope const& scope, std::string const& var_name);
+void var_defined(Lexer const& lexer, Scope const& scope, std::string const& var_name);
 
 // var undefined
-void var_undefined(Scope const& scope, std::string const& var_name);
+void var_undefined(Lexer const& lexer, Scope const& scope, std::string const& var_name);
 
 // var type compatable with assignment type
-void var_assign_type(Scope& scope, std::string const& var_name, AssignType assign_type);
+void var_assign_type(Lexer const& lexer, Scope& scope, std::string const& var_name, BytecodeType assign_type);
 
 // var type compatable with expr type
-void var_expr_type(Scope& scope, std::string const& var_name, ValueType expr_type);
+void var_expr_type(Lexer const& lexer, Scope& scope, std::string const& var_name, ValueType expr_type);
 
 }

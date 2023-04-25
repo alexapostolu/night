@@ -96,5 +96,5 @@ int Interpreter::pop(expr_stack& s)
 	auto const& [flag, val] = s.top();
 	s.pop();
 
-	return flag ? scope.vars[val] : val;
+	return flag ? scope.vars[val].val : val;
 }
