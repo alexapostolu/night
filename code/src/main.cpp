@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
 		Lexer lexer(main_file);
 
 		Scope global_scope;
-		auto bytecodes = parse_stmts(lexer, global_scope);
+		auto bytecodes = parse_stmts(lexer, global_scope, true);
 
 		for (auto code : bytecodes)
 			std::cout << code.to_str() << '\n';

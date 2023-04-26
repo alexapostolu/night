@@ -10,7 +10,7 @@
 
 // lexer starts at token before statements,
 // ends at last token of statements
-bytecodes_t parse_stmts(Lexer& lexer, Scope& scope, bool require_curly = false);
+bytecodes_t parse_stmts(Lexer& lexer, Scope& scope, bool* curly_enclosed = nullptr);
 bytecodes_t parse_stmt(Lexer& lexer, Scope& scope);
 
 // tokens start at first token of statement
@@ -22,7 +22,6 @@ bytecodes_t parse_while(Lexer& lexer, Scope& scope);
 bytecodes_t parse_func(Lexer& lexer, Scope& scope);
 bytecodes_t parse_rtn(Lexer& lexer, Scope& scope);
 
-void parse_var_def(Lexer& lexer, Scope& scope, bytecodes_t& codes, std::string const& var_name);
 // token starts at assign, ends at last statement of assignment
 // caller's responsibility to check curr token after function call finishes
 void parse_var_assign(Lexer& lexer, Scope& scope, bytecodes_t& codes, std::string const& var_name);

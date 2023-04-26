@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lexer.hpp"
+
 #include <string>
 #include <vector>
 #include <source_location>
@@ -9,6 +10,8 @@
 #define NIGHT_CREATE_MINOR(msg)	 night::error::get().create_minor_error(msg, lexer.loc, __FILE__, __LINE__);
 #define NIGHT_CREATE_FATAL(msg)				  night::error::get().create_fatal_error(msg, lexer);//, __FILE__, __LINE__);
 #define NIGHT_CREATE_FATAL_LEXER(msg)		  night::error::get().create_fatal_error(msg, *this, __FILE__, __LINE__);
+
+class Lexer;
 
 struct Location
 {

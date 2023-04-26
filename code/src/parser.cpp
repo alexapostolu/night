@@ -11,7 +11,7 @@
 #include <assert.h>
 #include <unordered_map>
 
-bytecodes_t parse_stmts(Lexer& lexer, Scope& upper_scope, bool require_curly)
+bytecodes_t parse_stmts(Lexer& lexer, Scope& upper_scope, bool* curly_enclosed)
 {
 	Scope scope{ upper_scope.vars };
 
@@ -19,6 +19,8 @@ bytecodes_t parse_stmts(Lexer& lexer, Scope& upper_scope, bool require_curly)
 	{
 	case TokenType::OPEN_CURLY:
 	{
+		*curly_enclosed = true;
+
 		bytecodes_t bytecodes;
 
 		while (lexer.eat().type != TokenType::CLOSE_BRACKET)
@@ -147,7 +149,10 @@ bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif)
 
 	lexer.expect(TokenType::CLOSE_BRACKET);
 
-	auto stmt_codes = parse_stmts(lexer, scope);
+	bool curly_enclosed = false;
+	auto stmt_codes = parse_stmts(lexer, scope, &curly_enclosed);
+	if (!curly_enclosed && stmt_codes.empty())
+		NIGHT_CREATE_MINOR("if statement missing body");
 
 	codes.push_back({ lexer.loc, is_elif ? BytecodeType::ELIF : BytecodeType::IF, (int)stmt_codes.size() });
 	codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
@@ -213,7 +218,7 @@ bytecodes_t parse_for(Lexer& lexer, Scope& scope)
 
 	// type checks
 
-	type_check::var_defined(scope, var_name);
+	type_check::var_defined(lexer, scope, var_name);
 
 	if (cond_type != ValueType::BOOL)
 	{
@@ -259,9 +264,30 @@ bytecodes_t parse_func(Lexer& lexer, Scope& scope)
 
 	bytecodes_t codes;
 
+	// parameters
+
 	parse_comma_sep_stmts(lexer, scope, codes);
 
-	auto stmt_codes = parse_stmts(lexer, scope);
+	// return values
+	
+	lexer.eat();
+	if (lexer.curr().type != TokenType::BOOL_TYPE ||
+		lexer.curr().type != TokenType::CHAR_TYPE ||
+		lexer.curr().type != TokenType::INT_TYPE ||
+		lexer.curr().type != TokenType::STR_TYPE)
+	{
+		throw NIGHT_CREATE_FATAL("expected type after parameters");
+	}
+
+	TokenType rtn_type = lexer.curr().type;
+
+	// body
+
+	bool curly_enclosed = false;
+	auto stmt_codes = parse_stmts(lexer, scope, &curly_enclosed);
+	if (!curly_enclosed)
+		NIGHT_CREATE_MINOR("function body must be enclosed by curly brackets");
+
 	codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
 
 	codes.push_back({ lexer.loc, BytecodeType::RETURN, 0 });
@@ -279,11 +305,6 @@ bytecodes_t parse_rtn(Lexer& lexer, Scope& scope)
 	codes.push_back({ lexer.loc, BytecodeType::RETURN });
 
 	return codes;
-}
-
-void parse_var_def(Lexer& lexer, Scope& scope, bytecodes_t& codes, std::string const& var_name)
-{
-	
 }
 
 void parse_var_assign(Lexer& lexer, Scope& scope, bytecodes_t& codes, std::string const& var_name)
@@ -332,9 +353,9 @@ void parse_var_assign(Lexer& lexer, Scope& scope, bytecodes_t& codes, std::strin
 	codes.push_back({ lexer.loc, BytecodeType::ADD_ASSIGN, (int)std::distance(std::begin(scope.vars), scope.vars.find(var_name)) });
 
 
-	type_check::var_undefined(scope, var_name);
-	type_check::var_assign_type(scope, var_name, assign_type);
-	type_check::var_expr_type(scope, var_name, expr_type);
+	type_check::var_undefined(lexer, scope, var_name);
+	type_check::var_assign_type(lexer, scope, var_name, assign_type);
+	type_check::var_expr_type(lexer, scope, var_name, expr_type);
 }
 
 void parse_comma_sep_stmts(Lexer& lexer, Scope& scope, bytecodes_t& codes)

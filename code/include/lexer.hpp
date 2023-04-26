@@ -6,6 +6,8 @@
 #include <fstream>
 #include <string>
 
+struct Location;
+
 class Lexer
 {
 public:
