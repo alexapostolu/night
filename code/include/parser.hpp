@@ -8,12 +8,19 @@
 
 #include <string>
 
-// lexer starts at token before statements,
-// ends at last token of statements
+// lexer
+//   start: one token before statements
+//   end:   last token of statements
+// curly_enclosed
+//   modifies to true if the statements are enclosed with curly braces
+//   this is useful to know as a function with statements not enclosed by curly
+//     braces will throw a syntax error
 bytecodes_t parse_stmts(Lexer& lexer, Scope& scope, bool* curly_enclosed = nullptr);
-bytecodes_t parse_stmt(Lexer& lexer, Scope& scope);
 
-// tokens start at first token of statement
+// lexer
+//   start: first token of statement
+//   end:   last token of statement
+bytecodes_t parse_stmt(Lexer& lexer, Scope& scope);
 bytecodes_t parse_var(Lexer& lexer, Scope& scope);
 bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif);
 bytecodes_t parse_else(Lexer& lexer, Scope& scope);
@@ -21,6 +28,9 @@ bytecodes_t parse_for(Lexer& lexer, Scope& scope);
 bytecodes_t parse_while(Lexer& lexer, Scope& scope);
 bytecodes_t parse_func(Lexer& lexer, Scope& scope);
 bytecodes_t parse_rtn(Lexer& lexer, Scope& scope);
+
+// index of element in map
+int find_var_index(var_container const& vars, std::string const& var_name);
 
 // token starts at assign, ends at last statement of assignment
 // caller's responsibility to check curr token after function call finishes

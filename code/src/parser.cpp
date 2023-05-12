@@ -25,7 +25,7 @@ bytecodes_t parse_stmts(Lexer& lexer, Scope& upper_scope, bool* curly_enclosed)
 
 		while (lexer.eat().type != TokenType::CLOSE_BRACKET)
 		{
-			if (lexer.eat().type == TokenType::END_OF_FILE)
+			if (lexer.curr().type == TokenType::END_OF_FILE)
 				throw NIGHT_CREATE_FATAL("missing closing curly bracket");
 
 			auto codes = parse_stmt(lexer, scope);
@@ -43,37 +43,21 @@ bytecodes_t parse_stmts(Lexer& lexer, Scope& upper_scope, bool* curly_enclosed)
 
 bytecodes_t parse_stmt(Lexer& lexer, Scope& scope)
 {
+	assert(lexer.curr().type != TokenType::CLOSE_CURLY && "should be handled by caller");
+	assert(lexer.curr().type != TokenType::END_OF_FILE && "should be handled by caller");
+
 	switch (lexer.curr().type)
 	{
-	case TokenType::VARIABLE:
-		return parse_var(lexer, scope);
+	case TokenType::VARIABLE: return parse_var(lexer, scope);
+	case TokenType::IF:		  return parse_if(lexer, scope, false);
+	case TokenType::ELIF:	  return parse_if(lexer, scope, true);
+	case TokenType::ELSE:	  return parse_else(lexer, scope);
+	case TokenType::FOR:	  return parse_for(lexer, scope);
+	case TokenType::WHILE:	  return parse_while(lexer, scope);
+	case TokenType::DEF:	  return parse_func(lexer, scope);
+	case TokenType::RETURN:	  return parse_rtn(lexer, scope);
 
-	case TokenType::IF:
-		return parse_if(lexer, scope, false);
-
-	case TokenType::ELIF:
-		return parse_if(lexer, scope, true);
-
-	case TokenType::ELSE:
-		return parse_else(lexer, scope);
-
-	case TokenType::FOR:
-		return parse_for(lexer, scope);
-
-	case TokenType::WHILE:
-		return parse_while(lexer, scope);
-
-	case TokenType::RETURN:
-		return parse_rtn(lexer, scope);
-
-	case TokenType::CLOSE_CURLY:
-		throw std::runtime_error("in parse_stmt: close curly bracket indicates empty curlys");
-
-	case TokenType::END_OF_FILE:
-		throw std::runtime_error("in parse_stmt: EOF should be handled in caller");
-
-	default:
-		throw NIGHT_CREATE_FATAL("unknown syntax '" + lexer.curr().str + "'");
+	default: throw NIGHT_CREATE_FATAL("unknown syntax '" + lexer.curr().str + "'");
 	}
 }
 
@@ -82,7 +66,8 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 	assert(lexer.curr().type == TokenType::VARIABLE);
 	
 	bytecodes_t codes;
-	std::string var_name = lexer.curr().str;
+
+	std::string const var_name = lexer.curr().str;
 
 	lexer.eat();
 
@@ -92,20 +77,20 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 		lexer.curr().type == TokenType::CHAR_TYPE ||
 		lexer.curr().type == TokenType::INT_TYPE)
 	{
-		BytecodeType var_type;
+		BytecodeType assign_type;
 		ValueType val_type;
 		switch (lexer.curr().type)
 		{
 		case TokenType::BOOL_TYPE:
-			var_type = BytecodeType::BOOL_ASSIGN;
+			assign_type = BytecodeType::BOOL_ASSIGN;
 			val_type = ValueType::BOOL;
 			break;
 		case TokenType::CHAR_TYPE:
-			var_type = BytecodeType::CHAR_ASSIGN;
+			assign_type = BytecodeType::CHAR_ASSIGN;
 			val_type = ValueType::CHAR;
 			break;
 		case TokenType::INT_TYPE:
-			var_type = BytecodeType::INT_ASSIGN;
+			assign_type = BytecodeType::INT_ASSIGN;
 			val_type = ValueType::INT;
 			break;
 		default:
@@ -117,7 +102,7 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 			scope.vars[var_name] = val_type;
 
 			codes.push_back({ lexer.loc, BytecodeType::CONSTANT, 0 });
-			codes.push_back({ lexer.loc, var_type, (int)std::distance(std::begin(scope.vars), scope.vars.find(var_name)) });
+			codes.push_back({ lexer.loc, assign_type, find_var_index(scope.vars, var_name)});
 
 			type_check::var_defined(lexer, scope, var_name);
 			return codes;
@@ -258,7 +243,7 @@ bytecodes_t parse_func(Lexer& lexer, Scope& scope)
 {
 	assert(lexer.curr().type == TokenType::DEF);
 
-	auto const& var_name = lexer.expect(TokenType::VARIABLE).str;
+	auto const& func_name = lexer.expect(TokenType::VARIABLE).str;
 
 	lexer.expect(TokenType::OPEN_BRACKET);
 
@@ -292,6 +277,9 @@ bytecodes_t parse_func(Lexer& lexer, Scope& scope)
 
 	codes.push_back({ lexer.loc, BytecodeType::RETURN, 0 });
 
+	if (scope.funcs.contains(func_name))
+		NIGHT_CREATE_MINOR("function already defined");
+
 	return codes;
 }
 
@@ -305,6 +293,11 @@ bytecodes_t parse_rtn(Lexer& lexer, Scope& scope)
 	codes.push_back({ lexer.loc, BytecodeType::RETURN });
 
 	return codes;
+}
+
+int find_map_index(var_container const& vars, std::string const& var_name)
+{
+	return (int)std::distance(std::begin(vars), vars.find(var_name));
 }
 
 void parse_var_assign(Lexer& lexer, Scope& scope, bytecodes_t& codes, std::string const& var_name)

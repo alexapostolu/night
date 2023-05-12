@@ -12,25 +12,25 @@
 
 // bool flag signals variable
 using expr_stack = std::stack<std::tuple<bool, int>>;
+using var_container = std::unordered_map<int, Value>;
 
-struct InterpreterScope
+struct Function;
+using func_container = std::unordered_map<std::string, Function>;
+
+struct Function
 {
-	std::unordered_map<int, Value> vars;
+	std::vector<int> params;
+	bytecodes_t codes;
 };
 
-class Interpreter
+struct Interpreter
 {
-public:
-	Interpreter(bytecodes_t const& bytecodes);
-
-public:
-	void interpret_bytecodes(bytecodes_t const& codes);
-
-private:
-	// wrapper for stack.pop()
-	int pop(expr_stack& s);
-
-private:
-	InterpreterScope scope;
+	var_container global_vars;
+	func_container funcs;
 	expr_stack s;
 };
+
+void interpret_bytecodes(Interpreter const& interpreter, bytecodes_t const& codes);
+
+// wrapper for stack.pop()
+int pop(InterpreterScope& scope, expr_stack& s);

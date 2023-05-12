@@ -22,9 +22,9 @@ enum struct BytecodeType
 	MULT,					//
 	DIV,					//
 
-	BOOL_ASSIGN,			// variable id
-	CHAR_ASSIGN,			// variable id
-	INT_ASSIGN,				// variable id
+	BOOL_ASSIGN,			// variable index
+	CHAR_ASSIGN,			// variable index
+	INT_ASSIGN,				// variable index
 
 	ADD_ASSIGN,				// variable id
 	SUB_ASSIGN,				// variable id

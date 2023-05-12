@@ -22,13 +22,15 @@ int main(int argc, char* argv[])
 		Lexer lexer(main_file);
 
 		Scope global_scope;
-		auto bytecodes = parse_stmts(lexer, global_scope, true);
+		global_scope.funcs["print"].params = { ValueType::BOOL };
+		global_scope.funcs["print"].params = { ValueType::CHAR };
+		global_scope.funcs["print"].params = { ValueType::INT };
+		auto bytecodes = parse_stmts(lexer, global_scope);
 
 		for (auto code : bytecodes)
 			std::cout << code.to_str() << '\n';
 
 		Interpreter interpreter(bytecodes);
-		interpreter.parse_bytecode();
 	}
 	catch (night::fatal_error const& e) {
 		std::cout << e.what();

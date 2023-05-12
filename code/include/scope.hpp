@@ -6,12 +6,13 @@
 #include <map>
 #include <vector>
 
-struct Function;
+struct ParserFunction;
 
+// has to be ordered
 using var_container  = std::map<std::string, ValueType>;
-using func_container = std::map<std::string, Function>;
+using func_container = std::map<std::string, ParserFunction>;
 
-struct Function
+struct ParserFunction
 {
 	std::vector<ValueType> params;
 	std::vector<Bytecode>  codes;

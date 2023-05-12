@@ -10,19 +10,26 @@
 	assert(!s.empty() \
 		&& "the stack should not be empty when assigning, should be checked in parser");
 
-Interpreter::Interpreter(bytecodes_t const& bytecodes)
+void interpret_bytecodes(Interpreter const& inperpreter, bytecodes_t const& codes)
 {
-	interpret_bytecodes(bytecodes);
-}
+	Function* func = nullptr;
+	int func_params = 0;
 
-void Interpreter::interpret_bytecodes(bytecodes_t const& codes)
-{
 	for (auto code = std::begin(codes); code != std::end(codes); ++code)
 	{
 		switch (code->type)
 		{
 		case BytecodeType::CONSTANT: s.push({ false, code->val }); break;
-		case BytecodeType::VARIABLE: s.push({ true,  code->val }); break;
+		case BytecodeType::VARIABLE:
+			if (func_params > 0) 
+			{
+				--func_params;
+				func->params.push_back(code->val);
+			}
+			else
+			{
+				s.push({ true,  code->val }); break;
+			}
 
 		case BytecodeType::NOT:  s.push({ false, !pop(s)		 }); break;
 		case BytecodeType::ADD:  s.push({ false, pop(s) + pop(s) }); break;
@@ -83,13 +90,18 @@ void Interpreter::interpret_bytecodes(bytecodes_t const& codes)
 				std::advance(code, code->val);
 			break;
 
+		case BytecodeType::FUNC:
+			*func = Function{};
+			func_params = code->val;
+			break;
+
 		default:
 			throw std::runtime_error("Interpreter::parse_bytecodes unhandled case " + bytecode_to_str(code->type));
 		}
 	}
 }
 
-int Interpreter::pop(expr_stack& s)
+int pop(InterpreterScope& scope, expr_stack& s)
 {
 	assert(!s.empty() && "u momma gay");
 
