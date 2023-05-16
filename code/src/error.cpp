@@ -1,9 +1,6 @@
 #include "error.hpp"
 
-std::string const& night::fatal_error::what() const noexcept
-{
-	return msg;
-}
+#include <string>
 
 night::error::error()
 	: debug_flag(false) {}
@@ -14,19 +11,47 @@ night::error& night::error::get()
 	return instance;
 }
 
-void night::error::create_warning(std::string const& msg, std::string const& file, int line) noexcept
+std::string night::error::what() const
 {
-	warnings.push_back(msg);
+	std::string s = fatal_error_msg + "\n";
+
+	for (auto const& msg : minor_errors)
+		s += msg + '\n';
+
+	for (auto const& msg : warnings)
+		s += msg + '\n';
+
+	return s;
 }
 
-void night::error::create_minor_error(std::string const& msg, int line, int col, std::string const& debug_file, int debug_line) noexcept
+void night::error::create_warning(std::string const& msg, Location const& loc, std::source_location const& s_loc) noexcept
 {
-	minor_error.push_back(msg);
+	warnings.push_back(format_error_msg(msg, loc, s_loc));
 }
 
-night::fatal_error night::error::create_fatal_error(std::string const& msg, Lexer const& lexer, std::string const& file, int line) noexcept
+void night::error::create_minor_error(std::string const& msg, Location const& loc, std::source_location const& s_loc) noexcept
+{
+	minor_errors.push_back(format_error_msg(msg, loc, s_loc));
+}
+
+night::error const& night::error::create_fatal_error(std::string const& msg, Location const& loc, std::source_location const& s_loc) noexcept
+{
+	fatal_error_msg = format_error_msg(msg, loc, s_loc);
+	return *this;
+}
+
+std::string night::error::format_error_msg(std::string const& msg, Location const& loc, std::source_location const& s_loc) const noexcept
 {
 	if (debug_flag)
-		return fatal_error{ "[ error ]\n" + file + '\n' + std::to_string(line) + '\n' + msg + '\n' };
-	return fatal_error{ "[ error ]\n" + lexer.file_name + " (" + std::to_string(lexer.line) + ":" + std::to_string(lexer.i) + ")\n" + msg + '\n'};
+		// [ error fatal ]
+		// parser.cpp 254
+		//
+		// ur bad
+		return std::string("") + "[ error fatal ]\n" + s_loc.file_name() + " " + std::to_string(s_loc.line()) + "\n\n" + msg + '\n';
+	else
+		// [ error fatal ]
+		// source.night (12:43)   
+		//
+		// u suck
+		return std::string("") + "[ error fatal ]\n" + loc.file + " (" + std::to_string(loc.line) + ":" + std::to_string(loc.col) + ")\n\n" + msg + '\n';
 }

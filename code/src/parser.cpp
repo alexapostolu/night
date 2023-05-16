@@ -127,12 +127,16 @@ bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif)
 
 	bytecodes_t codes;
 
+	// parse condition
+
 	lexer.expect(TokenType::OPEN_BRACKET);
 
-	auto expr = parse_expr_toks(lexer, scope);
-	auto type = parse_expr(expr, codes);
+	auto cond_expr = parse_expr_toks(lexer, scope);
+	auto cond_type = parse_expr(cond_expr, codes);
 
 	lexer.expect(TokenType::CLOSE_BRACKET);
+
+	// parse statements
 
 	bool curly_enclosed = false;
 	auto stmt_codes = parse_stmts(lexer, scope, &curly_enclosed);
@@ -142,9 +146,9 @@ bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif)
 	codes.push_back({ lexer.loc, is_elif ? BytecodeType::ELIF : BytecodeType::IF, (int)stmt_codes.size() });
 	codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
 
-	if (type != ValueType::BOOL)
+	if (cond_type != ValueType::BOOL)
 	{
-		NIGHT_CREATE_MINOR("found '" + val_type_to_str(type) + "' condition, expected boolean condition");
+		NIGHT_CREATE_MINOR("condition of type '" + val_type_to_str(cond_type) + "', expected type 'bool'");
 	}
 
 	return codes;

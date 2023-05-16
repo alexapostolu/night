@@ -32,8 +32,8 @@ int main(int argc, char* argv[])
 
 		Interpreter interpreter(bytecodes);
 	}
-	catch (night::fatal_error const& e) {
-		std::cout << e.what();
+	catch (night::error const& e) {
+		std::cout << e.what() << '\n';
 	}
 	catch (std::exception const& e) {
 		std::cout << "oops! we've come across and unexpected error!\n"

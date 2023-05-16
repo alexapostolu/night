@@ -10,16 +10,13 @@
 #include <unordered_map>
 
 Lexer::Lexer()
-	: file_name("testing file"), loc({ 1, 0 })
-{
-
-}
+	: loc({ "testing file", 1, 0 }) {}
 
 Lexer::Lexer(std::string const& _file_name)
-	: file_name(_file_name), file(_file_name), loc({ 1, 0 })
+	: file(_file_name), loc({ _file_name, 1, 0 })
 {
 	if (!file.is_open())
-		throw NIGHT_CREATE_FATAL_LEXER("file '" + file_name + "' could not be found/opened");
+		throw NIGHT_CREATE_FATAL_LEXER("file '" + loc.file_name + "' could not be found/opened");
 
 	std::getline(file, file_line);
 }
