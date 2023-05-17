@@ -6,7 +6,7 @@ Night is a static, bytecode interpreted language with strong management on types
 
 Under Development
 
-Build:
+Build (probably most likely does not work right now):
 
 ```
 cmake -G "MinGW Makefiles" .
