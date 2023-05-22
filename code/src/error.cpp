@@ -1,5 +1,6 @@
 #include "error.hpp"
 
+#include <source_location>
 #include <string>
 
 night::error::error()
@@ -52,6 +53,6 @@ std::string night::error::format_error_msg(std::string const& msg, Location cons
 		// [ error fatal ]
 		// source.night (12:43)   
 		//
-		// u suck
+		// u suck at coding
 		return std::string("") + "[ error fatal ]\n" + loc.file + " (" + std::to_string(loc.line) + ":" + std::to_string(loc.col) + ")\n\n" + msg + '\n';
 }

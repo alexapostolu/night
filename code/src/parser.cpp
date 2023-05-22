@@ -10,6 +10,7 @@
 #include <string>
 #include <assert.h>
 #include <unordered_map>
+#include <limits>
 
 bytecodes_t parse_stmts(Lexer& lexer, Scope& upper_scope, bool* curly_enclosed)
 {
@@ -73,12 +74,13 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 
 	// default values
 
+	ValueType val_type;
+
 	if (lexer.curr().type == TokenType::BOOL_TYPE ||
 		lexer.curr().type == TokenType::CHAR_TYPE ||
 		lexer.curr().type == TokenType::INT_TYPE)
 	{
 		BytecodeType assign_type;
-		ValueType val_type;
 		switch (lexer.curr().type)
 		{
 		case TokenType::BOOL_TYPE:
@@ -101,12 +103,24 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 		{
 			scope.vars[var_name] = val_type;
 
-			codes.push_back({ lexer.loc, BytecodeType::CONSTANT, 0 });
-			codes.push_back({ lexer.loc, assign_type, find_var_index(scope.vars, var_name)});
+			codes.push_back((uint8_t)BytecodeType::CONSTANT);
+			codes.push_back(0);
+			codes.push_back({ lexer.loc, assign_type, find_var_index(scope.vars, var_name) });
 
 			type_check::var_defined(lexer, scope, var_name);
 			return codes;
 		}
+
+		if (lexer.curr().type != TokenType::ASSIGN)
+			throw NIGHT_CREATE_FATAL("expected semicolong or assignment after variable type");
+		
+		auto expr = parse_expr_toks(lexer, scope);
+		if (!expr)
+			throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected expression after assignment");
+
+		auto expr_type = parse_expr(expr, codes);
+
+		codes.push_back({ lexer.loc, assign_type, (int)std::distance(std::begin(scope.vars), scope.vars.find(var_name)) });
 	}
 
 	if (lexer.curr().type != TokenType::ASSIGN)
@@ -140,16 +154,17 @@ bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif)
 
 	bool curly_enclosed = false;
 	auto stmt_codes = parse_stmts(lexer, scope, &curly_enclosed);
-	if (!curly_enclosed && stmt_codes.empty())
-		NIGHT_CREATE_MINOR("if statement missing body");
 
 	codes.push_back({ lexer.loc, is_elif ? BytecodeType::ELIF : BytecodeType::IF, (int)stmt_codes.size() });
 	codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
 
+	// error messages
+
 	if (cond_type != ValueType::BOOL)
-	{
 		NIGHT_CREATE_MINOR("condition of type '" + val_type_to_str(cond_type) + "', expected type 'bool'");
-	}
+
+	if (!curly_enclosed && stmt_codes.empty())
+		NIGHT_CREATE_MINOR("if statement missing body");
 
 	return codes;
 }
@@ -299,6 +314,46 @@ bytecodes_t parse_rtn(Lexer& lexer, Scope& scope)
 	return codes;
 }
 
+void number_to_bytecode(std::string const& s_num, bytecodes_t& codes)
+{
+	assert(s_num.length());
+
+	if (s_num[0] != '-')
+	{
+		assert(s_num.length() > 1);
+
+		uint64_t uint64 = std::stoull(s_num);
+
+		if (uint64 <= std::numeric_limits<uint8_t>::max())
+		{
+			// we don't need this
+			//, remove this so it's just like the other functions
+			codes.push_back((bytecode_size)BytecodeType::U_INT1);
+			codes.push_back(static_cast<uint8_t>(uint64));
+			return;
+		}
+		else if (uint64 <= std::numeric_limits<uint16_t>::max())
+			codes.push_back((bytecode_size)BytecodeType::U_INT2);
+		else if (uint64 <= std::numeric_limits<uint32_t>::max())
+			codes.push_back((bytecode_size)BytecodeType::U_INT4);
+		else if (uint64 <= std::numeric_limits<uint64_t>::max())
+			codes.push_back((bytecode_size)BytecodeType::U_INT8);
+		else {}
+
+		// I think this works for 8 bit
+		uint8_t i = 0;
+		do {
+			codes.push_back(uint64 & 0xFF);
+		} while (uint64 >>= 8);
+	}
+
+
+	// // this for bytecode_to_number
+	// memcpy doesn't work for 8 bit??
+	//uint8_t value2;
+	//memcpy_s(&value2, sizeof(value2), parts, sizeof(value2));
+}
+
 int find_map_index(var_container const& vars, std::string const& var_name)
 {
 	return (int)std::distance(std::begin(vars), vars.find(var_name));
@@ -309,45 +364,25 @@ void parse_var_assign(Lexer& lexer, Scope& scope, bytecodes_t& codes, std::strin
 	assert(lexer.curr().type == TokenType::ASSIGN);
 	
 	BytecodeType assign_type;
-	if (lexer.curr().str == "=")
-	{
-		if (scope.vars[var_name] == ValueType::BOOL)
-			assign_type = BytecodeType::BOOL_ASSIGN;
-		if (scope.vars[var_name] == ValueType::CHAR)
-			assign_type = BytecodeType::CHAR_ASSIGN;
-		if (scope.vars[var_name] == ValueType::INT)
-			assign_type = BytecodeType::INT_ASSIGN;
-	}
-	else if (lexer.curr().str == "+=")
-	{
-		assign_type = BytecodeType::ADD_ASSIGN;
-	}
-	else if (lexer.curr().str == "-=")
-	{
-		assign_type = BytecodeType::SUB_ASSIGN;
-	}
-	else if (lexer.curr().str == "*=")
-	{
-		assign_type = BytecodeType::MULT_ASSIGN;
-	}
-	else if (lexer.curr().str == "/=")
-	{
-		assign_type = BytecodeType::DIV_ASSIGN;
-	}
-	else
-	{
-		throw std::runtime_error("parse_var_assign unhandled case " + lexer.curr().str);
-	}
+	int var_index = (int)std::distance(std::begin(scope.vars), scope.vars.find(var_name));
+
+	codes.push_back({ lexer.loc, BytecodeType::VARIABLE, var_index });
+
+	if (lexer.curr().str == "+=")	   codes.push_back({ lexer.loc, BytecodeType::ADD });
+	else if (lexer.curr().str == "-=") codes.push_back({ lexer.loc, BytecodeType::SUB });
+	else if (lexer.curr().str == "*=") codes.push_back({ lexer.loc, BytecodeType::MULT });
+	else if (lexer.curr().str == "/=") codes.push_back({ lexer.loc, BytecodeType::DIV });
+	else if (lexer.curr().str != "=") throw std::runtime_error("parse_var_assign unhandled case " + lexer.curr().str);
+
+	codes.push_back({ lexer.loc, BytecodeType::INT_ASSIGN, var_index });
 
 	auto expr = parse_expr_toks(lexer, scope);
 	if (!expr)
-	{
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected expression after assignment");
-	}
 
 	auto expr_type = parse_expr(expr, codes);
 
-	codes.push_back({ lexer.loc, BytecodeType::ADD_ASSIGN, (int)std::distance(std::begin(scope.vars), scope.vars.find(var_name)) });
+	codes.push_back({ lexer.loc, assign_type, (int)std::distance(std::begin(scope.vars), scope.vars.find(var_name)) });
 
 
 	type_check::var_undefined(lexer, scope, var_name);

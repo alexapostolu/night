@@ -4,16 +4,25 @@
 #include "value.hpp"
 #include "error.hpp"
 
-#include <memory>
 #include <string>
 #include <vector>
-#include <optional>
-#include <queue>
 
-// comments indicate the corresponding integer value in the Bytecode
-enum struct BytecodeType
+using bytecode_size = uint8_t;
+
+// comments indicate the corresponding integer values following it
+enum struct BytecodeType : bytecode_size
 {
-	CONSTANT,				// value
+	S_INT1,
+	S_INT2,
+	S_INT4,
+	S_INT8,
+	U_INT1,
+	U_INT2,
+	U_INT4,
+	U_INT8,
+	FLOAT4,
+	FLOAT8,
+
 	VARIABLE,				// variable id
 
 	NOT,					//
@@ -26,11 +35,6 @@ enum struct BytecodeType
 	CHAR_ASSIGN,			// variable index
 	INT_ASSIGN,				// variable index
 
-	ADD_ASSIGN,				// variable id
-	SUB_ASSIGN,				// variable id
-	MULT_ASSIGN,			// variable id
-	DIV_ASSIGN,				// variable id
-
 	IF,						// index of last if bytecode
 	ELIF,					// index of last elif bytecode
 	ELSE,					// index of last else bytecode
@@ -38,22 +42,12 @@ enum struct BytecodeType
 	WHILE,					// index of last while bytecode
 	FOR,					// index of lats for bytecode
 
-	FUNC,					// number of parameters
 	RETURN,					// return value
+	FUNC_CALL				//
 };
 
-using op_type = BytecodeType;
+// for error messages, usually the real strategy here is something like, storing a side table that maps bytecode indices to locations in the source
 
-struct Bytecode
-{
-	std::string to_str() const;
-
-	Location loc; // for error messages
-
-	BytecodeType type;
-	int val; // optional
-};
-
-using bytecodes_t = std::vector<Bytecode>;
+using bytecodes_t = std::vector<bytecode_size>;
 
 std::string bytecode_to_str(BytecodeType type);

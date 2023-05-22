@@ -29,6 +29,8 @@ bytecodes_t parse_while(Lexer& lexer, Scope& scope);
 bytecodes_t parse_func(Lexer& lexer, Scope& scope);
 bytecodes_t parse_rtn(Lexer& lexer, Scope& scope);
 
+void number_to_bytecode(std::string const& s_num, bytecodes_t& codes);
+
 // index of element in map
 int find_var_index(var_container const& vars, std::string const& var_name);
 

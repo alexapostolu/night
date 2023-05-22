@@ -58,7 +58,7 @@ void test_parse_var()
 	codes = parse_var(lexer, scope);
 
 	night_assert_expect_bytecode(0, BytecodeType::CONSTANT);
-	night_assert_expect_bytecode(1, BytecodeType::ADD_ASSIGN);
+	night_assert_expect_bytecode(1, BytecodeType::INT_ASSIGN);
 }
 
 void test_parse_if()
