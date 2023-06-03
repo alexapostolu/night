@@ -1,23 +1,37 @@
 #include "bytecode.hpp"
-#include "value.hpp"
-#include "interpreter.hpp"
+#include "error.hpp"
 
-#include <stdexcept>
-#include <variant>
 #include <string>
-#include <assert.h>
-
-std::string Bytecode::to_str() const
-{
-	return bytecode_to_str(type);
-}
 
 std::string bytecode_to_str(BytecodeType type)
 {
 	switch (type)
 	{
-	case BytecodeType::CONSTANT:
-		return "CONSTANT";
+	case BytecodeType::S_INT1:
+		return "S_INT1";
+	case BytecodeType::S_INT2:
+		return "S_INT2";
+	case BytecodeType::S_INT4:
+		return "S_INT4";
+	case BytecodeType::S_INT8:
+		return "S_INT8";
+	case BytecodeType::U_INT1:
+		return "U_INT1";
+	case BytecodeType::U_INT2:
+		return "U_INT2";
+	case BytecodeType::U_INT4:
+		return "U_INT4";
+	case BytecodeType::U_INT8:
+		return "U_INT8";
+	case BytecodeType::FLOAT4:
+		return "FLOAT4";
+	case BytecodeType::FLOAT8:
+		return "FLOAT8";
+	case BytecodeType::BOOL:
+		return "BOOL";
+	case BytecodeType::CHAR1:
+		return "CHAR1";
+
 	case BytecodeType::VARIABLE:
 		return "VARIABLE";
 
@@ -32,14 +46,8 @@ std::string bytecode_to_str(BytecodeType type)
 	case BytecodeType::DIV:
 		return "DIV";
 
-	case BytecodeType::ADD_ASSIGN:
-		return "ADD_ASSIGN";
-	case BytecodeType::SUB_ASSIGN:
-		return "SUB_ASSIGN";
-	case BytecodeType::MULT_ASSIGN:
-		return "MULT_ASSIGN";
-	case BytecodeType::DIV_ASSIGN:
-		return "DIV_ASSIGN";
+	case BytecodeType::ASSIGN:
+		return "ASSIGN";
 
 	case BytecodeType::IF:
 		return "IF";
@@ -48,10 +56,22 @@ std::string bytecode_to_str(BytecodeType type)
 	case BytecodeType::ELSE:
 		return "ELSE";
 
+	case BytecodeType::WHILE:
+		return "WHILE";
+	case BytecodeType::FOR:
+		return "FOR";
+
 	case BytecodeType::RETURN:
 		return "RETURN";
+	case BytecodeType::FUNC_CALL:
+		return "FUNC_CALL";
 
 	default:
-		throw std::runtime_error("Bytecode::to_str unhandled case " + (int)type);
+		throw night::unhandled_case((int)type);
 	}
+}
+
+std::string bytecode_to_str(bytecode_t val)
+{
+	return std::to_string(val);
 }

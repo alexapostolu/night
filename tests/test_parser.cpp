@@ -1,12 +1,9 @@
 #include "test_parser.hpp"
-#include "night_tests.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "error.hpp"
 
 #include <iostream>
-
-#define night_assert_expect_bytecode(i, _type) night_assert("expected " + bytecode_to_str(_type), codes[(i)].type == (_type));
 
 void test_parser()
 {
@@ -19,60 +16,53 @@ void test_parse_var()
 {
 	std::clog << "testing parse_var\n";
 
-	Lexer lexer;
-	Scope scope;
-	bytecodes_t codes;
 
-	std::clog << " - variable declaration\n";
-	lexer.scan_code("var1 bool;");
-
-	codes = parse_var(lexer, scope);
-
-	night_assert_expect_bytecode(0, BytecodeType::CONSTANT);
-	night_assert_expect_bytecode(1, BytecodeType::BOOL_ASSIGN);
+	Wrap::test("variable declaration",
+		"var1 bool;");
+	Wrap::expect(BytecodeType::BOOL);   Wrap::expect(0);
+	Wrap::expect(BytecodeType::ASSIGN); Wrap::expect(0);
 
 
-	std::clog << " - variable initialization\n";
-	lexer.scan_code("var2 int = 2 + 3");
-
-	codes = parse_var(lexer, scope);
-
-	night_assert_expect_bytecode(0, BytecodeType::CONSTANT);
-	night_assert_expect_bytecode(1, BytecodeType::CONSTANT);
-	night_assert_expect_bytecode(2, BytecodeType::ADD);
-	night_assert_expect_bytecode(3, BytecodeType::INT_ASSIGN);
+	Wrap::test("variable initialization",
+		"var2 int32 = 2;");
+	Wrap::expect(BytecodeType::S_INT4); Wrap::expect(2);
+	Wrap::expect(BytecodeType::ASSIGN); Wrap::expect(1);
 
 
-	std::clog << " - variable assignment\n";
-	lexer.scan_code("var2 = 2;");
-
-	codes = parse_var(lexer, scope);
-
-	night_assert_expect_bytecode(0, BytecodeType::CONSTANT);
-	night_assert_expect_bytecode(1, BytecodeType::INT_ASSIGN);
+	Wrap::test("variable assignment",
+		"var2 = 5;");
+	Wrap::expect(BytecodeType::S_INT4); Wrap::expect(5);
+	Wrap::expect(BytecodeType::ASSIGN); Wrap::expect(1);
 
 
-	std::clog << " - variable add assignment\n";
-	lexer.scan_code("var2 += 2;");
+	Wrap::test("variable add assignment",
+		"var2 += 7;");
+	Wrap::expect(BytecodeType::S_INT4);   Wrap::expect(7);
+	Wrap::expect(BytecodeType::VARIABLE); Wrap::expect(1);
+	Wrap::expect(BytecodeType::ADD);
+	Wrap::expect(BytecodeType::ASSIGN);   Wrap::expect(1);
 
-	codes = parse_var(lexer, scope);
 
-	night_assert_expect_bytecode(0, BytecodeType::CONSTANT);
-	night_assert_expect_bytecode(1, BytecodeType::INT_ASSIGN);
+	Wrap::test("expressions",
+		"var3 int16 = var1 + var2 * 7");
+	Wrap::expect(BytecodeType::VARIABLE); Wrap::expect(1);
+	Wrap::expect(BytecodeType::S_INT2);   Wrap::expect(7);
+	Wrap::expect(BytecodeType::MULT);
+	Wrap::expect(BytecodeType::VARIABLE); Wrap::expect(0);
+	Wrap::expect(BytecodeType::ADD);
+	Wrap::expect(BytecodeType::ASSIGN);   Wrap::expect(2);
 }
 
 void test_parse_if()
 {
 	std::clog << "testing parse_if\n";
 
-	Lexer lexer;
-	Scope scope;
-	bytecodes_t codes;
-
-	std::clog << " - if statement\n";
-	lexer.scan_code("if (true) {}");
-
-	codes = parse_else(lexer, scope);
+	Wrap::test("if statement",
+		"if (true) {}");
+	Wrap::expect(BytecodeType::BOOL);
+	Wrap::expect(1);
+	Wrap::expect(BytecodeType::IF);
+	Wrap::expect
 
 	night_assert_expect_bytecode(0, BytecodeType::CONSTANT);
 	night_assert_expect_bytecode(1, BytecodeType::IF);
@@ -131,5 +121,37 @@ void test_parse_for()
 	night_assert_expect_bytecode(0, BytecodeType::FOR);
 }
 
-void test_parse_while();
-void test_parse_rtn();
+void test_parse_while() {}
+void test_parse_rtn() {}
+
+void Wrap::test(std::string const& msg, std::string const& code)
+{
+	std::clog << " - " << msg << '\b';
+
+	lexer.scan_code(code);
+
+	i = 0;
+	codes = parse_var(lexer, scope);
+}
+
+void Wrap::expect(bytecode_t value)
+{
+	std::clog << " . " << codes[i] << " == " << value;
+	if (codes[i] != value)
+		std::clog << " . . assertion failed\n";
+	else
+		std::clog << " . . assertion passed\n";
+
+	++i;
+}
+
+void Wrap::expect(BytecodeType value)
+{
+	std::clog << " . " << bytecode_to_str(codes[i]) << " == " << bytecode_to_str(value);
+	if (codes[i] != (bytecode_t)value)
+		std::clog << " . . assertion failed\n";
+	else
+		std::clog << " . . assertion passed\n";
+
+	++i;
+}

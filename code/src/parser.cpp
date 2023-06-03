@@ -103,7 +103,7 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 		{
 			scope.vars[var_name] = val_type;
 
-			codes.push_back((uint8_t)BytecodeType::CONSTANT);
+			codes.push_back(assign_type);
 			codes.push_back(0);
 			codes.push_back({ lexer.loc, assign_type, find_var_index(scope.vars, var_name) });
 
@@ -325,13 +325,7 @@ void number_to_bytecode(std::string const& s_num, bytecodes_t& codes)
 		uint64_t uint64 = std::stoull(s_num);
 
 		if (uint64 <= std::numeric_limits<uint8_t>::max())
-		{
-			// we don't need this
-			//, remove this so it's just like the other functions
 			codes.push_back((bytecode_size)BytecodeType::U_INT1);
-			codes.push_back(static_cast<uint8_t>(uint64));
-			return;
-		}
 		else if (uint64 <= std::numeric_limits<uint16_t>::max())
 			codes.push_back((bytecode_size)BytecodeType::U_INT2);
 		else if (uint64 <= std::numeric_limits<uint32_t>::max())
@@ -340,18 +334,28 @@ void number_to_bytecode(std::string const& s_num, bytecodes_t& codes)
 			codes.push_back((bytecode_size)BytecodeType::U_INT8);
 		else {}
 
-		// I think this works for 8 bit
-		uint8_t i = 0;
 		do {
 			codes.push_back(uint64 & 0xFF);
 		} while (uint64 >>= 8);
 	}
+	else
+	{
+		int64_t int64 = std::stoll(s_num);
 
+		if (int64 <= std::numeric_limits<uint8_t>::max())
+			codes.push_back((bytecode_size)BytecodeType::S_INT1);
+		else if (int64 <= std::numeric_limits<uint16_t>::max())
+			codes.push_back((bytecode_size)BytecodeType::S_INT2);
+		else if (int64 <= std::numeric_limits<uint32_t>::max())
+			codes.push_back((bytecode_size)BytecodeType::S_INT4);
+		else if (int64 <= std::numeric_limits<uint64_t>::max())
+			codes.push_back((bytecode_size)BytecodeType::S_INT8);
+		else {}
 
-	// // this for bytecode_to_number
-	// memcpy doesn't work for 8 bit??
-	//uint8_t value2;
-	//memcpy_s(&value2, sizeof(value2), parts, sizeof(value2));
+		do {
+			codes.push_back(int64 & 0xFF);
+		} while (int64 >>= 8);
+	}
 }
 
 int find_map_index(var_container const& vars, std::string const& var_name)

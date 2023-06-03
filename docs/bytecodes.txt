@@ -1,6 +1,22 @@
 x int;
 
 PUSH_CONSTANT INT 0
-VARIABLE INT X
+ASSIGN x
+
+
 
 x int = 2 + 3;
+
+PUSH_CONSTANT INT 2
+PUSH_CONSTANT INT 3
+ADD
+ASSIGN x
+
+
+
+x int = 5;
+c1 char = 'c';
+c2 char = 23;
+
+PUSH_CONSTANT INT 23
+ASSIGN c2

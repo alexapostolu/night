@@ -15,11 +15,20 @@ void interpret_bytecodes(Interpreter const& inperpreter, bytecodes_t const& code
 	Function* func = nullptr;
 	int func_params = 0;
 
-	for (auto code = std::begin(codes); code != std::end(codes); ++code)
+	for (auto code = std::cbegin(codes); code != std::cend(codes); ++code)
 	{
 		switch (code->type)
 		{
-		case BytecodeType::CONSTANT: s.push({ false, code->val }); break;
+		case BytecodeType::S_INT1:
+		case BytecodeType::S_INT2:
+		case BytecodeType::S_INT4:
+		case BytecodeType::S_INT8:
+		case BytecodeType::U_INT1:
+		case BytecodeType::U_INT2:
+		case BytecodeType::U_INT4:
+		case BytecodeType::U_INT8:
+		case BytecodeType::FLOAT4:
+		case BytecodeType::FLOAT8:
 		case BytecodeType::VARIABLE:
 			if (func_params > 0) 
 			{

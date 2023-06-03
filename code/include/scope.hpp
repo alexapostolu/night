@@ -15,7 +15,7 @@ using func_container = std::map<std::string, ParserFunction>;
 struct ParserFunction
 {
 	std::vector<ValueType> params;
-	std::vector<Bytecode>  codes;
+	std::vector<bytecode_t>  codes;
 };
 
 struct Scope

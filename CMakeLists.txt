@@ -9,7 +9,8 @@ configure_file("${PROJECT_SOURCE_DIR}/code/version/version.hpp.in"
 			   "${PROJECT_SOURCE_DIR}/code/version/version.hpp")
 
 include_directories("${PROJECT_SOURCE_DIR}/code/version"
-					"${PROJECT_SOURCE_DIR}/code/include")
+					"${PROJECT_SOURCE_DIR}/code/include"
+					"${PROJECT_SOURCE_DIR}/tests")
 
 file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "code/src/*.cpp")
 add_executable(night ${SOURCES})

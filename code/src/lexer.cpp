@@ -16,7 +16,7 @@ Lexer::Lexer(std::string const& _file_name)
 	: file(_file_name), loc({ _file_name, 1, 0 })
 {
 	if (!file.is_open())
-		throw NIGHT_CREATE_FATAL_LEXER("file '" + loc.file_name + "' could not be found/opened");
+		throw NIGHT_CREATE_FATAL_LEXER("file '" + loc.file + "' could not be found/opened");
 
 	std::getline(file, file_line);
 }
@@ -121,7 +121,10 @@ Token Lexer::eat_keyword()
 		{ "true", TokenType::BOOL_LIT },
 		{ "false", TokenType::BOOL_LIT },
 		{ "char", TokenType::CHAR_TYPE },
-		{ "int", TokenType::INT_TYPE },
+		{ "int8", TokenType::INT_TYPE },
+		{ "int16", TokenType::INT_TYPE },
+		{ "int32", TokenType::INT_TYPE },
+		{ "int64", TokenType::INT_TYPE },
 		{ "if", TokenType::IF },
 		{ "elif", TokenType::ELIF },
 		{ "else", TokenType::ELSE },
