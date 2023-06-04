@@ -4,6 +4,7 @@
 #include <vector>
 #include <source_location>
 #include <stdexcept>
+#include <sstream>
 
 #define NIGHT_CREATE_WARNING(msg)			  night::error::get().create_warning(msg, lexer.loc);
 #define NIGHT_CREATE_MINOR(msg)				  night::error::get().create_minor_error(msg, lexer.loc);
@@ -18,9 +19,13 @@ struct Location
 
 namespace night {
 
-inline std::runtime_error const& unhandled_case(int num, std::source_location const& s_loc = std::source_location::current())
+template <typename T>
+inline std::runtime_error const& unhandled_case(T val, std::source_location const& s_loc = std::source_location::current())
 {
-	return std::runtime_error(std::string() + s_loc.file_name() + '\n' + s_loc.function_name() + '\n' + std::to_string(num));
+	std::stringstream s;
+	s << s_loc.file_name() << '\n' + s_loc.function_name() << '\n' << val;
+
+	return std::runtime_error(s.str());
 }
 
 

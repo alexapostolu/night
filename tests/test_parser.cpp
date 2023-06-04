@@ -57,68 +57,50 @@ void test_parse_if()
 {
 	std::clog << "testing parse_if\n";
 
+
 	Wrap::test("if statement",
-		"if (true) {}");
-	Wrap::expect(BytecodeType::BOOL);
-	Wrap::expect(1);
-	Wrap::expect(BytecodeType::IF);
-	Wrap::expect
+		"if (true) { var float8; }");
+	Wrap::expect(BytecodeType::BOOL);   Wrap::expect(1);
+	Wrap::expect(BytecodeType::IF);     Wrap::expect(4);
+	Wrap::expect(BytecodeType::FLOAT8); Wrap::expect(0);
+	Wrap::expect(BytecodeType::ASSIGN); Wrap::expect(0);
 
-	night_assert_expect_bytecode(0, BytecodeType::CONSTANT);
-	night_assert_expect_bytecode(1, BytecodeType::IF);
-	night_assert("bytecode 'if' has the wrong identifier", codes[1].val = 1);
+	Wrap::test("if and elif statement",
+		"if (true) {} elif { var float8; }");
+	Wrap::expect(BytecodeType::BOOL);	Wrap::expect(1);
 
-
-	std::clog << " - if statement with body";
-	lexer.scan_code("if (true) { var int; }");
-
-	codes = parse_else(lexer, scope);
-
-	night_assert_expect_bytecode(0, BytecodeType::CONSTANT);
-	night_assert_expect_bytecode(0, BytecodeType::IF);
-	night_assert_expect_bytecode(1, BytecodeType::CONSTANT);
-	night_assert_expect_bytecode(2, BytecodeType::INT_ASSIGN);
+	Wrap::expect(BytecodeType::BOOL);   Wrap::expect(1);
+	Wrap::expect(BytecodeType::IF);     Wrap::expect(4);
+	Wrap::expect(BytecodeType::FLOAT8); Wrap::expect(0);
+	Wrap::expect(BytecodeType::ASSIGN); Wrap::expect(0);
 }
 
 void test_parse_else()
 {
 	std::clog << "testing parse_else\n";
 
-	Lexer lexer;
-	Scope scope;
-	bytecodes_t codes;
-
-	std::clog << " - else statement\n";
-	lexer.scan_code("else {}");
-
-	codes = parse_else(lexer, scope);
-
-	night_assert_expect_bytecode(0, BytecodeType::ELSE);
-
-	std::clog << " - else statement with statement";
-	lexer.scan_code("else { var int; }");
-
-	codes = parse_else(lexer, scope);
-
-	night_assert_expect_bytecode(0, BytecodeType::ELSE);
-	night_assert_expect_bytecode(1, BytecodeType::CONSTANT);
-	night_assert_expect_bytecode(2, BytecodeType::INT_ASSIGN);
+	
+	Wrap::test("else statement",
+		"else { var char8; }");
+	Wrap::expect(BytecodeType::ELSE);   Wrap::expect(4);
+	Wrap::expect(BytecodeType::CHAR1);  Wrap::expect(0);
+	Wrap::expect(BytecodeType::ASSIGN); Wrap::expect(0);
 }
 
 void test_parse_for()
 {
 	std::clog << "testing parse_for\n";
 
-	Lexer lexer;
-	Scope scope;
-	bytecodes_t codes;
+	Wrap::test("for statement with 3 conditions and body",
+		"for (i int8 = 0; i < 5; i += 1) { var int8; }");
+	Wrap::expect(3); Wrap::expect(BytecodeType::FOR); Wrap::expect(4);
+	Wrap::expect(BytecodeType::S_INT8); Wrap::expect(0);
+	Wrap::expect(BytecodeType::ASSIGN); Wrap::expect(0);
 
-	std::clog << " - for statement\n";
-	lexer.scan_code("for (int i = 0; i < 5; i += 1) {}");
 
-	codes = parse_else(lexer, scope);
-
-	night_assert_expect_bytecode(0, BytecodeType::FOR);
+	Wrap::test("for statement with 2 conditions",
+		"for (i int8 = 0; i < 5;) { }");
+	Wrap::expect(2); Wrap::expect(BytecodeType::FOR); Wrap::expect(0);
 }
 
 void test_parse_while() {}
@@ -131,7 +113,7 @@ void Wrap::test(std::string const& msg, std::string const& code)
 	lexer.scan_code(code);
 
 	i = 0;
-	codes = parse_var(lexer, scope);
+	codes = parse_stmt(lexer, scope);
 }
 
 void Wrap::expect(bytecode_t value)

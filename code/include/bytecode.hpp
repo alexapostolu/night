@@ -39,7 +39,7 @@ enum struct BytecodeType : bytecode_t
 	ELSE,					// index of last else bytecode
 
 	WHILE,					// index of last while bytecode
-	FOR,					// index of lats for bytecode
+	FOR,					// index of last for bytecode
 
 	RETURN,					// return value
 	FUNC_CALL				//

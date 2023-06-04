@@ -15,6 +15,7 @@ void test_parse_rtn();
 struct Wrap
 {
 	static void test(std::string const& msg, std::string const& code);
+
 	static void expect(bytecode_t type);
 	static void expect(BytecodeType type);
 

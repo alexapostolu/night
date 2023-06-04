@@ -120,7 +120,7 @@ Token Lexer::eat_keyword()
 	static std::unordered_map<std::string, TokenType> const keywords{
 		{ "true", TokenType::BOOL_LIT },
 		{ "false", TokenType::BOOL_LIT },
-		{ "char", TokenType::CHAR_TYPE },
+		{ "char8", TokenType::CHAR_TYPE },
 		{ "int8", TokenType::INT_TYPE },
 		{ "int16", TokenType::INT_TYPE },
 		{ "int32", TokenType::INT_TYPE },

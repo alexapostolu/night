@@ -72,14 +72,25 @@ bytecodes_t parse_var(Lexer& lexer, Scope& scope)
 
 	lexer.eat();
 
-	// default values
-
 	ValueType val_type;
 
 	if (lexer.curr().type == TokenType::BOOL_TYPE ||
 		lexer.curr().type == TokenType::CHAR_TYPE ||
 		lexer.curr().type == TokenType::INT_TYPE)
 	{
+		BytecodeType type;
+		if (lexer.curr().str == "int8")
+			type = BytecodeType::S_INT1;
+		else if (lexer.curr().str == "int16")
+			type = BytecodeType::S_INT2;
+		else if (lexer.curr().str == "int32")
+			type = BytecodeType::S_INT4;
+		else if (lexer.curr().str == "int64")
+			type = BytecodeType::S_INT8;
+		else
+			night::unhandled_case(lexer.curr().str);
+
+		// default values
 		BytecodeType assign_type;
 		switch (lexer.curr().type)
 		{
