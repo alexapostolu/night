@@ -29,7 +29,6 @@ enum class TokenType
 	BOOL_TYPE,
 	CHAR_TYPE,
 	INT_TYPE,
-	STR_TYPE,
 
 	IF,
 	ELIF,
@@ -48,6 +47,8 @@ struct Token
 {
 	TokenType type;
 	std::string str;
+
+	bool is_type() const;
 };
 
 std::string tok_type_to_str(TokenType type);

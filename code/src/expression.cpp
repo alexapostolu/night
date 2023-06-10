@@ -1,5 +1,9 @@
 #include "expression.hpp"
+#include "expression.hpp"
+#include "expression.hpp"
 #include "bytecode.hpp"
+#include "scope.hpp"
+#include "error.hpp"
 
 #include <memory>
 #include <stdexcept>
@@ -61,7 +65,7 @@ int ExprUnary::prec() const
 
 
 ExprBinary::ExprBinary(ExprBinaryType _type, expr_p const& _lhs, expr_p const& _rhs)
-	: Expr(ExprType::BINARY, _lhs, _rhs), type(_type), guard(false) {}
+	: Expr(ExprType::BINARY, _lhs, _rhs), expr_type(_type), guard(false) {}
 
 bytecode_t ExprBinary::to_bytecode() const
 {
@@ -83,6 +87,32 @@ bytecode_t ExprBinary::to_bytecode() const
 	}
 
 	return std::make_shared<Bytecode>(op_type);
+}
+
+std::optional<ValueType> ExprBinary::type_check(Scope const& scope) const
+{
+	auto lhs_type = lhs->type_check();
+	if (!lhs_type)
+		return std::nullopt;
+
+	auto rhs_type = rhs->type_check();
+	if (!rhs_type)
+		return std::nullopt;
+
+	if (expr_type == ExprBinaryType::DOT)
+	{
+
+	}
+
+	if (*lhs_type == ValueType::OBJECT)
+		night::error::get().create_minor_error("left hand side of type '" +
+			val_type_to_str(*lhs_type) + "' can not be used under operator '" +
+			expr_bin_type_to_string(expr_type) + "'", lhs->loc);
+
+	if (*rhs_type == ValueType::OBJECT)
+		night::error::get().create_minor_error("right hand side of type '" +
+			val_type_to_str(*rhs_type) + "' can not be used under operator '" +
+			expr_bin_type_to_string(expr_type) + "'", rhs->loc);
 }
 
 expr_p& ExprBinary::next()
@@ -131,5 +161,20 @@ int prec(ExprBinaryType type)
 
 	default:
 		throw std::runtime_error("unhandled case");
+	}
+}
+
+std::string const& expr_bin_type_to_string(ExprBinaryType type)
+{
+	switch (type)
+	{
+	case ExprBinaryType::ADD:
+		return "+";
+	case ExprBinaryType::SUB:
+		return "-";
+	case ExprBinaryType::MULT:
+		return "*";
+	case ExprBinaryType::DIV:
+		return "/";
 	}
 }

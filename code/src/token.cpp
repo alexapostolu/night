@@ -1,6 +1,13 @@
 #include "token.hpp"
 #include <string>
 
+bool Token::is_type() const
+{
+	return type == TokenType::BOOL_TYPE ||
+		   type == TokenType::CHAR_TYPE ||
+		   type == TokenType::INT_TYPE;
+}
+
 std::string tok_type_to_str(TokenType type)
 {
 	switch (type)
@@ -41,14 +48,8 @@ std::string tok_type_to_str(TokenType type)
 		return "string";
 	case TokenType::VARIABLE:
 		return "variable";
-	case TokenType::BOOL_TYPE:
-		return "bool type";
-	case TokenType::CHAR_TYPE:
-		return "char type";
-	case TokenType::INT_TYPE:
-		return "int type";
-	case TokenType::STR_TYPE:
-		return "str type";
+	case TokenType::TYPE:
+		return "type";
 	case TokenType::IF:
 		return "if";
 	case TokenType::ELIF:

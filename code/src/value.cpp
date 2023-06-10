@@ -1,4 +1,5 @@
 #include "value.hpp"
+#include "bytecode.hpp"
 
 #include <stdexcept>
 #include <variant>
@@ -29,4 +30,9 @@ std::string val_to_str(ValueType type, std::variant<char, int> const& val)
 	default:
 		throw std::runtime_error("unhandled case");
 	}
+}
+
+ValueType bytecode_type_to_val_type(BytecodeType type)
+{
+	return ValueType();
 }

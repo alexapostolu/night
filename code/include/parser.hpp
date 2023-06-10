@@ -21,13 +21,15 @@ bytecodes_t parse_stmts(Lexer& lexer, Scope& scope, bool* curly_enclosed = nullp
 //   start: first token of statement
 //   end:   last token of statement
 bytecodes_t parse_stmt(Lexer& lexer, Scope& scope);
-bytecodes_t parse_var(Lexer& lexer, Scope& scope);
+void parse_var(bytecodes_t& codes, Lexer& lexer, Scope& scope);
 bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif);
 bytecodes_t parse_else(Lexer& lexer, Scope& scope);
 bytecodes_t parse_for(Lexer& lexer, Scope& scope);
 bytecodes_t parse_while(Lexer& lexer, Scope& scope);
 bytecodes_t parse_func(Lexer& lexer, Scope& scope);
 bytecodes_t parse_rtn(Lexer& lexer, Scope& scope);
+
+BytecodeType token_var_type_to_bytecode(std::string const& type);
 
 void number_to_bytecode(std::string const& s_num, bytecodes_t& codes);
 
@@ -46,7 +48,10 @@ void parse_comma_sep_stmts(Lexer& lexer, Scope& scope, bytecodes_t& codes);
 // 'bracket' is for recursive call only
 // if return value is null, you have problem
 // lexer.curr starts token before expr, ends at token after expression
-expr_p parse_expr_toks(Lexer& lexer, Scope& scope, bool bracket = false);
+expr_p parse_toks_expr(Lexer& lexer, Scope& scope, bool bracket = false);
+ValueType expr_type_check(expr_p const& expr);
+// generates bytecode from the expression pointer
+// deduces and returns the type of the expression
 ValueType parse_expr(expr_p const& expr, bytecodes_t& bytes);
 void parse_expr_single(expr_p& head, expr_p const& val);
 
