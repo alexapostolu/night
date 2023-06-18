@@ -26,7 +26,9 @@ enum struct BytecodeType : bytecode_t
 
 	VARIABLE,				// variable id
 
+	NEGATIVE,
 	NOT,					// value
+
 	ADD,					// value
 	SUB,					// value
 	MULT,					// value

@@ -117,5 +117,11 @@ int pop(InterpreterScope& scope, expr_stack& s)
 	auto const& [flag, val] = s.top();
 	s.pop();
 
+	switch (type)
+	{
+		INT8,
+			int16,
+	}
+
 	return flag ? scope.vars[val].val : val;
 }

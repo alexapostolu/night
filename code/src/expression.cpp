@@ -1,60 +1,93 @@
 #include "expression.hpp"
 #include "expression.hpp"
-#include "expression.hpp"
 #include "bytecode.hpp"
 #include "scope.hpp"
+#include "parser.hpp"
 #include "error.hpp"
 
 #include <memory>
 #include <stdexcept>
+#include <limits>
 #include <string>
 
 Expr::Expr(ExprType _type, expr_p const& _lhs, expr_p const& _rhs)
-	: type(_type), lhs(_lhs), rhs(_rhs) {}
+	: type(_type), lhs(_lhs), rhs(_rhs), gaurd(false) {}
 
 expr_p& Expr::next() { return lhs; }
 int Expr::prec() const { return -1; }
-void Expr::set_guard() {};
+void Expr::set_guard() { gaurd = true; };
 
 
 
-ExprValue::ExprValue(ValueType _type, std::variant<char, int> const& _val)
-	: Expr(ExprType::VALUE, nullptr, nullptr), type(_type), val(_val) {}
+ExprValue::ExprValue(ValueType _type, Value const& _val)
+	: Expr(ExprType::VALUE, nullptr, nullptr), val(_val) {}
 
-bytecode_t ExprValue::to_bytecode() const
+bytecodes_t ExprValue::to_bytecode() const
 {
-	return std::make_shared<Constant>(type, val);
+	switch (val.type)
+	{
+	case ValueType::BOOL:
+		return { (bytecode_t)BytecodeType::BOOL, (bytecode_t)val.data };
+	case ValueType::CHAR:
+		return { (bytecode_t)BytecodeType::CHAR1, (bytecode_t)val.data };
+	case ValueType::INT:
+		bytecodes_t codes;
+		number_to_bytecode(val.data, codes);
+		return codes;
+	}
 }
 
-ExprVar::ExprVar(std::string const& _name)
-	: Expr(ExprType::VALUE, nullptr, nullptr), name(_name) {}
-
-bytecode_t ExprVar::to_bytecode() const
+std::optional<ValueType> ExprValue::type_check(Scope const& scope) const
 {
-	return std::make_shared<Bytecode>(BytecodeType::VARIABLE);
+	return val.type;
+}
+
+
+ExprVar::ExprVar(std::string const& _name)
+	: Expr(ExprType::VALUE, nullptr, nullptr), name(_name), index(-1) {}
+
+bytecodes_t ExprVar::to_bytecode() const
+{
+	bytecodes_t codes;
+	codes.push_back((bytecode_t)BytecodeType::VARIABLE);
+	number_to_bytecode(codes, index);
+
+	return codes;
+}
+
+std::optional<ValueType> ExprVar::type_check(Scope const& scope) const
+{
+	if (!scope.vars.contains(name))
+		night::error::get().create_minor_error("variable '" + name + "' not defined", loc);
+	
+	bytecodes_t codes;
+	codes.push_back((bytecode_t)BytecodeType::VARIABLE);
+	number_to_bytecode(codes, scope.vars.at(name).id);
+
+	return codes;
 }
 
 
 
 ExprUnary::ExprUnary(ExprUnaryType _type, expr_p const& _val)
-	: Expr(ExprType::UNARY, _val, nullptr), type(_type) {}
+	: Expr(ExprType::UNARY, _val, nullptr), unary_type(_type) {}
 
 expr_p& ExprUnary::next()
 {
 	return lhs;
 }
 
-bytecode_t ExprUnary::to_bytecode() const
+bytecodes_t ExprUnary::to_bytecode() const
 {
-	BytecodeType op_type;
-	switch (type)
+	switch (unary_type)
 	{
+	case ExprUnaryType::NEGATIVE:
+		return { (bytecode_t)BytecodeType::NEGATIVE };
 	case ExprUnaryType::NOT:
-		op_type = BytecodeType::NOT;
-		break;
+		return { (bytecode_t)BytecodeType::NOT };
+	default:
+		night::unhandled_case(unary_type);
 	}
-
-	return std::make_shared<Bytecode>(op_type);
 }
 
 int ExprUnary::prec() const
@@ -65,54 +98,39 @@ int ExprUnary::prec() const
 
 
 ExprBinary::ExprBinary(ExprBinaryType _type, expr_p const& _lhs, expr_p const& _rhs)
-	: Expr(ExprType::BINARY, _lhs, _rhs), expr_type(_type), guard(false) {}
+	: Expr(ExprType::BINARY, _lhs, _rhs), binary_type(_type), guard(false) {}
 
-bytecode_t ExprBinary::to_bytecode() const
+bytecodes_t ExprBinary::to_bytecode() const
 {
-	BytecodeType op_type;
-	switch (type)
+	switch (binary_type)
 	{
 	case ExprBinaryType::ADD:
-		op_type = BytecodeType::ADD;
-		break;
+		return { (bytecode_t)BytecodeType::ADD };
 	case ExprBinaryType::SUB:
-		op_type = BytecodeType::SUB;
-		break;
+		return { (bytecode_t)BytecodeType::SUB };
 	case ExprBinaryType::MULT:
-		op_type = BytecodeType::MULT;
-		break;
+		return { (bytecode_t)BytecodeType::MULT };
 	case ExprBinaryType::DIV:
-		op_type = BytecodeType::DIV;
-		break;
+		return { (bytecode_t)BytecodeType::DIV };
+	default:
+		night::unhandled_case(binary_type);
 	}
-
-	return std::make_shared<Bytecode>(op_type);
 }
 
 std::optional<ValueType> ExprBinary::type_check(Scope const& scope) const
 {
-	auto lhs_type = lhs->type_check();
+	auto lhs_type = lhs->type_check(scope);
 	if (!lhs_type)
 		return std::nullopt;
 
-	auto rhs_type = rhs->type_check();
+	auto rhs_type = rhs->type_check(scope);
 	if (!rhs_type)
 		return std::nullopt;
 
-	if (expr_type == ExprBinaryType::DOT)
+	if (binary_type == ExprBinaryType::DOT)
 	{
-
+		
 	}
-
-	if (*lhs_type == ValueType::OBJECT)
-		night::error::get().create_minor_error("left hand side of type '" +
-			val_type_to_str(*lhs_type) + "' can not be used under operator '" +
-			expr_bin_type_to_string(expr_type) + "'", lhs->loc);
-
-	if (*rhs_type == ValueType::OBJECT)
-		night::error::get().create_minor_error("right hand side of type '" +
-			val_type_to_str(*rhs_type) + "' can not be used under operator '" +
-			expr_bin_type_to_string(expr_type) + "'", rhs->loc);
 }
 
 expr_p& ExprBinary::next()
@@ -125,7 +143,7 @@ int ExprBinary::prec() const
 	if (guard)
 		return 100;
 
-	switch (type)
+	switch (binary_type)
 	{
 	case ExprBinaryType::ADD:
 	case ExprBinaryType::SUB:
@@ -176,5 +194,45 @@ std::string const& expr_bin_type_to_string(ExprBinaryType type)
 		return "*";
 	case ExprBinaryType::DIV:
 		return "/";
+	}
+}
+
+void number_to_bytecode(bytecodes_t& codes, int64_t num)
+{
+	if (num >= 0)
+	{
+		uint64_t uint64 = num;
+
+		if (uint64 <= std::numeric_limits<uint8_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::U_INT1);
+		else if (uint64 <= std::numeric_limits<uint16_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::U_INT2);
+		else if (uint64 <= std::numeric_limits<uint32_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::U_INT4);
+		else if (uint64 <= std::numeric_limits<uint64_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::U_INT8);
+		else {}
+
+		do {
+			codes.push_back(uint64 & 0xFF);
+		} while (uint64 >>= 8);
+	}
+	else
+	{
+		int64_t int64 = num;
+
+		if (int64 <= std::numeric_limits<uint8_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::S_INT1);
+		else if (int64 <= std::numeric_limits<uint16_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::S_INT2);
+		else if (int64 <= std::numeric_limits<uint32_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::S_INT4);
+		else if (int64 <= std::numeric_limits<uint64_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::S_INT8);
+		else {}
+
+		do {
+			codes.push_back(int64 & 0xFF);
+		} while (int64 >>= 8);
 	}
 }

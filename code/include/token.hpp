@@ -8,6 +8,7 @@ enum class TokenType
 	BINARY_OP,
 
 	ASSIGN,
+
 	OPEN_BRACKET,
 	CLOSE_BRACKET,
 	OPEN_SQUARE,

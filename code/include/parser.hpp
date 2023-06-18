@@ -21,38 +21,53 @@ bytecodes_t parse_stmts(Lexer& lexer, Scope& scope, bool* curly_enclosed = nullp
 //   start: first token of statement
 //   end:   last token of statement
 bytecodes_t parse_stmt(Lexer& lexer, Scope& scope);
-void parse_var(bytecodes_t& codes, Lexer& lexer, Scope& scope);
-bytecodes_t parse_if(Lexer& lexer, Scope& scope, bool is_elif);
-bytecodes_t parse_else(Lexer& lexer, Scope& scope);
-bytecodes_t parse_for(Lexer& lexer, Scope& scope);
-bytecodes_t parse_while(Lexer& lexer, Scope& scope);
+void generate_codes_var(bytecodes_t& codes, Lexer& lexer, Scope& scope);
+void generate_codes_if(bytecodes_t& codes, Lexer& lexer, Scope& scope, bool is_elif);
+void generate_codes_else(bytecodes_t& codes, Lexer& lexer, Scope& scope);
+void generate_codes_for(bytecodes_t& codes, Lexer& lexer, Scope& scope);
+void generate_codes_while(bytecodes_t& codes, Lexer& lexer, Scope& scope);
 bytecodes_t parse_func(Lexer& lexer, Scope& scope);
 bytecodes_t parse_rtn(Lexer& lexer, Scope& scope);
 
 BytecodeType token_var_type_to_bytecode(std::string const& type);
 
 void number_to_bytecode(std::string const& s_num, bytecodes_t& codes);
+void number_to_bytecode(int num, bytecodes_t& codes);
 
-// index of element in map
-int find_var_index(var_container const& vars, std::string const& var_name);
+// lexer
+//   start: variable type
+//   end: semicolon
+// examples:
+//   my_var int;
+//   my_var int = [expression];
+void generate_codes_var_init(bytecodes_t& codes, Lexer& lexer, Scope& scope,
+	std::string const& var_name);
 
-// token starts at assign, ends at last statement of assignment
-// caller's responsibility to check curr token after function call finishes
-void parse_var_assign(Lexer& lexer, Scope& scope, bytecodes_t& codes, std::string const& var_name);
+// lexer
+//   start: assignment
+//   end: if require_semicolon is true, semicolon, else, first token after expression
+// examples:
+//   my_var = [expression];
+//   my_var += [expression];
+void generate_codes_var_assign(bytecodes_t& codes, Lexer& lexer, Scope& scope,
+	std::string const& var_name, bool require_semicolon);
 
 // token starts at open bracket
 // ends at close bracket
 void parse_comma_sep_stmts(Lexer& lexer, Scope& scope, bytecodes_t& codes);
 
+// lexer
+//   start: first token of expression
+//   end: first token after expression
 // turns tokens into AST
 // 'bracket' is for recursive call only
-// if return value is null, you have problem
-// lexer.curr starts token before expr, ends at token after expression
-expr_p parse_toks_expr(Lexer& lexer, Scope& scope, bool bracket = false);
-ValueType expr_type_check(expr_p const& expr);
+// if return value is null, expression is empty
+// caller's responsibility to handle null return values
+expr_p parse_toks_expr(Lexer& lexer, Scope& scope, std::string const& err_msg = "",
+	bool bracket = false);
+
 // generates bytecode from the expression pointer
-// deduces and returns the type of the expression
-ValueType parse_expr(expr_p const& expr, bytecodes_t& bytes);
+void generate_codes_expr(bytecodes_t& codes, expr_p const& expr);
 void parse_expr_single(expr_p& head, expr_p const& val);
 
 ExprUnaryType  str_to_unary_type(std::string const& str);

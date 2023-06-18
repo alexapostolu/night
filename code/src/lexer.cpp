@@ -211,9 +211,7 @@ Token Lexer::eat_symbol()
 
 	auto symbol = symbols.find(file_line[loc.col]);
 	if (symbol == symbols.end())
-	{
 		throw NIGHT_CREATE_FATAL_LEXER("unknown symbol '" + std::string(1, file_line[loc.col]) + "'");
-	}
 
 	for (auto& [c, tok_type] : symbol->second)
 	{
