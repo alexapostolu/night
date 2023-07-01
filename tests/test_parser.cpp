@@ -106,6 +106,13 @@ void test_parse_for()
 void test_parse_while() {}
 void test_parse_rtn() {}
 
+void test_generate_func()
+{
+	Wrap::test("function without paramters",
+		"def func1() {}");
+	Wrap::expect(BytecodeType::)
+}
+
 void Wrap::test(std::string const& msg, std::string const& code)
 {
 	std::clog << " - " << msg << '\b';

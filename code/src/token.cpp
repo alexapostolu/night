@@ -1,5 +1,7 @@
 #include "token.hpp"
+#include "token.hpp"
 #include <string>
+#include <assert.h>
 
 bool Token::is_type() const
 {

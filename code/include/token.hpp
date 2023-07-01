@@ -1,5 +1,7 @@
 #pragma once
 
+#include "value.hpp"
+
 #include <string>
 
 enum class TokenType

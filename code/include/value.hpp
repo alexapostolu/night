@@ -3,21 +3,35 @@
 #include <string>
 #include <variant>
 
+constexpr short primitive_count = 2;
+
+using value_t = int;
+
 enum class ValueType
 {
 	BOOL,
 	CHAR,
-	INT,
-	OBJECT
+	S_INT,
+	U_INT
 };
 
 struct Value
 {
-	ValueType type;
-	int data; // stores index of class in object_array if Value type is object
-	//std::variant<int64_t, uint64_t> data;
+	// type = 1, 2, 3, then it's primative
+	// type > 3, signals the type of the object
+	value_t type;
+	
+	// stores index of class in object_array if Value type is object
+	std::variant<int64_t, uint64_t> data;
 };
 
-std::string val_type_to_str(ValueType type);
+// returns:
+//   true  if equal
+//   false if not
+bool compare_value_t(value_t type1, value_t type2);
+bool is_object_t(value_t type);
+
+
+std::string val_type_to_str(value_t type);
 std::string val_to_str(ValueType type, std::variant<char, int> const& val);
 ValueType bytecode_type_to_val_type(BytecodeType type);

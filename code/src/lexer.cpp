@@ -54,7 +54,7 @@ Token const& Lexer::expect(TokenType type, std::string const& err)
 	eat();
 
 	if (curr().type != type)
-		throw NIGHT_CREATE_FATAL_LEXER("found '" + curr().str + "', expected " + tok_type_to_str(type) + err);
+		throw NIGHT_CREATE_FATAL_LEXER("found '" + curr().str + "', expected " + tok_type_to_str(type) + " " + err);
 
 	return curr();
 }

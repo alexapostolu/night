@@ -21,16 +21,20 @@ int main(int argc, char* argv[])
 	try {
 		Lexer lexer(main_file);
 
+		func_container funcs;
 		Scope global_scope;
 		global_scope.funcs["print"].params = { ValueType::BOOL };
 		global_scope.funcs["print"].params = { ValueType::CHAR };
 		global_scope.funcs["print"].params = { ValueType::INT };
-		auto bytecodes = parse_stmts(lexer, global_scope);
+
+
+		auto bytecodes = parse_stmts(lexer, global_scope, funcs);
 
 		for (auto code : bytecodes)
 			std::cout << code.to_str() << '\n';
 
-		Interpreter interpreter(bytecodes);
+		Interpreter interpreter;
+		interpreter.funcs = funcs;
 	}
 	catch (night::error const& e) {
 		std::cout << e.what() << '\n';

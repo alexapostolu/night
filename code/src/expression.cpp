@@ -1,7 +1,7 @@
 #include "expression.hpp"
 #include "expression.hpp"
 #include "bytecode.hpp"
-#include "scope.hpp"
+#include "parser_scope.hpp"
 #include "parser.hpp"
 #include "error.hpp"
 
@@ -9,6 +9,27 @@
 #include <stdexcept>
 #include <limits>
 #include <string>
+
+Expression::Expression()
+{
+
+}
+
+
+ExpressionBinary::ExpressionBinary(ExprBinaryType _type,
+	std::shared_ptr<Expression> const& _lhs,
+	std::shared_ptr<Expression> const& _rhs)
+	: type(_type)
+{
+}
+
+std::optional<value_t> ExpressionBinary::type_check(ParserScope const& scope) const
+{
+
+}
+
+
+
 
 Expr::Expr(ExprType _type, expr_p const& _lhs, expr_p const& _rhs)
 	: type(_type), lhs(_lhs), rhs(_rhs), gaurd(false) {}

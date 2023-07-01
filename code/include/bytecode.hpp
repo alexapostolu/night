@@ -36,9 +36,9 @@ enum struct BytecodeType : bytecode_t
 
 	ASSIGN,
 
-	IF,						// index of last if bytecode
-	ELIF,					// index of last elif bytecode
-	ELSE,					// index of last else bytecode
+	JUMP_IF_FALSE,
+	JUMP,
+	END_IF,
 
 	WHILE,					// index of last while bytecode
 	FOR,					// index of last for bytecode

@@ -4,11 +4,63 @@
 #include "scope.hpp"
 #include "error.hpp"
 #include "value.hpp"
+#include "ast.hpp"
 
 #include <memory>
 #include <variant>
 #include <optional>
 #include <string>
+
+
+class Expression
+{
+public:
+	Expression();
+
+	virtual bytecodes_t generate_codes(ParserScope const& scope) const = 0;
+	virtual std::optional<value_t> type_check(ParserScope const& scope) const = 0;
+
+protected:
+	std::shared_ptr<Expression> lhs, rhs;
+};
+
+
+enum class ExprBinaryType
+{
+	ADD, SUB, MULT, DIV,
+	DOT
+};
+
+class ExpressionBinary : public Expression
+{
+public:
+	ExpressionBinary(
+		ExprBinaryType _type,
+		std::shared_ptr<Expression> const& _lhs = nullptr,
+		std::shared_ptr<Expression> const& _rhs = nullptr);
+
+	bytecodes_t generate_codes(ParserScope const& scope) const;
+	std::optional<value_t> type_check(ParserScope const& scope) const override;
+
+private:
+	ExprBinaryType type;
+};
+
+
+class ExpressionValue : public Expression
+{
+public:
+	bytecodes_t generate_codes(ParserScope const& scope) const;
+};
+
+
+
+
+
+
+
+
+
 
 enum class ExprType
 {
@@ -49,9 +101,9 @@ using expr_p = std::shared_ptr<Expr>;
 
 
 
-struct ExprValue : public Expr
+struct ExpressionValue : public Expression
 {
-	ExprValue(ValueType _type, Value const& _val);
+	ExpressionValue(Value const& _val);
 	bytecodes_t to_bytecode() const override;
 	std::optional<ValueType> type_check(Scope const& scope) const override;
 

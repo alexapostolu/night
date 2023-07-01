@@ -4,7 +4,9 @@
 #include "bytecode.hpp"
 #include "scope.hpp"
 #include "expression.hpp"
+#include "interpreter.hpp"
 #include "value.hpp"
+#include "ast.hpp"
 
 #include <string>
 
@@ -15,24 +17,41 @@
 //   modifies to true if the statements are enclosed with curly braces
 //   this is useful to know as a function with statements not enclosed by curly
 //     braces will throw a syntax error
-bytecodes_t parse_stmts(Lexer& lexer, Scope& scope, bool* curly_enclosed = nullptr);
+std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, ParserScope& scope, func_container* funcs = nullptr, bool* curly_enclosed = nullptr);
 
 // lexer
 //   start: first token of statement
 //   end:   last token of statement
-bytecodes_t parse_stmt(Lexer& lexer, Scope& scope);
-void generate_codes_var(bytecodes_t& codes, Lexer& lexer, Scope& scope);
+std::shared_ptr<AST> parse_stmt(Lexer& lexer, ParserScope& scope, func_container& funcs);
+
+std::shared_ptr<AST> parse_var(Lexer& lexer, ParserScope& scope);
+std::shared_ptr<AST> parse_var_init(Lexer& lexer, ParserScope& scope, std::string const& var_name);
+// caller's responsibility to check current token of lexer
+std::shared_ptr<AST> parse_var_assign(Lexer& lexer, ParserScope& scope, std::string const& var_name);
+
+std::shared_ptr<AST> parse_if(Lexer& lexer, ParserScope& scope, bool is_else);
+
+std::shared_ptr<AST> parse_for(Lexer& lexer, ParserScope& scope);
+std::shared_ptr<AST> parse_while(Lexer& lexer, ParserScope& scope);
+
 void generate_codes_if(bytecodes_t& codes, Lexer& lexer, Scope& scope, bool is_elif);
 void generate_codes_else(bytecodes_t& codes, Lexer& lexer, Scope& scope);
 void generate_codes_for(bytecodes_t& codes, Lexer& lexer, Scope& scope);
 void generate_codes_while(bytecodes_t& codes, Lexer& lexer, Scope& scope);
-bytecodes_t parse_func(Lexer& lexer, Scope& scope);
-bytecodes_t parse_rtn(Lexer& lexer, Scope& scope);
+void generate_codes_return(bytecodes_t& codes, Lexer& lexer, Scope& scope);
+
+// lexer
+//   start: first token of statement
+//   end: last token of statement
+// bytecode for functions are not saved in a .bnight file with the others,
+// instead it is stored in a Scope
+void generate_codes_func(func_container& funcs, Lexer& lexer, Scope& scope);
 
 BytecodeType token_var_type_to_bytecode(std::string const& type);
 
 void number_to_bytecode(std::string const& s_num, bytecodes_t& codes);
 void number_to_bytecode(int num, bytecodes_t& codes);
+
 
 // lexer
 //   start: variable type
@@ -52,9 +71,11 @@ void generate_codes_var_init(bytecodes_t& codes, Lexer& lexer, Scope& scope,
 void generate_codes_var_assign(bytecodes_t& codes, Lexer& lexer, Scope& scope,
 	std::string const& var_name, bool require_semicolon);
 
-// token starts at open bracket
-// ends at close bracket
-void parse_comma_sep_stmts(Lexer& lexer, Scope& scope, bytecodes_t& codes);
+// returns the types of the 
+// lexer
+//   start: open bracket
+//   end: close bracket
+std::vector<ValueType> parse_params(Lexer& lexer, Scope& scope);
 
 // lexer
 //   start: first token of expression
@@ -63,7 +84,8 @@ void parse_comma_sep_stmts(Lexer& lexer, Scope& scope, bytecodes_t& codes);
 // 'bracket' is for recursive call only
 // if return value is null, expression is empty
 // caller's responsibility to handle null return values
-expr_p parse_toks_expr(Lexer& lexer, Scope& scope, std::string const& err_msg = "",
+std::shared_ptr<Expression> parse_toks_expr(Lexer& lexer, ParserScope const& scope,
+	std::string const& err_msg_empty = "",
 	bool bracket = false);
 
 // generates bytecode from the expression pointer
