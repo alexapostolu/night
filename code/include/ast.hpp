@@ -74,12 +74,26 @@ private:
 };
 
 
+class Loop
+{
+protected:
+	bytecodes_t generate_codes_loop(ParserScope const& scope) const;
+
+protected:
+	std::shared_ptr<Expression> cond;
+	AST_Block block;
+};
+
+
 class While : public AST
 {
 public:
-	While(Location const& _loc, std::shared_ptr<Expression> const& _cond, AST_Block const& _block);
+	While(
+		Location const& _loc,
+		std::shared_ptr<Expression> const& _cond,
+		AST_Block const& _block);
 
-	bytecodes_t generate_codes(ParserScope const& scope) const;
+	bytecodes_t generate_codes(ParserScope const& scope) const override;
 
 private:
 	std::shared_ptr<Expression>  cond_expr;
@@ -97,11 +111,43 @@ public:
 		VariableAssign const& _var_assign,
 		AST_Block const& _block);
 
-	bytecodes_t generate_codes(ParserScope const& scope) const;
+	bytecodes_t generate_codes(ParserScope const& scope) const override;
 
 private:
 	VariableInit var_init;
 	std::shared_ptr<Expression> cond_expr;
 	VariableAssign var_assign;
 	AST_Block block;
+};
+
+
+class Function : public AST
+{
+public:
+	Function(
+		Location const& _loc,
+		std::string const& _func_name,
+		std::vector<std::string> const& _param_names,
+		AST_Block const& _block);
+
+	bytecodes_t generate_codes(ParserScope const& scope) const override;
+
+private:
+	std::string func_name;
+	std::vector<std::string> param_names;
+	AST_Block block;
+};
+
+
+class Return : public AST
+{
+public:
+	Return(
+		Location const& _loc,
+		std::shared_ptr<Expression> _expr);
+
+	bytecodes_t generate_codes(ParserScope const& scope) const;
+
+private:
+	std::shared_ptr<Expression> expr;
 };

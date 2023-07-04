@@ -14,10 +14,10 @@
 using expr_stack = std::stack<std::tuple<bool, int>>;
 using var_container = std::unordered_map<int, Value>;
 
-struct Function;
-using func_container = std::unordered_map<std::string, Function>;
+struct InterpreterFunction;
+using func_container = std::unordered_map<std::string, InterpreterFunction>;
 
-struct Function
+struct InterpreterFunction
 {
 	std::vector<int> params;
 	bytecodes_t codes;

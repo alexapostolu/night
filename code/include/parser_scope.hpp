@@ -4,8 +4,10 @@
 #include "value.hpp"
 
 #include <string>
+#include <optional>
 #include <unordered_map>
 #include <vector>
+#include <string>
 
 struct ParserFunction;
 struct Variable;
@@ -23,15 +25,22 @@ struct Variable
 
 struct ParserFunction
 {
-	std::vector<ValueType> param_types;
-	ValueType rtn_type;
+	std::vector<value_t> param_types;
+	std::optional<value_t> rtn_type;
 };
 
 struct ParserScope
 {
+	static scope_func_container funcs;
+	static scope_func_container::iterator curr_func;
+	
 	scope_var_container   vars;
-	scope_func_container  funcs;
 	scope_class_container objs;
 
+	value_t rtn_type;
+
+	// returns:
+	//    empty string if successful
+	//    error message if not successful
 	std::string const& create_variable(std::string const& name, value_t type);
 };

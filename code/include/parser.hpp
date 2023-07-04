@@ -2,7 +2,7 @@
 
 #include "lexer.hpp"
 #include "bytecode.hpp"
-#include "scope.hpp"
+#include "parser_scope.hpp"
 #include "expression.hpp"
 #include "interpreter.hpp"
 #include "value.hpp"
@@ -25,20 +25,38 @@ std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, ParserScope& scope, 
 std::shared_ptr<AST> parse_stmt(Lexer& lexer, ParserScope& scope, func_container& funcs);
 
 std::shared_ptr<AST> parse_var(Lexer& lexer, ParserScope& scope);
-std::shared_ptr<AST> parse_var_init(Lexer& lexer, ParserScope& scope, std::string const& var_name);
+
+// lexer
+//   start: variable type
+//   end: semicolon
+// examples:
+//   my_var int;
+//   my_var int = [expression];
+VariableInit parse_var_init(Lexer& lexer, ParserScope& scope, std::string const& var_name);
+
 // caller's responsibility to check current token of lexer
-std::shared_ptr<AST> parse_var_assign(Lexer& lexer, ParserScope& scope, std::string const& var_name);
+// lexer
+//   start: assignment
+//   end:   first token after expression
+// examples:
+//   my_var = [expression];
+//   my_var += [expression];
+VariableAssign parse_var_assign(Lexer& lexer, ParserScope& scope, std::string const& var_name);
 
-std::shared_ptr<AST> parse_if(Lexer& lexer, ParserScope& scope, bool is_else);
+If parse_if(Lexer& lexer, ParserScope& scope, bool is_else);
 
-std::shared_ptr<AST> parse_for(Lexer& lexer, ParserScope& scope);
-std::shared_ptr<AST> parse_while(Lexer& lexer, ParserScope& scope);
+While parse_while(Lexer& lexer, ParserScope& scope);
+For parse_for(Lexer& lexer, ParserScope& scope);
 
-void generate_codes_if(bytecodes_t& codes, Lexer& lexer, Scope& scope, bool is_elif);
-void generate_codes_else(bytecodes_t& codes, Lexer& lexer, Scope& scope);
-void generate_codes_for(bytecodes_t& codes, Lexer& lexer, Scope& scope);
-void generate_codes_while(bytecodes_t& codes, Lexer& lexer, Scope& scope);
-void generate_codes_return(bytecodes_t& codes, Lexer& lexer, Scope& scope);
+Function parse_func(Lexer& lexer, ParserScope& scope);
+
+Return parse_return(Lexer& lexer, ParserScope& scope);
+
+
+
+
+
+
 
 // lexer
 //   start: first token of statement
@@ -52,39 +70,20 @@ BytecodeType token_var_type_to_bytecode(std::string const& type);
 void number_to_bytecode(std::string const& s_num, bytecodes_t& codes);
 void number_to_bytecode(int num, bytecodes_t& codes);
 
-
-// lexer
-//   start: variable type
-//   end: semicolon
-// examples:
-//   my_var int;
-//   my_var int = [expression];
-void generate_codes_var_init(bytecodes_t& codes, Lexer& lexer, Scope& scope,
-	std::string const& var_name);
-
-// lexer
-//   start: assignment
-//   end: if require_semicolon is true, semicolon, else, first token after expression
-// examples:
-//   my_var = [expression];
-//   my_var += [expression];
-void generate_codes_var_assign(bytecodes_t& codes, Lexer& lexer, Scope& scope,
-	std::string const& var_name, bool require_semicolon);
-
 // returns the types of the 
 // lexer
 //   start: open bracket
 //   end: close bracket
 std::vector<ValueType> parse_params(Lexer& lexer, Scope& scope);
 
+// callers responsibility to handle null return value,
+// or give optional parameter to display error messages
 // lexer
 //   start: first token of expression
 //   end: first token after expression
 // turns tokens into AST
 // 'bracket' is for recursive call only
-// if return value is null, expression is empty
-// caller's responsibility to handle null return values
-std::shared_ptr<Expression> parse_toks_expr(Lexer& lexer, ParserScope const& scope,
+std::shared_ptr<Expression> parse_expr(Lexer& lexer, ParserScope const& scope,
 	std::string const& err_msg_empty = "",
 	bool bracket = false);
 

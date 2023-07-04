@@ -3,6 +3,100 @@
 
 #include <string>
 
+void bytecode_create_int(bytecodes_t& codes, int i, int64_t num)
+{
+	if (i == -1)
+		i = codes.size();
+
+	if (num >= 0)
+	{
+		uint64_t uint64 = num;
+
+		if (uint64 <= std::numeric_limits<uint8_t>::max())
+			codes.insert(std::begin(codes) + i, (bytecode_t)BytecodeType::U_INT1);
+		else if (uint64 <= std::numeric_limits<uint16_t>::max())
+			codes.insert(std::begin(codes) + i, (bytecode_t)BytecodeType::U_INT2);
+		else if (uint64 <= std::numeric_limits<uint32_t>::max())
+			codes.insert(std::begin(codes) + i, (bytecode_t)BytecodeType::U_INT4);
+		else if (uint64 <= std::numeric_limits<uint64_t>::max())
+			codes.insert(std::begin(codes) + i, (bytecode_t)BytecodeType::U_INT8);
+		else {}
+
+		do {
+			codes.insert(std::begin(codes) + i, uint64 & 0xFF);
+			++i;
+		} while (uint64 >>= 8);
+	}
+	else
+	{
+		int64_t int64 = num;
+
+		if (int64 <= std::numeric_limits<uint8_t>::max())
+			codes.insert(std::begin(codes) + i, (bytecode_t)BytecodeType::S_INT1);
+		else if (int64 <= std::numeric_limits<uint16_t>::max())
+			codes.insert(std::begin(codes) + i, (bytecode_t)BytecodeType::S_INT2);
+		else if (int64 <= std::numeric_limits<uint32_t>::max())
+			codes.insert(std::begin(codes) + i, (bytecode_t)BytecodeType::S_INT4);
+		else if (int64 <= std::numeric_limits<uint64_t>::max())
+			codes.insert(std::begin(codes) + i, (bytecode_t)BytecodeType::S_INT8);
+		else {}
+
+		do {
+			codes.insert(std::begin(codes) + i, int64 & 0xFF);
+			++i;
+		} while (int64 >>= 8);
+	}
+}
+
+void number_to_bytecode(bytecodes_t& codes, uint64_t num)
+{
+	if (num >= 0)
+	{
+		uint64_t uint64 = num;
+
+		if (uint64 <= std::numeric_limits<uint8_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::U_INT1);
+		else if (uint64 <= std::numeric_limits<uint16_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::U_INT2);
+		else if (uint64 <= std::numeric_limits<uint32_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::U_INT4);
+		else if (uint64 <= std::numeric_limits<uint64_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::U_INT8);
+		else {}
+
+		do {
+			codes.push_back(uint64 & 0xFF);
+		} while (uint64 >>= 8);
+	}
+	else
+	{
+		int64_t int64 = num;
+
+		if (int64 <= std::numeric_limits<uint8_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::S_INT1);
+		else if (int64 <= std::numeric_limits<uint16_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::S_INT2);
+		else if (int64 <= std::numeric_limits<uint32_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::S_INT4);
+		else if (int64 <= std::numeric_limits<uint64_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::S_INT8);
+		else {}
+
+		do {
+			codes.push_back(int64 & 0xFF);
+		} while (int64 >>= 8);
+	}
+}
+
+bytecodes_t const& number_to_bytecode(int64_t num)
+{
+	bytecodes_t codes;
+	number_to_bytecode(codes, num);
+
+	return codes;
+}
+
+
 std::string bytecode_to_str(BytecodeType type)
 {
 	switch (type)
