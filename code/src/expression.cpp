@@ -1,42 +1,179 @@
 #include "expression.hpp"
-#include "expression.hpp"
 #include "bytecode.hpp"
 #include "parser_scope.hpp"
 #include "parser.hpp"
 #include "error.hpp"
 
+#include <optional>
 #include <memory>
-#include <stdexcept>
-#include <limits>
-#include <string>
 
-Expression::Expression()
+Expression::Expression(
+	ExpressionType _type,
+	Location const& _loc,
+	std::shared_ptr<Expression> const& _lhs = nullptr,
+	std::shared_ptr<Expression> const& _rhs = nullptr)
+	: type(_type), loc(_loc), lhs(_lhs), rhs(_rhs) {}
+
+bool Expression::is_operator() const { return type == ExpressionType::BINARY_OP || type == ExpressionType::UNARY_OP; };
+bool Expression::is_value() const { return type == ExpressionType::BRACKET || type == ExpressionType::UNARY_OP || type == ExpressionType::BINARY_OP; };
+
+
+Bracket::Bracket(
+	Location const& _loc,
+	std::shared_ptr<Expression> const& _expr)
+	: Expression(ExpressionType::BRACKET, _loc), expr(_expr) {}
+
+void Bracket::insert_node(std::shared_ptr<Expression> const& node)
 {
+	expr->insert_node(node);
+}
 
+bytecodes_t Bracket::generate_codes(ParserScope const& scope) const
+{
+	return expr->generate_codes(scope);
+}
+
+std::optional<value_t> Bracket::type_check(ParserScope const& scope) const
+{
+	return expr->type_check(scope);
 }
 
 
-ExpressionBinary::ExpressionBinary(ExprBinaryType _type,
+BinaryOp::BinaryOp(
+	Location const& _loc,
+	BinaryOpType _type,
 	std::shared_ptr<Expression> const& _lhs,
 	std::shared_ptr<Expression> const& _rhs)
-	: type(_type)
+	: Expression(ExpressionType::BINARY_OP, _loc, _lhs, _rhs), type(_type) {}
+
+void BinaryOp::insert_node(
+	std::shared_ptr<Expression>& prev,
+	std::shared_ptr<Expression> const& node)
 {
+	if (!lhs)
+		lhs = node;
+	else if (!rhs)
+		rhs = node;
+	else
+		rhs->insert_node(this->rhs, node);
 }
 
-std::optional<value_t> ExpressionBinary::type_check(ParserScope const& scope) const
+bytecodes_t BinaryOp::generate_codes(ParserScope const& scope) const
 {
+	bytecodes_t codes;
+	
+	auto codes_lhs = lhs->generate_codes(scope);
+	codes.insert(std::end(codes), std::begin(codes_lhs), std::end(codes_lhs));
 
+	auto codes_rhs = rhs->generate_codes(scope);
+	codes.insert(std::end(codes), std::begin(codes_rhs), std::end(codes_rhs));
+
+	switch (type)
+	{
+	case BinaryOpType::ADD:
+		codes.push_back((bytecode_t)BytecodeType::ADD);
+	case BinaryOpType::SUB:
+		codes.push_back((bytecode_t)BytecodeType::SUB);
+	case BinaryOpType::MULT:
+		codes.push_back((bytecode_t)BytecodeType::MULT);
+	case BinaryOpType::DIV:
+		codes.push_back((bytecode_t)BytecodeType::DIV);
+	default:
+		night::unhandled_case(type);
+	}
+
+	return codes;
+}
+
+std::optional<value_t> BinaryOp::type_check(ParserScope const& scope) const
+{
+	if (type == BinaryOpType::DOT)
+	{
+		auto lhs_type = lhs->type_check(scope);
+		if (lhs_type.has_value() && is_object_t(*lhs_type))
+			night::error::get().create_minor_error("variable '' can not be used with operator +", loc);
+
+		auto rhs_type = rhs->type_check(scope);
+		if (rhs_type.has_value() && is_object_t(*rhs_type))
+			night::error::get().create_minor_error("variable '' can not be used with operator +", loc);
+	}
+	else
+	{
+		auto lhs_type = lhs->type_check(scope);
+		if (lhs_type.has_value() && is_object_t(*lhs_type))
+			night::error::get().create_minor_error("variable '' can not be used with operator +", loc);
+
+		auto rhs_type = rhs->type_check(scope);
+		if (rhs_type.has_value() && is_object_t(*rhs_type))
+			night::error::get().create_minor_error("variable '' can not be used with operator +", loc);
+
+		if (*lhs_type == (value_t)ValueType::S_INT || *rhs_type == (value_t)ValueType::S_INT)
+			return (value_t)ValueType::S_INT;
+		if (*lhs_type == (value_t)ValueType::U_INT || *rhs_type == (value_t)ValueType::U_INT)
+			return (value_t)ValueType::U_INT;
+		if (*lhs_type == (value_t)ValueType::CHAR || *rhs_type == (value_t)ValueType::CHAR)
+			return (value_t)ValueType::CHAR;
+		return (value_t)ValueType::BOOL;
+	}
+}
+
+
+UnaryOp::UnaryOp(
+	Location const& _loc,
+	UnaryOpType _type,
+	std::shared_ptr<Expression> const& _expr = nullptr)
+	: Expression(ExpressionType::UNARY_OP, _loc), type(_type), expr(_expr) {}
+
+void UnaryOp::insert_node(
+	std::shared_ptr<Expression>& prev,
+	std::shared_ptr<Expression> const& node)
+{
+	if (!expr)
+		expr = node;
+	else if (node->precedence() > precedence())
+		expr->insert_node(expr, node);
+	else
+	{
+		prev = node;
+		node->insert_node(prev, std::make_shared<Expression>(this));
+	}
+}
+
+bytecodes_t UnaryOp::generate_codes(ParserScope const& scope) const
+{
+	bytecodes_t codes = expr->generate_codes(scope);
+
+	switch (type)
+	{
+	case UnaryOpType::NEGATIVE:
+		codes.push_back((bytecode_t)BytecodeType::NEGATIVE);
+		break;
+	case UnaryOpType::NOT:
+		codes.push_back((bytecode_t)BytecodeType::NOT);
+		break;
+	default:
+		night::unhandled_case(type);
+	}
+
+	return codes;
+}
+
+std::optional<value_t> UnaryOp::type_check(ParserScope const& scope) const
+{
+	auto type = expr->type_check(scope);
+	if (type.has_value() && is_object_t(*type))
+		night::error::get().create_minor_error("expression under operator ! has type '" + val_type_to_str(*type) + "', expected primitive type", loc);
+
+	return type;
 }
 
 
 
 
-Expr::Expr(ExprType _type, expr_p const& _lhs, expr_p const& _rhs)
-	: type(_type), lhs(_lhs), rhs(_rhs), gaurd(false) {}
 
-expr_p& Expr::next() { return lhs; }
-int Expr::prec() const { return -1; }
-void Expr::set_guard() { gaurd = true; };
+
+
+
 
 
 
@@ -120,23 +257,6 @@ int ExprUnary::prec() const
 
 ExprBinary::ExprBinary(ExprBinaryType _type, expr_p const& _lhs, expr_p const& _rhs)
 	: Expr(ExprType::BINARY, _lhs, _rhs), binary_type(_type), guard(false) {}
-
-bytecodes_t ExprBinary::to_bytecode() const
-{
-	switch (binary_type)
-	{
-	case ExprBinaryType::ADD:
-		return { (bytecode_t)BytecodeType::ADD };
-	case ExprBinaryType::SUB:
-		return { (bytecode_t)BytecodeType::SUB };
-	case ExprBinaryType::MULT:
-		return { (bytecode_t)BytecodeType::MULT };
-	case ExprBinaryType::DIV:
-		return { (bytecode_t)BytecodeType::DIV };
-	default:
-		night::unhandled_case(binary_type);
-	}
-}
 
 std::optional<ValueType> ExprBinary::type_check(Scope const& scope) const
 {

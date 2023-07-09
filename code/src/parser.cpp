@@ -106,6 +106,9 @@ VariableInit parse_var_init(Lexer& lexer, ParserScope& scope, std::string const&
 {
 	assert(lexer.curr().is_type());
 
+	if (scope.vars.contains(var_name))
+		throw NIGHT_CREATE_FATAL("variable '" + var_name + "' is already defined");
+
 	auto var_type = token_var_type_to_val_type(lexer.curr().str);
 	std::shared_ptr<Expression> var_expr = std::make_shared<ExpressionValue>(0);
 
@@ -116,7 +119,7 @@ VariableInit parse_var_init(Lexer& lexer, ParserScope& scope, std::string const&
 		// case:
 		//   var int = [expression];
 
-		var_expr = parse_toks_expr(lexer, scope,
+		var_expr = parse_expr(lexer, scope,
 			"found '" + lexer.curr().str + "', expected expression after assignment");
 
 		if (lexer.curr().type != TokenType::SEMICOLON)
@@ -153,7 +156,7 @@ VariableAssign parse_var_assign(Lexer& lexer, ParserScope& scope, std::string co
 	
 	std::string assign_op = lexer.curr().str;
 
-	auto expr = parse_toks_expr(lexer, scope,
+	auto expr = parse_expr(lexer, scope,
 		"found '" + lexer.curr().str + "', expected expression after assignment");
 
 	if (lexer.curr().type != TokenType::SEMICOLON)
@@ -203,7 +206,7 @@ While parse_while(Lexer& lexer, ParserScope& scope)
 
 	lexer.expect(TokenType::OPEN_BRACKET);
 
-	auto cond_expr = parse_toks_expr(lexer, scope,
+	auto cond_expr = parse_expr(lexer, scope,
 		"found '" + lexer.curr().str + "', expected expression after opening bracket");
 
 	if (lexer.curr().type != TokenType::CLOSE_BRACKET)
@@ -230,7 +233,7 @@ For parse_for(Lexer& lexer, ParserScope& scope)
 	
 	// condition
 
-	auto cond_expr = parse_toks_expr(lexer, scope,
+	auto cond_expr = parse_expr(lexer, scope,
 		"expected expression after condition in for loop");
 
 	if (lexer.curr().type != TokenType::SEMICOLON)
@@ -445,52 +448,9 @@ void number_to_bytecode(int64_t num, bytecodes_t& codes)
 	}
 }
 
-void parse_comma_sep_stmts(Lexer& lexer, Scope& scope, bytecodes_t& codes)
-{
-	assert(lexer.curr().type == TokenType::OPEN_BRACKET);
-
-	while (true)
-	{
-		auto const& var_name = lexer.expect(TokenType::VARIABLE).str;
-
-		if (lexer.eat().is_type())
-		{
-			BytecodeType var_type;
-			ValueType val_type;
-			switch (lexer.curr().type)
-			{
-			case TokenType::BOOL_TYPE:
-				var_type = BytecodeType::BOOL_ASSIGN;
-				val_type = ValueType::BOOL;
-				break;
-			case TokenType::CHAR_TYPE:
-				var_type = BytecodeType::CHAR_ASSIGN;
-				val_type = ValueType::CHAR;
-				break;
-			case TokenType::INT_TYPE:
-				var_type = BytecodeType::INT_ASSIGN;
-				val_type = ValueType::INT;
-				break;
-			default:
-				throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected variable type or assignment");
-			}
-
-			Scope func_scope;
-			func_scope.vars[var_name] = val_type;
-
-			  NIGHT_CREATE_FATAL("expected variable type");
-		}
-	}
-
-	if (lexer.curr().type != TokenType::CLOSE_BRACKET)
-	{
-
-	}
-}
- 
 std::shared_ptr<Expression> parse_expr(Lexer& lexer, ParserScope const& scope, std::string const& err_msg, bool bracket)
 {
-	expr_p head(nullptr);
+	std::shared_ptr<Expression> head(nullptr);
 	bool is_func_call = false;
 
 	while (true)
@@ -499,14 +459,14 @@ std::shared_ptr<Expression> parse_expr(Lexer& lexer, ParserScope const& scope, s
 		{
 		case TokenType::CHAR_LIT:
 		{
-			auto val = std::make_shared<ExprValue>(ValueType::CHAR, lexer.curr().str[0]);
+			auto val = std::make_shared<Expression>(ValueType::CHAR, lexer.curr().str[0]);
 			parse_expr_single(head, val);
 			is_func_call = false;
 			break;
 		}
 		case TokenType::INT_LIT:
 		{
-			auto val = std::make_shared<ExprValue>(ValueType::INT, std::stoi(lexer.curr().str));
+			auto val = std::make_shared<Expression>(ValueType::INT, std::stoi(lexer.curr().str));
 			parse_expr_single(head, val);
 			is_func_call = false;
 			break;
