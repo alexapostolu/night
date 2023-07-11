@@ -12,7 +12,7 @@ AST::AST(Location const& _loc)
 VariableInit::VariableInit(
 	Location const& _loc,
 	std::string const& _name,
-	std::shared_ptr<Expression> const& _expr)
+	std::shared_ptr<expr::Expression> const& _expr)
 	: AST(_loc), name(_name), expr(_expr) {}
 
 bytecodes_t VariableInit::generate_codes(ParserScope const& scope) const
@@ -29,7 +29,7 @@ bytecodes_t VariableInit::generate_codes(ParserScope const& scope) const
 VariableAssign::VariableAssign(
 	Location const& _loc,
 	std::string const& _name,
-	std::shared_ptr<Expression> const& _expr,
+	std::shared_ptr<expr::Expression> const& _expr,
 	std::string const& _assign_op)
 	: AST(_loc), name(_name), expr(_expr), assign_op(_assign_op) {}
 
@@ -55,7 +55,7 @@ bytecodes_t VariableAssign::generate_codes(ParserScope const& scope) const
 }
 
 
-If::If(Location const& _loc, std::shared_ptr<Expression> const& _cond_expr, AST_Block const& _block)
+If::If(Location const& _loc, std::shared_ptr<expr::Expression> const& _cond_expr, AST_Block const& _block)
 	: AST(_loc), cond_expr(_cond_expr), block(_block) {}
 
 bytecodes_t If::generate_codes(ParserScope const& scope) const
@@ -82,7 +82,7 @@ bytecodes_t If::generate_codes(ParserScope const& scope) const
 
 While::While(
 	Location const& _loc,
-	std::shared_ptr<Expression> const& _cond,
+	std::shared_ptr<expr::Expression> const& _cond,
 	AST_Block const& _block)
 	: AST(_loc), cond_expr(_cond), block(_block) {}
 
@@ -109,7 +109,7 @@ bytecodes_t While::generate_codes(ParserScope const& scope) const
 For::For(
 	Location const& _loc,
 	VariableInit const& _var_init,
-	std::shared_ptr<Expression> const& _cond_expr,
+	std::shared_ptr<expr::Expression> const& _cond_expr,
 	VariableAssign const& _var_assign,
 	AST_Block const& _block)
 	: AST(_loc), var_init(_var_init), cond_expr(_cond_expr), var_assign(_var_assign), block(_block) {}
@@ -168,7 +168,7 @@ bytecodes_t Function::generate_codes(ParserScope const& scope) const
 
 Return::Return(
 	Location const& _loc,
-	std::shared_ptr<Expression> _expr)
+	std::shared_ptr<expr::Expression> _expr)
 	: AST(_loc), expr(_expr) {}
 
 bytecodes_t Return::generate_codes(ParserScope const& scope) const

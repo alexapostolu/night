@@ -8,6 +8,7 @@
 #include "value.hpp"
 #include "ast.hpp"
 
+#include <memory>
 #include <string>
 
 // lexer
@@ -17,7 +18,7 @@
 //   modifies to true if the statements are enclosed with curly braces
 //   this is useful to know as a function with statements not enclosed by curly
 //     braces will throw a syntax error
-std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, ParserScope& scope, func_container* funcs = nullptr, bool* curly_enclosed = nullptr);
+AST_Block parse_stmts(Lexer& lexer, ParserScope& scope, func_container* funcs = nullptr, bool* curly_enclosed = nullptr);
 
 // lexer
 //   start: first token of statement
@@ -52,29 +53,7 @@ Function parse_func(Lexer& lexer, ParserScope& scope);
 
 Return parse_return(Lexer& lexer, ParserScope& scope);
 
-
-
-
-
-
-
-// lexer
-//   start: first token of statement
-//   end: last token of statement
-// bytecode for functions are not saved in a .bnight file with the others,
-// instead it is stored in a Scope
-void generate_codes_func(func_container& funcs, Lexer& lexer, Scope& scope);
-
 BytecodeType token_var_type_to_bytecode(std::string const& type);
-
-void number_to_bytecode(std::string const& s_num, bytecodes_t& codes);
-void number_to_bytecode(int num, bytecodes_t& codes);
-
-// returns the types of the 
-// lexer
-//   start: open bracket
-//   end: close bracket
-std::vector<ValueType> parse_params(Lexer& lexer, Scope& scope);
 
 // callers responsibility to handle null return value,
 // or give optional parameter to display error messages
@@ -83,30 +62,6 @@ std::vector<ValueType> parse_params(Lexer& lexer, Scope& scope);
 //   end: first token after expression
 // turns tokens into AST
 // 'bracket' is for recursive call only
-std::shared_ptr<Expression> parse_expr(Lexer& lexer, ParserScope const& scope,
+std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, ParserScope const& scope,
 	std::string const& err_msg_empty = "",
 	bool bracket = false);
-
-// generates bytecode from the expression pointer
-void generate_codes_expr(bytecodes_t& codes, expr_p const& expr);
-void parse_expr_single(expr_p& head, expr_p const& val);
-
-ExprUnaryType  str_to_unary_type(std::string const& str);
-ExprBinaryType str_to_binary_type(std::string const& str);
-
-// type check functions should generally throw minor errors
-namespace type_check {
-
-// var already defined
-void var_defined(Lexer const& lexer, Scope const& scope, std::string const& var_name);
-
-// var undefined
-void var_undefined(Lexer const& lexer, Scope const& scope, std::string const& var_name);
-
-// var type compatable with assignment type
-void var_assign_type(Lexer const& lexer, Scope& scope, std::string const& var_name, BytecodeType assign_type);
-
-// var type compatable with expr type
-void var_expr_type(Lexer const& lexer, Scope& scope, std::string const& var_name, ValueType expr_type);
-
-}

@@ -19,7 +19,7 @@ using scope_class_container = std::unordered_map<std::string, int>;
 
 struct Variable
 {
-	value_t type;
+	val::value_t type;
 	bytecode_t id;
 };
 

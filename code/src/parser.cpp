@@ -110,7 +110,8 @@ VariableInit parse_var_init(Lexer& lexer, ParserScope& scope, std::string const&
 		throw NIGHT_CREATE_FATAL("variable '" + var_name + "' is already defined");
 
 	auto var_type = token_var_type_to_val_type(lexer.curr().str);
-	std::shared_ptr<Expression> var_expr = std::make_shared<ExpressionValue>(0);
+	std::shared_ptr<expr::Expression> var_expr =
+		std::make_shared<expr::Value>(lexer.loc, val::Value{ (val::value_t)val::ValueType::U_INT, 0 });
 
 	lexer.eat();
 
@@ -178,7 +179,8 @@ If parse_if(Lexer& lexer, ParserScope& scope, bool is_else)
 {
 	assert(lexer.curr().type == TokenType::IF);
 
-	std::shared_ptr<Expression> cond_expr = std::make_shared<ExpressionValue>(true);
+	std::shared_ptr<expr::Expression> cond_expr =
+		std::make_shared<expr::Value>(lexer.loc, val::Value{ (val::value_t)val::ValueType::BOOL, 1 });
 
 	// parse condition
 	if (!is_else)
@@ -342,7 +344,7 @@ BytecodeType token_var_type_to_bytecode(std::string const& type)
 		night::unhandled_case(type);
 }
 
-value_t token_var_type_to_val_type(std::string const& type)
+val::value_t token_var_type_to_val_type(std::string const& type)
 {
 	if (type == "int8")
 		return (value_t)ValueType::S_INT;
@@ -364,164 +366,53 @@ value_t token_var_type_to_val_type(std::string const& type)
 		night::unhandled_case(type);
 }
 
-void number_to_bytecode(std::string const& s_num, bytecodes_t& codes)
+std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, ParserScope const& scope, std::string const& err_msg, bool bracket)
 {
-	assert(s_num.length());
-
-	if (s_num[0] != '-')
-	{
-		assert(s_num.length() > 1);
-
-		uint64_t uint64 = std::stoull(s_num);
-
-		if (uint64 <= std::numeric_limits<uint8_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::U_INT1);
-		else if (uint64 <= std::numeric_limits<uint16_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::U_INT2);
-		else if (uint64 <= std::numeric_limits<uint32_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::U_INT4);
-		else if (uint64 <= std::numeric_limits<uint64_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::U_INT8);
-		else {}
-
-		do {
-			codes.push_back(uint64 & 0xFF);
-		} while (uint64 >>= 8);
-	}
-	else
-	{
-		int64_t int64 = std::stoll(s_num);
-
-		if (int64 <= std::numeric_limits<uint8_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::S_INT1);
-		else if (int64 <= std::numeric_limits<uint16_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::S_INT2);
-		else if (int64 <= std::numeric_limits<uint32_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::S_INT4);
-		else if (int64 <= std::numeric_limits<uint64_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::S_INT8);
-		else {}
-
-		do {
-			codes.push_back(int64 & 0xFF);
-		} while (int64 >>= 8);
-	}
-}
-
-void number_to_bytecode(int64_t num, bytecodes_t& codes)
-{
-	if (num >= 0)
-	{
-		uint64_t uint64 = num;
-
-		if (uint64 <= std::numeric_limits<uint8_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::U_INT1);
-		else if (uint64 <= std::numeric_limits<uint16_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::U_INT2);
-		else if (uint64 <= std::numeric_limits<uint32_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::U_INT4);
-		else if (uint64 <= std::numeric_limits<uint64_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::U_INT8);
-		else {}
-
-		do {
-			codes.push_back(uint64 & 0xFF);
-		} while (uint64 >>= 8);
-	}
-	else
-	{
-		int64_t int64 = num;
-
-		if (int64 <= std::numeric_limits<uint8_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::S_INT1);
-		else if (int64 <= std::numeric_limits<uint16_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::S_INT2);
-		else if (int64 <= std::numeric_limits<uint32_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::S_INT4);
-		else if (int64 <= std::numeric_limits<uint64_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::S_INT8);
-		else {}
-
-		do {
-			codes.push_back(int64 & 0xFF);
-		} while (int64 >>= 8);
-	}
-}
-
-std::shared_ptr<Expression> parse_expr(Lexer& lexer, ParserScope const& scope, std::string const& err_msg, bool bracket)
-{
-	std::shared_ptr<Expression> head(nullptr);
-	bool is_func_call = false;
+	std::shared_ptr<expr::Expression> head(nullptr);
 
 	while (true)
 	{
+		std::shared_ptr<expr::Expression> node(nullptr);
 		switch (lexer.eat().type)
 		{
 		case TokenType::CHAR_LIT:
 		{
-			auto val = std::make_shared<Expression>(ValueType::CHAR, lexer.curr().str[0]);
-			parse_expr_single(head, val);
-			is_func_call = false;
+			node = std::make_shared<expr::Expression>(val::ValueType::CHAR, lexer.curr().str[0]);
 			break;
 		}
 		case TokenType::INT_LIT:
 		{
-			auto val = std::make_shared<Expression>(ValueType::INT, std::stoi(lexer.curr().str));
-			parse_expr_single(head, val);
-			is_func_call = false;
+			node = std::make_shared<expr::Expression>(val::ValueType::INT, std::stoi(lexer.curr().str));
 			break;
 		}
 		case TokenType::VARIABLE:
 		{
-			auto val = std::make_shared<ExprVar>(lexer.curr().str);
-			parse_expr_single(head, val);
-			is_func_call = true;
+			node = std::make_shared<expr::Variable>(lexer.curr().str);
 			break;
 		}
 		case TokenType::UNARY_OP:
 		{
-			auto val = std::make_shared<ExprUnary>(str_to_unary_type(lexer.curr().str), nullptr);
-			parse_expr_single(head, val);
-			is_func_call = false;
+			node = std::make_shared<expr::UnaryOp>(lexer.curr().str);
 			break;
 		}
 		case TokenType::BINARY_OP:
 		{
-			auto tok_type = str_to_binary_type(lexer.curr().str);
-
-			assert(head);
-			if (!head->next())
-			{
-				head = std::make_shared<ExprBinary>(tok_type, head, nullptr);
-			}
-			else
-			{
-				expr_p curr(head);
-
-				assert(curr->next());
-				while (curr->next()->next() && prec(tok_type) >= curr->next()->prec())
-					curr = curr->next();
-
-				if (curr == head && curr->prec() >= prec(tok_type))
-					head = std::make_shared<ExprBinary>(tok_type, head, nullptr);
-				else
-					curr->next() = std::make_shared<ExprBinary>(tok_type, curr->next(), nullptr);
-			}
-			is_func_call = false;
+			node = std::make_shared<expr::BinaryOp>(lexer.curr().str);
 			break;
 		}
 		case TokenType::OPEN_BRACKET:
 		{
-			auto val = parse_toks_expr(lexer, scope, err_msg, true);
-			val->set_guard();
+			node = parse_expr(lexer, scope, err_msg, true);
 
-			parse_expr_single(head, val);
-			is_func_call = false;
+			if (lexer.curr().type != TokenType::CLOSE_BRACKET)
+				throw NIGHT_CREATE_FATAL("missing closing bracket in expression");
+
+			node->guard = true;
 			break;
 		}
 		case TokenType::CLOSE_BRACKET:
 		{
-			if (bracket)
+			if (!bracket)
 				throw NIGHT_CREATE_FATAL("missing opening bracket");
 		}
 		default:
@@ -532,104 +423,10 @@ std::shared_ptr<Expression> parse_expr(Lexer& lexer, ParserScope const& scope, s
 			return head;
 		}
 		}
-	}
-}
 
-void generate_codes_expr(bytecodes_t& codes, expr_p const& expr)
-{
-	assert(expr && "nullptr 'expr' should be handled by the caller");
-
-	auto expr_codes = expr->to_bytecode();
-	codes.insert(std::end(codes), std::begin(expr_codes), std::end(expr_codes));
-
-	switch (expr->type)
-	{
-	case ExprType::VALUE:
-		break;
-	case ExprType::UNARY:
-		generate_codes_expr(codes, expr->lhs);
-		break;
-	case ExprType::BINARY:
-		generate_codes_expr(codes, expr->rhs);
-		generate_codes_expr(codes, expr->lhs);
-		break;
-	default:
-		throw std::runtime_error("parse_expr, missing case for ExprType '" + std::to_string((int)expr->type) + "'");
-	}
-}
-
-void parse_expr_single(expr_p& head, expr_p const& val)
-{
-	if (!head)
-	{
-		head = val;
-	}
-	else
-	{
-		expr_p curr(head);
-		while (curr->next())
-			curr = curr->next();
-
-		curr->next() = val;
-	}
-}
-
-ExprUnaryType str_to_unary_type(std::string const& str)
-{
-	if (str == "!")
-		return ExprUnaryType::NOT;
-
-	throw std::runtime_error("str_to_unary_type, missing case for '" + str + "'");
-}
-
-ExprBinaryType str_to_binary_type(std::string const& str)
-{
-	if (str == "+")
-		return ExprBinaryType::ADD;
-	if (str == "-")
-		return ExprBinaryType::SUB;
-	if (str == "*")
-		return ExprBinaryType::MULT;
-	if (str == "/")
-		return ExprBinaryType::DIV;
-
-	throw std::runtime_error("str_to_binary_type, missing case for '" + str + "'");
-}
-
-void type_check::var_defined(Lexer const& lexer, Scope const& scope, std::string const& var_name)
-{
-	if (scope.vars.find(var_name) != std::end(scope.vars))
-	{
-		NIGHT_CREATE_MINOR("variable '" + var_name + "' is already defined");
-	}
-}
-
-void type_check::var_undefined(Lexer const& lexer, Scope const& scope, std::string const& var_name)
-{
-	if (scope.vars.find(var_name) == std::end(scope.vars))
-	{
-		NIGHT_CREATE_MINOR("variable '" + var_name + "' is undefined");
-	}
-}
-
-void type_check::var_assign_type(Lexer const& lexer, Scope& scope, std::string const& var_name, BytecodeType assign_type)
-{
-	switch (scope.vars[var_name])
-	{
-	case ValueType::INT:
-		break;
-	case ValueType::CHAR:
-			NIGHT_CREATE_MINOR("variable '" + var_name + "' has type 'char', which is not compatable with operator '");
-		break;
-	default:
-		throw std::runtime_error("typecheck::var_assign_type, unhandled case");
-	}
-}
-
-void type_check::var_expr_type(Lexer const& lexer, Scope& scope, std::string const& var_name, ValueType expr_type)
-{
-	if (scope.vars[var_name] != expr_type)
-	{
-		NIGHT_CREATE_MINOR(std::string("expression of type '") + "expr_type" + "' is incompatable with variable '" + var_name + "' of type '" + "var_type");
+		if (!head)
+			head = node;
+		else
+			head->insert_node(node, &head);
 	}
 }

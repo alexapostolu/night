@@ -5,6 +5,9 @@
 
 constexpr short primitive_count = 2;
 
+namespace val
+{
+
 using value_t = int;
 
 enum class ValueType
@@ -25,11 +28,13 @@ struct Value
 	std::variant<int64_t, uint64_t> data;
 };
 
+}
+
 // returns:
 //   true  if equal
 //   false if not
-bool compare_value_t(value_t type1, value_t type2);
-bool is_object_t(value_t type);
+bool compare_value_t(val::value_t type1, val::value_t type2);
+bool is_object_t(val::value_t type);
 
 
 std::string val_type_to_str(value_t type);
