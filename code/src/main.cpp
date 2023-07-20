@@ -1,8 +1,8 @@
 #include "parse_args.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
+#include "parser_scope.hpp"
 #include "interpreter.hpp"
-#include "scope.hpp"
 #include "error.hpp"
 
 #include <iostream>
@@ -19,22 +19,33 @@ int main(int argc, char* argv[])
 		return 0;
 
 	try {
+		/* lexer */
+
 		Lexer lexer(main_file);
 
-		func_container funcs;
-		Scope global_scope;
-		global_scope.funcs["print"].params = { ValueType::BOOL };
-		global_scope.funcs["print"].params = { ValueType::CHAR };
-		global_scope.funcs["print"].params = { ValueType::INT };
+		/* parser */
 
+		ParserScope global_scope;
+		auto ast_block = parse_stmts(lexer, global_scope);
 
-		auto bytecodes = parse_stmts(lexer, global_scope, funcs);
+		/* codegen */
 
-		for (auto code : bytecodes)
-			std::cout << code.to_str() << '\n';
+		bytecodes_t codes;
+		for (auto const& ast : ast_block)
+		{
+			auto ast_codes = ast->generate_codes(global_scope);
+			codes.insert(std::end(codes), std::begin(ast_codes), std::end(ast_codes));
+
+			// debugging
+			for (auto const& code : ast_codes)
+				std::cout << night::to_str(code) << '\n';
+			std::cout << '\n';
+		}
+
+		/* interpreter */
 
 		Interpreter interpreter;
-		interpreter.funcs = funcs;
+		interpret_bytecodes(interpreter, codes);
 	}
 	catch (night::error const& e) {
 		std::cout << e.what() << '\n';

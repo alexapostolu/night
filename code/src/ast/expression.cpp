@@ -1,4 +1,4 @@
-#include "expression.hpp"
+#include "ast/expression.hpp"
 #include "bytecode.hpp"
 #include "parser_scope.hpp"
 #include "parser.hpp"
@@ -68,7 +68,7 @@ bytecodes_t expr::UnaryOp::generate_codes(ParserScope const& scope) const
 		codes.push_back((bytecode_t)BytecodeType::NOT);
 		break;
 	default:
-		night::unhandled_case(type);
+		night::throw_unhandled_case(type);
 	}
 
 	return codes;
@@ -164,7 +164,7 @@ bytecodes_t expr::BinaryOp::generate_codes(ParserScope const& scope) const
 	case BinaryOpType::DIV:
 		codes.push_back((bytecode_t)BytecodeType::DIV);
 	default:
-		night::unhandled_case(type);
+		night::throw_unhandled_case(type);
 	}
 
 	return codes;
@@ -218,7 +218,7 @@ int expr::BinaryOp::precedence() const
 	case BinaryOpType::DOT:
 		return bin_op_prec + 103;
 	default:
-		night::unhandled_case(type);
+		night::throw_unhandled_case(type);
 	}
 }
 
@@ -286,7 +286,7 @@ bytecodes_t expr::Value::generate_codes(ParserScope const& scope) const
 		return codes;
 	}
 	default:
-		night::unhandled_case(val.type);
+		night::throw_unhandled_case(val.type);
 	}
 }
 

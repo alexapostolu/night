@@ -2,20 +2,19 @@
 #include "lexer.hpp"
 #include "parser_scope.hpp"
 #include "bytecode.hpp"
-#include "expression.hpp"
 #include "interpreter_scope.hpp"
+#include "ast/ast.hpp"
+#include "ast/expression.hpp"
 #include "value.hpp"
 #include "error.hpp"
-#include "ast.hpp"
 
 #include <iostream>
 #include <variant>
 #include <string>
 #include <assert.h>
 #include <unordered_map>
-#include <limits>
 
-std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, ParserScope& upper_scope, func_container* funcs, bool* curly_enclosed)
+std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, ParserScope& upper_scope, bool* curly_enclosed)
 {
 	ParserScope scope{ upper_scope.vars };
 
@@ -44,7 +43,7 @@ std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, ParserScope& upper_s
 			conditional = lexer.curr().type == TokenType::IF ||
 						  lexer.curr().type == TokenType::ELIF;
 
-			block.push_back(parse_stmt(lexer, scope, *funcs));
+			block.push_back(parse_stmt(lexer, scope));
 		}
 
 		return block;
@@ -52,14 +51,14 @@ std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, ParserScope& upper_s
 	case TokenType::END_OF_FILE:
 		return {};
 	default:
-		return { parse_stmt(lexer, scope, *funcs) };
+		return { parse_stmt(lexer, scope) };
 	}
 }
 
-std::shared_ptr<AST> parse_stmt(Lexer& lexer, ParserScope& scope, func_container& funcs)
+std::shared_ptr<AST> parse_stmt(Lexer& lexer, ParserScope& scope)
 {
-	assert(lexer.curr().type != TokenType::CLOSE_CURLY && "should be handled by caller");
-	assert(lexer.curr().type != TokenType::END_OF_FILE && "should be handled by caller");
+	assert(lexer.curr().type != TokenType::CLOSE_CURLY);
+	assert(lexer.curr().type != TokenType::END_OF_FILE);
 
 	switch (lexer.curr().type)
 	{
@@ -69,7 +68,7 @@ std::shared_ptr<AST> parse_stmt(Lexer& lexer, ParserScope& scope, func_container
 	case TokenType::ELSE:	  return std::make_shared<If>(parse_if(lexer, scope, true));
 	case TokenType::FOR:	  return std::make_shared<For>(parse_for(lexer, scope));
 	case TokenType::WHILE:	  return std::make_shared<While>(parse_while(lexer, scope));
-	case TokenType::DEF:	  parse_func(lexer, scope); return nullptr;
+	case TokenType::DEF:	  return std::make_shared<Function>(parse_func(lexer, scope));
 	case TokenType::RETURN:	  return std::make_shared<Return>(parse_return(lexer, scope));
 
 	default: throw NIGHT_CREATE_FATAL("unknown syntax '" + lexer.curr().str + "'");
@@ -95,6 +94,10 @@ std::shared_ptr<AST> parse_var(Lexer& lexer, ParserScope& scope)
 			throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected semicolon after variable assignment");
 
 		return std::make_shared<VariableAssign>(ast);
+	}
+	else if (lexer.curr().type == TokenType::OPEN_BRACKET)
+	{
+		return std::make_shared<FunctionCall>(parse_func_call(lexer, scope, var_name));
 	}
 	else
 	{
@@ -173,6 +176,32 @@ VariableAssign parse_var_assign(Lexer& lexer, ParserScope& scope, std::string co
 			"' can not be initialized with expression of type '" + val_type_to_str(*expr_type) + "'");
 
 	return VariableAssign(lexer.loc, var_name, expr, assign_op);
+}
+
+FunctionCall parse_func_call(Lexer& lexer, ParserScope& scope, std::string const& func_name)
+{
+	assert(lexer.curr() == TokenType::OPEN_BRACKET);
+	
+	std::vector<std::shared_ptr<expr::Expression>> param_expr;
+
+	while (lexer.curr().type != TokenType::CLOSE_BRACKET)
+	{
+		auto expr = parse_expr(lexer, scope,
+			"expected expression in function call");
+	}
+
+	if (param_expr.size() != ParserScope::funcs[func_name].param_names.size())
+		throw NIGHT_CREATE_FATAL("function call has " + std::to_string(param_expr.size()) + " parameters, expected " +
+			std::to_string(ParserScope::funcs[func_name].param_names.size()) + " parameters");
+
+	for (std::size_t i = 0; i < param_expr.size(); ++i)
+	{
+		auto type = param_expr[i]->type_check(scope);
+		if (type.has_value() && compare_value_t(*type, ParserScope::funcs[func_name].param_types[i]))
+			NIGHT_CREATE_MINOR("found type '" + val_type_to_str(*type) + "', expected type '" + val_type_to_str(ParserScope::funcs[func_name].param_types[i])) + "'")
+	}
+
+	return FunctionCall(lexer.loc, func_name, param_expr, ParserScope::funcs[func_name].param_names);
 }
 
 If parse_if(Lexer& lexer, ParserScope& scope, bool is_else)
@@ -316,56 +345,6 @@ Return parse_return(Lexer& lexer, ParserScope& scope)
 	return Return(lexer.loc, expr);
 }
 
-
-
-
-
-
-
-BytecodeType token_var_type_to_bytecode(std::string const& type)
-{
-	if (type == "int8")
-		return BytecodeType::S_INT1;
-	else if (type == "int16")
-		return BytecodeType::S_INT2;
-	else if (type == "int32")
-		return BytecodeType::S_INT4;
-	else if (type == "int64")
-		return BytecodeType::S_INT8;
-	else if (type == "uint8")
-		return BytecodeType::U_INT1;
-	else if (type == "uint16")
-		return BytecodeType::U_INT2;
-	else if (type == "uint32")
-		return BytecodeType::U_INT4;
-	else if (type == "uint64")
-		return  BytecodeType::U_INT8;
-	else
-		night::unhandled_case(type);
-}
-
-val::value_t token_var_type_to_val_type(std::string const& type)
-{
-	if (type == "int8")
-		return (value_t)ValueType::S_INT;
-	else if (type == "int16")
-		return (value_t)ValueType::S_INT;
-	else if (type == "int32")
-		return (value_t)ValueType::S_INT;
-	else if (type == "int64")
-		return (value_t)ValueType::S_INT;
-	else if (type == "uint8")
-		return (value_t)ValueType::U_INT;
-	else if (type == "uint16")
-		return (value_t)ValueType::U_INT;
-	else if (type == "uint32")
-		return (value_t)ValueType::U_INT;
-	else if (type == "uint64")
-		return (value_t)ValueType::U_INT;
-	else
-		night::unhandled_case(type);
-}
-
 std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, ParserScope const& scope, std::string const& err_msg, bool bracket)
 {
 	std::shared_ptr<expr::Expression> head(nullptr);
@@ -382,7 +361,10 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, ParserScope const& sc
 		}
 		case TokenType::INT_LIT:
 		{
-			node = std::make_shared<expr::Expression>(val::ValueType::INT, std::stoi(lexer.curr().str));
+			if (std::stoi(lexer.curr().str) > 0)
+				node = std::make_shared<expr::Expression>(val::ValueType::U_INT, std::stoi(lexer.curr().str));
+			else
+				node = std::make_shared<expr::Expression>(val::ValueType::S_INT, std::stoi(lexer.curr().str));
 			break;
 		}
 		case TokenType::VARIABLE:
@@ -429,4 +411,26 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, ParserScope const& sc
 		else
 			head->insert_node(node, &head);
 	}
+}
+
+val::value_t token_var_type_to_val_type(std::string const& type)
+{
+	if (type == "int8")
+		return (val::value_t)val::ValueType::S_INT;
+	else if (type == "int16")
+		return (val::value_t)val::ValueType::S_INT;
+	else if (type == "int32")
+		return (val::value_t)val::ValueType::S_INT;
+	else if (type == "int64")
+		return (val::value_t)val::ValueType::S_INT;
+	else if (type == "uint8")
+		return (val::value_t)val::ValueType::U_INT;
+	else if (type == "uint16")
+		return (val::value_t)val::ValueType::U_INT;
+	else if (type == "uint32")
+		return (val::value_t)val::ValueType::U_INT;
+	else if (type == "uint64")
+		return (val::value_t)val::ValueType::U_INT;
+	else
+		night::throw_unhandled_case(type);
 }

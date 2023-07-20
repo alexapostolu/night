@@ -4,34 +4,55 @@
 #include <stdexcept>
 #include <variant>
 
-bool compare_value_t(value_t type1, value_t type2)
+bool compare_value_t(val::value_t type1, val::value_t type2)
 {
 	return (type1 <= primitive_count && type2 <= primitive_count) ||
 		   (type1 == type2);
 }
 
-bool is_object_t(value_t type)
+bool is_object_t(val::value_t type)
 {
 	return type > primitive_count;
 }
 
-std::string val_type_to_str(value_t type)
+std::string to_str(val::value_t type, bool primitive)
 {
-	switch (type)
+	if (primitive)
 	{
-	case (value_t)ValueType::BOOL:
-		return "BOOL";
-	case (value_t)ValueType::CHAR:
-		return "CHAR";
-	case (value_t)ValueType::S_INT:
-		return "SIGNED_INT";
-	case (value_t)ValueType::U_INT:
-		return "UNSIGNED_INT";
-	default:
-		// return classes[type];
-		return;
+		switch (type)
+		{
+		case (val::value_t)val::ValueType::BOOL:
+		case (val::value_t)val::ValueType::CHAR:
+		case (val::value_t)val::ValueType::S_INT:
+		case (val::value_t)val::ValueType::U_INT:
+			return "primitive";
+		default:
+			// return classes[type];
+			return;
+		}
+	}
+	else
+	{
+		switch (type)
+		{
+		case (val::value_t)val::ValueType::BOOL:
+			return "bool";
+		case (val::value_t)val::ValueType::CHAR:
+			return "char";
+		case (val::value_t)val::ValueType::S_INT:
+			return "signed int";
+		case (val::value_t)val::ValueType::U_INT:
+			return "unsigned int";
+		default:
+			// return classes[type];
+			return;
+		}
 	}
 }
+
+
+
+
 
 std::string val_to_str(ValueType type, std::variant<char, int> const& val)
 {

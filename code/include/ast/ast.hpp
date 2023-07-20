@@ -31,7 +31,8 @@ protected:
 class VariableInit : public AST
 {
 public:
-	VariableInit(Location const& _loc,
+	VariableInit(
+		Location const& _loc,
 		std::string const& _name,
 		std::shared_ptr<expr::Expression> const& _expr);
 
@@ -140,4 +141,21 @@ public:
 
 private:
 	std::shared_ptr<expr::Expression> expr;
+};
+
+
+class FunctionCall : public AST
+{
+public:
+	FunctionCall(
+		Location const& _loc,
+		std::string const& _func_name,
+		std::vector<std::shared_ptr<expr::Expression>> const& _params,
+		std::vector<std::string> const& param_names);
+
+	bytecodes_t generate_codes(ParserScope const& scope) const;
+
+private:
+	std::string func_name;
+	std::vector<VariableInit> params;
 };

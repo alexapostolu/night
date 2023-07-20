@@ -25,8 +25,9 @@ struct Variable
 
 struct ParserFunction
 {
-	std::vector<value_t> param_types;
-	std::optional<value_t> rtn_type;
+	std::vector<std::string> param_names;
+	std::vector<val::value_t> param_types;
+	std::optional<val::value_t> rtn_type;
 };
 
 struct ParserScope
@@ -37,10 +38,10 @@ struct ParserScope
 	scope_var_container   vars;
 	scope_class_container objs;
 
-	value_t rtn_type;
+	val::value_t rtn_type;
 
 	// returns:
 	//    empty string if successful
 	//    error message if not successful
-	std::string const& create_variable(std::string const& name, value_t type);
+	std::string const& create_variable(std::string const& name, val::value_t type);
 };

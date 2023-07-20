@@ -2,8 +2,8 @@
 
 #include "parser_scope.hpp"
 #include "bytecode.hpp"
-#include "error.hpp"
 #include "value.hpp"
+#include "error.hpp"
 
 #include <memory>
 #include <variant>

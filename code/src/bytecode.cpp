@@ -97,7 +97,7 @@ bytecodes_t const& number_to_bytecode(int64_t num)
 }
 
 
-std::string bytecode_to_str(BytecodeType type)
+std::string night::to_str(BytecodeType type)
 {
 	switch (type)
 	{
@@ -143,12 +143,10 @@ std::string bytecode_to_str(BytecodeType type)
 	case BytecodeType::ASSIGN:
 		return "ASSIGN";
 
-	case BytecodeType::IF:
-		return "IF";
-	case BytecodeType::ELIF:
-		return "ELIF";
-	case BytecodeType::ELSE:
-		return "ELSE";
+	case BytecodeType::JUMP:
+		return "JUMP";
+	case BytecodeType::JUMP_IF_FALSE:
+		return "JUMP_IF_FALSE";
 
 	case BytecodeType::WHILE:
 		return "WHILE";
@@ -161,11 +159,11 @@ std::string bytecode_to_str(BytecodeType type)
 		return "FUNC_CALL";
 
 	default:
-		throw night::unhandled_case((int)type);
+		night::throw_unhandled_case((int)type);
 	}
 }
 
-std::string bytecode_to_str(bytecode_t val)
+std::string night::to_str(bytecode_t val)
 {
 	return std::to_string(val);
 }

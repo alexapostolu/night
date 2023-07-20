@@ -62,5 +62,10 @@ bytecodes_t const& number_to_bytecode(int64_t num);
 
 // for error messages, usually the real strategy here is something like, storing a side table that maps bytecode indices to locations in the source
 
-std::string bytecode_to_str(BytecodeType type);
-std::string bytecode_to_str(bytecode_t type);
+namespace night
+{
+
+std::string to_str(BytecodeType type);
+std::string to_str(bytecode_t type);
+
+}

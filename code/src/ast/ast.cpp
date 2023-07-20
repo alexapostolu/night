@@ -1,9 +1,10 @@
-#include "ast.hpp"
+#include "ast/ast.hpp"
 #include "bytecode.hpp"
 #include "parser_scope.hpp"
 #include "interpreter_scope.hpp"
 #include "error.hpp"
 
+#include <cassert>
 #include <limits>
 
 AST::AST(Location const& _loc)
@@ -45,7 +46,7 @@ bytecodes_t VariableAssign::generate_codes(ParserScope const& scope) const
 		else if (assign_op == "-=") codes.push_back((bytecode_t)BytecodeType::SUB);
 		else if (assign_op == "*=") codes.push_back((bytecode_t)BytecodeType::MULT);
 		else if (assign_op == "/=") codes.push_back((bytecode_t)BytecodeType::DIV);
-		else throw night::unhandled_case(assign_op);
+		else night::throw_unhandled_case(assign_op);
 	}
 
 	codes.push_back(scope.vars.at(name).id);
@@ -178,4 +179,24 @@ bytecodes_t Return::generate_codes(ParserScope const& scope) const
 	codes.push_back((bytecode_t)BytecodeType::RETURN);
 
 	return codes;
+}
+
+
+FunctionCall::FunctionCall(
+	Location const& _loc,
+	std::string const& _func_name,
+	std::vector<std::shared_ptr<expr::Expression>> const& _params,
+	std::vector<std::string> const& param_names)
+	: AST(_loc), func_name(_func_name)
+{
+	assert(param_names.size() == _params.size());
+
+	for (std::size_t i = 0; i < _params.size(); ++i)
+		params.push_back(VariableInit(_loc, param_names[i], _params[i]));
+}
+
+bytecodes_t FunctionCall::generate_codes(ParserScope const& scope) const
+{
+	bytecodes_t codes;
+	codes.push_back(params->);
 }

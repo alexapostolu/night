@@ -3,9 +3,16 @@
 
 #include <string>
 
+scope_func_container ParserScope::funcs = {
+	{ "print", { {}, {(val::value_t)val::ValueType::BOOL } } },
+	{ "print", { {}, {(val::value_t)val::ValueType::CHAR } } },
+	{ "print", { {}, {(val::value_t)val::ValueType::U_INT } } },
+	{ "print", { {}, {(val::value_t)val::ValueType::S_INT } } },
+};
+
 scope_func_container::iterator curr_func = std::end(ParserScope::funcs);
 
-std::string const& ParserScope::create_variable(std::string const& name, value_t type)
+std::string const& ParserScope::create_variable(std::string const& name, val::value_t type)
 {
 	static bytecode_t var_id = 0;
 

@@ -37,6 +37,8 @@ bool compare_value_t(val::value_t type1, val::value_t type2);
 bool is_object_t(val::value_t type);
 
 
+std::string to_str(val::value_t type, bool primitive = true);
+
 std::string val_type_to_str(value_t type);
 std::string val_to_str(ValueType type, std::variant<char, int> const& val);
 ValueType bytecode_type_to_val_type(BytecodeType type);
