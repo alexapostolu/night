@@ -6,7 +6,12 @@ Night is a static, bytecode interpreted language with strong management on types
 
 Under Development
 
-Build (does not compile atm):
+**Windows Build:**
+
+Windows excecutable coming soon
+
+dependenies
+`cmake` `gcc`
 
 ```
 cmake -G "MinGW Makefiles" .
@@ -14,3 +19,6 @@ cmake --build .
 
 night source.night
 ```
+
+**Linux Build:**
+Coming soons
