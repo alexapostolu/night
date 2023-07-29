@@ -4,6 +4,8 @@
 #include "parser_scope.hpp"
 #include "lexer.hpp"
 
+class Lexer;
+
 void test_parser();
 void test_parse_var();
 void test_parse_conditional();

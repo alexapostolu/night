@@ -4,6 +4,9 @@
 #include <stdexcept>
 #include <variant>
 
+val::Value::Value(ValueType _type, int _data)
+	: type((value_t)_type), data((int64_t)_data) {}
+
 bool compare_value_t(val::value_t type1, val::value_t type2)
 {
 	return (type1 <= primitive_count && type2 <= primitive_count) ||
@@ -15,7 +18,7 @@ bool is_object_t(val::value_t type)
 	return type > primitive_count;
 }
 
-std::string to_str(val::value_t type, bool primitive)
+std::string night::to_str(val::value_t type, bool primitive)
 {
 	if (primitive)
 	{

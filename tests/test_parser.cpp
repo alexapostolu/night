@@ -1,7 +1,8 @@
 #include "test_parser.hpp"
-#include "lexer.hpp"
-#include "parser.hpp"
-#include "error.hpp"
+#include "../code/include/lexer.hpp"
+#include "../code/include/parser.hpp"
+#include "../code/include/bytecode.hpp"
+#include "../code/include/error.hpp"
 
 #include <iostream>
 

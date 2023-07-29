@@ -218,7 +218,7 @@ int expr::BinaryOp::precedence() const
 	case BinaryOpType::DOT:
 		return bin_op_prec + 103;
 	default:
-		night::throw_unhandled_case(type);
+		night::throw_unhandled_case((int)type);
 	}
 }
 

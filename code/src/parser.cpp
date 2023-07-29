@@ -115,7 +115,7 @@ VariableInit parse_var_init(Lexer& lexer, ParserScope& scope, std::string const&
 
 	auto var_type = token_var_type_to_val_type(lexer.curr().str);
 	std::shared_ptr<expr::Expression> var_expr =
-		std::make_shared<expr::Value>(lexer.loc, val::Value{ (val::value_t)val::ValueType::U_INT, 0 });
+		std::make_shared<expr::Value>(lexer.loc, val::Value(val::ValueType::U_INT, 0));
 
 	lexer.eat();
 
@@ -219,7 +219,7 @@ Conditional parse_if(Lexer& lexer, ParserScope& scope)
 
 	do {
 		std::shared_ptr<expr::Expression> cond_expr =
-			std::make_shared<expr::Value>(lexer.loc, val::Value{ (val::value_t)val::ValueType::BOOL, 1 });
+			std::make_shared<expr::Value>(lexer.loc, val::Value(val::ValueType::BOOL, 1));
 
 		// parse condition
 		if (lexer.curr().type != TokenType::ELSE)
@@ -380,30 +380,30 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, ParserScope const& sc
 		{
 		case TokenType::CHAR_LIT:
 		{
-			node = std::make_shared<expr::Expression>(val::ValueType::CHAR, lexer.curr().str[0]);
+			node = std::make_shared<expr::Value>(lexer.loc, val::Value(val::ValueType::CHAR, (uint64_t)lexer.curr().str[0]));
 			break;
 		}
 		case TokenType::INT_LIT:
 		{
 			if (std::stoi(lexer.curr().str) > 0)
-				node = std::make_shared<expr::Expression>(val::ValueType::U_INT, std::stoi(lexer.curr().str));
+				node = std::make_shared<expr::Value>(lexer.loc, val::Value(val::ValueType::U_INT, (uint64_t)std::stoi(lexer.curr().str)));
 			else
-				node = std::make_shared<expr::Expression>(val::ValueType::S_INT, std::stoi(lexer.curr().str));
+				node = std::make_shared<expr::Value>(lexer.loc, val::Value(val::ValueType::S_INT, (uint64_t)std::stoi(lexer.curr().str)));
 			break;
 		}
 		case TokenType::VARIABLE:
 		{
-			node = std::make_shared<expr::Variable>(lexer.curr().str);
+			node = std::make_shared<expr::Variable>(lexer.loc, lexer.curr().str, scope.vars.at(lexer.curr().str).id);
 			break;
 		}
 		case TokenType::UNARY_OP:
 		{
-			node = std::make_shared<expr::UnaryOp>(lexer.curr().str);
+			node = std::make_shared<expr::UnaryOp>(lexer.loc, lexer.curr().str);
 			break;
 		}
 		case TokenType::BINARY_OP:
 		{
-			node = std::make_shared<expr::BinaryOp>(lexer.curr().str);
+			node = std::make_shared<expr::BinaryOp>(lexer.loc, lexer.curr().str);
 			break;
 		}
 		case TokenType::OPEN_BRACKET:

@@ -88,6 +88,46 @@ void number_to_bytecode(bytecodes_t& codes, uint64_t num)
 	}
 }
 
+void number_to_bytecode(bytecodes_t& codes, int64_t num)
+{
+	if (num >= 0)
+	{
+		uint64_t uint64 = num;
+
+		if (uint64 <= std::numeric_limits<uint8_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::U_INT1);
+		else if (uint64 <= std::numeric_limits<uint16_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::U_INT2);
+		else if (uint64 <= std::numeric_limits<uint32_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::U_INT4);
+		else if (uint64 <= std::numeric_limits<uint64_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::U_INT8);
+		else {}
+
+		do {
+			codes.push_back(uint64 & 0xFF);
+		} while (uint64 >>= 8);
+	}
+	else
+	{
+		int64_t int64 = num;
+
+		if (int64 <= std::numeric_limits<uint8_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::S_INT1);
+		else if (int64 <= std::numeric_limits<uint16_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::S_INT2);
+		else if (int64 <= std::numeric_limits<uint32_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::S_INT4);
+		else if (int64 <= std::numeric_limits<uint64_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::S_INT8);
+		else {}
+
+		do {
+			codes.push_back(int64 & 0xFF);
+		} while (int64 >>= 8);
+	}
+}
+
 bytecodes_t number_to_bytecode(int64_t num)
 {
 	bytecodes_t codes;
@@ -160,5 +200,5 @@ std::string night::to_str(BytecodeType type)
 
 std::string night::to_str(bytecode_t val)
 {
-	return std::to_string(val);
+	return night::to_str((BytecodeType)val);
 }
