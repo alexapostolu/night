@@ -6,6 +6,12 @@
 
 #include <iostream>
 
+ParserScope Test::scope;
+Lexer Test::lexer;
+
+int Test::i = 0;
+bytecodes_t Test::codes;
+
 void test_parser()
 {
 	std::clog << "testing parser\n\n";
@@ -130,7 +136,7 @@ void Test::expect(bytecode_t value)
 
 void Test::expect(BytecodeType value, int val)
 {
-	std::clog << " . " << night::to_str(codes[i]) << " == " << night::to_str(value);
+	//std::clog << " . " << night::to_str(codes[i]) << " == " << night::to_str(value);
 	if (codes[i] != (bytecode_t)value)
 		std::clog << " . . assertion failed\n";
 	else

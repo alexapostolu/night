@@ -9,9 +9,6 @@
 #include <vector>
 #include <unordered_map>
 
-Lexer::Lexer()
-	: loc({ "testing file", 1, 0 }) {}
-
 Lexer::Lexer(std::string const& _file_name)
 	: file(_file_name), loc({ _file_name, 1, 0 })
 {
@@ -20,8 +17,6 @@ Lexer::Lexer(std::string const& _file_name)
 
 	std::getline(file, file_line);
 }
-
-Lexer::~Lexer() {}
 
 Token const& Lexer::eat()
 {

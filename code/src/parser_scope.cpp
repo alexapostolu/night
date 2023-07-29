@@ -10,7 +10,7 @@ scope_func_container ParserScope::funcs = {
 	{ "print", { {}, {(val::value_t)val::ValueType::S_INT } } },
 };
 
-scope_func_container::iterator curr_func = std::end(ParserScope::funcs);
+scope_func_container::iterator ParserScope::curr_func = std::end(ParserScope::funcs);
 
 std::string const& ParserScope::create_variable(std::string const& name, val::value_t type)
 {

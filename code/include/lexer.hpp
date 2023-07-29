@@ -11,9 +11,9 @@ struct Location;
 class Lexer
 {
 public:
-	Lexer();
+	Lexer() = default;
 	Lexer(std::string const& _file_name);
-	~Lexer();
+	~Lexer() = default;
 
 public:
 	Token const& eat();

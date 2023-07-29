@@ -1,10 +1,10 @@
 #pragma once
 
-#include "bytecode.hpp"
-#include "parser_scope.hpp"
-#include "lexer.hpp"
+#include "../code/include/bytecode.hpp"
+#include "../code/include/parser_scope.hpp"
+#include "../code/include/lexer.hpp"
 
-class Lexer;
+#include <string>
 
 void test_parser();
 void test_parse_var();
@@ -26,5 +26,5 @@ private:
 	static Lexer lexer;
 
 	static int i;
-	static bytecodes_t& codes;
+	static bytecodes_t codes;
 };

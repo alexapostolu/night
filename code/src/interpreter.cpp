@@ -2,6 +2,8 @@
 #include "interpreter_scope.hpp"
 #include "error.hpp"
 
+func_container Interpreter::funcs;
+
 void interpret_bytecodes(bytecodes_t const& codes)
 {
 	Interpreter i;

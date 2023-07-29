@@ -60,7 +60,7 @@ bytecodes_t VariableAssign::generate_codes() const
 Conditional::Conditional(
 	Location const& _loc,
 	std::vector<
-	std::pair<std::shared_ptr<expr::Expression>, AST_Block>
+		std::pair<std::shared_ptr<expr::Expression>, AST_Block>
 	> const& _conditionals)
 	: AST(_loc), conditionals(_conditionals) {}
 
