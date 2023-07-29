@@ -2,6 +2,7 @@
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "parser_scope.hpp"
+#include "code_gen.hpp"
 #include "interpreter.hpp"
 #include "error.hpp"
 
@@ -28,24 +29,18 @@ int main(int argc, char* argv[])
 		ParserScope global_scope;
 		auto ast_block = parse_stmts(lexer, global_scope);
 
-		/* codegen */
+		/* code gen */
 
-		bytecodes_t codes;
-		for (auto const& ast : ast_block)
-		{
-			auto ast_codes = ast->generate_codes(global_scope);
-			codes.insert(std::end(codes), std::begin(ast_codes), std::end(ast_codes));
+		bytecodes_t codes = code_gen(ast_block);
 
-			// debugging
-			for (auto const& code : ast_codes)
-				std::cout << night::to_str(code) << '\n';
-			std::cout << '\n';
-		}
+		// debugging
+		for (auto const& code : codes)
+			std::cout << night::to_str(code) << '\n';
 
 		/* interpreter */
 
-		Interpreter interpreter;
-		interpret_bytecodes(interpreter, codes);
+		Interpreter interpreter(codes);
+		interpreter.interpret_bytecodes();
 	}
 	catch (night::error const& e) {
 		std::cout << e.what() << '\n';

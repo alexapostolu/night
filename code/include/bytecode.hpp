@@ -11,40 +11,39 @@ constexpr bytecode_t bytecode_t_lim = std::numeric_limits<bytecode_t>::max();;
 
 using bytecodes_t = std::vector<bytecode_t>;
 
-// comments indicate the corresponding integer values following it
+// comments indicate how the bytecode should be used
+// [] indicate a value popped off the stack
+// () indicate the next bytecode value
 enum struct BytecodeType : bytecode_t
 {
-	S_INT1,					// value
-	S_INT2,					// value
-	S_INT4,					// value
-	S_INT8,					// value
-	U_INT1,					// value
-	U_INT2,					// value
-	U_INT4,					// value
-	U_INT8,					// value
-	FLOAT4,					// value
-	FLOAT8,					// value
+	BOOL,					// BOOL (val)
+	CHAR1,					//
+							//
+	S_INT1,					//
+	S_INT2,					// S_INT2 (val) (val)
+	S_INT4,					// S_INT4 (val) (val) (val) (val)
+	S_INT8,					//
+	U_INT1,					//
+	U_INT2,					//
+	U_INT4,					//
+	U_INT8,					//
+	FLOAT4,					//
+	FLOAT8,					//
 
-	BOOL,					// value
-	CHAR1,					// value
+	LOAD,					// LOAD (var_id)
 
-	VARIABLE,				// variable id
+	NEGATIVE,				// [val] NEGATIVE 
+	NOT,					//
 
-	NEGATIVE,
-	NOT,					// value
+	ADD,					// [val] [val] ADD
+	SUB,					//
+	MULT,					//
+	DIV,					//
 
-	ADD,					// value
-	SUB,					// value
-	MULT,					// value
-	DIV,					// value
+	STORE,					// STORE (var_id)
 
-	ASSIGN,
-
-	JUMP,
-	LABEL,
-
-	JUMP_IF_FALSE,
-	END_IF,
+	JUMP_IF_FALSE,			// [cond] JUMP_IF_FALSE (offset)	// jumps to next in conditional chain
+	JUMP,					// JUMP (offset)					// jumps to end of conditional chain
 
 	WHILE,					// index of last while bytecode
 	FOR,					// index of last for bytecode

@@ -9,6 +9,7 @@
 #include "error.hpp"
 
 #include <iostream>
+#include <algorithm>
 #include <variant>
 #include <string>
 #include <assert.h>
@@ -64,8 +65,8 @@ std::shared_ptr<AST> parse_stmt(Lexer& lexer, ParserScope& scope)
 	{
 	case TokenType::VARIABLE: return parse_var(lexer, scope);
 	case TokenType::IF:
-	case TokenType::ELIF:	  return std::make_shared<If>(parse_if(lexer, scope, false));
-	case TokenType::ELSE:	  return std::make_shared<If>(parse_if(lexer, scope, true));
+	case TokenType::ELIF:
+	case TokenType::ELSE:	  return std::make_shared<Conditional>(parse_if(lexer, scope));
 	case TokenType::FOR:	  return std::make_shared<For>(parse_for(lexer, scope));
 	case TokenType::WHILE:	  return std::make_shared<While>(parse_while(lexer, scope));
 	case TokenType::DEF:	  return std::make_shared<Function>(parse_func(lexer, scope));
@@ -148,7 +149,7 @@ VariableInit parse_var_init(Lexer& lexer, ParserScope& scope, std::string const&
 	if (!msg.empty())
 		NIGHT_CREATE_MINOR(msg);
 
-	return VariableInit(lexer.loc, var_name, var_expr);
+	return VariableInit(lexer.loc, scope.vars[var_name].id, var_expr);
 }
 
 VariableAssign parse_var_assign(Lexer& lexer, ParserScope& scope, std::string const& var_name)
@@ -175,12 +176,12 @@ VariableAssign parse_var_assign(Lexer& lexer, ParserScope& scope, std::string co
 		NIGHT_CREATE_MINOR("variable '" + var_name + "' of type '" + val_type_to_str(scope.vars.at(var_name).type) +
 			"' can not be initialized with expression of type '" + val_type_to_str(*expr_type) + "'");
 
-	return VariableAssign(lexer.loc, var_name, expr, assign_op);
+	return VariableAssign(lexer.loc, scope.vars[var_name].id, expr, assign_op);
 }
 
 FunctionCall parse_func_call(Lexer& lexer, ParserScope& scope, std::string const& func_name)
 {
-	assert(lexer.curr() == TokenType::OPEN_BRACKET);
+	assert(lexer.curr().type == TokenType::OPEN_BRACKET);
 	
 	std::vector<std::shared_ptr<expr::Expression>> param_expr;
 
@@ -198,37 +199,53 @@ FunctionCall parse_func_call(Lexer& lexer, ParserScope& scope, std::string const
 	{
 		auto type = param_expr[i]->type_check(scope);
 		if (type.has_value() && compare_value_t(*type, ParserScope::funcs[func_name].param_types[i]))
-			NIGHT_CREATE_MINOR("found type '" + val_type_to_str(*type) + "', expected type '" + val_type_to_str(ParserScope::funcs[func_name].param_types[i])) + "'")
+			NIGHT_CREATE_MINOR("found type '" + val_type_to_str(*type) + "', expected type '" + val_type_to_str(ParserScope::funcs[func_name].param_types[i]) + "'");
 	}
 
-	return FunctionCall(lexer.loc, func_name, param_expr, ParserScope::funcs[func_name].param_names);
+	std::vector<bytecode_t> param_ids;
+	for (auto const& param_name : ParserScope::funcs[func_name].param_names)
+		param_ids.push_back(scope.vars[param_name].id);
+
+	return FunctionCall(lexer.loc, func_name, param_expr, param_ids);
 }
 
-If parse_if(Lexer& lexer, ParserScope& scope, bool is_else)
+Conditional parse_if(Lexer& lexer, ParserScope& scope)
 {
 	assert(lexer.curr().type == TokenType::IF);
 
-	std::shared_ptr<expr::Expression> cond_expr =
-		std::make_shared<expr::Value>(lexer.loc, val::Value{ (val::value_t)val::ValueType::BOOL, 1 });
+	std::vector<
+		std::pair<std::shared_ptr<expr::Expression>, AST_Block>
+	> conditionals;
 
-	// parse condition
-	if (!is_else)
-	{
-		lexer.expect(TokenType::OPEN_BRACKET);
+	do {
+		std::shared_ptr<expr::Expression> cond_expr =
+			std::make_shared<expr::Value>(lexer.loc, val::Value{ (val::value_t)val::ValueType::BOOL, 1 });
 
-		cond_expr = parse_expr(lexer, scope,
-			"found '" + lexer.curr().str + "', expected expression after opening bracket");
+		// parse condition
+		if (lexer.curr().type != TokenType::ELSE)
+		{
+			lexer.expect(TokenType::OPEN_BRACKET);
 
-		if (lexer.curr().type != TokenType::CLOSE_BRACKET)
-			throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected closing bracket after condition");
+			cond_expr = parse_expr(lexer, scope,
+				"found '" + lexer.curr().str + "', expected expression after opening bracket");
 
-		auto cond_type = cond_expr->type_check(scope);
+			if (lexer.curr().type != TokenType::CLOSE_BRACKET)
+				throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected closing bracket after condition");
 
-		if (cond_type.has_value() && is_object_t(*cond_type))
-			NIGHT_CREATE_MINOR("condition is type '" + val_type_to_str(*cond_type) + "', expected type 'bool', 'char', or 'int'");
-	}
+			auto cond_type = cond_expr->type_check(scope);
 
-	return If(lexer.loc, cond_expr, parse_stmts(lexer, scope));
+			if (cond_type.has_value() && is_object_t(*cond_type))
+				NIGHT_CREATE_MINOR("condition is type '" + val_type_to_str(*cond_type) + "', expected type 'bool', 'char', or 'int'");
+		}
+
+		conditionals.push_back({ cond_expr, parse_stmts(lexer, scope) });
+
+		lexer.eat();
+	} while (lexer.curr().type == TokenType::IF	  ||
+			 lexer.curr().type == TokenType::ELIF ||
+			 lexer.curr().type == TokenType::ELSE);
+
+	return Conditional(lexer.loc, conditionals);
 }
 
 While parse_while(Lexer& lexer, ParserScope& scope)
@@ -319,7 +336,11 @@ Function parse_func(Lexer& lexer, ParserScope& scope)
 
 	ParserScope::curr_func = ParserScope::funcs.find(func_name);
 
-	Function func(lexer.loc, func_name, param_names, parse_stmts(lexer, scope));
+	std::vector<bytecode_t> param_ids(param_names.size());
+	std::transform(std::begin(param_names), std::end(param_names), std::begin(param_ids),
+		[&scope](auto const& name) { return scope.vars[name].id; });
+
+	Function func(lexer.loc, func_name, param_ids, parse_stmts(lexer, scope));
 
 	ParserScope::curr_func = std::end(ParserScope::funcs);
 

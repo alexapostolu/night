@@ -17,40 +17,44 @@ void test_parse_var()
 	std::clog << "testing parse_var\n";
 
 
-	Wrap::test("variable declaration",
-		"var1 bool;");
-	Wrap::expect(BytecodeType::BOOL);   Wrap::expect(0);
-	Wrap::expect(BytecodeType::ASSIGN); Wrap::expect(0);
+	Test::test("variable declaration",
+		"var0 bool;");
+	Test::expect(BytecodeType::BOOL);   Test::expect(0);
+	Test::expect(BytecodeType::U_INT1); Test::expect(0);
+	Test::expect(BytecodeType::STORE);
 
 
-	Wrap::test("variable initialization",
-		"var2 int32 = 2;");
-	Wrap::expect(BytecodeType::S_INT4); Wrap::expect(2);
-	Wrap::expect(BytecodeType::ASSIGN); Wrap::expect(1);
+	Test::test("variable initialization",
+		"var1 int32 = 2;");
+	Test::expect(BytecodeType::S_INT4); Test::expect(2);
+	Test::expect(BytecodeType::U_INT1); Test::expect(1);
+	Test::expect(BytecodeType::STORE);
 
 
-	Wrap::test("variable assignment",
-		"var2 = 5;");
-	Wrap::expect(BytecodeType::S_INT4); Wrap::expect(5);
-	Wrap::expect(BytecodeType::ASSIGN); Wrap::expect(1);
+	Test::test("variable assignment",
+		"var1 = 5;");
+	Test::expect(BytecodeType::S_INT4); Test::expect(5);
+	Test::expect(BytecodeType::U_INT1); Test::expect(1);
+	Test::expect(BytecodeType::STORE);
 
 
-	Wrap::test("variable add assignment",
-		"var2 += 7;");
-	Wrap::expect(BytecodeType::S_INT4);   Wrap::expect(7);
-	Wrap::expect(BytecodeType::VARIABLE); Wrap::expect(1);
-	Wrap::expect(BytecodeType::ADD);
-	Wrap::expect(BytecodeType::ASSIGN);   Wrap::expect(1);
+	Test::test("variable add assignment",
+		"var1 += 7;");
+	Test::expect(BytecodeType::S_INT4);   Test::expect(7);
+	Test::expect(BytecodeType::LOAD);	  Test::expect(1);
+	Test::expect(BytecodeType::ADD);
+	Test::expect(BytecodeType::STORE);    Test::expect(1);
 
 
-	Wrap::test("expressions",
-		"var3 int16 = var1 + var2 * 7");
-	Wrap::expect(BytecodeType::VARIABLE); Wrap::expect(1);
-	Wrap::expect(BytecodeType::S_INT2);   Wrap::expect(7);
-	Wrap::expect(BytecodeType::MULT);
-	Wrap::expect(BytecodeType::VARIABLE); Wrap::expect(0);
-	Wrap::expect(BytecodeType::ADD);
-	Wrap::expect(BytecodeType::ASSIGN);   Wrap::expect(2);
+	Test::test("expressions",
+		"var2 int16 = var0 + var1 * 7");
+	Test::expect(BytecodeType::LOAD);	  Test::expect(0);
+	Test::expect(BytecodeType::S_INT2);   Test::expect(7);
+	Test::expect(BytecodeType::MULT);  
+	Test::expect(BytecodeType::LOAD);	  Test::expect(1);
+	Test::expect(BytecodeType::ADD);
+	Test::expect(BytecodeType::U_INT1);	  Test::expect(2);
+	Test::expect(BytecodeType::STORE);	  Test::expect(2);
 }
 
 void test_parse_if()
@@ -58,21 +62,24 @@ void test_parse_if()
 	std::clog << "testing parse_if\n";
 
 
-	Wrap::test("if statement",
+	Test::test("if statement",
 		"if (true) { var float8; }");
-	Wrap::expect(BytecodeType::BOOL);   Wrap::expect(1);
-	Wrap::expect(BytecodeType::IF);     Wrap::expect(4);
-	Wrap::expect(BytecodeType::FLOAT8); Wrap::expect(0);
-	Wrap::expect(BytecodeType::ASSIGN); Wrap::expect(0);
+	Test::expect(BytecodeType::BOOL, 1);
+	Test::expect(BytecodeType::JUMP_IF_FALSE, 6);
+	Test::expect(BytecodeType::FLOAT8, 0);
+	Test::expect(BytecodeType::STORE, 0);
+	Test::expect(BytecodeType::JUMP, 0);
 
-	Wrap::test("if and elif statement",
-		"if (true) {} elif { var float8; }");
-	Wrap::expect(BytecodeType::BOOL);	Wrap::expect(1);
-
-	Wrap::expect(BytecodeType::BOOL);   Wrap::expect(1);
-	Wrap::expect(BytecodeType::IF);     Wrap::expect(4);
-	Wrap::expect(BytecodeType::FLOAT8); Wrap::expect(0);
-	Wrap::expect(BytecodeType::ASSIGN); Wrap::expect(0);
+	Test::test("if and elif statement",
+		"if (true) {} elif (true) { var float8; }");
+	Test::expect(BytecodeType::BOOL, 1);
+	Test::expect(BytecodeType::JUMP_IF_FALSE, 2);
+	Test::expect(BytecodeType::JUMP, 10);
+	Test::expect(BytecodeType::BOOL, 1);
+	Test::expect(BytecodeType::JUMP_IF_FALSE, 6);
+	Test::expect(BytecodeType::FLOAT8, 0);
+	Test::expect(BytecodeType::STORE, 0);
+	Test::expect(BytecodeType::JUMP, 0);
 }
 
 void test_parse_else()
@@ -80,27 +87,27 @@ void test_parse_else()
 	std::clog << "testing parse_else\n";
 
 	
-	Wrap::test("else statement",
+	Test::test("else statement",
 		"else { var char8; }");
-	Wrap::expect(BytecodeType::ELSE);   Wrap::expect(4);
-	Wrap::expect(BytecodeType::CHAR1);  Wrap::expect(0);
-	Wrap::expect(BytecodeType::ASSIGN); Wrap::expect(0);
+	Test::expect(BytecodeType::ELSE);   Test::expect(4);
+	Test::expect(BytecodeType::CHAR1);  Test::expect(0);
+	Test::expect(BytecodeType::ASSIGN); Test::expect(0);
 }
 
 void test_parse_for()
 {
 	std::clog << "testing parse_for\n";
 
-	Wrap::test("for statement with 3 conditions and body",
+	Test::test("for statement with 3 conditions and body",
 		"for (i int8 = 0; i < 5; i += 1) { var int8; }");
-	Wrap::expect(3); Wrap::expect(BytecodeType::FOR); Wrap::expect(4);
-	Wrap::expect(BytecodeType::S_INT8); Wrap::expect(0);
-	Wrap::expect(BytecodeType::ASSIGN); Wrap::expect(0);
+	Test::expect(3); Test::expect(BytecodeType::FOR); Test::expect(4);
+	Test::expect(BytecodeType::S_INT8); Test::expect(0);
+	Test::expect(BytecodeType::ASSIGN); Test::expect(0);
 
 
-	Wrap::test("for statement with 2 conditions",
+	Test::test("for statement with 2 conditions",
 		"for (i int8 = 0; i < 5;) { }");
-	Wrap::expect(2); Wrap::expect(BytecodeType::FOR); Wrap::expect(0);
+	Test::expect(2); Test::expect(BytecodeType::FOR); Test::expect(0);
 }
 
 void test_parse_while() {}
@@ -108,12 +115,12 @@ void test_parse_rtn() {}
 
 void test_generate_func()
 {
-	Wrap::test("function without paramters",
+	Test::test("function without paramters",
 		"def func1() {}");
-	Wrap::expect(BytecodeType::)
+	Test::expect(BytecodeType::)
 }
 
-void Wrap::test(std::string const& msg, std::string const& code)
+void Test::test(std::string const& msg, std::string const& code)
 {
 	std::clog << " - " << msg << '\b';
 
@@ -123,7 +130,7 @@ void Wrap::test(std::string const& msg, std::string const& code)
 	codes = parse_stmt(lexer, scope);
 }
 
-void Wrap::expect(bytecode_t value)
+void Test::expect(bytecode_t value)
 {
 	std::clog << " . " << codes[i] << " == " << value;
 	if (codes[i] != value)
@@ -134,13 +141,16 @@ void Wrap::expect(bytecode_t value)
 	++i;
 }
 
-void Wrap::expect(BytecodeType value)
+void Test::expect(BytecodeType value, int val)
 {
-	std::clog << " . " << bytecode_to_str(codes[i]) << " == " << bytecode_to_str(value);
+	std::clog << " . " << to_str(codes[i]) << " == " << to_str(value);
 	if (codes[i] != (bytecode_t)value)
 		std::clog << " . . assertion failed\n";
 	else
 		std::clog << " . . assertion passed\n";
 
 	++i;
+
+	if (val != -1)
+		expect(val);
 }

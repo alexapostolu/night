@@ -33,7 +33,7 @@ public:
 		std::shared_ptr<Expression> const& node,
 		std::shared_ptr<Expression>* prev = nullptr) = 0;
 
-	virtual bytecodes_t generate_codes(ParserScope const& scope) const = 0;
+	virtual bytecodes_t generate_codes() const = 0;
 	virtual std::optional<val::value_t> type_check(ParserScope const& scope) const = 0;
 	// virtual void optimize(ParserScope const& scope) = 0;
 
@@ -74,7 +74,7 @@ public:
 		std::shared_ptr<Expression> const& node,
 		std::shared_ptr<Expression>* prev = nullptr) override;
 
-	bytecodes_t generate_codes(ParserScope const& scope) const;
+	bytecodes_t generate_codes() const;
 	std::optional<val::value_t> type_check(ParserScope const& scope) const override;
 
 public:
@@ -105,7 +105,7 @@ public:
 		std::shared_ptr<Expression> const& node,
 		std::shared_ptr<Expression>* prev) override;
 
-	bytecodes_t generate_codes(ParserScope const& scope) const override;
+	bytecodes_t generate_codes() const override;
 	std::optional<val::value_t> type_check(ParserScope const& scope) const override;
 
 public:
@@ -128,7 +128,7 @@ public:
 		std::shared_ptr<Expression> const& node,
 		std::shared_ptr<Expression>* prev) override;
 
-	bytecodes_t generate_codes(ParserScope const& scope) const override;
+	bytecodes_t generate_codes() const override;
 	std::optional<val::value_t> type_check(ParserScope const& scope) const override;
 
 public:
@@ -144,13 +144,14 @@ class Variable : public Expression
 public:
 	Variable(
 		Location const& _loc,
-		std::string const& _name);
+		std::string const& _name,
+		bytecode_t _id);
 
 	void insert_node(
 		std::shared_ptr<Expression> const& node,
 		std::shared_ptr<Expression>* prev) override;
 
-	bytecodes_t generate_codes(ParserScope const& scope) const override;
+	bytecodes_t generate_codes() const override;
 	std::optional<val::value_t> type_check(ParserScope const& scope) const override;
 
 public:
@@ -158,6 +159,7 @@ public:
 
 private:
 	std::string name;
+	bytecode_t id;
 };
 
 }

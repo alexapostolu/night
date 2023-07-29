@@ -55,7 +55,7 @@ VariableAssign parse_var_assign(Lexer& lexer, ParserScope& scope, std::string co
 
 FunctionCall parse_func_call(Lexer& lexer, ParserScope& scope, std::string const& func_name);
 
-If parse_if(Lexer& lexer, ParserScope& scope, bool is_else);
+Conditional parse_if(Lexer& lexer, ParserScope& scope);
 
 While parse_while(Lexer& lexer, ParserScope& scope);
 

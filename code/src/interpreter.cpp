@@ -2,110 +2,70 @@
 #include "interpreter_scope.hpp"
 #include "error.hpp"
 
-#include <stdexcept>
 #include <assert.h>
-
-// debugging with asserts
-#define assert_assignment() \
-	assert(scope.vars.contains(code->val) \
-		&& "variable definitions should be checked in parser"); \
-	assert(!s.empty() \
-		&& "the stack should not be empty when assigning, should be checked in parser");
 
 Interpreter::Interpreter(bytecodes_t& _codes)
 	: codes(_codes) {}
 
 void Interpreter::interpret_bytecodes()
 {
+	int passed_conditionals = 0;
 	for (auto it = std::cbegin(codes); it != std::cend(codes); ++it)
 	{
-		switch (*it)
+		switch ((BytecodeType)*it)
 		{
-		case (bytecode_t)BytecodeType::S_INT1:
-		case (bytecode_t)BytecodeType::S_INT2:
-		case (bytecode_t)BytecodeType::S_INT4:
-		case (bytecode_t)BytecodeType::S_INT8:
-		case (bytecode_t)BytecodeType::U_INT1:
-		case (bytecode_t)BytecodeType::U_INT2:
-		case (bytecode_t)BytecodeType::U_INT4:
-		case (bytecode_t)BytecodeType::U_INT8:
-		case (bytecode_t)BytecodeType::FLOAT4:
-		case (bytecode_t)BytecodeType::FLOAT8:
-			push_num();
+		case BytecodeType::BOOL:
+			push_bool(it);
+			break;
+		case BytecodeType::CHAR1:
+			push_char(it);
 			break;
 
-		case (bytecode_t)BytecodeType::BOOL:
-			interpreter.s.push(1);
-			break;
-		case (bytecode_t)BytecodeType::CHAR1:
-			push_char(interpreter.s, (BytecodeType)*it);
-			break;
-
-		case (bytecode_t)BytecodeType::VARIABLE:
-			push_var(interpreter, *(++it));
-
-		case BytecodeType::NOT:  s.push({ false, !pop(s) }); break;
-		case BytecodeType::ADD:  s.push({ false, pop(s) + pop(s) }); break;
-		case BytecodeType::SUB:  s.push({ false, pop(s) - pop(s) }); break;
-		case BytecodeType::MULT: s.push({ false, pop(s) * pop(s) }); break;
-		case BytecodeType::DIV:  s.push({ false, pop(s) / pop(s) }); break;
-
-		case BytecodeType::BOOL_ASSIGN:
-			assert_assignment();
-			scope.vars[code->val] = { ValueType::BOOL, pop(s) };
-			break;
-		case BytecodeType::CHAR_ASSIGN:
-			assert_assignment();
-			scope.vars[code->val] = { ValueType::CHAR, pop(s) };
-			break;
-		case BytecodeType::INT_ASSIGN:
-			assert_assignment();
-			scope.vars[code->val] = { ValueType::INT, pop(s) };
+		case BytecodeType::S_INT1:
+		case BytecodeType::S_INT2:
+		case BytecodeType::S_INT4:
+		case BytecodeType::S_INT8:
+		case BytecodeType::U_INT1:
+		case BytecodeType::U_INT2:
+		case BytecodeType::U_INT4:
+		case BytecodeType::U_INT8:
+		case BytecodeType::FLOAT4:
+		case BytecodeType::FLOAT8:
+			push_num(it);
 			break;
 
-		case BytecodeType::ADD_ASSIGN:
-			assert_assignment();
-			scope.vars[code->val].val += pop(s);
-			break;
-		case BytecodeType::SUB_ASSIGN:
-			assert_assignment();
-			scope.vars[code->val].val -= pop(s);
-			break;
-		case BytecodeType::MULT_ASSIGN:
-			assert_assignment();
-			scope.vars[code->val].val *= pop(s);
-			break;
-		case BytecodeType::DIV_ASSIGN:
-			assert_assignment();
-			scope.vars[code->val].val /= pop(s);
+		case BytecodeType::LOAD:
+			push_var(it);
 			break;
 
-		case BytecodeType::IF:
-		case BytecodeType::ELIF:
-			if (code->val)
-			{
-				interpret_bytecodes(bytecodes_t(++code, std::next(code, code->val + 1)));
-				std::advance(code, code->val + 1);
+		case BytecodeType::NEGATIVE: s.push(-pop()); break;
+		case BytecodeType::NOT:		 s.push(pop() == 0); break;
 
-				while (code != std::end(codes) && (code->type == BytecodeType::ELIF || code->type == BytecodeType::ELSE))
-					std::advance(code, code->val + 1);
-				--code;
-			}
-			else
-			{
-				std::advance(code, code->val);
-			}
-			break;
-		case BytecodeType::ELSE:
-			if (code->val)
-				interpret_bytecodes(bytecodes_t(++code, std::next(code, code->val + 1)));
-			else
-				std::advance(code, code->val);
+		case BytecodeType::ADD:  s.push(pop() + pop()); break;
+		case BytecodeType::SUB:  s.push(pop() - pop()); break;
+		case BytecodeType::MULT: s.push(pop() * pop()); break;
+		case BytecodeType::DIV:  s.push(pop() / pop()); break;
+
+		case BytecodeType::STORE:
+			vars[pop()] = pop();
 			break;
 
-		case BytecodeType::FUNC:
-			*func = Function{};
-			func_params = code->val;
+		case BytecodeType::JUMP:
+			auto line = pop();
+			std::advance(it, line);
+			break;
+		case BytecodeType::JUMP_IF_FALSE:
+			auto line = pop();
+			std::advance(it, line);
+
+		case BytecodeType::WHILE:
+			break;
+		case BytecodeType::FOR:
+			break;
+
+		case BytecodeType::RETURN:
+			break;
+		case BytecodeType::FUNC_CALL:
 			break;
 
 		default:
@@ -114,15 +74,28 @@ void Interpreter::interpret_bytecodes()
 	}
 }
 
+void Interpreter::push_bool(bytecodes_t::const_iterator& it)
+{
+	++it;
+	s.push(*it != 0);
+}
+
 void Interpreter::push_num(bytecodes_t::const_iterator& it)
 {
-	switch ((BytecodeType)*it)
+	auto type = (BytecodeType)(*it);
+	++it;
+
+	switch (type)
 	{
 	case BytecodeType::S_INT1:
+		s.push(-(*it));
+		break;
 	case BytecodeType::S_INT2:
 	case BytecodeType::S_INT4:
 	case BytecodeType::S_INT8:
 	case BytecodeType::U_INT1:
+		s.push(*it);
+		break;
 	case BytecodeType::U_INT2:
 	case BytecodeType::U_INT4:
 	case BytecodeType::U_INT8:
@@ -135,10 +108,12 @@ void Interpreter::push_num(bytecodes_t::const_iterator& it)
 
 void Interpreter::push_char(bytecodes_t::const_iterator& it)
 {
+	++it;
+
 	switch ((BytecodeType)*it)
 	{
 	case BytecodeType::CHAR1:
-		s.push(*(++it));
+		s.push(*it);
 		break;
 	default:
 		night::throw_unhandled_case(*it);
@@ -147,21 +122,14 @@ void Interpreter::push_char(bytecodes_t::const_iterator& it)
 
 void Interpreter::push_var(bytecodes_t::const_iterator& it)
 {
-	interpreter.s.push(interpreter.vars[var_id]);
+	++it;
+	s.push(vars[*it]);
 }
 
-int pop(InterpreterScope& scope, expr_stack& s)
+int Interpreter::pop()
 {
-	assert(!s.empty());
-
-	auto const& [flag, val] = s.top();
+	auto val = s.top();
 	s.pop();
 
-	switch (type)
-	{
-		INT8,
-			int16,
-	}
-
-	return flag ? scope.vars[val].val : val;
+	return val;
 }

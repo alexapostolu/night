@@ -1,27 +1,27 @@
 #include "ast/ast.hpp"
 #include "bytecode.hpp"
-#include "parser_scope.hpp"
 #include "interpreter_scope.hpp"
 #include "error.hpp"
 
-#include <cassert>
 #include <limits>
+#include <vector>
+#include <assert.h>
 
 AST::AST(Location const& _loc)
 	: loc(_loc) {}
 
 VariableInit::VariableInit(
 	Location const& _loc,
-	std::string const& _name,
+	bytecode_t _id,
 	std::shared_ptr<expr::Expression> const& _expr)
-	: AST(_loc), name(_name), expr(_expr) {}
+	: AST(_loc), id(_id), expr(_expr) {}
 
-bytecodes_t VariableInit::generate_codes(ParserScope const& scope) const
+bytecodes_t VariableInit::generate_codes() const
 {
-	bytecodes_t codes = expr->generate_codes(scope);
+	bytecodes_t codes = expr->generate_codes();
 
-	codes.push_back(scope.vars.at(name).id);
-	codes.push_back((bytecode_t)BytecodeType::ASSIGN);
+	codes.push_back((bytecode_t)BytecodeType::STORE);
+	codes.push_back(id);
 
 	return codes;
 }
@@ -29,18 +29,19 @@ bytecodes_t VariableInit::generate_codes(ParserScope const& scope) const
 
 VariableAssign::VariableAssign(
 	Location const& _loc,
-	std::string const& _name,
+	bytecode_t _id,
 	std::shared_ptr<expr::Expression> const& _expr,
 	std::string const& _assign_op)
-	: AST(_loc), name(_name), expr(_expr), assign_op(_assign_op) {}
+	: AST(_loc), id(_id), expr(_expr), assign_op(_assign_op) {}
 
-bytecodes_t VariableAssign::generate_codes(ParserScope const& scope) const
+bytecodes_t VariableAssign::generate_codes() const
 {
-	bytecodes_t codes = expr->generate_codes(scope);
+	bytecodes_t codes = expr->generate_codes();
 
 	if (assign_op != "=")
 	{
-		codes.push_back(scope.vars.at(name).id);
+		codes.push_back((bytecode_t)BytecodeType::LOAD);
+		codes.push_back(id);
 
 		if      (assign_op == "+=")	codes.push_back((bytecode_t)BytecodeType::ADD);
 		else if (assign_op == "-=") codes.push_back((bytecode_t)BytecodeType::SUB);
@@ -49,33 +50,53 @@ bytecodes_t VariableAssign::generate_codes(ParserScope const& scope) const
 		else night::throw_unhandled_case(assign_op);
 	}
 
-	codes.push_back(scope.vars.at(name).id);
-	codes.push_back((bytecode_t)BytecodeType::ASSIGN);
+	codes.push_back((bytecode_t)BytecodeType::STORE);
+	codes.push_back(id);
 
 	return codes;
 }
 
 
-If::If(Location const& _loc, std::shared_ptr<expr::Expression> const& _cond_expr, AST_Block const& _block)
-	: AST(_loc), cond_expr(_cond_expr), block(_block) {}
+Conditional::Conditional(
+	Location const& _loc,
+	std::vector<
+	std::pair<std::shared_ptr<expr::Expression>, AST_Block>
+	> const& _conditionals)
+	: AST(_loc), conditionals(_conditionals) {}
 
-bytecodes_t If::generate_codes(ParserScope const& scope) const
+bytecodes_t Conditional::generate_codes() const
 {
 	bytecodes_t codes;
-	
-	auto cond_codes = cond_expr->generate_codes(scope);
-	codes.insert(std::end(codes), std::begin(cond_codes), std::end(cond_codes));
+	std::vector<int> jumps;
 
-	codes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE);
-	codes.push_back((bytecode_t)block.size());
-
-	for (auto stmt : block)
+	for (std::size_t i = 0; i < conditionals.size(); ++i)
 	{
-		auto stmt_codes = stmt->generate_codes(scope);
-		codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
+		auto cond_codes = conditionals[i].first->generate_codes();
+		codes.insert(std::end(codes), std::begin(cond_codes), std::end(cond_codes));
+
+		codes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE);
+		int offset_index = codes.size();
+
+		int stmt_size = 0;
+		for (auto const& stmt : conditionals[i].second)
+		{
+			auto stmt_codes = stmt->generate_codes();
+			codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
+
+			stmt_size += stmt_codes.size();
+		}
+
+		// insert offset after JUMP_IF_FALSE
+		codes.insert(std::begin(codes) + offset_index, stmt_size + 2);
+
+		codes.push_back((bytecode_t)BytecodeType::JUMP);
+		jumps.push_back(codes.size());
 	}
 
-	codes.push_back((bytecode_t)BytecodeType::END_IF);
+
+	// insert offsets after JUMP
+	for (int jump : jumps)
+		codes.insert(std::begin(codes) + jump, codes.size() - jump);
 
 	return codes;
 }
@@ -87,16 +108,16 @@ While::While(
 	AST_Block const& _block)
 	: AST(_loc), cond_expr(_cond), block(_block) {}
 
-bytecodes_t While::generate_codes(ParserScope const& scope) const
+bytecodes_t While::generate_codes() const
 {
-	auto codes = cond_expr->generate_codes(scope);
+	auto codes = cond_expr->generate_codes();
 
 	auto codes_s = codes.size() - 2;
 	codes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE);
 
 	for (auto const& stmt : block)
 	{
-		auto stmt_codes = stmt->generate_codes(scope);
+		auto stmt_codes = stmt->generate_codes();
 		codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
 	}
 
@@ -115,11 +136,11 @@ For::For(
 	AST_Block const& _block)
 	: AST(_loc), var_init(_var_init), cond_expr(_cond_expr), var_assign(_var_assign), block(_block) {}
 
-bytecodes_t For::generate_codes(ParserScope const& scope) const
+bytecodes_t For::generate_codes() const
 {
-	auto codes = var_init.generate_codes(scope);
+	auto codes = var_init.generate_codes();
 
-	auto codes_cond = cond_expr->generate_codes(scope);
+	auto codes_cond = cond_expr->generate_codes();
 	codes.insert(std::end(codes), std::begin(codes_cond), std::begin(codes_cond));
 
 	auto codes_s = codes.size() - 2;
@@ -127,11 +148,11 @@ bytecodes_t For::generate_codes(ParserScope const& scope) const
 
 	for (auto const& stmt : block)
 	{
-		auto stmt_codes = stmt->generate_codes(scope);
+		auto stmt_codes = stmt->generate_codes();
 		codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
 	}
 
-	auto codes_incr = var_assign.generate_codes(scope);
+	auto codes_incr = var_assign.generate_codes();
 	codes.insert(std::end(codes), std::begin(codes_incr), std::end(codes_incr));
 
 	bytecode_create_int(codes, -codes.size() - 1, codes_s);
@@ -144,20 +165,20 @@ bytecodes_t For::generate_codes(ParserScope const& scope) const
 Function::Function(
 	Location const& _loc,
 	std::string const& _func_name,
-	std::vector<std::string> const& _param_names,
+	std::vector<bytecode_t> const& _param_ids,
 	AST_Block const& _block)
-	: AST(_loc), func_name(_func_name), param_names(_param_names), block(_block) {}
+	: AST(_loc), func_name(_func_name), param_ids(_param_ids), block(_block) {}
 
-bytecodes_t Function::generate_codes(ParserScope const& scope) const
+bytecodes_t Function::generate_codes() const
 {
 	InterpreterScope::funcs[func_name] = {};
 
-	for (auto const& param_name : param_names)
-		InterpreterScope::funcs[func_name].params.push_back(scope.vars.at(param_name).id);
+	for (auto const& param_id : param_ids)
+		InterpreterScope::funcs[func_name].params.push_back(param_id);
 
 	for (auto const& stmt : block)
 	{
-		auto stmt_codes = stmt->generate_codes(scope);
+		auto stmt_codes = stmt->generate_codes();
 		InterpreterScope::funcs[func_name].codes.insert(
 			std::end(InterpreterScope::funcs[func_name].codes),
 			std::begin(stmt_codes), std::end(stmt_codes));
@@ -172,9 +193,9 @@ Return::Return(
 	std::shared_ptr<expr::Expression> _expr)
 	: AST(_loc), expr(_expr) {}
 
-bytecodes_t Return::generate_codes(ParserScope const& scope) const
+bytecodes_t Return::generate_codes() const
 {
-	auto codes = expr->generate_codes(scope);
+	auto codes = expr->generate_codes();
 
 	codes.push_back((bytecode_t)BytecodeType::RETURN);
 
@@ -186,16 +207,16 @@ FunctionCall::FunctionCall(
 	Location const& _loc,
 	std::string const& _func_name,
 	std::vector<std::shared_ptr<expr::Expression>> const& _params,
-	std::vector<std::string> const& param_names)
+	std::vector<bytecode_t> const& param_ids)
 	: AST(_loc), func_name(_func_name)
 {
-	assert(param_names.size() == _params.size());
+	assert(param_ids.size() == _params.size());
 
 	for (std::size_t i = 0; i < _params.size(); ++i)
-		params.push_back(VariableInit(_loc, param_names[i], _params[i]));
+		params.push_back(VariableInit(_loc, param_ids[i], _params[i]));
 }
 
-bytecodes_t FunctionCall::generate_codes(ParserScope const& scope) const
+bytecodes_t FunctionCall::generate_codes() const
 {
 	bytecodes_t codes;
 	codes.push_back(params->);

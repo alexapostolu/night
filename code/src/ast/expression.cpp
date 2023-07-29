@@ -55,9 +55,9 @@ void expr::UnaryOp::insert_node(
 	}
 }
 
-bytecodes_t expr::UnaryOp::generate_codes(ParserScope const& scope) const
+bytecodes_t expr::UnaryOp::generate_codes() const
 {
-	bytecodes_t codes = expr->generate_codes(scope);
+	bytecodes_t codes = expr->generate_codes();
 
 	switch (type)
 	{
@@ -143,14 +143,14 @@ void expr::BinaryOp::insert_node(
 	}
 }
 
-bytecodes_t expr::BinaryOp::generate_codes(ParserScope const& scope) const
+bytecodes_t expr::BinaryOp::generate_codes() const
 {
 	bytecodes_t codes;
 	
-	auto codes_lhs = lhs->generate_codes(scope);
+	auto codes_lhs = lhs->generate_codes();
 	codes.insert(std::end(codes), std::begin(codes_lhs), std::end(codes_lhs));
 
-	auto codes_rhs = rhs->generate_codes(scope);
+	auto codes_rhs = rhs->generate_codes();
 	codes.insert(std::end(codes), std::begin(codes_rhs), std::end(codes_rhs));
 
 	switch (type)
@@ -235,7 +235,7 @@ void expr::Value::insert_node(
 	*this = *dynamic_cast<expr::Value*>(node.get());
 }
 
-bytecodes_t expr::Value::generate_codes(ParserScope const& scope) const
+bytecodes_t expr::Value::generate_codes() const
 {
 	switch (val.type)
 	{
@@ -303,8 +303,9 @@ int expr::Value::precedence() const
 
 expr::Variable::Variable(
 	Location const& _loc,
-	std::string const& _name)
-	: Expression(ExpressionType::VARIABLE, _loc), name(_name) {}
+	std::string const& _name,
+	bytecode_t _id)
+	: Expression(ExpressionType::VARIABLE, _loc), name(_name), id(_id) {}
 
 void expr::Variable::insert_node(
 	std::shared_ptr<expr::Expression> const& node,
@@ -313,9 +314,9 @@ void expr::Variable::insert_node(
 	*this = *dynamic_cast<expr::Variable*>(node.get());
 }
 
-bytecodes_t expr::Variable::generate_codes(ParserScope const& scope) const
+bytecodes_t expr::Variable::generate_codes() const
 {
-	return { (bytecode_t)BytecodeType::VARIABLE, scope.vars.at(name).id };
+	return { (bytecode_t)BytecodeType::S_INT1, id, (bytecode_t)BytecodeType::VARIABLE };
 }
 
 std::optional<val::value_t> expr::Variable::type_check(ParserScope const& scope) const

@@ -32,9 +32,10 @@ public:
 
 private:
 	void push_num(bytecodes_t::const_iterator& it);
+	void push_bool(bytecodes_t::const_iterator& it);
 	void push_char(bytecodes_t::const_iterator& it);
 	void push_var(bytecodes_t::const_iterator& it);
-	int pop(Interpreter& scope, expr_stack& s);
+	int pop();
 
 public:
 	func_container funcs;
