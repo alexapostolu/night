@@ -18,8 +18,7 @@ using AST_Block = std::vector<std::shared_ptr<AST>>;
 class AST
 {
 public:
-	AST(
-		Location const& loc);
+	AST(Location const& loc);
 
 	virtual bytecodes_t generate_codes() const = 0;
 
@@ -69,8 +68,7 @@ public:
 		Location const& _loc,
 		std::vector<
 			std::pair<std::shared_ptr<expr::Expression>, AST_Block>
-		> const& _conditionals
-	);
+		> const& _conditionals);
 
 	bytecodes_t generate_codes() const override;
 
@@ -92,7 +90,7 @@ public:
 	bytecodes_t generate_codes() const override;
 
 private:
-	std::shared_ptr<expr::Expression>  cond_expr;
+	std::shared_ptr<expr::Expression> cond_expr;
 	AST_Block block;
 };
 
@@ -100,20 +98,19 @@ private:
 class For : public AST
 {
 public:
+	// params:
+	//   _block should already include VariableAssign statement
 	For(
 		Location const& _loc,
 		VariableInit const& _var_init,
 		std::shared_ptr<expr::Expression> const& _cond_expr,
-		VariableAssign const& _var_assign,
 		AST_Block const& _block);
 
 	bytecodes_t generate_codes() const override;
 
 private:
 	VariableInit var_init;
-	std::shared_ptr<expr::Expression> cond_expr;
-	VariableAssign var_assign;
-	AST_Block block;
+	While loop;
 };
 
 

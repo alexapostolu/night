@@ -57,7 +57,7 @@ void test_parse_var()
 	Test::expect(BytecodeType::STORE);	  Test::expect(2);
 }
 
-void test_parse_if()
+void test_parse_conditional()
 {
 	std::clog << "testing parse_if\n";
 
@@ -80,34 +80,21 @@ void test_parse_if()
 	Test::expect(BytecodeType::FLOAT8, 0);
 	Test::expect(BytecodeType::STORE, 0);
 	Test::expect(BytecodeType::JUMP, 0);
-}
 
-void test_parse_else()
-{
-	std::clog << "testing parse_else\n";
-
-	
-	Test::test("else statement",
-		"else { var char8; }");
-	Test::expect(BytecodeType::ELSE);   Test::expect(4);
-	Test::expect(BytecodeType::CHAR1);  Test::expect(0);
-	Test::expect(BytecodeType::ASSIGN); Test::expect(0);
+	Test::test("if, elif, and else statement",
+		"if (true) {} elif (true) {} else { var char; }");
+	Test::expect(BytecodeType::BOOL, 1);
+	Test::expect(BytecodeType::JUMP_IF_FALSE, 2);
+	Test::expect(BytecodeType::JUMP, 10);
+	Test::expect(BytecodeType::BOOL, 1);
+	Test::expect(BytecodeType::JUMP_IF_FALSE, 2);
+	Test::expect(BytecodeType::JUMP, 4);
+	Test::expect(BytecodeType::CHAR1, 0);
+	Test::expect(BytecodeType::STORE, 0);
 }
 
 void test_parse_for()
 {
-	std::clog << "testing parse_for\n";
-
-	Test::test("for statement with 3 conditions and body",
-		"for (i int8 = 0; i < 5; i += 1) { var int8; }");
-	Test::expect(3); Test::expect(BytecodeType::FOR); Test::expect(4);
-	Test::expect(BytecodeType::S_INT8); Test::expect(0);
-	Test::expect(BytecodeType::ASSIGN); Test::expect(0);
-
-
-	Test::test("for statement with 2 conditions",
-		"for (i int8 = 0; i < 5;) { }");
-	Test::expect(2); Test::expect(BytecodeType::FOR); Test::expect(0);
 }
 
 void test_parse_while() {}
@@ -117,7 +104,6 @@ void test_generate_func()
 {
 	Test::test("function without paramters",
 		"def func1() {}");
-	Test::expect(BytecodeType::)
 }
 
 void Test::test(std::string const& msg, std::string const& code)
@@ -127,7 +113,7 @@ void Test::test(std::string const& msg, std::string const& code)
 	lexer.scan_code(code);
 
 	i = 0;
-	codes = parse_stmt(lexer, scope);
+	codes = parse_stmt(lexer, scope)->generate_codes();
 }
 
 void Test::expect(bytecode_t value)
@@ -143,7 +129,7 @@ void Test::expect(bytecode_t value)
 
 void Test::expect(BytecodeType value, int val)
 {
-	std::clog << " . " << to_str(codes[i]) << " == " << to_str(value);
+	std::clog << " . " << night::to_str(codes[i]) << " == " << night::to_str(value);
 	if (codes[i] != (bytecode_t)value)
 		std::clog << " . . assertion failed\n";
 	else

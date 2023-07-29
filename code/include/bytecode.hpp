@@ -30,8 +30,6 @@ enum struct BytecodeType : bytecode_t
 	FLOAT4,					//
 	FLOAT8,					//
 
-	LOAD,					// LOAD (var_id)
-
 	NEGATIVE,				// [val] NEGATIVE 
 	NOT,					//
 
@@ -40,16 +38,14 @@ enum struct BytecodeType : bytecode_t
 	MULT,					//
 	DIV,					//
 
+	LOAD,					// LOAD  (var_id)
 	STORE,					// STORE (var_id)
 
 	JUMP_IF_FALSE,			// [cond] JUMP_IF_FALSE (offset)	// jumps to next in conditional chain
 	JUMP,					// JUMP (offset)					// jumps to end of conditional chain
 
-	WHILE,					// index of last while bytecode
-	FOR,					// index of last for bytecode
-
 	RETURN,					// return value
-	FUNC_CALL				//
+	FUNC_CALL				// [init] [init] FUNC_CALL
 };
 
 void bytecode_create_int(bytecodes_t& codes,int64_t num, int i = -1);
@@ -57,7 +53,7 @@ void bytecode_create_int(bytecodes_t& codes,int64_t num, int i = -1);
 void number_to_bytecode(bytecodes_t& codes, uint64_t num);
 void number_to_bytecode(bytecodes_t& codes, int64_t num);
 
-bytecodes_t const& number_to_bytecode(int64_t num);
+bytecodes_t number_to_bytecode(int64_t num);
 
 // for error messages, usually the real strategy here is something like, storing a side table that maps bytecode indices to locations in the source
 

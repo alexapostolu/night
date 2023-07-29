@@ -28,7 +28,7 @@ std::string to_str(val::value_t type, bool primitive)
 			return "primitive";
 		default:
 			// return classes[type];
-			return;
+			return "object";
 		}
 	}
 	else
@@ -45,31 +45,7 @@ std::string to_str(val::value_t type, bool primitive)
 			return "unsigned int";
 		default:
 			// return classes[type];
-			return;
+			return "object";
 		}
 	}
-}
-
-
-
-
-
-std::string val_to_str(ValueType type, std::variant<char, int> const& val)
-{
-	switch (type)
-	{
-	case ValueType::CHAR:
-		return std::string(std::get<char>(val), 1);
-		break;
-	case ValueType::INT:
-		return std::to_string(std::get<int>(val));
-		break;
-	default:
-		throw std::runtime_error("unhandled case");
-	}
-}
-
-ValueType bytecode_type_to_val_type(BytecodeType type)
-{
-	return ValueType();
 }

@@ -50,8 +50,6 @@ std::string tok_type_to_str(TokenType type)
 		return "string";
 	case TokenType::VARIABLE:
 		return "variable";
-	case TokenType::TYPE:
-		return "type";
 	case TokenType::IF:
 		return "if";
 	case TokenType::ELIF:

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <string>
-#include <vector>
 #include <source_location>
 #include <stdexcept>
 #include <sstream>
+#include <vector>
+#include <string>
 
 #define NIGHT_CREATE_WARNING(msg)			  night::error::get().create_warning(msg, lexer.loc);
 #define NIGHT_CREATE_MINOR(msg)				  night::error::get().create_minor_error(msg, lexer.loc);

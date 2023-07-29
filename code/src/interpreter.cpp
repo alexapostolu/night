@@ -2,23 +2,19 @@
 #include "interpreter_scope.hpp"
 #include "error.hpp"
 
-#include <assert.h>
-
-Interpreter::Interpreter(bytecodes_t& _codes)
-	: codes(_codes) {}
-
-void Interpreter::interpret_bytecodes()
+void interpret_bytecodes(bytecodes_t const& codes)
 {
-	int passed_conditionals = 0;
+	Interpreter i;
+
 	for (auto it = std::cbegin(codes); it != std::cend(codes); ++it)
 	{
 		switch ((BytecodeType)*it)
 		{
 		case BytecodeType::BOOL:
-			push_bool(it);
+			i.push_bool(it);
 			break;
 		case BytecodeType::CHAR1:
-			push_char(it);
+			i.push_char(it);
 			break;
 
 		case BytecodeType::S_INT1:
@@ -31,36 +27,33 @@ void Interpreter::interpret_bytecodes()
 		case BytecodeType::U_INT8:
 		case BytecodeType::FLOAT4:
 		case BytecodeType::FLOAT8:
-			push_num(it);
+			i.push_num(it);
 			break;
+
+		case BytecodeType::NEGATIVE: i.s.push(-i.pop()); break;
+		case BytecodeType::NOT:		 i.s.push(!i.pop()); break;
+
+		case BytecodeType::ADD:  i.s.push(i.pop() + i.pop()); break;
+		case BytecodeType::SUB:  i.s.push(i.pop() - i.pop()); break;
+		case BytecodeType::MULT: i.s.push(i.pop() * i.pop()); break;
+		case BytecodeType::DIV:  i.s.push(i.pop() / i.pop()); break;
 
 		case BytecodeType::LOAD:
-			push_var(it);
+			++it;
+			i.s.push(i.vars[*it]);
 			break;
 
-		case BytecodeType::NEGATIVE: s.push(-pop()); break;
-		case BytecodeType::NOT:		 s.push(pop() == 0); break;
-
-		case BytecodeType::ADD:  s.push(pop() + pop()); break;
-		case BytecodeType::SUB:  s.push(pop() - pop()); break;
-		case BytecodeType::MULT: s.push(pop() * pop()); break;
-		case BytecodeType::DIV:  s.push(pop() / pop()); break;
-
 		case BytecodeType::STORE:
-			vars[pop()] = pop();
+			i.vars[*(++it)] = i.pop();
+			break;
+
+		case BytecodeType::JUMP_IF_FALSE:
+			if (!i.pop())
+				std::advance(it, *(++it));
 			break;
 
 		case BytecodeType::JUMP:
-			auto line = pop();
-			std::advance(it, line);
-			break;
-		case BytecodeType::JUMP_IF_FALSE:
-			auto line = pop();
-			std::advance(it, line);
-
-		case BytecodeType::WHILE:
-			break;
-		case BytecodeType::FOR:
+			std::advance(it, *(++it));
 			break;
 
 		case BytecodeType::RETURN:

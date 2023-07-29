@@ -1,6 +1,6 @@
 #include "ast/ast.hpp"
 #include "bytecode.hpp"
-#include "interpreter_scope.hpp"
+#include "interpreter.hpp"
 #include "error.hpp"
 
 #include <limits>
@@ -69,30 +69,28 @@ bytecodes_t Conditional::generate_codes() const
 	bytecodes_t codes;
 	std::vector<int> jumps;
 
-	for (std::size_t i = 0; i < conditionals.size(); ++i)
+	for (auto const& [cond_expr, stmts] : conditionals)
 	{
-		auto cond_codes = conditionals[i].first->generate_codes();
+		// condition
+		auto cond_codes = cond_expr->generate_codes();
 		codes.insert(std::end(codes), std::begin(cond_codes), std::end(cond_codes));
 
 		codes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE);
 		int offset_index = codes.size();
 
-		int stmt_size = 0;
-		for (auto const& stmt : conditionals[i].second)
+		// statements
+		for (auto const& stmt : stmts)
 		{
 			auto stmt_codes = stmt->generate_codes();
 			codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
-
-			stmt_size += stmt_codes.size();
 		}
 
 		// insert offset after JUMP_IF_FALSE
-		codes.insert(std::begin(codes) + offset_index, stmt_size + 2);
+		codes.insert(std::begin(codes) + offset_index, codes.size() - offset_index);
 
 		codes.push_back((bytecode_t)BytecodeType::JUMP);
 		jumps.push_back(codes.size());
 	}
-
 
 	// insert offsets after JUMP
 	for (int jump : jumps)
@@ -112,8 +110,8 @@ bytecodes_t While::generate_codes() const
 {
 	auto codes = cond_expr->generate_codes();
 
-	auto codes_s = codes.size() - 2;
 	codes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE);
+	auto offset_index = codes.size();
 
 	for (auto const& stmt : block)
 	{
@@ -121,8 +119,11 @@ bytecodes_t While::generate_codes() const
 		codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
 	}
 
-	bytecode_create_int(codes, -codes.size() - 1, codes_s);
 	codes.push_back((bytecode_t)BytecodeType::JUMP);
+	codes.push_back(offset_index);
+
+	// insert offset after JUMP_IF_FALSE
+	codes.insert(std::begin(codes) + offset_index, codes.size() - offset_index);
 
 	return codes;
 }
@@ -132,31 +133,15 @@ For::For(
 	Location const& _loc,
 	VariableInit const& _var_init,
 	std::shared_ptr<expr::Expression> const& _cond_expr,
-	VariableAssign const& _var_assign,
 	AST_Block const& _block)
-	: AST(_loc), var_init(_var_init), cond_expr(_cond_expr), var_assign(_var_assign), block(_block) {}
+	: AST(_loc), var_init(_var_init), loop(_loc, _cond_expr, _block) {}
 
 bytecodes_t For::generate_codes() const
 {
 	auto codes = var_init.generate_codes();
 
-	auto codes_cond = cond_expr->generate_codes();
-	codes.insert(std::end(codes), std::begin(codes_cond), std::begin(codes_cond));
-
-	auto codes_s = codes.size() - 2;
-	codes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE);
-
-	for (auto const& stmt : block)
-	{
-		auto stmt_codes = stmt->generate_codes();
-		codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
-	}
-
-	auto codes_incr = var_assign.generate_codes();
-	codes.insert(std::end(codes), std::begin(codes_incr), std::end(codes_incr));
-
-	bytecode_create_int(codes, -codes.size() - 1, codes_s);
-	codes.push_back((bytecode_t)BytecodeType::JUMP);
+	auto loop_codes = loop.generate_codes();
+	codes.insert(std::end(codes), std::begin(loop_codes), std::end(loop_codes));
 
 	return codes;
 }
@@ -171,16 +156,16 @@ Function::Function(
 
 bytecodes_t Function::generate_codes() const
 {
-	InterpreterScope::funcs[func_name] = {};
+	Interpreter::funcs[func_name] = {};
 
 	for (auto const& param_id : param_ids)
-		InterpreterScope::funcs[func_name].params.push_back(param_id);
+		Interpreter::funcs[func_name].params.push_back(param_id);
 
 	for (auto const& stmt : block)
 	{
 		auto stmt_codes = stmt->generate_codes();
-		InterpreterScope::funcs[func_name].codes.insert(
-			std::end(InterpreterScope::funcs[func_name].codes),
+		Interpreter::funcs[func_name].codes.insert(
+			std::end(Interpreter::funcs[func_name].codes),
 			std::begin(stmt_codes), std::end(stmt_codes));
 	}
 
@@ -218,6 +203,14 @@ FunctionCall::FunctionCall(
 
 bytecodes_t FunctionCall::generate_codes() const
 {
-	bytecodes_t codes;
-	codes.push_back(params->);
+	bytecodes_t codes = {
+		(bytecode_t)BytecodeType::FUNC_CALL };
+
+	for (auto const& param : params)
+	{
+		auto param_codes = param.generate_codes();
+		codes.insert(std::end(codes), std::begin(param_codes), std::end(param_codes));
+	}
+
+	return codes;
 }

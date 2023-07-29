@@ -1,8 +1,9 @@
 #pragma once
 
-#include "value.hpp"
+#include "interpreter_scope.hpp"
 #include "bytecode.hpp"
 
+#include <functional>
 #include <unordered_map>
 #include <stack>
 #include <tuple>
@@ -11,26 +12,9 @@
 
 using expr_stack = std::stack<int>;
 
-// <id, val>
-using var_container = std::unordered_map<bytecode_t, int>;
-
-struct InterpreterFunction;
-using func_container = std::unordered_map<std::string, InterpreterFunction>;
-
-struct InterpreterFunction
-{
-	std::vector<int> params;
-	bytecodes_t codes;
-};
-
 struct Interpreter
 {
 public:
-	Interpreter(bytecodes_t& _codes);
-
-	void interpret_bytecodes();
-
-private:
 	void push_num(bytecodes_t::const_iterator& it);
 	void push_bool(bytecodes_t::const_iterator& it);
 	void push_char(bytecodes_t::const_iterator& it);
@@ -38,10 +22,9 @@ private:
 	int pop();
 
 public:
-	func_container funcs;
+	static func_container funcs;
 	var_container vars;
 	expr_stack s;
-
-private:
-	bytecodes_t& codes;
 };
+
+void interpret_bytecodes(bytecodes_t const& codes);

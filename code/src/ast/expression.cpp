@@ -25,7 +25,7 @@ int expr::Expression::single_prec = 1000;
 expr::UnaryOp::UnaryOp(
 	Location const& _loc,
 	std::string const& _type,
-	std::shared_ptr<Expression> const& _expr = nullptr)
+	std::shared_ptr<Expression> const& _expr)
 	: Expression(ExpressionType::UNARY_OP, _loc), expr(_expr)
 {
 	if (_type == "-")
@@ -68,7 +68,7 @@ bytecodes_t expr::UnaryOp::generate_codes() const
 		codes.push_back((bytecode_t)BytecodeType::NOT);
 		break;
 	default:
-		night::throw_unhandled_case(type);
+		night::throw_unhandled_case((int)type);
 	}
 
 	return codes;
@@ -78,7 +78,7 @@ std::optional<val::value_t> expr::UnaryOp::type_check(ParserScope const& scope) 
 {
 	auto type = expr->type_check(scope);
 	if (type.has_value() && is_object_t(*type))
-		night::error::get().create_minor_error("expression under operator ! has type '" + val_type_to_str(*type) + "', expected primitive type", loc);
+		night::error::get().create_minor_error("expression under operator ! has type '" + night::to_str(*type) + "', expected primitive type", loc);
 
 	return type;
 }
@@ -94,7 +94,7 @@ int expr::UnaryOp::precedence() const
 	case UnaryOpType::NEGATIVE:
 		return unary_op_prec + 1;
 	default:
-		night::throw_unhandled_case(type);
+		night::throw_unhandled_case((int)type);
 	}
 }
 
@@ -164,7 +164,7 @@ bytecodes_t expr::BinaryOp::generate_codes() const
 	case BinaryOpType::DIV:
 		codes.push_back((bytecode_t)BytecodeType::DIV);
 	default:
-		night::throw_unhandled_case(type);
+		night::throw_unhandled_case((int)type);
 	}
 
 	return codes;
@@ -286,7 +286,7 @@ bytecodes_t expr::Value::generate_codes() const
 		return codes;
 	}
 	default:
-		night::throw_unhandled_case(val.type);
+		night::throw_unhandled_case((int)(val.type));
 	}
 }
 
@@ -316,7 +316,7 @@ void expr::Variable::insert_node(
 
 bytecodes_t expr::Variable::generate_codes() const
 {
-	return { (bytecode_t)BytecodeType::S_INT1, id, (bytecode_t)BytecodeType::VARIABLE };
+	return { (bytecode_t)BytecodeType::LOAD, id };
 }
 
 std::optional<val::value_t> expr::Variable::type_check(ParserScope const& scope) const

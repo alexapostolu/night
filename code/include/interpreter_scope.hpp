@@ -3,19 +3,17 @@
 #include "bytecode.hpp"
 
 #include <unordered_map>
+#include <vector>
 #include <string>
 
-class InterpreterFunction;
-using interpreter_func_container = std::unordered_map<std::string, InterpreterFunction>;
+// <id, val>
+using var_container = std::unordered_map<bytecode_t, int>;
 
-struct InterpreterScope
-{
-	static interpreter_func_container funcs;
-};
+struct InterpreterFunction;
+using func_container = std::unordered_map<std::string, InterpreterFunction>;
 
 struct InterpreterFunction
 {
-	// index of argument in function call (minus 1), is the index of param id
-	std::vector<bytecode_t> params;
+	std::vector<int> params;
 	bytecodes_t codes;
 };

@@ -88,7 +88,7 @@ void number_to_bytecode(bytecodes_t& codes, uint64_t num)
 	}
 }
 
-bytecodes_t const& number_to_bytecode(int64_t num)
+bytecodes_t number_to_bytecode(int64_t num)
 {
 	bytecodes_t codes;
 	number_to_bytecode(codes, num);
@@ -126,9 +126,6 @@ std::string night::to_str(BytecodeType type)
 	case BytecodeType::CHAR1:
 		return "CHAR1";
 
-	case BytecodeType::VARIABLE:
-		return "VARIABLE";
-
 	case BytecodeType::NOT:
 		return "NOT";
 	case BytecodeType::ADD:
@@ -140,18 +137,15 @@ std::string night::to_str(BytecodeType type)
 	case BytecodeType::DIV:
 		return "DIV";
 
-	case BytecodeType::ASSIGN:
-		return "ASSIGN";
+	case BytecodeType::LOAD:
+		return "LOAD";
+	case BytecodeType::STORE:
+		return "STORE";
 
 	case BytecodeType::JUMP:
 		return "JUMP";
 	case BytecodeType::JUMP_IF_FALSE:
 		return "JUMP_IF_FALSE";
-
-	case BytecodeType::WHILE:
-		return "WHILE";
-	case BytecodeType::FOR:
-		return "FOR";
 
 	case BytecodeType::RETURN:
 		return "RETURN";
@@ -160,6 +154,7 @@ std::string night::to_str(BytecodeType type)
 
 	default:
 		night::throw_unhandled_case((int)type);
+		return "";
 	}
 }
 

@@ -133,8 +133,8 @@ VariableInit parse_var_init(Lexer& lexer, ParserScope& scope, std::string const&
 		auto expr_type = var_expr->type_check(scope);
 
 		if (expr_type.has_value() && !compare_value_t(var_type, *expr_type))
-			NIGHT_CREATE_MINOR("variable '" + var_name + "' of type '" + val_type_to_str(var_type) +
-				"' can not be initialized with expression of type '" + val_type_to_str(*expr_type) + "'");
+			NIGHT_CREATE_MINOR("variable '" + var_name + "' of type '" + night::to_str(var_type) +
+				"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'");
 	}
 	else if (lexer.curr().type == TokenType::ASSIGN && lexer.curr().str != "=")
 	{
@@ -170,11 +170,11 @@ VariableAssign parse_var_assign(Lexer& lexer, ParserScope& scope, std::string co
 	auto expr_type = expr->type_check(scope);
 
 	if (expr_type.has_value() && assign_op != "=" && is_object_t(*expr_type))
-		NIGHT_CREATE_MINOR("assignment '" + assign_op + "' can not be used on expression of type '" + val_type_to_str(*expr_type) + "'");
+		NIGHT_CREATE_MINOR("assignment '" + assign_op + "' can not be used on expression of type '" + night::to_str(*expr_type) + "'");
 
 	if (expr_type.has_value() && compare_value_t(scope.vars.at(var_name).type, *expr_type))
-		NIGHT_CREATE_MINOR("variable '" + var_name + "' of type '" + val_type_to_str(scope.vars.at(var_name).type) +
-			"' can not be initialized with expression of type '" + val_type_to_str(*expr_type) + "'");
+		NIGHT_CREATE_MINOR("variable '" + var_name + "' of type '" + night::to_str(scope.vars.at(var_name).type) +
+			"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'");
 
 	return VariableAssign(lexer.loc, scope.vars[var_name].id, expr, assign_op);
 }
@@ -199,7 +199,7 @@ FunctionCall parse_func_call(Lexer& lexer, ParserScope& scope, std::string const
 	{
 		auto type = param_expr[i]->type_check(scope);
 		if (type.has_value() && compare_value_t(*type, ParserScope::funcs[func_name].param_types[i]))
-			NIGHT_CREATE_MINOR("found type '" + val_type_to_str(*type) + "', expected type '" + val_type_to_str(ParserScope::funcs[func_name].param_types[i]) + "'");
+			NIGHT_CREATE_MINOR("found type '" + night::to_str(*type) + "', expected type '" + night::to_str(ParserScope::funcs[func_name].param_types[i]) + "'");
 	}
 
 	std::vector<bytecode_t> param_ids;
@@ -235,7 +235,7 @@ Conditional parse_if(Lexer& lexer, ParserScope& scope)
 			auto cond_type = cond_expr->type_check(scope);
 
 			if (cond_type.has_value() && is_object_t(*cond_type))
-				NIGHT_CREATE_MINOR("condition is type '" + val_type_to_str(*cond_type) + "', expected type 'bool', 'char', or 'int'");
+				NIGHT_CREATE_MINOR("condition is type '" + night::to_str(*cond_type) + "', expected type 'bool', 'char', or 'int'");
 		}
 
 		conditionals.push_back({ cond_expr, parse_stmts(lexer, scope) });
@@ -263,7 +263,7 @@ While parse_while(Lexer& lexer, ParserScope& scope)
 	auto cond_type = cond_expr->type_check(scope);
 
 	if (cond_type.has_value() && is_object_t(*cond_type))
-		NIGHT_CREATE_MINOR("condition of type '" + val_type_to_str(*cond_type) + "', expected type 'bool', 'char', or 'int'");
+		NIGHT_CREATE_MINOR("condition of type '" + night::to_str(*cond_type) + "', expected type 'bool', 'char', or 'int'");
 
 	return While(lexer.loc, cond_expr, parse_stmts(lexer, scope));
 }
@@ -290,7 +290,7 @@ For parse_for(Lexer& lexer, ParserScope& scope)
 	auto cond_type = cond_expr->type_check(scope);
 
 	if (cond_type.has_value() && is_object_t(*cond_type))
-		NIGHT_CREATE_MINOR("condition of type '" + val_type_to_str(*cond_type) + "', expected type 'bool', 'char', or 'int'");
+		NIGHT_CREATE_MINOR("condition of type '" + night::to_str(*cond_type) + "', expected type 'bool', 'char', or 'int'");
 
 	// assignment
 
@@ -299,7 +299,10 @@ For parse_for(Lexer& lexer, ParserScope& scope)
 
 	auto var_assign = parse_var_assign(lexer, scope, var_assign_name);
 
-	return For(lexer.loc, var_init, cond_expr, var_assign, parse_stmts(lexer, scope));
+	auto stmts = parse_stmts(lexer, scope);
+	stmts.push_back(std::make_shared<VariableAssign>(var_assign));
+
+	return For(lexer.loc, var_init, cond_expr, stmts);
 }
 
 Function parse_func(Lexer& lexer, ParserScope& scope)
@@ -361,7 +364,7 @@ Return parse_return(Lexer& lexer, ParserScope& scope)
 	if (!ParserScope::curr_func->second.rtn_type.has_value())
 		ParserScope::curr_func->second.rtn_type = expr_type;
 	else if (expr_type.has_value() && !compare_value_t(*ParserScope::curr_func->second.rtn_type, *expr_type))
-		NIGHT_CREATE_MINOR("return is type '" + val_type_to_str(*expr_type) + "', expected type '" + val_type_to_str(*ParserScope::curr_func->second.rtn_type) + "'");
+		NIGHT_CREATE_MINOR("return is type '" + night::to_str(*expr_type) + "', expected type '" + night::to_str(*ParserScope::curr_func->second.rtn_type) + "'");
 
 	return Return(lexer.loc, expr);
 }
