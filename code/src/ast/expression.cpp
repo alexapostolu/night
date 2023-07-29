@@ -9,8 +9,7 @@
 #include <memory>
 
 expr::Expression::Expression(
-	expr::ExpressionType _type,
-	Location const& _loc)
+	expr::ExpressionType _type, Location const& _loc)
 	: guard(false), type(_type), loc(_loc) {}
 
 bool expr::Expression::is_operator() const { return type == ExpressionType::BINARY_OP || type == ExpressionType::UNARY_OP; };
@@ -18,7 +17,7 @@ bool expr::Expression::is_value() const { return type == ExpressionType::BRACKET
 
 int expr::Expression::unary_op_prec = 0;
 int expr::Expression::bin_op_prec   = 100;
-int expr::Expression::single_prec = 1000;
+int expr::Expression::single_prec	= 1000;
 
 
 
@@ -222,7 +221,6 @@ int expr::BinaryOp::precedence() const
 	}
 }
 
-
 expr::Value::Value(
 	Location const& _loc,
 	val::Value const& _val)
@@ -232,18 +230,18 @@ void expr::Value::insert_node(
 	std::shared_ptr<Expression> const& node,
 	std::shared_ptr<Expression>* prev)
 {
-	*this = *dynamic_cast<expr::Value*>(node.get());
+	(*prev)->insert_node(std::make_shared<expr::Value>(*this));
 }
 
 bytecodes_t expr::Value::generate_codes() const
 {
-	switch (val.type)
+	switch ((val::ValueType)val.type)
 	{
-	case (val::value_t)val::ValueType::BOOL:
+	case val::ValueType::BOOL:
 		return { (bytecode_t)BytecodeType::BOOL, (bool)std::get<uint64_t>(val.data) };
-	case (val::value_t)val::ValueType::CHAR:
+	case val::ValueType::CHAR:
 		return { (bytecode_t)BytecodeType::CHAR1, (bytecode_t)std::get<uint64_t>(val.data) };
-	case (val::value_t)val::ValueType::S_INT:
+	case val::ValueType::S_INT:
 	{
 		bytecodes_t codes;
 		int64_t int64 = std::get<int64_t>(val.data);
@@ -264,7 +262,7 @@ bytecodes_t expr::Value::generate_codes() const
 
 		return codes;
 	}
-	case(val::value_t)val::ValueType::U_INT:
+	case val::ValueType::U_INT:
 	{
 		bytecodes_t codes;
 		uint64_t uint64 = std::get<uint64_t>(val.data);

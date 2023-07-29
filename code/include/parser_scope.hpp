@@ -43,5 +43,5 @@ struct ParserScope
 	// returns:
 	//    empty string if successful
 	//    error message if not successful
-	std::string const& create_variable(std::string const& name, val::value_t type);
+	std::string create_variable(std::string const& name, val::value_t type);
 };

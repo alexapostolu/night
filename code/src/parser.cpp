@@ -32,17 +32,10 @@ std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, ParserScope& upper_s
 
 		std::vector<std::shared_ptr<AST>> block;
 
-		while (lexer.eat().type != TokenType::CLOSE_BRACKET)
+		while (lexer.eat().type != TokenType::CLOSE_CURLY)
 		{
 			if (lexer.curr().type == TokenType::END_OF_FILE)
 				throw NIGHT_CREATE_FATAL("missing closing curly bracket");
-
-			if (!conditional &&
-				(lexer.curr().type == TokenType::ELIF || lexer.curr().type == TokenType::ELSE))
-				throw NIGHT_CREATE_FATAL("expected 'elif' and 'else' statement to come after 'if' or 'elif' statement");
-
-			conditional = lexer.curr().type == TokenType::IF ||
-						  lexer.curr().type == TokenType::ELIF;
 
 			block.push_back(parse_stmt(lexer, scope));
 		}
@@ -102,7 +95,7 @@ std::shared_ptr<AST> parse_var(Lexer& lexer, ParserScope& scope)
 	}
 	else
 	{
-		throw NIGHT_CREATE_FATAL("expected variable type or assignment after variable name '" + var_name + "'");
+		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected variable type or assignment after variable name '" + var_name + "'");
 	}
 }
 
@@ -142,7 +135,7 @@ VariableInit parse_var_init(Lexer& lexer, ParserScope& scope, std::string const&
 	}
 	else if (lexer.curr().type != TokenType::SEMICOLON)
 	{
-		throw NIGHT_CREATE_FATAL("expected semicolon or assignment after variable type");
+		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "' expected semicolon or assignment after variable type");
 	}
 
 	auto msg = scope.create_variable(var_name, var_type);
@@ -321,7 +314,7 @@ Function parse_func(Lexer& lexer, ParserScope& scope)
 		param_names.push_back(var_name);
 
 		if (!lexer.eat().is_type())
-			throw NIGHT_CREATE_FATAL("expected type after variable name in function parameter list");
+			throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected type after variable name in function parameter list");
 
 		auto var_type = token_var_type_to_val_type(lexer.curr().str);
 
@@ -442,6 +435,8 @@ val::value_t token_var_type_to_val_type(std::string const& type)
 	if (type == "int8")
 		return (val::value_t)val::ValueType::S_INT;
 	else if (type == "int16")
+		return (val::value_t)val::ValueType::S_INT;
+	else if (type == "int")
 		return (val::value_t)val::ValueType::S_INT;
 	else if (type == "int32")
 		return (val::value_t)val::ValueType::S_INT;

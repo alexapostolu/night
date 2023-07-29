@@ -20,8 +20,6 @@ enum class ValueType
 
 struct Value
 {
-	// params:
-	//   _data converted into int64_t
 	Value(ValueType _type, int _data);
 
 	// type = 1, 2, 3, then it's primative

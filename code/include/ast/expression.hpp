@@ -103,13 +103,13 @@ public:
 
 	void insert_node(
 		std::shared_ptr<Expression> const& node,
-		std::shared_ptr<Expression>* prev) override;
+		std::shared_ptr<Expression>* prev = nullptr) override;
 
 	bytecodes_t generate_codes() const override;
 	std::optional<val::value_t> type_check(ParserScope const& scope) const override;
 
 public:
-	int precedence() const;
+	int precedence() const override;
 
 private:
 	BinaryOpType type;
@@ -126,13 +126,13 @@ public:
 
 	void insert_node(
 		std::shared_ptr<Expression> const& node,
-		std::shared_ptr<Expression>* prev) override;
+		std::shared_ptr<Expression>* prev = nullptr)override;
 
 	bytecodes_t generate_codes() const override;
 	std::optional<val::value_t> type_check(ParserScope const& scope) const override;
 
 public:
-	int precedence() const;
+	int precedence() const override;
 
 private:
 	val::Value val;
@@ -149,13 +149,13 @@ public:
 
 	void insert_node(
 		std::shared_ptr<Expression> const& node,
-		std::shared_ptr<Expression>* prev) override;
+		std::shared_ptr<Expression>* prev = nullptr) override;
 
 	bytecodes_t generate_codes() const override;
 	std::optional<val::value_t> type_check(ParserScope const& scope) const override;
 
 public:
-	int precedence() const;
+	int precedence() const override;
 
 private:
 	std::string name;

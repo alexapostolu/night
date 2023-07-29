@@ -200,5 +200,10 @@ std::string night::to_str(BytecodeType type)
 
 std::string night::to_str(bytecode_t val)
 {
-	return night::to_str((BytecodeType)val);
+	try {
+		return night::to_str((BytecodeType)val);
+	}
+	catch (std::runtime_error const&) {
+		return std::to_string((int)val);
+	}
 }

@@ -44,12 +44,12 @@ Token const& Lexer::curr() const
 	return curr_tok;
 }
 
-Token const& Lexer::expect(TokenType type, std::string const& err)
+Token const& Lexer::expect(TokenType type, std::string const& err, std::source_location const& s_loc)
 {
 	eat();
 
 	if (curr().type != type)
-		throw NIGHT_CREATE_FATAL_LEXER("found '" + curr().str + "', expected " + tok_type_to_str(type) + " " + err);
+		night::error::get().create_fatal_error("found '" + curr().str + "', expected " + tok_type_to_str(type) + " " + err, loc, s_loc, true);
 
 	return curr();
 }
@@ -115,7 +115,9 @@ Token Lexer::eat_keyword()
 	static std::unordered_map<std::string, TokenType> const keywords{
 		{ "true", TokenType::BOOL_LIT },
 		{ "false", TokenType::BOOL_LIT },
+		{ "char", TokenType::CHAR_TYPE },
 		{ "char8", TokenType::CHAR_TYPE },
+		{ "int", TokenType::INT_TYPE },
 		{ "int8", TokenType::INT_TYPE },
 		{ "int16", TokenType::INT_TYPE },
 		{ "int32", TokenType::INT_TYPE },
@@ -129,6 +131,7 @@ Token Lexer::eat_keyword()
 		{ "else", TokenType::ELSE },
 		{ "for", TokenType::FOR },
 		{ "while", TokenType::WHILE },
+		{ "def", TokenType::DEF },
 		{ "return", TokenType::RETURN }
 	};
 

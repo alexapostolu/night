@@ -5,7 +5,13 @@
 #include <variant>
 
 val::Value::Value(ValueType _type, int _data)
-	: type((value_t)_type), data((int64_t)_data) {}
+	: type((value_t)_type)
+{
+	if (type == (value_t)ValueType::U_INT)
+		data = (uint64_t)_data;
+	else
+		data = (uint64_t)_data;
+}
 
 bool compare_value_t(val::value_t type1, val::value_t type2)
 {
