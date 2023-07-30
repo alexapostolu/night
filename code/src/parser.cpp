@@ -7,6 +7,7 @@
 #include "ast/expression.hpp"
 #include "value.hpp"
 #include "error.hpp"
+#include "debug.hpp"
 
 #include <iostream>
 #include <algorithm>
@@ -15,10 +16,8 @@
 #include <assert.h>
 #include <unordered_map>
 
-std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, ParserScope& upper_scope, bool* curly_enclosed)
+std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, ParserScope& scope, bool* curly_enclosed)
 {
-	ParserScope scope{ upper_scope.vars };
-
 	bool conditional = false;
 
 	// two cases:
@@ -231,7 +230,8 @@ Conditional parse_if(Lexer& lexer, ParserScope& scope)
 				NIGHT_CREATE_MINOR("condition is type '" + night::to_str(*cond_type) + "', expected type 'bool', 'char', or 'int'");
 		}
 
-		conditionals.push_back({ cond_expr, parse_stmts(lexer, scope) });
+		ParserScope stmt_scope{ scope.vars };
+		conditionals.push_back({ cond_expr, parse_stmts(lexer, stmt_scope) });
 
 		lexer.eat();
 	} while (lexer.curr().type == TokenType::IF	  ||
@@ -258,7 +258,8 @@ While parse_while(Lexer& lexer, ParserScope& scope)
 	if (cond_type.has_value() && is_object_t(*cond_type))
 		NIGHT_CREATE_MINOR("condition of type '" + night::to_str(*cond_type) + "', expected type 'bool', 'char', or 'int'");
 
-	return While(lexer.loc, cond_expr, parse_stmts(lexer, scope));
+	ParserScope stmt_scope{ scope.vars };
+	return While(lexer.loc, cond_expr, parse_stmts(lexer, stmt_scope));
 }
 
 For parse_for(Lexer& lexer, ParserScope& scope)
@@ -292,7 +293,8 @@ For parse_for(Lexer& lexer, ParserScope& scope)
 
 	auto var_assign = parse_var_assign(lexer, scope, var_assign_name);
 
-	auto stmts = parse_stmts(lexer, scope);
+	ParserScope stmt_scope{ scope.vars };
+	auto stmts = parse_stmts(lexer, stmt_scope);
 	stmts.push_back(std::make_shared<VariableAssign>(var_assign));
 
 	return For(lexer.loc, var_init, cond_expr, stmts);
@@ -336,7 +338,8 @@ Function parse_func(Lexer& lexer, ParserScope& scope)
 	std::transform(std::begin(param_names), std::end(param_names), std::begin(param_ids),
 		[&scope](auto const& name) { return scope.vars[name].id; });
 
-	Function func(lexer.loc, func_name, param_ids, parse_stmts(lexer, scope));
+	ParserScope stmt_scope{ scope.vars };
+	Function func(lexer.loc, func_name, param_ids, parse_stmts(lexer, stmt_scope));
 
 	ParserScope::curr_func = std::end(ParserScope::funcs);
 
@@ -381,7 +384,7 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, ParserScope const& sc
 			if (std::stoi(lexer.curr().str) > 0)
 				node = std::make_shared<expr::Value>(lexer.loc, val::Value(val::ValueType::U_INT, (uint64_t)std::stoi(lexer.curr().str)));
 			else
-				node = std::make_shared<expr::Value>(lexer.loc, val::Value(val::ValueType::S_INT, (uint64_t)std::stoi(lexer.curr().str)));
+				node = std::make_shared<expr::Value>(lexer.loc, val::Value(val::ValueType::S_INT, (int64_t)std::stoi(lexer.curr().str)));
 			break;
 		}
 		case TokenType::VARIABLE:
@@ -451,5 +454,5 @@ val::value_t token_var_type_to_val_type(std::string const& type)
 	else if (type == "uint64")
 		return (val::value_t)val::ValueType::U_INT;
 	else
-		night::throw_unhandled_case(type);
+		debug::throw_unhandled_case(type);
 }

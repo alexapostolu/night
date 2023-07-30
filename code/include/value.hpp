@@ -1,9 +1,10 @@
 #pragma once
 
-#include <string>
 #include <variant>
+#include <string>
 
-constexpr short primitive_count = 2;
+// should be the number of elements in ValueType
+constexpr short primitive_count = 3;
 
 namespace val
 {

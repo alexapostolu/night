@@ -1,5 +1,6 @@
 #include "bytecode.hpp"
 #include "error.hpp"
+#include "debug.hpp"
 
 #include <string>
 
@@ -189,11 +190,11 @@ std::string night::to_str(BytecodeType type)
 
 	case BytecodeType::RETURN:
 		return "RETURN";
-	case BytecodeType::FUNC_CALL:
+	case BytecodeType::CALL:
 		return "FUNC_CALL";
 
 	default:
-		night::throw_unhandled_case((int)type);
+		debug::throw_unhandled_case((int)type);
 		return "";
 	}
 }

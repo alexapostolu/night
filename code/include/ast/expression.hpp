@@ -70,6 +70,11 @@ public:
 		std::string const& _type,
 		std::shared_ptr<Expression> const& _expr = nullptr);
 
+	UnaryOp(
+		Location const& _loc,
+		UnaryOpType _type,
+		std::shared_ptr<Expression> const& _expr = nullptr);
+
 	void insert_node(
 		std::shared_ptr<Expression> const& node,
 		std::shared_ptr<Expression>* prev = nullptr) override;
@@ -101,6 +106,12 @@ public:
 		std::shared_ptr<Expression> const& _lhs = nullptr,
 		std::shared_ptr<Expression> const& _rhs = nullptr);
 
+	BinaryOp(
+		Location const& _loc,
+		BinaryOpType _type,
+		std::shared_ptr<Expression> const& _lhs = nullptr,
+		std::shared_ptr<Expression> const& _rhs = nullptr);
+
 	void insert_node(
 		std::shared_ptr<Expression> const& node,
 		std::shared_ptr<Expression>* prev = nullptr) override;
@@ -126,7 +137,7 @@ public:
 
 	void insert_node(
 		std::shared_ptr<Expression> const& node,
-		std::shared_ptr<Expression>* prev = nullptr)override;
+		std::shared_ptr<Expression>* prev = nullptr) override;
 
 	bytecodes_t generate_codes() const override;
 	std::optional<val::value_t> type_check(ParserScope const& scope) const override;

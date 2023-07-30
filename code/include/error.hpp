@@ -19,16 +19,6 @@ struct Location
 
 namespace night {
 
-template <typename T>
-void throw_unhandled_case(T val, std::source_location const& s_loc = std::source_location::current())
-{
-	std::stringstream s;
-	s << s_loc.file_name() << '\n' + s_loc.function_name() << '\n' << val;
-
-	throw std::runtime_error(s.str());
-}
-
-
 class error
 {
 public:
@@ -43,8 +33,7 @@ public:
 		std::source_location const& s_loc = std::source_location::current()) noexcept;
 
 	error const& create_fatal_error(
-		std::string const& msg,
-		Location const& loc,
+		std::string const& msg, Location const& loc,
 		std::source_location const& s_loc = std::source_location::current(),
 		bool modified = false,
 		std::source_location const& o_loc = std::source_location::current()) noexcept;
@@ -54,6 +43,7 @@ public:
 
 private:
 	error();
+
 	std::string format_error_msg(std::string const& msg, Location const& loc, std::source_location const& s_loc,
 		bool modified, std::source_location const& o_loc) const noexcept;
 

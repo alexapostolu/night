@@ -2,6 +2,7 @@
 #include "bytecode.hpp"
 #include "interpreter.hpp"
 #include "error.hpp"
+#include "debug.hpp"
 
 #include <limits>
 #include <vector>
@@ -47,7 +48,7 @@ bytecodes_t VariableAssign::generate_codes() const
 		else if (assign_op == "-=") codes.push_back((bytecode_t)BytecodeType::SUB);
 		else if (assign_op == "*=") codes.push_back((bytecode_t)BytecodeType::MULT);
 		else if (assign_op == "/=") codes.push_back((bytecode_t)BytecodeType::DIV);
-		else night::throw_unhandled_case(assign_op);
+		else debug::throw_unhandled_case(assign_op);
 	}
 
 	codes.push_back((bytecode_t)BytecodeType::STORE);
@@ -204,7 +205,7 @@ FunctionCall::FunctionCall(
 bytecodes_t FunctionCall::generate_codes() const
 {
 	bytecodes_t codes = {
-		(bytecode_t)BytecodeType::FUNC_CALL };
+		(bytecode_t)BytecodeType::CALL };
 
 	for (auto const& param : params)
 	{

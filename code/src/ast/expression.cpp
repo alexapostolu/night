@@ -3,10 +3,12 @@
 #include "parser_scope.hpp"
 #include "parser.hpp"
 #include "error.hpp"
+#include "debug.hpp"
 
 #include <limits>
 #include <optional>
 #include <memory>
+#include <iostream>
 
 expr::Expression::Expression(
 	expr::ExpressionType _type, Location const& _loc)
@@ -32,8 +34,14 @@ expr::UnaryOp::UnaryOp(
 	else if (_type == "!")
 		type = UnaryOpType::NOT;
 	else
-		night::throw_unhandled_case(_type);
+		debug::throw_unhandled_case(_type);
 }
+
+expr::UnaryOp::UnaryOp(
+	Location const& _loc,
+	UnaryOpType _type,
+	std::shared_ptr<Expression> const& _expr)
+	: Expression(ExpressionType::UNARY_OP, _loc), type(_type), expr(_expr) {}
 
 void expr::UnaryOp::insert_node(
 	std::shared_ptr<Expression> const& node,
@@ -49,8 +57,8 @@ void expr::UnaryOp::insert_node(
 	}
 	else
 	{
+		node->insert_node(std::make_shared<UnaryOp>(loc, type, expr));
 		*prev = node;
-		node->insert_node(std::shared_ptr<UnaryOp>(this));
 	}
 }
 
@@ -67,7 +75,7 @@ bytecodes_t expr::UnaryOp::generate_codes() const
 		codes.push_back((bytecode_t)BytecodeType::NOT);
 		break;
 	default:
-		night::throw_unhandled_case((int)type);
+		debug::throw_unhandled_case((int)type);
 	}
 
 	return codes;
@@ -93,7 +101,7 @@ int expr::UnaryOp::precedence() const
 	case UnaryOpType::NEGATIVE:
 		return unary_op_prec + 1;
 	default:
-		night::throw_unhandled_case((int)type);
+		debug::throw_unhandled_case((int)type);
 	}
 }
 
@@ -116,8 +124,15 @@ expr::BinaryOp::BinaryOp(
 	else if (_type == ".")
 		type = BinaryOpType::DOT;
 	else
-		night::throw_unhandled_case(_type);
+		debug::throw_unhandled_case(_type);
 }
+
+expr::BinaryOp::BinaryOp(
+	Location const& _loc,
+	BinaryOpType _type,
+	std::shared_ptr<Expression> const& _lhs,
+	std::shared_ptr<Expression> const& _rhs)
+	: Expression(ExpressionType::BINARY_OP, _loc), type(_type), lhs(_lhs), rhs(_rhs) {}
 
 void expr::BinaryOp::insert_node(
 	std::shared_ptr<Expression> const& node,
@@ -137,8 +152,8 @@ void expr::BinaryOp::insert_node(
 	}
 	else
 	{
+		node->insert_node(std::make_shared<BinaryOp>(loc, type, lhs, rhs));
 		*prev = node;
-		node->insert_node(std::shared_ptr<BinaryOp>(this));
 	}
 }
 
@@ -156,14 +171,18 @@ bytecodes_t expr::BinaryOp::generate_codes() const
 	{
 	case BinaryOpType::ADD:
 		codes.push_back((bytecode_t)BytecodeType::ADD);
+		break;
 	case BinaryOpType::SUB:
 		codes.push_back((bytecode_t)BytecodeType::SUB);
+		break;
 	case BinaryOpType::MULT:
 		codes.push_back((bytecode_t)BytecodeType::MULT);
+		break;
 	case BinaryOpType::DIV:
 		codes.push_back((bytecode_t)BytecodeType::DIV);
+		break;
 	default:
-		night::throw_unhandled_case((int)type);
+		debug::throw_unhandled_case((int)type);
 	}
 
 	return codes;
@@ -217,9 +236,10 @@ int expr::BinaryOp::precedence() const
 	case BinaryOpType::DOT:
 		return bin_op_prec + 103;
 	default:
-		night::throw_unhandled_case((int)type);
+		debug::throw_unhandled_case((int)type);
 	}
 }
+
 
 expr::Value::Value(
 	Location const& _loc,
@@ -230,7 +250,8 @@ void expr::Value::insert_node(
 	std::shared_ptr<Expression> const& node,
 	std::shared_ptr<Expression>* prev)
 {
-	(*prev)->insert_node(std::make_shared<expr::Value>(*this));
+	node->insert_node(std::make_shared<expr::Value>(loc, val));
+	*prev = node;
 }
 
 bytecodes_t expr::Value::generate_codes() const
@@ -284,7 +305,7 @@ bytecodes_t expr::Value::generate_codes() const
 		return codes;
 	}
 	default:
-		night::throw_unhandled_case((int)(val.type));
+		debug::throw_unhandled_case((int)(val.type));
 	}
 }
 

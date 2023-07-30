@@ -1,6 +1,7 @@
 #include "interpreter.hpp"
 #include "interpreter_scope.hpp"
 #include "error.hpp"
+#include "debug.hpp"
 
 func_container Interpreter::funcs;
 
@@ -60,11 +61,11 @@ void interpret_bytecodes(bytecodes_t const& codes)
 
 		case BytecodeType::RETURN:
 			break;
-		case BytecodeType::FUNC_CALL:
+		case BytecodeType::CALL:
 			break;
 
 		default:
-			night::throw_unhandled_case(*it);
+			debug::throw_unhandled_case(*it);
 		}
 	}
 }
@@ -97,7 +98,7 @@ void Interpreter::push_num(bytecodes_t::const_iterator& it)
 	case BytecodeType::FLOAT4:
 	case BytecodeType::FLOAT8:
 	default:
-		night::throw_unhandled_case(*it);
+		debug::throw_unhandled_case(*it);
 	}
 }
 
@@ -111,7 +112,7 @@ void Interpreter::push_char(bytecodes_t::const_iterator& it)
 		s.push(*it);
 		break;
 	default:
-		night::throw_unhandled_case(*it);
+		debug::throw_unhandled_case(*it);
 	}
 }
 
