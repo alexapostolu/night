@@ -34,7 +34,7 @@ expr::UnaryOp::UnaryOp(
 	else if (_type == "!")
 		type = UnaryOpType::NOT;
 	else
-		debug::throw_unhandled_case(_type);
+		throw debug::unhandled_case(_type);
 }
 
 expr::UnaryOp::UnaryOp(
@@ -75,7 +75,7 @@ bytecodes_t expr::UnaryOp::generate_codes() const
 		codes.push_back((bytecode_t)BytecodeType::NOT);
 		break;
 	default:
-		debug::throw_unhandled_case((int)type);
+		throw debug::unhandled_case((int)type);
 	}
 
 	return codes;
@@ -101,7 +101,7 @@ int expr::UnaryOp::precedence() const
 	case UnaryOpType::NEGATIVE:
 		return unary_op_prec + 1;
 	default:
-		debug::throw_unhandled_case((int)type);
+		throw debug::unhandled_case((int)type);
 	}
 }
 
@@ -124,7 +124,7 @@ expr::BinaryOp::BinaryOp(
 	else if (_type == ".")
 		type = BinaryOpType::DOT;
 	else
-		debug::throw_unhandled_case(_type);
+		throw debug::unhandled_case(_type);
 }
 
 expr::BinaryOp::BinaryOp(
@@ -182,7 +182,7 @@ bytecodes_t expr::BinaryOp::generate_codes() const
 		codes.push_back((bytecode_t)BytecodeType::DIV);
 		break;
 	default:
-		debug::throw_unhandled_case((int)type);
+		debug::unhandled_case((int)type);
 	}
 
 	return codes;
@@ -199,6 +199,8 @@ std::optional<val::value_t> expr::BinaryOp::type_check(ParserScope const& scope)
 		auto rhs_type = rhs->type_check(scope);
 		if (rhs_type.has_value() && is_object_t(*rhs_type))
 			night::error::get().create_minor_error("variable '' can not be used with operator +", loc);
+
+		return {};
 	}
 	else
 	{
@@ -223,20 +225,20 @@ std::optional<val::value_t> expr::BinaryOp::type_check(ParserScope const& scope)
 int expr::BinaryOp::precedence() const
 {
 	if (guard)
-		return bin_op_prec;
+		return single_prec;
 
 	switch (type)
 	{
 	case BinaryOpType::ADD:
 	case BinaryOpType::SUB:
-		return bin_op_prec + 101;
+		return bin_op_prec + 1;
 	case BinaryOpType::MULT:
 	case BinaryOpType::DIV:
-		return bin_op_prec + 102;
+		return bin_op_prec + 2;
 	case BinaryOpType::DOT:
-		return bin_op_prec + 103;
+		return bin_op_prec + 3;
 	default:
-		debug::throw_unhandled_case((int)type);
+		throw debug::unhandled_case((int)type);
 	}
 }
 
@@ -305,7 +307,7 @@ bytecodes_t expr::Value::generate_codes() const
 		return codes;
 	}
 	default:
-		debug::throw_unhandled_case((int)(val.type));
+		throw debug::unhandled_case((int)(val.type));
 	}
 }
 
@@ -330,7 +332,8 @@ void expr::Variable::insert_node(
 	std::shared_ptr<expr::Expression> const& node,
 	std::shared_ptr<expr::Expression>* prev)
 {
-	*this = *dynamic_cast<expr::Variable*>(node.get());
+	node->insert_node(std::make_shared<expr::Variable>(loc, name, id));
+	*prev = node;
 }
 
 bytecodes_t expr::Variable::generate_codes() const

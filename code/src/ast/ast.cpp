@@ -48,7 +48,7 @@ bytecodes_t VariableAssign::generate_codes() const
 		else if (assign_op == "-=") codes.push_back((bytecode_t)BytecodeType::SUB);
 		else if (assign_op == "*=") codes.push_back((bytecode_t)BytecodeType::MULT);
 		else if (assign_op == "/=") codes.push_back((bytecode_t)BytecodeType::DIV);
-		else debug::throw_unhandled_case(assign_op);
+		else throw debug::unhandled_case(assign_op);
 	}
 
 	codes.push_back((bytecode_t)BytecodeType::STORE);

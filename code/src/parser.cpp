@@ -149,7 +149,7 @@ VariableAssign parse_var_assign(Lexer& lexer, ParserScope& scope, std::string co
 	assert(lexer.curr().type == TokenType::ASSIGN);
 
 	if (!scope.vars.contains(var_name))
-		NIGHT_CREATE_MINOR("variable '" + var_name + "' is undefined");
+		throw NIGHT_CREATE_FATAL("variable '" + var_name + "' is undefined");
 	
 	std::string assign_op = lexer.curr().str;
 
@@ -415,7 +415,7 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, ParserScope const& sc
 		case TokenType::CLOSE_BRACKET:
 		{
 			if (!bracket)
-				throw NIGHT_CREATE_FATAL("missing opening bracket");
+				throw NIGHT_CREATE_FATAL("missing opening bracket in expression");
 		}
 		default:
 		{
@@ -454,5 +454,5 @@ val::value_t token_var_type_to_val_type(std::string const& type)
 	else if (type == "uint64")
 		return (val::value_t)val::ValueType::U_INT;
 	else
-		debug::throw_unhandled_case(type);
+		throw debug::unhandled_case(type);
 }

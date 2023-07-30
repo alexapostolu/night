@@ -6,10 +6,6 @@
 
 template<typename T>
 
-void concat_vector(std::vector<T>& vec1, std::vector<T> const& vec2)
-{
-	vec1.insert(std::end(vec1), std::begin(vec2), std::end(vec2));
-}
 
 int64_t bytecode_to_snum(bytecode_size arr[])
 {

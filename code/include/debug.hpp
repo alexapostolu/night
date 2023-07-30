@@ -16,7 +16,8 @@ namespace debug
 {
 
 template <typename T>
-void throw_unhandled_case(T val, std::source_location const& s_loc = std::source_location::current())
+[[nodiscard]]
+std::runtime_error unhandled_case(T val, std::source_location const& s_loc = std::source_location::current())
 {
 	std::stringstream s;
 	s << s_loc.file_name() << '\n' + s_loc.function_name() << '\n' << val;

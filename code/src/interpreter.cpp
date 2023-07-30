@@ -65,7 +65,7 @@ void interpret_bytecodes(bytecodes_t const& codes)
 			break;
 
 		default:
-			debug::throw_unhandled_case(*it);
+			debug::unhandled_case(*it);
 		}
 	}
 }
@@ -98,7 +98,7 @@ void Interpreter::push_num(bytecodes_t::const_iterator& it)
 	case BytecodeType::FLOAT4:
 	case BytecodeType::FLOAT8:
 	default:
-		debug::throw_unhandled_case(*it);
+		debug::unhandled_case(*it);
 	}
 }
 
@@ -112,7 +112,7 @@ void Interpreter::push_char(bytecodes_t::const_iterator& it)
 		s.push(*it);
 		break;
 	default:
-		debug::throw_unhandled_case(*it);
+		debug::unhandled_case(*it);
 	}
 }
 

@@ -4,20 +4,20 @@
 #include "value.hpp"
 
 #include <string>
-#include <optional>
 #include <unordered_map>
+#include <optional>
 #include <vector>
 #include <string>
 
+struct ParserVariable;
 struct ParserFunction;
-struct Variable;
 
 // has to be ordered
-using scope_var_container   = std::unordered_map<std::string, Variable>;
+using scope_var_container   = std::unordered_map<std::string, ParserVariable>;
 using scope_func_container  = std::unordered_map<std::string, ParserFunction>;
-using scope_class_container = std::unordered_map<std::string, int>;
+//using scope_class_container = std::unordered_map<std::string, int>;
 
-struct Variable
+struct ParserVariable
 {
 	val::value_t type;
 	bytecode_t id;

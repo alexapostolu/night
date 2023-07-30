@@ -194,7 +194,7 @@ std::string night::to_str(BytecodeType type)
 		return "FUNC_CALL";
 
 	default:
-		debug::throw_unhandled_case((int)type);
+		debug::unhandled_case((int)type);
 		return "";
 	}
 }
