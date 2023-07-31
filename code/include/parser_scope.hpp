@@ -12,10 +12,8 @@
 struct ParserVariable;
 struct ParserFunction;
 
-// has to be ordered
 using scope_var_container   = std::unordered_map<std::string, ParserVariable>;
 using scope_func_container  = std::unordered_map<std::string, ParserFunction>;
-//using scope_class_container = std::unordered_map<std::string, int>;
 
 struct ParserVariable
 {
@@ -25,6 +23,8 @@ struct ParserVariable
 
 struct ParserFunction
 {
+	bytecode_t id;
+
 	std::vector<std::string> param_names;
 	std::vector<val::value_t> param_types;
 	std::optional<val::value_t> rtn_type;
@@ -33,12 +33,11 @@ struct ParserFunction
 struct ParserScope
 {
 	static scope_func_container funcs;
+
+	// curr_func is so that parse_return() can be type checked
 	static scope_func_container::iterator curr_func;
 	
-	scope_var_container   vars;
-	scope_class_container objs;
-
-	val::value_t rtn_type;
+	scope_var_container vars;
 
 	// returns:
 	//    empty string if successful

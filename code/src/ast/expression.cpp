@@ -5,7 +5,6 @@
 #include "error.hpp"
 #include "debug.hpp"
 
-#include <limits>
 #include <optional>
 #include <memory>
 #include <iostream>

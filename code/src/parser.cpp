@@ -175,7 +175,7 @@ FunctionCall parse_func_call(Lexer& lexer, ParserScope& scope, std::string const
 {
 	assert(lexer.curr().type == TokenType::OPEN_BRACKET);
 	
-	std::vector<std::shared_ptr<expr::Expression>> param_expr;
+	std::vector<std::shared_ptr<expr::Expression>> param_exprs;
 
 	while (lexer.curr().type != TokenType::CLOSE_BRACKET)
 	{
@@ -183,22 +183,18 @@ FunctionCall parse_func_call(Lexer& lexer, ParserScope& scope, std::string const
 			"expected expression in function call");
 	}
 
-	if (param_expr.size() != ParserScope::funcs[func_name].param_names.size())
-		throw NIGHT_CREATE_FATAL("function call has " + std::to_string(param_expr.size()) + " parameters, expected " +
+	if (param_exprs.size() != ParserScope::funcs[func_name].param_names.size())
+		throw NIGHT_CREATE_FATAL("function call has " + std::to_string(param_exprs.size()) + " parameters, expected " +
 			std::to_string(ParserScope::funcs[func_name].param_names.size()) + " parameters");
 
-	for (std::size_t i = 0; i < param_expr.size(); ++i)
+	for (std::size_t i = 0; i < param_exprs.size(); ++i)
 	{
-		auto type = param_expr[i]->type_check(scope);
+		auto type = param_exprs[i]->type_check(scope);
 		if (type.has_value() && compare_value_t(*type, ParserScope::funcs[func_name].param_types[i]))
 			NIGHT_CREATE_MINOR("found type '" + night::to_str(*type) + "', expected type '" + night::to_str(ParserScope::funcs[func_name].param_types[i]) + "'");
 	}
 
-	std::vector<bytecode_t> param_ids;
-	for (auto const& param_name : ParserScope::funcs[func_name].param_names)
-		param_ids.push_back(scope.vars[param_name].id);
-
-	return FunctionCall(lexer.loc, func_name, param_expr, param_ids);
+	return FunctionCall(lexer.loc, func_name, ParserScope::funcs[func_name].id, param_exprs);
 }
 
 Conditional parse_if(Lexer& lexer, ParserScope& scope)
@@ -304,6 +300,9 @@ Function parse_func(Lexer& lexer, ParserScope& scope)
 {
 	std::string func_name = lexer.expect(TokenType::VARIABLE).str;
 
+	if (ParserScope::funcs.contains(func_name))
+		NIGHT_CREATE_FATAL("function '" + func_name + "' already defined");
+
 	lexer.expect(TokenType::OPEN_BRACKET);
 	
 	ParserScope::funcs[func_name] = {};
@@ -312,8 +311,8 @@ Function parse_func(Lexer& lexer, ParserScope& scope)
 
 	while (lexer.curr().type != TokenType::CLOSE_BRACKET)
 	{
-		auto var_name = lexer.expect(TokenType::VARIABLE).str;
-		param_names.push_back(var_name);
+		auto param_name = lexer.expect(TokenType::VARIABLE).str;
+		param_names.push_back(param_name);
 
 		if (!lexer.eat().is_type())
 			throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected type after variable name in function parameter list");
@@ -348,6 +347,8 @@ Function parse_func(Lexer& lexer, ParserScope& scope)
 
 Return parse_return(Lexer& lexer, ParserScope& scope)
 {
+	assert(lexer.curr().type == TokenType::RETURN);
+
 	auto expr = parse_expr(lexer, scope,
 		"expected expression after return");
 	if (lexer.curr().type != TokenType::SEMICOLON)

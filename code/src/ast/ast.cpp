@@ -192,26 +192,22 @@ bytecodes_t Return::generate_codes() const
 FunctionCall::FunctionCall(
 	Location const& _loc,
 	std::string const& _func_name,
-	std::vector<std::shared_ptr<expr::Expression>> const& _params,
-	std::vector<bytecode_t> const& param_ids)
-	: AST(_loc), func_name(_func_name)
-{
-	assert(param_ids.size() == _params.size());
-
-	for (std::size_t i = 0; i < _params.size(); ++i)
-		params.push_back(VariableInit(_loc, param_ids[i], _params[i]));
-}
+	bytecode_t _id,
+	std::vector<std::shared_ptr<expr::Expression>> const& _param_exprs)
+	: AST(_loc), id(_id), func_name(_func_name), param_exprs(_param_exprs) {}
 
 bytecodes_t FunctionCall::generate_codes() const
 {
-	bytecodes_t codes = {
-		(bytecode_t)BytecodeType::CALL };
+	bytecodes_t codes;
 
-	for (auto const& param : params)
+	for (auto const& param : param_exprs)
 	{
-		auto param_codes = param.generate_codes();
+		auto param_codes = param->generate_codes();
 		codes.insert(std::end(codes), std::begin(param_codes), std::end(param_codes));
 	}
+
+	codes.push_back((bytecode_t)BytecodeType::CALL);
+	codes.push_back(id);
 
 	return codes;
 }

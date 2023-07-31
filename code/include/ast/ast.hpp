@@ -152,12 +152,13 @@ public:
 	FunctionCall(
 		Location const& _loc,
 		std::string const& _func_name,
-		std::vector<std::shared_ptr<expr::Expression>> const& _params,
-		std::vector<bytecode_t> const& param_ids);
+		bytecode_t _id,
+		std::vector<std::shared_ptr<expr::Expression>> const& _param_exprs);
 
 	bytecodes_t generate_codes() const;
 
 private:
+	bytecode_t id;
 	std::string func_name;
-	std::vector<VariableInit> params;
+	std::vector<std::shared_ptr<expr::Expression>> param_exprs;
 };
