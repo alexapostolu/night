@@ -4,13 +4,24 @@ Night is a static, bytecode interpreted language with strong management on types
 
 ---
 
+## Project Status
+
 Under Development
+
+**v0.0.0**
+- interpreter for functions
+- unit tests
+
+---
+
+## Build
 
 **Windows Build:**
 
-Windows excecutable coming soon
+Windows executable coming soon
 
 dependenies
+
 `cmake` `gcc`
 
 ```
@@ -21,4 +32,9 @@ night source.night
 ```
 
 **Linux Build:**
-Coming soons
+
+Coming soon
+
+---
+
+Website is hosted here: https://github.com/alexapostolu/night-web
