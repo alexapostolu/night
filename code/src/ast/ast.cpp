@@ -1,6 +1,6 @@
 #include "ast/ast.hpp"
 #include "bytecode.hpp"
-#include "interpreter.hpp"
+#include "interpreter_scope.hpp"
 #include "error.hpp"
 #include "debug.hpp"
 
@@ -150,23 +150,23 @@ bytecodes_t For::generate_codes() const
 
 Function::Function(
 	Location const& _loc,
-	std::string const& _func_name,
+	bytecode_t _func_id,
 	std::vector<bytecode_t> const& _param_ids,
 	AST_Block const& _block)
-	: AST(_loc), func_name(_func_name), param_ids(_param_ids), block(_block) {}
+	: AST(_loc), func_id(_func_id), param_ids(_param_ids), block(_block) {}
 
 bytecodes_t Function::generate_codes() const
 {
-	Interpreter::funcs[func_name] = {};
+	InterpreterScope::funcs[func_id] = {};
 
 	for (auto const& param_id : param_ids)
-		Interpreter::funcs[func_name].params.push_back(param_id);
+		InterpreterScope::funcs[func_id].params.push_back(param_id);
 
 	for (auto const& stmt : block)
 	{
 		auto stmt_codes = stmt->generate_codes();
-		Interpreter::funcs[func_name].codes.insert(
-			std::end(Interpreter::funcs[func_name].codes),
+		InterpreterScope::funcs[func_id].codes.insert(
+			std::end(InterpreterScope::funcs[func_id].codes),
 			std::begin(stmt_codes), std::end(stmt_codes));
 	}
 

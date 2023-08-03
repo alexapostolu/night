@@ -48,7 +48,7 @@ enum struct BytecodeType : bytecode_t
 	CALL					// [parameters as variable initializations] FUNC_CALL
 };
 
-void bytecode_create_int(bytecodes_t& codes, int64_t num, int i = -1);
+//void bytecode_create_int(bytecodes_t& codes, int64_t num, int i = -1);
 
 void number_to_bytecode(bytecodes_t& codes, uint64_t num);
 void number_to_bytecode(bytecodes_t& codes, int64_t num);

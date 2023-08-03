@@ -80,7 +80,7 @@ bytecodes_t expr::UnaryOp::generate_codes() const
 	return codes;
 }
 
-std::optional<val::value_t> expr::UnaryOp::type_check(ParserScope const& scope) const
+std::optional<value_t> expr::UnaryOp::type_check(ParserScope const& scope) const
 {
 	auto type = expr->type_check(scope);
 	if (type.has_value() && is_object_t(*type))
@@ -181,13 +181,13 @@ bytecodes_t expr::BinaryOp::generate_codes() const
 		codes.push_back((bytecode_t)BytecodeType::DIV);
 		break;
 	default:
-		debug::unhandled_case((int)type);
+		throw debug::unhandled_case((int)type);
 	}
 
 	return codes;
 }
 
-std::optional<val::value_t> expr::BinaryOp::type_check(ParserScope const& scope) const
+std::optional<value_t> expr::BinaryOp::type_check(ParserScope const& scope) const
 {
 	if (type == BinaryOpType::DOT)
 	{
@@ -211,13 +211,13 @@ std::optional<val::value_t> expr::BinaryOp::type_check(ParserScope const& scope)
 		if (rhs_type.has_value() && is_object_t(*rhs_type))
 			night::error::get().create_minor_error("variable '' can not be used with operator +", loc);
 
-		if (*lhs_type == (val::value_t)val::ValueType::S_INT || *rhs_type == (val::value_t)val::ValueType::S_INT)
-			return (val::value_t)val::ValueType::S_INT;
-		if (*lhs_type == (val::value_t)val::ValueType::U_INT || *rhs_type == (val::value_t)val::ValueType::U_INT)
-			return (val::value_t)val::ValueType::U_INT;
-		if (*lhs_type == (val::value_t)val::ValueType::CHAR || *rhs_type == (val::value_t)val::ValueType::CHAR)
-			return (val::value_t)val::ValueType::CHAR;
-		return (val::value_t)val::ValueType::BOOL;
+		if (*lhs_type == (value_t)ValueType::INT || *rhs_type == (value_t)ValueType::INT)
+			return (value_t)ValueType::INT;
+		//if (*lhs_type == (val::value_t)val::ValueType::U_INT || *rhs_type == (val::value_t)val::ValueType::U_INT)
+			//return (val::value_t)val::ValueType::U_INT;
+		if (*lhs_type == (value_t)ValueType::CHAR || *rhs_type == (value_t)ValueType::CHAR)
+			return (value_t)ValueType::CHAR;
+		return (value_t)ValueType::BOOL;
 	}
 }
 
@@ -242,85 +242,6 @@ int expr::BinaryOp::precedence() const
 }
 
 
-expr::Value::Value(
-	Location const& _loc,
-	val::Value const& _val)
-	: Expression(ExpressionType::VALUE, _loc), val(_val) {}
-
-void expr::Value::insert_node(
-	std::shared_ptr<Expression> const& node,
-	std::shared_ptr<Expression>* prev)
-{
-	node->insert_node(std::make_shared<expr::Value>(loc, val));
-	*prev = node;
-}
-
-bytecodes_t expr::Value::generate_codes() const
-{
-	switch ((val::ValueType)val.type)
-	{
-	case val::ValueType::BOOL:
-		return { (bytecode_t)BytecodeType::BOOL, (bool)std::get<uint64_t>(val.data) };
-	case val::ValueType::CHAR:
-		return { (bytecode_t)BytecodeType::CHAR1, (bytecode_t)std::get<uint64_t>(val.data) };
-	case val::ValueType::S_INT:
-	{
-		bytecodes_t codes;
-		int64_t int64 = std::get<int64_t>(val.data);
-
-		if (int64 <= std::numeric_limits<uint8_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::S_INT1);
-		else if (int64 <= std::numeric_limits<uint16_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::S_INT2);
-		else if (int64 <= std::numeric_limits<uint32_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::S_INT4);
-		else if (int64 <= std::numeric_limits<uint64_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::S_INT8);
-		else {}
-
-		do {
-			codes.push_back(int64 & 0xFF);
-		} while (int64 >>= 8);
-
-		return codes;
-	}
-	case val::ValueType::U_INT:
-	{
-		bytecodes_t codes;
-		uint64_t uint64 = std::get<uint64_t>(val.data);
-
-		if (uint64 <= std::numeric_limits<uint8_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::U_INT1);
-		else if (uint64 <= std::numeric_limits<uint16_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::U_INT2);
-		else if (uint64 <= std::numeric_limits<uint32_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::U_INT4);
-		else if (uint64 <= std::numeric_limits<uint64_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::U_INT8);
-		else {}
-
-		do {
-			codes.push_back(uint64 & 0xFF);
-		} while (uint64 >>= 8);
-
-		return codes;
-	}
-	default:
-		throw debug::unhandled_case((int)(val.type));
-	}
-}
-
-std::optional<val::value_t> expr::Value::type_check(ParserScope const& scope) const
-{
-	return val.type;
-}
-
-int expr::Value::precedence() const
-{
-	return single_prec;
-}
-
-
 expr::Variable::Variable(
 	Location const& _loc,
 	std::string const& _name,
@@ -340,12 +261,71 @@ bytecodes_t expr::Variable::generate_codes() const
 	return { (bytecode_t)BytecodeType::LOAD, id };
 }
 
-std::optional<val::value_t> expr::Variable::type_check(ParserScope const& scope) const
+std::optional<value_t> expr::Variable::type_check(ParserScope const& scope) const
 {
 	return scope.vars.at(name).type;
 }
 
 int expr::Variable::precedence() const
+{
+	return single_prec;
+}
+
+
+expr::Value::Value(
+	Location const& _loc,
+	value_t _type,
+	std::string const& _val)
+	: Expression(ExpressionType::VALUE, _loc), val(_val) {}
+
+void expr::Value::insert_node(
+	std::shared_ptr<Expression> const& node,
+	std::shared_ptr<Expression>* prev)
+{
+	node->insert_node(std::make_shared<expr::Value>(loc, type, val));
+	*prev = node;
+}
+
+bytecodes_t expr::Value::generate_codes() const
+{
+	switch ((ValueType)type)
+	{
+	case ValueType::BOOL:
+		return { (bytecode_t)BytecodeType::BOOL, std::stod(val) != 0 };
+	case ValueType::CHAR:
+		return { (bytecode_t)BytecodeType::CHAR1, (bytecode_t)std::stoi(val) };
+	case ValueType::INT:
+	{
+		bytecodes_t codes;
+		int64_t int64 = std::stoi(val);
+
+		if (int64 <= std::numeric_limits<uint8_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::S_INT1);
+		else if (int64 <= std::numeric_limits<uint16_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::S_INT2);
+		else if (int64 <= std::numeric_limits<uint32_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::S_INT4);
+		else if (int64 <= std::numeric_limits<uint64_t>::max())
+			codes.push_back((bytecode_t)BytecodeType::S_INT8);
+		else {}
+
+		do {
+			codes.push_back(int64 & 0xFF);
+		} while (int64 >>= 8);
+
+		return codes;
+	}
+	default:
+		throw debug::unhandled_case((int)(type));
+	}
+}
+
+std::optional<value_t> expr::Value::type_check(ParserScope const& scope) const
+{
+	return type;
+}
+
+int expr::Value::precedence() const
 {
 	return single_prec;
 }

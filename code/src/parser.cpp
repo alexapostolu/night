@@ -5,11 +5,10 @@
 #include "interpreter_scope.hpp"
 #include "ast/ast.hpp"
 #include "ast/expression.hpp"
-#include "value.hpp"
+#include "value_type.hpp"
 #include "error.hpp"
 #include "debug.hpp"
 
-#include <iostream>
 #include <algorithm>
 #include <variant>
 #include <string>
@@ -107,7 +106,7 @@ VariableInit parse_var_init(Lexer& lexer, ParserScope& scope, std::string const&
 
 	auto var_type = token_var_type_to_val_type(lexer.curr().str);
 	std::shared_ptr<expr::Expression> var_expr =
-		std::make_shared<expr::Value>(lexer.loc, val::Value(val::ValueType::U_INT, 0));
+		std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::INT, "0");
 
 	lexer.eat();
 
@@ -207,7 +206,7 @@ Conditional parse_if(Lexer& lexer, ParserScope& scope)
 
 	do {
 		std::shared_ptr<expr::Expression> cond_expr =
-			std::make_shared<expr::Value>(lexer.loc, val::Value(val::ValueType::BOOL, 1));
+			std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::BOOL, "1");
 
 		// parse condition
 		if (lexer.curr().type != TokenType::ELSE)
@@ -300,12 +299,12 @@ Function parse_func(Lexer& lexer, ParserScope& scope)
 {
 	std::string func_name = lexer.expect(TokenType::VARIABLE).str;
 
+	lexer.expect(TokenType::OPEN_BRACKET);
+
+	ParserScope::funcs[func_name] = {};
+
 	if (ParserScope::funcs.contains(func_name))
 		NIGHT_CREATE_FATAL("function '" + func_name + "' already defined");
-
-	lexer.expect(TokenType::OPEN_BRACKET);
-	
-	ParserScope::funcs[func_name] = {};
 
 	std::vector<std::string> param_names;
 
@@ -331,14 +330,14 @@ Function parse_func(Lexer& lexer, ParserScope& scope)
 		lexer.eat();
 	}
 
-	ParserScope::curr_func = ParserScope::funcs.find(func_name);
-
 	std::vector<bytecode_t> param_ids(param_names.size());
 	std::transform(std::begin(param_names), std::end(param_names), std::begin(param_ids),
 		[&scope](auto const& name) { return scope.vars[name].id; });
 
+	ParserScope::curr_func = ParserScope::funcs.find(func_name);
+
 	ParserScope stmt_scope{ scope.vars };
-	Function func(lexer.loc, func_name, param_ids, parse_stmts(lexer, stmt_scope));
+	Function func(lexer.loc, ParserScope::funcs[func_name].id, param_ids, parse_stmts(lexer, stmt_scope));
 
 	ParserScope::curr_func = std::end(ParserScope::funcs);
 
@@ -377,15 +376,12 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, ParserScope const& sc
 		{
 		case TokenType::CHAR_LIT:
 		{
-			node = std::make_shared<expr::Value>(lexer.loc, val::Value(val::ValueType::CHAR, (uint64_t)lexer.curr().str[0]));
+			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::CHAR, lexer.curr().str);
 			break;
 		}
 		case TokenType::INT_LIT:
 		{
-			if (std::stoi(lexer.curr().str) > 0)
-				node = std::make_shared<expr::Value>(lexer.loc, val::Value(val::ValueType::U_INT, (uint64_t)std::stoi(lexer.curr().str)));
-			else
-				node = std::make_shared<expr::Value>(lexer.loc, val::Value(val::ValueType::S_INT, (int64_t)std::stoi(lexer.curr().str)));
+			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::INT, lexer.curr().str);
 			break;
 		}
 		case TokenType::VARIABLE:
@@ -434,26 +430,12 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, ParserScope const& sc
 	}
 }
 
-val::value_t token_var_type_to_val_type(std::string const& type)
+value_t token_var_type_to_val_type(std::string const& type)
 {
-	if (type == "int8")
-		return (val::value_t)val::ValueType::S_INT;
-	else if (type == "int16")
-		return (val::value_t)val::ValueType::S_INT;
-	else if (type == "int")
-		return (val::value_t)val::ValueType::S_INT;
-	else if (type == "int32")
-		return (val::value_t)val::ValueType::S_INT;
-	else if (type == "int64")
-		return (val::value_t)val::ValueType::S_INT;
-	else if (type == "uint8")
-		return (val::value_t)val::ValueType::U_INT;
-	else if (type == "uint16")
-		return (val::value_t)val::ValueType::U_INT;
-	else if (type == "uint32")
-		return (val::value_t)val::ValueType::U_INT;
-	else if (type == "uint64")
-		return (val::value_t)val::ValueType::U_INT;
-	else
-		throw debug::unhandled_case(type);
+	if (type == "bool") return (value_t)ValueType::BOOL;
+	else if (type == "char") return (value_t)ValueType::CHAR;
+	else if (type == "int") return (value_t)ValueType::INT;
+	else if (type == "float") return (value_t)ValueType::FLOAT;
+	else if (type == "str") return (value_t)ValueType::STRING;
+	else throw debug::unhandled_case(type);
 }

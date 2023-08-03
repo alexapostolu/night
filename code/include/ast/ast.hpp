@@ -2,7 +2,7 @@
 
 #include "expression.hpp"
 #include "bytecode.hpp"
-#include "value.hpp"
+#include "value_type.hpp"
 #include "error.hpp"
 
 #include <memory>
@@ -119,14 +119,14 @@ class Function : public AST
 public:
 	Function(
 		Location const& _loc,
-		std::string const& _func_name,
+		bytecode_t _func_id,
 		std::vector<bytecode_t> const& _param_ids,
 		AST_Block const& _block);
 
 	bytecodes_t generate_codes() const override;
 
 private:
-	std::string func_name;
+	bytecode_t func_id;
 	std::vector<bytecode_t> param_ids;
 	AST_Block block;
 };

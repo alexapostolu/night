@@ -1,7 +1,5 @@
 #pragma once
 
-#include "value.hpp"
-
 #include <string>
 
 enum class TokenType
@@ -32,6 +30,8 @@ enum class TokenType
 	BOOL_TYPE,
 	CHAR_TYPE,
 	INT_TYPE,
+	FLOAT_TYPE,
+	STRING_TYPE,
 
 	IF,
 	ELIF,

@@ -3,21 +3,23 @@
 #include "error.hpp"
 #include "debug.hpp"
 
-func_container Interpreter::funcs;
+#include <iostream>
+#include <stack>
+#include <string.h>
 
-void interpret_bytecodes(bytecodes_t const& codes)
+std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes)
 {
-	Interpreter i;
+	std::stack<intpr::Value> s;
 
 	for (auto it = std::cbegin(codes); it != std::cend(codes); ++it)
 	{
 		switch ((BytecodeType)*it)
 		{
 		case BytecodeType::BOOL:
-			i.push_bool(it);
+			s.emplace(intpr::ValueType::INT, *(++it));
 			break;
 		case BytecodeType::CHAR1:
-			i.push_char(it);
+			s.emplace(intpr::ValueType::INT, *(++it));
 			break;
 
 		case BytecodeType::S_INT1:
@@ -30,28 +32,36 @@ void interpret_bytecodes(bytecodes_t const& codes)
 		case BytecodeType::U_INT8:
 		case BytecodeType::FLOAT4:
 		case BytecodeType::FLOAT8:
-			i.push_num(it);
+			push_num(s, it);
 			break;
 
-		case BytecodeType::NEGATIVE: i.s.push(-i.pop()); break;
-		case BytecodeType::NOT:		 i.s.push(!i.pop()); break;
+		case BytecodeType::NEGATIVE: s.emplace(intpr::ValueType::INT, -pop(s).i); break;
+		case BytecodeType::NOT:		 s.emplace(intpr::ValueType::INT, !pop(s).i); break;
 
-		case BytecodeType::ADD:  i.s.push(i.pop() + i.pop()); break;
-		case BytecodeType::SUB:  i.s.push(i.pop() - i.pop()); break;
-		case BytecodeType::MULT: i.s.push(i.pop() * i.pop()); break;
-		case BytecodeType::DIV:  i.s.push(i.pop() / i.pop()); break;
+		case BytecodeType::ADD: {
+			auto t1 = pop(s);
+			auto t2 = pop(s);
+			if (t1.type == intpr::ValueType::STR)
+				s.emplace(t1.s + t2.s);
+			else
+				s.emplace(intpr::ValueType::INT, pop(s).i + pop(s).i);
+			break;
+		}
+		case BytecodeType::MULT: s.emplace(intpr::ValueType::INT, pop(s).i * pop(s).i); break;
+		case BytecodeType::DIV:  s.emplace(intpr::ValueType::INT, pop(s).i / pop(s).i); break;
+		case BytecodeType::SUB:  s.emplace(intpr::ValueType::INT, pop(s).i - pop(s).i); break;
 
 		case BytecodeType::LOAD:
 			++it;
-			i.s.push(i.vars[*it]);
+			s.push(scope.vars[*it]);
 			break;
 
 		case BytecodeType::STORE:
-			i.vars[*(++it)] = i.pop();
+			scope.vars[*(++it)] = pop(s);
 			break;
 
 		case BytecodeType::JUMP_IF_FALSE:
-			if (!i.pop())
+			if (!pop(s).i)
 				std::advance(it, *(++it));
 			break;
 
@@ -60,37 +70,59 @@ void interpret_bytecodes(bytecodes_t const& codes)
 			break;
 
 		case BytecodeType::RETURN:
+			return pop(s);
+
+		case BytecodeType::CALL: {
+			auto id = *(++it);
+
+			switch (id)
+			{
+			case 0: std::cout << (bool)pop(s).i; break;
+			case 1: std::cout << (char)pop(s).i; break;
+			case 2: std::cout << (int)pop(s).i; break;
+			case 3: std::cout << (float)pop(s).f; break;
+			case 4: std::cout << pop(s).s; break;
+			case 5: {
+				std::string str;
+				std::cin >> str;
+				s.emplace(str);
+				break;
+			}
+			default: {
+				InterpreterScope func_scope{ scope.vars };
+
+				for (int i = 0; i < scope.funcs[id].params.size(); ++i)
+					func_scope.vars[InterpreterScope::funcs[id].params[i]] = pop(s);
+
+				s.push(*interpret_bytecodes(func_scope, InterpreterScope::funcs[id].codes));
+
+				break;
+			}
+			}
+
 			break;
-		case BytecodeType::CALL:
-			break;
+		}
 
 		default:
-			debug::unhandled_case(*it);
+			throw debug::unhandled_case(*it);
 		}
 	}
+
+	return std::nullopt;
 }
 
-void Interpreter::push_bool(bytecodes_t::const_iterator& it)
+void push_num(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it)
 {
-	++it;
-	s.push(*it != 0);
-}
-
-void Interpreter::push_num(bytecodes_t::const_iterator& it)
-{
-	auto type = (BytecodeType)(*it);
-	++it;
-
-	switch (type)
+	switch ((BytecodeType)(*(it++)))
 	{
 	case BytecodeType::S_INT1:
-		s.push(-(*it));
+		s.emplace(intpr::ValueType::INT, -(*it));
 		break;
 	case BytecodeType::S_INT2:
 	case BytecodeType::S_INT4:
 	case BytecodeType::S_INT8:
 	case BytecodeType::U_INT1:
-		s.push(*it);
+		s.emplace(intpr::ValueType::INT, *it);
 		break;
 	case BytecodeType::U_INT2:
 	case BytecodeType::U_INT4:
@@ -98,31 +130,11 @@ void Interpreter::push_num(bytecodes_t::const_iterator& it)
 	case BytecodeType::FLOAT4:
 	case BytecodeType::FLOAT8:
 	default:
-		debug::unhandled_case(*it);
+		throw debug::unhandled_case(*it);
 	}
 }
 
-void Interpreter::push_char(bytecodes_t::const_iterator& it)
-{
-	++it;
-
-	switch ((BytecodeType)*it)
-	{
-	case BytecodeType::CHAR1:
-		s.push(*it);
-		break;
-	default:
-		debug::unhandled_case(*it);
-	}
-}
-
-void Interpreter::push_var(bytecodes_t::const_iterator& it)
-{
-	++it;
-	s.push(vars[*it]);
-}
-
-int Interpreter::pop()
+intpr::Value pop(std::stack<intpr::Value>& s)
 {
 	auto val = s.top();
 	s.pop();

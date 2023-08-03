@@ -45,7 +45,8 @@ int main(int argc, char* argv[])
 
 		/* interpreter */
 
-		interpret_bytecodes(codes);
+		InterpreterScope scope;
+		interpret_bytecodes(scope, codes);
 	}
 	catch (night::error const& e) {
 		std::cout << e.what() << '\n';

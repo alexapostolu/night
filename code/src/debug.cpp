@@ -60,7 +60,7 @@ void debug::log_codes(bytecodes_t const& codes)
 			break;
 
 		default:
-			debug::unhandled_case(*it);
+			throw debug::unhandled_case(*it);
 		}
 	}
 }

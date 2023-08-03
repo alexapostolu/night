@@ -2,7 +2,7 @@
 
 #include "parser_scope.hpp"
 #include "bytecode.hpp"
-#include "value.hpp"
+#include "value_type.hpp"
 #include "error.hpp"
 
 #include <memory>
@@ -34,7 +34,7 @@ public:
 		std::shared_ptr<Expression>* prev = nullptr) = 0;
 
 	virtual bytecodes_t generate_codes() const = 0;
-	virtual std::optional<val::value_t> type_check(ParserScope const& scope) const = 0;
+	virtual std::optional<value_t> type_check(ParserScope const& scope) const = 0;
 	// virtual void optimize(ParserScope const& scope) = 0;
 
 public:
@@ -80,7 +80,7 @@ public:
 		std::shared_ptr<Expression>* prev = nullptr) override;
 
 	bytecodes_t generate_codes() const;
-	std::optional<val::value_t> type_check(ParserScope const& scope) const override;
+	std::optional<value_t> type_check(ParserScope const& scope) const override;
 
 public:
 	int precedence() const override;
@@ -117,7 +117,7 @@ public:
 		std::shared_ptr<Expression>* prev = nullptr) override;
 
 	bytecodes_t generate_codes() const override;
-	std::optional<val::value_t> type_check(ParserScope const& scope) const override;
+	std::optional<value_t> type_check(ParserScope const& scope) const override;
 
 public:
 	int precedence() const override;
@@ -125,28 +125,6 @@ public:
 private:
 	BinaryOpType type;
 	std::shared_ptr<Expression> lhs, rhs;
-};
-
-
-class Value : public Expression
-{
-public:
-	Value(
-		Location const& _loc,
-		val::Value const& _val);
-
-	void insert_node(
-		std::shared_ptr<Expression> const& node,
-		std::shared_ptr<Expression>* prev = nullptr) override;
-
-	bytecodes_t generate_codes() const override;
-	std::optional<val::value_t> type_check(ParserScope const& scope) const override;
-
-public:
-	int precedence() const override;
-
-private:
-	val::Value val;
 };
 
 
@@ -163,7 +141,7 @@ public:
 		std::shared_ptr<Expression>* prev = nullptr) override;
 
 	bytecodes_t generate_codes() const override;
-	std::optional<val::value_t> type_check(ParserScope const& scope) const override;
+	std::optional<value_t> type_check(ParserScope const& scope) const override;
 
 public:
 	int precedence() const override;
@@ -171,6 +149,30 @@ public:
 private:
 	std::string name;
 	bytecode_t id;
+};
+
+
+class Value : public expr::Expression
+{
+public:
+	Value(
+		Location const& _loc,
+		value_t _type,
+		std::string const& _val);
+
+	void insert_node(
+		std::shared_ptr<expr::Expression> const& node,
+		std::shared_ptr<expr::Expression>* prev = nullptr) override;
+
+	bytecodes_t generate_codes() const override;
+	std::optional<value_t> type_check(ParserScope const& scope) const override;
+
+public:
+	int precedence() const override;
+
+private:
+	value_t type;
+	std::string val;
 };
 
 }

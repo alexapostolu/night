@@ -3,28 +3,11 @@
 #include "interpreter_scope.hpp"
 #include "bytecode.hpp"
 
-#include <functional>
-#include <unordered_map>
 #include <stack>
-#include <tuple>
-#include <variant>
-#include <string>
+#include <optional>
 
-using expr_stack = std::stack<int>;
+std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& i, bytecodes_t const& codes);
 
-struct Interpreter
-{
-public:
-	void push_num(bytecodes_t::const_iterator& it);
-	void push_bool(bytecodes_t::const_iterator& it);
-	void push_char(bytecodes_t::const_iterator& it);
-	void push_var(bytecodes_t::const_iterator& it);
-	int pop();
+void push_num(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it);
 
-public:
-	static func_container funcs;
-	var_container vars;
-	expr_stack s;
-};
-
-void interpret_bytecodes(bytecodes_t const& codes);
+intpr::Value pop(std::stack<intpr::Value>& s);

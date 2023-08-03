@@ -1,7 +1,7 @@
 #include "token.hpp"
-#include "token.hpp"
+#include "debug.hpp"
+
 #include <string>
-#include <assert.h>
 
 bool Token::is_type() const
 {
@@ -64,5 +64,7 @@ std::string tok_type_to_str(TokenType type)
 		return "return";
 	case TokenType::END_OF_FILE:
 		return "end of file";
+	default:
+		throw debug::unhandled_case((int)type);
 	}
 }

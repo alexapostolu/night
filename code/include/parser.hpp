@@ -6,7 +6,7 @@
 #include "interpreter.hpp"
 #include "ast/ast.hpp"
 #include "ast/expression.hpp"
-#include "value.hpp"
+#include "value_type.hpp"
 
 #include <memory>
 #include <string>
@@ -76,4 +76,4 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, ParserScope const& sc
 	std::string const& err_msg_empty = "",
 	bool bracket = false);
 
-val::value_t token_var_type_to_val_type(std::string const& type);
+value_t token_var_type_to_val_type(std::string const& type);
