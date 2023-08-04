@@ -40,7 +40,7 @@ using func_container = std::unordered_map<bytecode_t, InterpreterFunction>;
 
 struct InterpreterFunction
 {
-	std::vector<bytecode_t> params;
+	std::vector<bytecode_t> param_ids;
 	bytecodes_t codes;
 };
 

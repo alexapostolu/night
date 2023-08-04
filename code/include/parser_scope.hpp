@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include "bytecode.hpp"
@@ -5,14 +6,15 @@
 
 #include <unordered_map>
 #include <vector>
+#include <utility>
 #include <optional>
 #include <string>
 
 struct ParserVariable;
 struct ParserFunction;
 
-using scope_var_container   = std::unordered_map<std::string, ParserVariable>;
-using scope_func_container  = std::unordered_map<std::string, ParserFunction>;
+using scope_var_container  = std::unordered_map<std::string, ParserVariable>;
+using scope_func_container = std::unordered_multimap<std::string, ParserFunction>;
 
 struct ParserVariable
 {
@@ -22,6 +24,7 @@ struct ParserVariable
 
 struct ParserFunction
 {
+	// used when generating bytecode for function call
 	bytecode_t id;
 
 	std::vector<std::string> param_names;
@@ -33,13 +36,24 @@ struct ParserScope
 {
 	static scope_func_container funcs;
 
-	// curr_func is so that parse_return() can be type checked
-	static scope_func_container::iterator curr_func;
+	// this value is set in parse_func()
+	// parse_return() will compare this value with its own expression type
+	// for type checking
+	static std::optional<value_t> curr_rtn_type;
 	
 	scope_var_container vars;
 
 	// returns:
-	//    empty string if successful
-	//    error message if not successful
-	std::string create_variable(std::string const& name, value_t type);
+	//    <"", id> if successful
+	//    <error message, 0> if unsuccessful
+	std::pair<std::string, bytecode_t> create_variable(std::string const& name, value_t type);
+
+	// returns:
+	//    <"", it> if successful
+	//    <error message, it::end()> if unsuccessful
+	static std::pair<std::string, scope_func_container::iterator> create_function(
+		std::string const& name,
+		std::vector<std::string> const& param_names,
+		std::vector<value_t> param_types,
+		std::optional<value_t> rtn_type);
 };

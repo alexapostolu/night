@@ -49,7 +49,7 @@ Token const& Lexer::expect(TokenType type, std::string const& err, std::source_l
 	eat();
 
 	if (curr().type != type)
-		night::error::get().create_fatal_error("found '" + curr().str + "', expected " + tok_type_to_str(type) + " " + err, loc, s_loc, true);
+		night::error::get().create_fatal_error("found '" + curr().str + "', expected " + tok_type_to_str(type) + " " + err, loc);
 
 	return curr();
 }
@@ -126,6 +126,7 @@ Token Lexer::eat_keyword()
 		{ "for", TokenType::FOR },
 		{ "while", TokenType::WHILE },
 		{ "def", TokenType::DEF },
+		{ "void", TokenType::VOID },
 		{ "return", TokenType::RETURN }
 	};
 

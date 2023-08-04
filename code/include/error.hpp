@@ -32,11 +32,10 @@ public:
 	void create_minor_error(std::string const& msg, Location const& loc,
 		std::source_location const& s_loc = std::source_location::current()) noexcept;
 
+	[[nodiscard]]
 	error const& create_fatal_error(
 		std::string const& msg, Location const& loc,
-		std::source_location const& s_loc = std::source_location::current(),
-		bool modified = false,
-		std::source_location const& o_loc = std::source_location::current()) noexcept;
+		std::source_location const& s_loc = std::source_location::current()) noexcept;
 
 public:
 	void operator=(error const&) = delete;
@@ -44,8 +43,9 @@ public:
 private:
 	error();
 
-	std::string format_error_msg(std::string const& msg, Location const& loc, std::source_location const& s_loc,
-		bool modified, std::source_location const& o_loc) const noexcept;
+	std::string format_error_msg(
+		std::string const& msg, Location const& loc,
+		std::source_location const& s_loc) const noexcept;
 
 public:
 	bool debug_flag;

@@ -160,7 +160,7 @@ bytecodes_t Function::generate_codes() const
 	InterpreterScope::funcs[func_id] = {};
 
 	for (auto const& param_id : param_ids)
-		InterpreterScope::funcs[func_id].params.push_back(param_id);
+		InterpreterScope::funcs[func_id].param_ids.push_back(param_id);
 
 	for (auto const& stmt : block)
 	{

@@ -39,12 +39,12 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		case BytecodeType::NOT:		 s.emplace(intpr::ValueType::INT, !pop(s).i); break;
 
 		case BytecodeType::ADD: {
-			auto t1 = pop(s);
-			auto t2 = pop(s);
-			if (t1.type == intpr::ValueType::STR)
-				s.emplace(t1.s + t2.s);
+			auto v1 = pop(s);
+			auto v2 = pop(s);
+			if (v1.type == intpr::ValueType::STR)
+				s.emplace(v1.s + v2.s);
 			else
-				s.emplace(intpr::ValueType::INT, pop(s).i + pop(s).i);
+				s.emplace(intpr::ValueType::INT, v1.i + v2.i);
 			break;
 		}
 		case BytecodeType::MULT: s.emplace(intpr::ValueType::INT, pop(s).i * pop(s).i); break;
@@ -91,8 +91,8 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			default: {
 				InterpreterScope func_scope{ scope.vars };
 
-				for (int i = 0; i < scope.funcs[id].params.size(); ++i)
-					func_scope.vars[InterpreterScope::funcs[id].params[i]] = pop(s);
+				for (int i = 0; i < scope.funcs[id].param_ids.size(); ++i)
+					func_scope.vars[InterpreterScope::funcs[id].param_ids[i]] = pop(s);
 
 				s.push(*interpret_bytecodes(func_scope, InterpreterScope::funcs[id].codes));
 
@@ -116,7 +116,7 @@ void push_num(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it)
 	switch ((BytecodeType)(*(it++)))
 	{
 	case BytecodeType::S_INT1:
-		s.emplace(intpr::ValueType::INT, -(*it));
+		s.emplace(intpr::ValueType::INT, *it);
 		break;
 	case BytecodeType::S_INT2:
 	case BytecodeType::S_INT4:

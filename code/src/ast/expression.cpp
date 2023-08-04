@@ -276,7 +276,7 @@ expr::Value::Value(
 	Location const& _loc,
 	value_t _type,
 	std::string const& _val)
-	: Expression(ExpressionType::VALUE, _loc), val(_val) {}
+	: Expression(ExpressionType::VALUE, _loc), type(_type), val(_val) {}
 
 void expr::Value::insert_node(
 	std::shared_ptr<Expression> const& node,
@@ -314,6 +314,12 @@ bytecodes_t expr::Value::generate_codes() const
 		} while (int64 >>= 8);
 
 		return codes;
+	}
+	case ValueType::FLOAT: {
+
+	}
+	case ValueType::STRING: {
+
 	}
 	default:
 		throw debug::unhandled_case((int)(type));

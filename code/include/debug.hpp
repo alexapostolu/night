@@ -20,7 +20,10 @@ template <typename T>
 std::runtime_error unhandled_case(T val, std::source_location const& s_loc = std::source_location::current())
 {
 	std::stringstream s;
-	s << s_loc.file_name() << '\n' + s_loc.function_name() << '\n' << val;
+	s << "\n    [unhandled case]\n";
+	s << "    " << s_loc.file_name()
+		<< "\n    " << s_loc.function_name()
+		<< "\n    line: " << s_loc.line() << "\n    " << val << '\n';
 
 	throw std::runtime_error(s.str());
 }

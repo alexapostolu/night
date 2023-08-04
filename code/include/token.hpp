@@ -41,6 +41,7 @@ enum class TokenType
 	WHILE,
 
 	DEF,
+	VOID,
 	RETURN,
 
 	END_OF_FILE

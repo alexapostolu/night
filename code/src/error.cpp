@@ -27,34 +27,31 @@ std::string night::error::what() const
 
 void night::error::create_warning(std::string const& msg, Location const& loc, std::source_location const& s_loc) noexcept
 {
-	warnings.push_back(format_error_msg(msg, loc, s_loc, false, {}));
+	warnings.push_back(format_error_msg(msg, loc, s_loc));
 }
 
 void night::error::create_minor_error(std::string const& msg, Location const& loc, std::source_location const& s_loc) noexcept
 {
-	minor_errors.push_back(format_error_msg(msg, loc, s_loc, false, {}));
+	minor_errors.push_back(format_error_msg(msg, loc, s_loc));
 }
 
-night::error const& night::error::create_fatal_error(std::string const& msg, Location const& loc, std::source_location const& s_loc,
-	bool modified, std::source_location const& o_loc) noexcept
+night::error const& night::error::create_fatal_error(
+	std::string const& msg, Location const& loc,
+	std::source_location const& s_loc) noexcept
 {
-	fatal_error_msg = format_error_msg(msg, loc, s_loc, modified, o_loc);
+	fatal_error_msg = format_error_msg(msg, loc, s_loc);
 	return *this;
 }
 
-std::string night::error::format_error_msg(std::string const& msg, Location const& loc, std::source_location const& s_loc, bool modified,
-	std::source_location const& o_loc) const noexcept
+std::string night::error::format_error_msg(
+	std::string const& msg, Location const& loc,
+	std::source_location const& s_loc) const noexcept
 {
 	std::string base = "[ error fatal ]\n" +
 						loc.file + " (" + std::to_string(loc.line) + ":" + std::to_string(loc.col) + ")\n";
 
 	if (debug_flag)
-	{
 		base += std::string() + s_loc.file_name() + " " + std::to_string(s_loc.line()) + '\n';
-
-		if (modified)
-			base += std::string() + "modified: " + o_loc.file_name() + " " + std::to_string(o_loc.line()) + '\n';
-	}
 	
 	base += '\n' + msg;
 	return base;

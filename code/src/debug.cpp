@@ -57,6 +57,7 @@ void debug::log_codes(bytecodes_t const& codes)
 			std::cout << "RETURN\n" << (int)(*(++it)) << '\n';
 			break;
 		case BytecodeType::CALL:
+			std::cout << "CALL " << (int)(*(++it)) << '\n';
 			break;
 
 		default:

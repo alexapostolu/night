@@ -65,15 +65,14 @@ Function parse_func(Lexer& lexer, ParserScope& scope);
 
 Return parse_return(Lexer& lexer, ParserScope& scope);
 
-// callers responsibility to handle null return value,
-// or give optional parameter to display error messages
+// if expr is null, it is the callers responsibility to handle,
+// or give optional parameter to display an error message in that event
 // lexer
 //   start: first token of expression
 //   end: first token after expression
 // turns tokens into AST
 // 'bracket' is for recursive call only
 std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, ParserScope const& scope,
-	std::string const& err_msg_empty = "",
-	bool bracket = false);
+	std::string const& err_msg_empty = "");
 
 value_t token_var_type_to_val_type(std::string const& type);
