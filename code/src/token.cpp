@@ -7,7 +7,8 @@ bool Token::is_type() const
 {
 	return type == TokenType::BOOL_TYPE ||
 		   type == TokenType::CHAR_TYPE ||
-		   type == TokenType::INT_TYPE;
+		   type == TokenType::INT_TYPE ||
+		   type == TokenType::STRING_TYPE;
 }
 
 std::string tok_type_to_str(TokenType type)
@@ -46,7 +47,7 @@ std::string tok_type_to_str(TokenType type)
 		return "integer";
 	case TokenType::FLOAT_LIT:
 		return "float";
-	case TokenType::STR_LIT:
+	case TokenType::STRING_LIT:
 		return "string";
 	case TokenType::VARIABLE:
 		return "variable";

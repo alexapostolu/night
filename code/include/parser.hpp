@@ -53,7 +53,7 @@ VariableInit parse_var_init(Lexer& lexer, ParserScope& scope, std::string const&
 //   my_var += [expression];
 VariableAssign parse_var_assign(Lexer& lexer, ParserScope& scope, std::string const& var_name);
 
-FunctionCall parse_func_call(Lexer& lexer, ParserScope& scope, std::string const& func_name);
+FunctionCall parse_func_call(Lexer& lexer, ParserScope const& scope, std::string const& func_name);
 
 Conditional parse_if(Lexer& lexer, ParserScope& scope);
 
@@ -68,7 +68,7 @@ Return parse_return(Lexer& lexer, ParserScope& scope);
 // if expr is null, it is the callers responsibility to handle,
 // or give optional parameter to display an error message in that event
 // lexer
-//   start: first token of expression
+//   start: token before expression
 //   end: first token after expression
 // turns tokens into AST
 // 'bracket' is for recursive call only

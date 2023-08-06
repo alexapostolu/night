@@ -6,6 +6,7 @@
 
 #include <limits>
 #include <vector>
+#include <memory>
 #include <assert.h>
 
 AST::AST(Location const& _loc)
@@ -191,16 +192,24 @@ bytecodes_t Return::generate_codes() const
 
 FunctionCall::FunctionCall(
 	Location const& _loc,
-	std::string const& _func_name,
+	std::string const& _name,
 	bytecode_t _id,
 	std::vector<std::shared_ptr<expr::Expression>> const& _param_exprs)
-	: AST(_loc), id(_id), func_name(_func_name), param_exprs(_param_exprs) {}
+	: AST(_loc), Expression(expr::ExpressionType::FUNCTION_CALL, _loc), id(_id), name(_name), arg_exprs(_param_exprs) {}
+
+void FunctionCall::insert_node(
+	std::shared_ptr<expr::Expression> const& node,
+	std::shared_ptr<expr::Expression>* prev)
+{
+	node->insert_node(std::make_shared<FunctionCall>(AST::loc, name, id, arg_exprs));
+	*prev = node;
+}
 
 bytecodes_t FunctionCall::generate_codes() const
 {
 	bytecodes_t codes;
 
-	for (auto const& param : param_exprs)
+	for (auto const& param : arg_exprs)
 	{
 		auto param_codes = param->generate_codes();
 		codes.insert(std::end(codes), std::begin(param_codes), std::end(param_codes));
@@ -210,4 +219,22 @@ bytecodes_t FunctionCall::generate_codes() const
 	codes.push_back(id);
 
 	return codes;
+}
+
+std::optional<value_t> FunctionCall::type_check(ParserScope const& scope) const
+{
+	auto [it, end] = ParserScope::funcs.equal_range(name);
+
+	for (; it != end; ++it)
+	{
+		if (it->second.id == id)
+			return it->second.rtn_type;
+	}
+
+	throw debug::unhandled_case("function '" + name + "' can not be found");
+}
+
+int FunctionCall::precedence() const
+{
+	return single_prec;
 }

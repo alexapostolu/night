@@ -146,19 +146,27 @@ private:
 };
 
 
-class FunctionCall : public AST
+class FunctionCall : public AST, public expr::Expression
 {
 public:
 	FunctionCall(
 		Location const& _loc,
-		std::string const& _func_name,
+		std::string const& _name,
 		bytecode_t _id,
-		std::vector<std::shared_ptr<expr::Expression>> const& _param_exprs);
+		std::vector<std::shared_ptr<expr::Expression>> const& _arg_exprs);
+
+	void insert_node(
+		std::shared_ptr<Expression> const& node,
+		std::shared_ptr<Expression>* prev = nullptr);
 
 	bytecodes_t generate_codes() const;
 
+	std::optional<value_t> type_check(ParserScope const& scope) const;
+
+	int precedence() const;
+
 private:
+	std::string name;
 	bytecode_t id;
-	std::string func_name;
-	std::vector<std::shared_ptr<expr::Expression>> param_exprs;
+	std::vector<std::shared_ptr<expr::Expression>> arg_exprs;
 };

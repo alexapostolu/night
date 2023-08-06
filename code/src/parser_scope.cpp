@@ -9,7 +9,9 @@ scope_func_container ParserScope::funcs = {
 	{ "print", ParserFunction{ 0, {}, { (value_t)ValueType::BOOL }, std::nullopt } },
 	{ "print", ParserFunction{ 1, {}, { (value_t)ValueType::CHAR }, std::nullopt } },
 	{ "print", ParserFunction{ 2, {}, { (value_t)ValueType::INT }, std::nullopt } },
-	{ "input", ParserFunction{ 3, {}, {}, (value_t)ValueType::STRING } }
+	{ "print", ParserFunction{ 3, {}, { (value_t)ValueType::FLOAT }, std::nullopt } },
+	{ "print", ParserFunction{ 4, {}, { (value_t)ValueType::STRING }, std::nullopt } },
+	{ "input", ParserFunction{ 5, {}, {}, (value_t)ValueType::STRING } }
 };
 
 std::optional<value_t> ParserScope::curr_rtn_type = std::nullopt;

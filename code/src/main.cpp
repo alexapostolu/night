@@ -51,18 +51,9 @@ int main(int argc, char* argv[])
 	catch (night::error const& e) {
 		std::cout << e.what() << '\n';
 	}
-	catch (std::runtime_error const& e) {
-		std::cout << "oops! we've come across and unexpected error!\n"
-				  << e.what() << '\n'
-				  << "please submit an issue on github: https://github.com/DynamicSquid/night";
-	}
 	catch (std::exception const& e) {
-		std::cout << "oops! we've come across and unexpected error!\n"
-				  << e.what() << '\n'
-				  << "please submit an issue on github: https://github.com/DynamicSquid/night";
-	}
-	catch (...) {
-		std::cout << "oops! we've come across and unexpected error!\n"
-				  << "please submit an issue on github: https://github.com/DynamicSquid/night";
+		std::cout << "oops! we've come across and unexpected error!\n\n"
+				  << "    " << e.what() << "\n\n"
+				  << "please submit an issue on github: https://github.com/DynamicSquid/night\n";
 	}
 }

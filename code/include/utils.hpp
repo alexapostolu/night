@@ -4,9 +4,6 @@
 #include <string.h>
 #include "bytecode.hpp"
 
-template<typename T>
-
-
 int64_t bytecode_to_snum(bytecode_size arr[])
 {
 	int64_t value;

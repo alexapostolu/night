@@ -18,8 +18,9 @@ enum class ExpressionType
 	BRACKET,
 	BINARY_OP,
 	UNARY_OP,
-	VALUE,
+	FUNCTION_CALL,
 	VARIABLE,
+	VALUE,
 };
 
 class Expression
@@ -35,7 +36,6 @@ public:
 
 	virtual bytecodes_t generate_codes() const = 0;
 	virtual std::optional<value_t> type_check(ParserScope const& scope) const = 0;
-	// virtual void optimize(ParserScope const& scope) = 0;
 
 public:
 	virtual int precedence() const = 0;

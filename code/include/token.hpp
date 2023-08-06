@@ -23,7 +23,7 @@ enum class TokenType
 	CHAR_LIT,
 	INT_LIT,
 	FLOAT_LIT,
-	STR_LIT,
+	STRING_LIT,
 
 	VARIABLE,
 

@@ -23,6 +23,7 @@ std::string night::to_str(value_t type, bool primitive)
 		case (value_t)ValueType::BOOL:
 		case (value_t)ValueType::CHAR:
 		case (value_t)ValueType::INT:
+		case (value_t)ValueType::STRING:
 			return "primitive";
 		default:
 			throw debug::unhandled_case((int)type);
@@ -34,7 +35,8 @@ std::string night::to_str(value_t type, bool primitive)
 		{
 		case (value_t)ValueType::BOOL:  return "bool";
 		case (value_t)ValueType::CHAR:  return "char";
-		case (value_t)ValueType::INT:	return "signed int";
+		case (value_t)ValueType::INT:	return "int";
+		case (value_t)ValueType::STRING: return "string";
 		default:
 			throw debug::unhandled_case((int)type);
 		}

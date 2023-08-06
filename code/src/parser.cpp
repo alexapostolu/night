@@ -170,7 +170,7 @@ VariableAssign parse_var_assign(Lexer& lexer, ParserScope& scope, std::string co
 	return VariableAssign(lexer.loc, scope.vars[var_name].id, expr, assign_op);
 }
 
-FunctionCall parse_func_call(Lexer& lexer, ParserScope& scope, std::string const& func_name)
+FunctionCall parse_func_call(Lexer& lexer, ParserScope const& scope, std::string const& func_name)
 {
 	assert(lexer.curr().type == TokenType::OPEN_BRACKET);
 	
@@ -421,11 +421,24 @@ Return parse_return(Lexer& lexer, ParserScope& scope)
 std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, ParserScope const& scope, std::string const& err_msg)
 {
 	std::shared_ptr<expr::Expression> head(nullptr);
+	Token next{ .str = "" };
 
 	while (true)
 	{
 		std::shared_ptr<expr::Expression> node(nullptr);
-		switch (lexer.eat().type)
+
+		Token comp;
+		if (next.str.empty())
+		{
+			comp = lexer.eat();
+		}
+		else
+		{
+			comp = next;
+			next.str = "";
+		}
+
+		switch (comp.type)
 		{
 		case TokenType::CHAR_LIT:
 		{
@@ -437,9 +450,30 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, ParserScope const& sc
 			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::INT, lexer.curr().str);
 			break;
 		}
+		case TokenType::FLOAT_LIT:
+		{
+			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::FLOAT, lexer.curr().str);
+			break;
+		}
+		case TokenType::STRING_LIT:
+		{
+			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::STRING, lexer.curr().str);
+			break;
+		}
 		case TokenType::VARIABLE:
 		{
-			node = std::make_shared<expr::Variable>(lexer.loc, lexer.curr().str, scope.vars.at(lexer.curr().str).id);
+			auto var_name = lexer.curr().str;
+			next = lexer.eat();
+			if (next.type == TokenType::OPEN_BRACKET)
+			{
+				node = std::make_shared<FunctionCall>(parse_func_call(lexer, scope, var_name));
+				next.str = "";
+			}
+			else
+			{
+				node = std::make_shared<expr::Variable>(lexer.loc, var_name, scope.vars.at(var_name).id);
+			}
+
 			break;
 		}
 		case TokenType::UNARY_OP:
@@ -455,11 +489,11 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, ParserScope const& sc
 		case TokenType::OPEN_BRACKET:
 		{
 			node = parse_expr(lexer, scope, err_msg);
-			node->guard = true;
 
 			if (lexer.curr().type != TokenType::CLOSE_BRACKET)
 				throw NIGHT_CREATE_FATAL("missing closing bracket in expression");
 
+			node->guard = true;
 			break;
 		}
 		default:

@@ -316,10 +316,10 @@ bytecodes_t expr::Value::generate_codes() const
 		return codes;
 	}
 	case ValueType::FLOAT: {
-
+		break;
 	}
 	case ValueType::STRING: {
-
+		break;
 	}
 	default:
 		throw debug::unhandled_case((int)(type));
