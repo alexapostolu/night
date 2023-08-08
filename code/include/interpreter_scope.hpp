@@ -12,19 +12,20 @@ namespace intpr
 
 enum class ValueType
 {
-	INT, FLOAT, STR
+	INT, UINT, FLOAT, STR
 };
 
 struct Value
 {
 	ValueType type;
 	
-	int i;
+	int64_t i;
+	uint64_t ui;
 	float f;
 	std::string s;
 
 	Value() = default;
-	Value(ValueType type, int _i);
+	Value(int64_t _i);
 	Value(float _i);
 	Value(std::string _s);
 	Value(Value const& _v);

@@ -392,36 +392,37 @@ Return parse_return(Lexer& lexer, ParserScope& scope)
 {
 	assert(lexer.curr().type == TokenType::RETURN);
 
-	auto expr = parse_expr(lexer, scope);
+auto expr = parse_expr(lexer, scope);
 
-	if (lexer.curr().type != TokenType::SEMICOLON)
-		throw NIGHT_CREATE_FATAL("expected semicolon after return");
+if (lexer.curr().type != TokenType::SEMICOLON)
+throw NIGHT_CREATE_FATAL("expected semicolon after return");
 
-	if (!expr)
-	{
-		if (ParserScope::curr_rtn_type.has_value())
-			NIGHT_CREATE_MINOR("return statement does nto return a value, yet function expects one of type '" +
-				night::to_str(*ParserScope::curr_rtn_type) + "'");
-	}
-	else
-	{
-		if (!ParserScope::curr_rtn_type.has_value())
-			NIGHT_CREATE_MINOR("return statement found, yet function does not return a value");
+if (!expr)
+{
+	if (ParserScope::curr_rtn_type.has_value())
+		NIGHT_CREATE_MINOR("return statement does nto return a value, yet function expects one of type '" +
+			night::to_str(*ParserScope::curr_rtn_type) + "'");
+}
+else
+{
+	if (!ParserScope::curr_rtn_type.has_value())
+		NIGHT_CREATE_MINOR("return statement found, yet function does not return a value");
 
-		auto expr_type = expr->type_check(scope);
-	
-		if (expr_type.has_value() && !compare_value_t(*ParserScope::curr_rtn_type, *expr_type))
-			NIGHT_CREATE_MINOR("return is type '" + night::to_str(*expr_type) + "', expected type '" +
-				night::to_str(*ParserScope::curr_rtn_type) + "'");
-	}
-	
-	return Return(lexer.loc, expr);
+	auto expr_type = expr->type_check(scope);
+
+	if (expr_type.has_value() && !compare_value_t(*ParserScope::curr_rtn_type, *expr_type))
+		NIGHT_CREATE_MINOR("return is type '" + night::to_str(*expr_type) + "', expected type '" +
+			night::to_str(*ParserScope::curr_rtn_type) + "'");
+}
+
+return Return(lexer.loc, expr);
 }
 
 std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, ParserScope const& scope, std::string const& err_msg)
 {
 	std::shared_ptr<expr::Expression> head(nullptr);
 	Token next{ .str = "" };
+	bool allow_unary_next = true;
 
 	while (true)
 	{
@@ -443,21 +444,25 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, ParserScope const& sc
 		case TokenType::CHAR_LIT:
 		{
 			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::CHAR, lexer.curr().str);
+			allow_unary_next = false;
 			break;
 		}
 		case TokenType::INT_LIT:
 		{
 			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::INT, lexer.curr().str);
+			allow_unary_next = false;
 			break;
 		}
 		case TokenType::FLOAT_LIT:
 		{
 			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::FLOAT, lexer.curr().str);
+			allow_unary_next = false;
 			break;
 		}
 		case TokenType::STRING_LIT:
 		{
 			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::STRING, lexer.curr().str);
+			allow_unary_next = false;
 			break;
 		}
 		case TokenType::VARIABLE:
@@ -474,16 +479,27 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, ParserScope const& sc
 				node = std::make_shared<expr::Variable>(lexer.loc, var_name, scope.vars.at(var_name).id);
 			}
 
+			allow_unary_next = false;
 			break;
 		}
 		case TokenType::UNARY_OP:
 		{
 			node = std::make_shared<expr::UnaryOp>(lexer.loc, lexer.curr().str);
+			allow_unary_next = true;
 			break;
 		}
 		case TokenType::BINARY_OP:
 		{
-			node = std::make_shared<expr::BinaryOp>(lexer.loc, lexer.curr().str);
+			if (allow_unary_next && lexer.curr().str == "-")
+			{
+				node = std::make_shared<expr::UnaryOp>(lexer.loc, lexer.curr().str);
+			}
+			else
+			{
+				node = std::make_shared<expr::BinaryOp>(lexer.loc, lexer.curr().str);
+				allow_unary_next = true;
+			}
+
 			break;
 		}
 		case TokenType::OPEN_BRACKET:
@@ -494,6 +510,7 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, ParserScope const& sc
 				throw NIGHT_CREATE_FATAL("missing closing bracket in expression");
 
 			node->guard = true;
+			allow_unary_next = false;
 			break;
 		}
 		default:

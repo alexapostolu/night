@@ -166,9 +166,10 @@ public:
 
 	bytecodes_t generate_codes() const override;
 	std::optional<value_t> type_check(ParserScope const& scope) const override;
-
-public:
 	int precedence() const override;
+
+private:
+	static bytecodes_t int_to_bytecodes(int64_t int64);
 
 private:
 	value_t type;

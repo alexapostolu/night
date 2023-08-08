@@ -29,6 +29,7 @@ enum struct BytecodeType : bytecode_t
 	U_INT8,					//
 	FLOAT4,					//
 	FLOAT8,					//
+	STR,					// S_INT1 (length) (characters)
 
 	NEGATIVE,				// [val] NEGATIVE 
 	NOT,					//

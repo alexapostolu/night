@@ -296,30 +296,21 @@ bytecodes_t expr::Value::generate_codes() const
 		return { (bytecode_t)BytecodeType::CHAR1, (bytecode_t)std::stoi(val) };
 	case ValueType::INT:
 	{
-		bytecodes_t codes;
-		int64_t int64 = std::stoi(val);
-
-		if (int64 <= std::numeric_limits<uint8_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::S_INT1);
-		else if (int64 <= std::numeric_limits<uint16_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::S_INT2);
-		else if (int64 <= std::numeric_limits<uint32_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::S_INT4);
-		else if (int64 <= std::numeric_limits<uint64_t>::max())
-			codes.push_back((bytecode_t)BytecodeType::S_INT8);
-		else {}
-
-		do {
-			codes.push_back(int64 & 0xFF);
-		} while (int64 >>= 8);
-
-		return codes;
+		return int_to_bytecodes(std::stoll(val));
 	}
 	case ValueType::FLOAT: {
 		break;
 	}
 	case ValueType::STRING: {
-		break;
+		bytecodes_t codes{ (bytecode_t)BytecodeType::STR };
+		
+		auto length_codes = Value::int_to_bytecodes(val.length());
+		codes.insert(std::end(codes), std::begin(length_codes), std::end(length_codes));
+
+		for (char c : val)
+			codes.push_back((bytecode_t)c);
+
+		return codes;
 	}
 	default:
 		throw debug::unhandled_case((int)(type));
@@ -334,4 +325,26 @@ std::optional<value_t> expr::Value::type_check(ParserScope const& scope) const
 int expr::Value::precedence() const
 {
 	return single_prec;
+}
+
+bytecodes_t expr::Value::int_to_bytecodes(int64_t int64)
+{
+	bytecodes_t codes;
+
+	if (int64 <= std::numeric_limits<uint8_t>::max())
+		codes.push_back((bytecode_t)BytecodeType::S_INT1);
+	else if (int64 <= std::numeric_limits<uint16_t>::max())
+		codes.push_back((bytecode_t)BytecodeType::S_INT2);
+	else if (int64 <= std::numeric_limits<uint32_t>::max())
+		codes.push_back((bytecode_t)BytecodeType::S_INT4);
+	else if (int64 <= std::numeric_limits<uint64_t>::max())
+		codes.push_back((bytecode_t)BytecodeType::S_INT8);
+	else
+		throw debug::unhandled_case(int64);
+
+	do {
+		codes.push_back(int64 & 0xFF);
+	} while (int64 >>= 8);
+
+	return codes;
 }

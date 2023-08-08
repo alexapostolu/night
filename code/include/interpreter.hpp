@@ -8,6 +8,7 @@
 
 std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& i, bytecodes_t const& codes);
 
+void push_int(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it);
 void push_num(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it);
 
 intpr::Value pop(std::stack<intpr::Value>& s);

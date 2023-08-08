@@ -6,6 +6,7 @@
 #include <iostream>
 #include <stack>
 #include <string.h>
+#include <cmath>
 
 std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes)
 {
@@ -30,6 +31,8 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		case BytecodeType::U_INT2:
 		case BytecodeType::U_INT4:
 		case BytecodeType::U_INT8:
+			push_int(s, it);
+
 		case BytecodeType::FLOAT4:
 		case BytecodeType::FLOAT8:
 			push_num(s, it);
@@ -109,6 +112,44 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 	}
 
 	return std::nullopt;
+}
+
+void push_int(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it)
+{
+	int count;
+	bool neg;
+
+	switch ((BytecodeType)(*it))
+	{
+	case BytecodeType::S_INT1: count = 8; neg = true; break;
+	case BytecodeType::S_INT2: count = 16; neg = true; break;
+	case BytecodeType::S_INT4: count = 32; neg = true; break;
+	case BytecodeType::S_INT8: count = 64; neg = true; break;
+	case BytecodeType::U_INT1: count = 8; neg = false; break;
+	case BytecodeType::U_INT2: count = 16; neg = false; break;
+	case BytecodeType::U_INT4: count = 32; neg = false; break;
+	case BytecodeType::U_INT8: count = 64; neg = false; break;
+	default: throw debug::unhandled_case(*it);
+	}
+
+	if (neg)
+	{
+		int64_t num = *(++it);
+		for (int i = 8; i < count; i *= 2)
+		{
+			auto byte = *(++it);
+			num += byte * (pow(2, i));
+		}
+	}
+	else
+	{
+		uint64_t num = *(++it);
+		for (int i = 8; i < count; i *= 2)
+		{
+			auto byte = *(++it);
+			num += byte * (pow(2, i));
+		}
+	}
 }
 
 void push_num(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it)
