@@ -4,9 +4,10 @@
 #include "debug.hpp"
 
 #include <iostream>
-#include <stack>
-#include <string.h>
 #include <cmath>
+#include <stack>
+#include <optional>
+#include <assert.h>
 
 std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes)
 {
@@ -17,42 +18,42 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		switch ((BytecodeType)*it)
 		{
 		case BytecodeType::BOOL:
-			s.emplace(intpr::ValueType::INT, *(++it));
+			s.emplace((int64_t)*(++it));
 			break;
 		case BytecodeType::CHAR1:
-			s.emplace(intpr::ValueType::INT, *(++it));
+			s.emplace((int64_t)*(++it));
 			break;
 
 		case BytecodeType::S_INT1:
 		case BytecodeType::S_INT2:
 		case BytecodeType::S_INT4:
 		case BytecodeType::S_INT8:
+			s.emplace(get_int<int64_t>(it));
+			break;
+
 		case BytecodeType::U_INT1:
 		case BytecodeType::U_INT2:
 		case BytecodeType::U_INT4:
 		case BytecodeType::U_INT8:
-			push_int(s, it);
+			s.emplace(get_int<uint64_t>(it));
+			break;
 
 		case BytecodeType::FLOAT4:
 		case BytecodeType::FLOAT8:
-			push_num(s, it);
+			push_float(s, it);
 			break;
 
-		case BytecodeType::NEGATIVE: s.emplace(intpr::ValueType::INT, -pop(s).i); break;
-		case BytecodeType::NOT:		 s.emplace(intpr::ValueType::INT, !pop(s).i); break;
-
-		case BytecodeType::ADD: {
-			auto v1 = pop(s);
-			auto v2 = pop(s);
-			if (v1.type == intpr::ValueType::STR)
-				s.emplace(v1.s + v2.s);
-			else
-				s.emplace(intpr::ValueType::INT, v1.i + v2.i);
+		case BytecodeType::STR:
+			push_str(s, it);
 			break;
-		}
-		case BytecodeType::MULT: s.emplace(intpr::ValueType::INT, pop(s).i * pop(s).i); break;
-		case BytecodeType::DIV:  s.emplace(intpr::ValueType::INT, pop(s).i / pop(s).i); break;
-		case BytecodeType::SUB:  s.emplace(intpr::ValueType::INT, pop(s).i - pop(s).i); break;
+
+		case BytecodeType::NEGATIVE: s.emplace(- pop(s).i); break;
+		case BytecodeType::NOT:		 s.emplace((int64_t)!pop(s).i); break;
+
+		case BytecodeType::ADD:	 s.emplace(pop(s).i + pop(s).i); break;
+		case BytecodeType::MULT: s.emplace(pop(s).i * pop(s).i); break;
+		case BytecodeType::DIV:  s.emplace(pop(s).i / pop(s).i); break;
+		case BytecodeType::SUB:  s.emplace(pop(s).i - pop(s).i); break;
 
 		case BytecodeType::LOAD:
 			++it;
@@ -114,65 +115,79 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 	return std::nullopt;
 }
 
-void push_int(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it)
+int64_t get_sint(bytecodes_t::const_iterator& it)
 {
 	int count;
-	bool neg;
 
 	switch ((BytecodeType)(*it))
 	{
-	case BytecodeType::S_INT1: count = 8; neg = true; break;
-	case BytecodeType::S_INT2: count = 16; neg = true; break;
-	case BytecodeType::S_INT4: count = 32; neg = true; break;
-	case BytecodeType::S_INT8: count = 64; neg = true; break;
-	case BytecodeType::U_INT1: count = 8; neg = false; break;
-	case BytecodeType::U_INT2: count = 16; neg = false; break;
-	case BytecodeType::U_INT4: count = 32; neg = false; break;
-	case BytecodeType::U_INT8: count = 64; neg = false; break;
+	case BytecodeType::S_INT1: count = 8;  break;
+	case BytecodeType::S_INT2: count = 16; break;
+	case BytecodeType::S_INT4: count = 32; break;
+	case BytecodeType::S_INT8: count = 64; break;
 	default: throw debug::unhandled_case(*it);
 	}
 
-	if (neg)
+	int64_t num = *(++it);
+	for (int i = 8; i < count; i *= 2)
 	{
-		int64_t num = *(++it);
-		for (int i = 8; i < count; i *= 2)
-		{
-			auto byte = *(++it);
-			num += byte * (pow(2, i));
-		}
+		auto byte = *(++it);
+		num += byte * (pow(2, i));
 	}
-	else
-	{
-		uint64_t num = *(++it);
-		for (int i = 8; i < count; i *= 2)
-		{
-			auto byte = *(++it);
-			num += byte * (pow(2, i));
-		}
-	}
+
+	return num;
 }
 
-void push_num(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it)
+uint64_t get_uint(bytecodes_t::const_iterator& it)
+{
+	int count;
+
+	switch ((BytecodeType)(*it))
+	{
+	case BytecodeType::U_INT1: count = 8;  break;
+	case BytecodeType::U_INT2: count = 16; break;
+	case BytecodeType::U_INT4: count = 32; break;
+	case BytecodeType::U_INT8: count = 64; break;
+	default: throw debug::unhandled_case(*it);
+	}
+
+	uint64_t num = *(++it);
+	for (int i = 8; i < count; i *= 2)
+	{
+		auto byte = *(++it);
+		num += byte * (pow(2, i));
+	}
+
+	return num;
+}
+
+void push_float(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it)
 {
 	switch ((BytecodeType)(*(it++)))
 	{
-	case BytecodeType::S_INT1:
-		s.emplace(intpr::ValueType::INT, *it);
-		break;
-	case BytecodeType::S_INT2:
-	case BytecodeType::S_INT4:
-	case BytecodeType::S_INT8:
-	case BytecodeType::U_INT1:
-		s.emplace(intpr::ValueType::INT, *it);
-		break;
-	case BytecodeType::U_INT2:
-	case BytecodeType::U_INT4:
-	case BytecodeType::U_INT8:
 	case BytecodeType::FLOAT4:
+		break;
 	case BytecodeType::FLOAT8:
+		break;
 	default:
 		throw debug::unhandled_case(*it);
 	}
+}
+
+void push_str(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it)
+{
+	assert(*it == (bytecode_t)BytecodeType::STR);
+
+	std::string str;
+	int64_t size = get_int<int64_t>(++it);
+
+	for (int i = 0; i < size; ++i)
+	{
+		++it;
+		str += *it;
+	}
+
+	s.emplace(str);
 }
 
 intpr::Value pop(std::stack<intpr::Value>& s)

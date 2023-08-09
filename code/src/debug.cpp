@@ -1,10 +1,12 @@
 #include "debug.hpp"
+#include "parser_scope.hpp"
 #include "bytecode.hpp"
 
 #include <iostream>
 
 void debug::log_codes(bytecodes_t const& codes)
 {
+	return;
 	std::clog << "[printing bytecodes]\n";
 	for (auto it = std::cbegin(codes); it != std::cend(codes); ++it)
 	{
@@ -28,6 +30,9 @@ void debug::log_codes(bytecodes_t const& codes)
 		case BytecodeType::FLOAT4:
 		case BytecodeType::FLOAT8:
 			std::clog << night::to_str(*it) << ' ' << (int)(*(++it)) << '\n';
+			break;
+
+		case BytecodeType::STR:
 			break;
 
 		case BytecodeType::NEGATIVE: std::clog << "NEGATIVE\n"; break;
@@ -57,9 +62,16 @@ void debug::log_codes(bytecodes_t const& codes)
 		case BytecodeType::RETURN:
 			std::clog << "RETURN\n" << (int)(*(++it)) << '\n';
 			break;
-		case BytecodeType::CALL:
-			std::clog << "CALL " << (int)(*(++it)) << '\n';
+		case BytecodeType::CALL: {
+			int id = (int)(*(++it));
+			for (auto const& [name, func] : ParserScope::funcs)
+			{
+				if (id == func.id)
+					std::clog << "CALL " << name << " (" << id << ")\n";
+			}
+
 			break;
+		}
 
 		default:
 			throw debug::unhandled_case(*it);

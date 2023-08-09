@@ -55,4 +55,9 @@ struct Token
 	bool is_type() const;
 };
 
-std::string tok_type_to_str(TokenType type);
+namespace night
+{
+
+std::string to_str(TokenType type);
+
+}

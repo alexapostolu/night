@@ -25,9 +25,10 @@ struct Value
 	std::string s;
 
 	Value() = default;
-	Value(int64_t _i);
-	Value(float _i);
-	Value(std::string _s);
+	explicit Value(int64_t _i);
+	explicit Value(uint64_t _ui);
+	explicit Value(float _i);
+	explicit Value(std::string _s);
 	Value(Value const& _v);
 };
 

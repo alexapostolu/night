@@ -44,14 +44,20 @@ Token const& Lexer::curr() const
 	return curr_tok;
 }
 
-Token const& Lexer::expect(TokenType type, std::string const& err, std::source_location const& s_loc)
+Token const& Lexer::expect(TokenType type, std::string const& err)
 {
 	eat();
 
 	if (curr().type != type)
-		throw night::error::get().create_fatal_error("found '" + curr().str + "', expected " + tok_type_to_str(type) + " " + err, loc);
+		throw NIGHT_CREATE_FATAL_LEXER("found '" + curr().str + "', expected " + night::to_str(type) + " " + err);
 
 	return curr();
+}
+
+void Lexer::expect_curr(TokenType type)
+{
+	if (curr_tok.type != type)
+		throw NIGHT_CREATE_FATAL_LEXER("found '" + night::to_str(type) + "', expected '" + night::to_str(type) + "'");
 }
 
 void Lexer::scan_code(std::string const& code)

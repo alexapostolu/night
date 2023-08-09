@@ -3,7 +3,6 @@
 #include "token.hpp"
 #include "error.hpp"
 
-#include <source_location>
 #include <fstream>
 #include <string>
 
@@ -19,7 +18,9 @@ public:
 public:
 	Token const& eat();
 	Token const& curr() const;
-	Token const& expect(TokenType type, std::string const& err = "\n", std::source_location const& s_loc = std::source_location::current());
+
+	Token const& expect(TokenType type, std::string const& err = "\n");
+	void expect_curr(TokenType type);
 
 	// used for testing
 	void scan_code(std::string const& code);
