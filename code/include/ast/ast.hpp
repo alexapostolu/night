@@ -1,5 +1,6 @@
 #pragma once
 
+#include "parser_scope.hpp"
 #include "expression.hpp"
 #include "bytecode.hpp"
 #include "value_type.hpp"
@@ -20,6 +21,8 @@ class AST
 public:
 	AST(Location const& loc);
 
+	// this function must be called before generate_codes()
+	virtual void check(ParserScope& scope) = 0;
 	virtual bytecodes_t generate_codes() const = 0;
 
 protected:
@@ -32,14 +35,19 @@ class VariableInit : public AST
 public:
 	VariableInit(
 		Location const& _loc,
-		bytecode_t _id,
+		std::string const& _name,
+		std::string const& _type,
 		std::shared_ptr<expr::Expression> const& _expr);
 
+	void check(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
-	bytecode_t id;
+	std::string name;
+	value_t type;
 	std::shared_ptr<expr::Expression> expr;
+
+	bytecode_t id;
 };
 
 
@@ -48,16 +56,19 @@ class VariableAssign : public AST
 public:
 	VariableAssign(
 		Location const& _loc,
-		bytecode_t _id,
-		std::shared_ptr<expr::Expression> const& _val,
-		std::string const& assign_op);
+		std::string const& _name,
+		std::string const& assign_op,
+		std::shared_ptr<expr::Expression> const& _expr);
 
+	void check(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
-	bytecode_t id;
-	std::shared_ptr<expr::Expression> expr;
+	std::string name;
 	std::string assign_op;
+	std::shared_ptr<expr::Expression> expr;
+
+	bytecode_t id;
 };
 
 
@@ -70,6 +81,7 @@ public:
 			std::pair<std::shared_ptr<expr::Expression>, AST_Block>
 		> const& _conditionals);
 
+	void check(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
@@ -84,13 +96,14 @@ class While : public AST
 public:
 	While(
 		Location const& _loc,
-		std::shared_ptr<expr::Expression> const& _cond,
+		expr::expr_p const& _cond,
 		AST_Block const& _block);
 
+	void check(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
-	std::shared_ptr<expr::Expression> cond_expr;
+	expr::expr_p cond_expr;
 	AST_Block block;
 };
 
@@ -103,9 +116,10 @@ public:
 	For(
 		Location const& _loc,
 		VariableInit const& _var_init,
-		std::shared_ptr<expr::Expression> const& _cond_expr,
+		expr::expr_p const& _cond_expr,
 		AST_Block const& _block);
 
+	void check(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
@@ -119,16 +133,24 @@ class Function : public AST
 public:
 	Function(
 		Location const& _loc,
-		bytecode_t _func_id,
-		std::vector<bytecode_t> const& _param_ids,
+		std::string const& _name,
+		std::vector<std::string> const& _param_names,
+		std::vector<std::string> const& _param_types,
+		std::string const& _rtn_type,
 		AST_Block const& _block);
 
+	void check(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
-	bytecode_t func_id;
-	std::vector<bytecode_t> param_ids;
+	std::string name;
+	std::vector<std::string> param_names;
+	std::vector<value_t> param_types;
+	value_t rtn_type;
 	AST_Block block;
+
+	bytecode_t id;
+	std::vector<bytecode_t> param_ids;
 };
 
 
@@ -137,12 +159,13 @@ class Return : public AST
 public:
 	Return(
 		Location const& _loc,
-		std::shared_ptr<expr::Expression> _expr);
+		expr::expr_p _expr);
 
-	bytecodes_t generate_codes() const;
+	void check(ParserScope& scope) override;
+	bytecodes_t generate_codes() const override;
 
 private:
-	std::shared_ptr<expr::Expression> expr;
+	expr::expr_p expr;
 };
 
 
@@ -152,21 +175,21 @@ public:
 	FunctionCall(
 		Location const& _loc,
 		std::string const& _name,
-		bytecode_t _id,
-		std::vector<std::shared_ptr<expr::Expression>> const& _arg_exprs);
+		std::vector<expr::expr_p> const& _arg_exprs);
 
 	void insert_node(
-		std::shared_ptr<Expression> const& node,
-		std::shared_ptr<Expression>* prev = nullptr);
+		expr::expr_p const& node,
+		expr::expr_p* prev = nullptr);
 
-	bytecodes_t generate_codes() const;
-
-	std::optional<value_t> type_check(ParserScope const& scope) const;
+	std::optional<value_t> type_check(ParserScope const& scope) const override;
+	void check(ParserScope& scope) override;
+	bytecodes_t generate_codes() const override;
 
 	int precedence() const;
 
 private:
 	std::string name;
+	std::vector<expr::expr_p> arg_exprs;
+
 	bytecode_t id;
-	std::vector<std::shared_ptr<expr::Expression>> arg_exprs;
 };

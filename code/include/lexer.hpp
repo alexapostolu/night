@@ -20,7 +20,7 @@ public:
 	Token const& curr() const;
 
 	Token const& expect(TokenType type, std::string const& err = "\n");
-	void expect_curr(TokenType type);
+	void curr_expect(TokenType type);
 
 	// used for testing
 	void scan_code(std::string const& code);

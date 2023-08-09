@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 
 		/* code gen */
 
-		bytecodes_t codes = code_gen(ast_block);
+		bytecodes_t codes = code_gen(ast_block, global_scope);
 
 		// debugging
 		debug::log_codes(codes);

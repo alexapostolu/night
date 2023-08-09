@@ -13,6 +13,10 @@
 namespace expr
 {
 
+class Expression;
+using expr_p = std::shared_ptr<Expression>;
+
+
 enum class ExpressionType
 {
 	BRACKET,
@@ -31,8 +35,8 @@ public:
 		Location const& _loc);
 
 	virtual void insert_node(
-		std::shared_ptr<Expression> const& node,
-		std::shared_ptr<Expression>* prev = nullptr) = 0;
+		expr_p const& node,
+		expr_p* prev = nullptr) = 0;
 
 	virtual bytecodes_t generate_codes() const = 0;
 	virtual std::optional<value_t> type_check(ParserScope const& scope) const = 0;
@@ -133,15 +137,14 @@ class Variable : public Expression
 public:
 	Variable(
 		Location const& _loc,
-		std::string const& _name,
-		bytecode_t _id);
+		std::string const& _name);
 
 	void insert_node(
 		std::shared_ptr<Expression> const& node,
 		std::shared_ptr<Expression>* prev = nullptr) override;
 
+	std::optional<value_t> type_check(ParserScope const& scope) override;
 	bytecodes_t generate_codes() const override;
-	std::optional<value_t> type_check(ParserScope const& scope) const override;
 
 public:
 	int precedence() const override;

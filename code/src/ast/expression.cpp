@@ -244,9 +244,8 @@ int expr::BinaryOp::precedence() const
 
 expr::Variable::Variable(
 	Location const& _loc,
-	std::string const& _name,
-	bytecode_t _id)
-	: Expression(ExpressionType::VARIABLE, _loc), name(_name), id(_id) {}
+	std::string const& _name)
+	: Expression(ExpressionType::VARIABLE, _loc), name(_name) {}
 
 void expr::Variable::insert_node(
 	std::shared_ptr<expr::Expression> const& node,
@@ -256,14 +255,15 @@ void expr::Variable::insert_node(
 	*prev = node;
 }
 
+std::optional<value_t> expr::Variable::type_check(ParserScope const& scope)
+{
+	id = scope.vars.at(name).id;
+	return scope.vars.at(name).type;
+}
+
 bytecodes_t expr::Variable::generate_codes() const
 {
 	return { (bytecode_t)BytecodeType::LOAD, id };
-}
-
-std::optional<value_t> expr::Variable::type_check(ParserScope const& scope) const
-{
-	return scope.vars.at(name).type;
 }
 
 int expr::Variable::precedence() const
