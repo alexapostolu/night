@@ -61,6 +61,15 @@ void expr::UnaryOp::insert_node(
 	}
 }
 
+std::optional<value_t> expr::UnaryOp::type_check(ParserScope const& scope)
+{
+	auto type = expr->type_check(scope);
+	if (type.has_value() && is_object_t(*type))
+		night::error::get().create_minor_error("expression under operator ! has type '" + night::to_str(*type) + "', expected primitive type", loc);
+
+	return type;
+}
+
 bytecodes_t expr::UnaryOp::generate_codes() const
 {
 	bytecodes_t codes = expr->generate_codes();
@@ -78,15 +87,6 @@ bytecodes_t expr::UnaryOp::generate_codes() const
 	}
 
 	return codes;
-}
-
-std::optional<value_t> expr::UnaryOp::type_check(ParserScope const& scope) const
-{
-	auto type = expr->type_check(scope);
-	if (type.has_value() && is_object_t(*type))
-		night::error::get().create_minor_error("expression under operator ! has type '" + night::to_str(*type) + "', expected primitive type", loc);
-
-	return type;
 }
 
 int expr::UnaryOp::precedence() const
@@ -156,38 +156,7 @@ void expr::BinaryOp::insert_node(
 	}
 }
 
-bytecodes_t expr::BinaryOp::generate_codes() const
-{
-	bytecodes_t codes;
-	
-	auto codes_lhs = lhs->generate_codes();
-	codes.insert(std::end(codes), std::begin(codes_lhs), std::end(codes_lhs));
-
-	auto codes_rhs = rhs->generate_codes();
-	codes.insert(std::end(codes), std::begin(codes_rhs), std::end(codes_rhs));
-
-	switch (type)
-	{
-	case BinaryOpType::ADD:
-		codes.push_back((bytecode_t)BytecodeType::ADD);
-		break;
-	case BinaryOpType::SUB:
-		codes.push_back((bytecode_t)BytecodeType::SUB);
-		break;
-	case BinaryOpType::MULT:
-		codes.push_back((bytecode_t)BytecodeType::MULT);
-		break;
-	case BinaryOpType::DIV:
-		codes.push_back((bytecode_t)BytecodeType::DIV);
-		break;
-	default:
-		throw debug::unhandled_case((int)type);
-	}
-
-	return codes;
-}
-
-std::optional<value_t> expr::BinaryOp::type_check(ParserScope const& scope) const
+std::optional<value_t> expr::BinaryOp::type_check(ParserScope const& scope)
 {
 	if (type == BinaryOpType::DOT)
 	{
@@ -221,6 +190,37 @@ std::optional<value_t> expr::BinaryOp::type_check(ParserScope const& scope) cons
 	}
 }
 
+bytecodes_t expr::BinaryOp::generate_codes() const
+{
+	bytecodes_t codes;
+	
+	auto codes_lhs = lhs->generate_codes();
+	codes.insert(std::end(codes), std::begin(codes_lhs), std::end(codes_lhs));
+
+	auto codes_rhs = rhs->generate_codes();
+	codes.insert(std::end(codes), std::begin(codes_rhs), std::end(codes_rhs));
+
+	switch (type)
+	{
+	case BinaryOpType::ADD:
+		codes.push_back((bytecode_t)BytecodeType::ADD);
+		break;
+	case BinaryOpType::SUB:
+		codes.push_back((bytecode_t)BytecodeType::SUB);
+		break;
+	case BinaryOpType::MULT:
+		codes.push_back((bytecode_t)BytecodeType::MULT);
+		break;
+	case BinaryOpType::DIV:
+		codes.push_back((bytecode_t)BytecodeType::DIV);
+		break;
+	default:
+		throw debug::unhandled_case((int)type);
+	}
+
+	return codes;
+}
+
 int expr::BinaryOp::precedence() const
 {
 	if (guard)
@@ -251,7 +251,7 @@ void expr::Variable::insert_node(
 	std::shared_ptr<expr::Expression> const& node,
 	std::shared_ptr<expr::Expression>* prev)
 {
-	node->insert_node(std::make_shared<expr::Variable>(loc, name, id));
+	node->insert_node(std::make_shared<expr::Variable>(loc, name));
 	*prev = node;
 }
 
@@ -286,6 +286,11 @@ void expr::Value::insert_node(
 	*prev = node;
 }
 
+std::optional<value_t> expr::Value::type_check(ParserScope const& scope)
+{
+	return type;
+}
+
 bytecodes_t expr::Value::generate_codes() const
 {
 	switch ((ValueType)type)
@@ -315,11 +320,6 @@ bytecodes_t expr::Value::generate_codes() const
 	default:
 		throw debug::unhandled_case((int)(type));
 	}
-}
-
-std::optional<value_t> expr::Value::type_check(ParserScope const& scope) const
-{
-	return type;
 }
 
 int expr::Value::precedence() const

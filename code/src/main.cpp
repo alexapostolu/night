@@ -29,11 +29,11 @@ int main(int argc, char* argv[])
 
 		ParserScope global_scope;
 		AST_Block ast_block;
-		auto stmt = parse_stmts(lexer, global_scope);
+		auto stmt = parse_stmts(lexer);
 		while (!stmt.empty())
 		{
 			ast_block.insert(std::end(ast_block), std::begin(stmt), std::end(stmt));
-			stmt = parse_stmts(lexer, global_scope);
+			stmt = parse_stmts(lexer);
 		}
 
 		/* code gen */

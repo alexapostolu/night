@@ -181,7 +181,7 @@ public:
 		expr::expr_p const& node,
 		expr::expr_p* prev = nullptr);
 
-	std::optional<value_t> type_check(ParserScope const& scope) const override;
+	std::optional<value_t> type_check(ParserScope const& scope) override;
 	void check(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
 

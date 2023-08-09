@@ -1,6 +1,7 @@
 #include "ast/ast.hpp"
 #include "bytecode.hpp"
 #include "interpreter_scope.hpp"
+#include "utils.hpp"
 #include "error.hpp"
 #include "debug.hpp"
 
@@ -8,16 +9,6 @@
 #include <vector>
 #include <memory>
 #include <assert.h>
-
-value_t token_var_type_to_val_type(std::string const& type)
-{
-	if (type == "bool") return (value_t)ValueType::BOOL;
-	else if (type == "char") return (value_t)ValueType::CHAR;
-	else if (type == "int") return (value_t)ValueType::INT;
-	else if (type == "float") return (value_t)ValueType::FLOAT;
-	else if (type == "str") return (value_t)ValueType::STRING;
-	else throw debug::unhandled_case(type);
-}
 
 AST::AST(Location const& _loc)
 	: loc(_loc) {}
@@ -347,11 +338,11 @@ void FunctionCall::insert_node(
 	expr::expr_p const& node,
 	expr::expr_p* prev)
 {
-	node->insert_node(std::make_shared<FunctionCall>(AST::loc, name, id, arg_exprs));
+	node->insert_node(std::make_shared<FunctionCall>(AST::loc, name, arg_exprs));
 	*prev = node;
 }
 
-std::optional<value_t> FunctionCall::type_check(ParserScope const& scope) const
+std::optional<value_t> FunctionCall::type_check(ParserScope const& scope)
 {
 	std::vector<value_t> arg_types;
 	for (auto& arg_expr : arg_exprs)
@@ -374,12 +365,34 @@ std::optional<value_t> FunctionCall::type_check(ParserScope const& scope) const
 			"arguments in function call '" + name +
 			"' do not match with the parameters in its function definition", Expression::loc);
 
+	id = func->second.id;
 	return func->second.rtn_type;
 }
 
 void FunctionCall::check(ParserScope& scope)
 {
-	
+	std::vector<value_t> arg_types;
+	for (auto& arg_expr : arg_exprs)
+		arg_types.push_back(*arg_expr->type_check(scope));
+
+	auto [func, range_end] = ParserScope::funcs.equal_range(name);
+
+	if (func == range_end)
+		night::error::get().create_minor_error("function '" + name + "' is not defined", Expression::loc);
+
+	for (; func != range_end; ++func)
+	{
+		if (std::equal(std::begin(arg_types), std::end(arg_types),
+			std::begin(func->second.param_types), std::end(func->second.param_types)))
+			break;
+	}
+
+	if (func == range_end)
+		night::error::get().create_minor_error(
+			"arguments in function call '" + name +
+			"' do not match with the parameters in its function definition", Expression::loc);
+
+	id = func->second.id;
 }
 
 bytecodes_t FunctionCall::generate_codes() const

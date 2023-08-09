@@ -38,8 +38,8 @@ public:
 		expr_p const& node,
 		expr_p* prev = nullptr) = 0;
 
+	virtual std::optional<value_t> type_check(ParserScope const& scope) = 0;
 	virtual bytecodes_t generate_codes() const = 0;
-	virtual std::optional<value_t> type_check(ParserScope const& scope) const = 0;
 
 public:
 	virtual int precedence() const = 0;
@@ -83,10 +83,9 @@ public:
 		std::shared_ptr<Expression> const& node,
 		std::shared_ptr<Expression>* prev = nullptr) override;
 
+	std::optional<value_t> type_check(ParserScope const& scope) override;
 	bytecodes_t generate_codes() const;
-	std::optional<value_t> type_check(ParserScope const& scope) const override;
 
-public:
 	int precedence() const override;
 
 private:
@@ -121,7 +120,7 @@ public:
 		std::shared_ptr<Expression>* prev = nullptr) override;
 
 	bytecodes_t generate_codes() const override;
-	std::optional<value_t> type_check(ParserScope const& scope) const override;
+	std::optional<value_t> type_check(ParserScope const& scope) override;
 
 public:
 	int precedence() const override;
@@ -146,7 +145,6 @@ public:
 	std::optional<value_t> type_check(ParserScope const& scope) override;
 	bytecodes_t generate_codes() const override;
 
-public:
 	int precedence() const override;
 
 private:
@@ -167,8 +165,9 @@ public:
 		std::shared_ptr<expr::Expression> const& node,
 		std::shared_ptr<expr::Expression>* prev = nullptr) override;
 
+	std::optional<value_t> type_check(ParserScope const& scope) override;
 	bytecodes_t generate_codes() const override;
-	std::optional<value_t> type_check(ParserScope const& scope) const override;
+
 	int precedence() const override;
 
 private:

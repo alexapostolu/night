@@ -6,6 +6,7 @@
 #include "ast/ast.hpp"
 #include "ast/expression.hpp"
 #include "value_type.hpp"
+#include "utils.hpp"
 #include "error.hpp"
 #include "debug.hpp"
 
@@ -15,7 +16,7 @@
 #include <assert.h>
 #include <unordered_map>
 
-std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, ParserScope& scope, bool* curly_enclosed)
+std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, bool* curly_enclosed)
 {
 	bool conditional = false;
 
@@ -35,7 +36,7 @@ std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, ParserScope& scope, 
 			if (lexer.curr().type == TokenType::END_OF_FILE)
 				throw NIGHT_CREATE_FATAL("missing closing curly bracket");
 
-			block.push_back(parse_stmt(lexer, scope));
+			block.push_back(parse_stmt(lexer));
 		}
 
 		return block;
@@ -43,31 +44,31 @@ std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, ParserScope& scope, 
 	case TokenType::END_OF_FILE:
 		return {};
 	default:
-		return { parse_stmt(lexer, scope) };
+		return { parse_stmt(lexer) };
 	}
 }
 
-std::shared_ptr<AST> parse_stmt(Lexer& lexer, ParserScope& scope)
+std::shared_ptr<AST> parse_stmt(Lexer& lexer)
 {
 	assert(lexer.curr().type != TokenType::CLOSE_CURLY);
 	assert(lexer.curr().type != TokenType::END_OF_FILE);
 
 	switch (lexer.curr().type)
 	{
-	case TokenType::VARIABLE: return parse_var(lexer, scope);
-	case TokenType::IF:		  return std::make_shared<Conditional>(parse_if(lexer, scope));
+	case TokenType::VARIABLE: return parse_var(lexer);
+	case TokenType::IF:		  return std::make_shared<Conditional>(parse_if(lexer));
 	case TokenType::ELIF:	  throw NIGHT_CREATE_FATAL("elif statement must come before an if or elif statement");
 	case TokenType::ELSE:	  throw NIGHT_CREATE_FATAL("else statement must come before an if or elif statement");
-	case TokenType::FOR:	  return std::make_shared<For>(parse_for(lexer, scope));
-	case TokenType::WHILE:	  return std::make_shared<While>(parse_while(lexer, scope));
-	case TokenType::DEF:	  return std::make_shared<Function>(parse_func(lexer, scope));
-	case TokenType::RETURN:	  return std::make_shared<Return>(parse_return(lexer, scope));
+	case TokenType::FOR:	  return std::make_shared<For>(parse_for(lexer));
+	case TokenType::WHILE:	  return std::make_shared<While>(parse_while(lexer));
+	case TokenType::DEF:	  return std::make_shared<Function>(parse_func(lexer));
+	case TokenType::RETURN:	  return std::make_shared<Return>(parse_return(lexer));
 
 	default: throw NIGHT_CREATE_FATAL("unknown syntax '" + lexer.curr().str + "'");
 	}
 }
 
-std::shared_ptr<AST> parse_var(Lexer& lexer, ParserScope& scope)
+std::shared_ptr<AST> parse_var(Lexer& lexer)
 {
 	std::string var_name = lexer.curr().str;
 	
@@ -77,15 +78,15 @@ std::shared_ptr<AST> parse_var(Lexer& lexer, ParserScope& scope)
 
 	if (lexer.curr().is_type())
 	{
-		return std::make_shared<VariableInit>(parse_var_init(lexer, scope, var_name));
+		return std::make_shared<VariableInit>(parse_var_init(lexer, var_name));
 	}
 	else if (lexer.curr().type == TokenType::ASSIGN)
 	{
-		return std::make_shared<VariableAssign>(parse_var_assign(lexer, scope, var_name));
+		return std::make_shared<VariableAssign>(parse_var_assign(lexer, var_name));
 	}
 	else if (lexer.curr().type == TokenType::OPEN_BRACKET)
 	{
-		ast = std::make_shared<FunctionCall>(parse_func_call(lexer, scope, var_name));
+		ast = std::make_shared<FunctionCall>(parse_func_call(lexer, var_name));
 	}
 	else
 	{
@@ -96,7 +97,7 @@ std::shared_ptr<AST> parse_var(Lexer& lexer, ParserScope& scope)
 	return ast;
 }
 
-VariableInit parse_var_init(Lexer& lexer, ParserScope& scope, std::string const& var_name)
+VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 {
 	std::string var_type = lexer.curr().str;
 
@@ -123,17 +124,17 @@ VariableInit parse_var_init(Lexer& lexer, ParserScope& scope, std::string const&
 	return VariableInit(lexer.loc, var_name, var_type, var_expr);
 }
 
-VariableAssign parse_var_assign(Lexer& lexer, ParserScope& scope, std::string const& var_name)
+VariableAssign parse_var_assign(Lexer& lexer, std::string const& var_name)
 {
 	auto assign_op = lexer.curr().str;
-	auto expr = parse_expr(lexer, scope, true);
+	auto expr = parse_expr(lexer, true);
 
 	lexer.curr_expect(TokenType::SEMICOLON);
 
 	return VariableAssign(lexer.loc, var_name, assign_op, expr);
 }
 
-FunctionCall parse_func_call(Lexer& lexer, ParserScope const& scope, std::string const& func_name)
+FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name)
 {
 	// parse argument expressions and types
 
@@ -163,7 +164,7 @@ FunctionCall parse_func_call(Lexer& lexer, ParserScope const& scope, std::string
 	return FunctionCall(lexer.loc, func_name, arg_exprs);
 }
 
-Conditional parse_if(Lexer& lexer, ParserScope& scope)
+Conditional parse_if(Lexer& lexer)
 {
 	std::vector<std::pair<expr::expr_p, AST_Block>> conditionals;
 
@@ -181,8 +182,7 @@ Conditional parse_if(Lexer& lexer, ParserScope& scope)
 			lexer.curr_expect(TokenType::CLOSE_BRACKET);
 		}
 
-		ParserScope stmt_scope{ scope.vars };
-		conditionals.push_back({ cond_expr, parse_stmts(lexer, stmt_scope) });
+		conditionals.push_back({ cond_expr, parse_stmts(lexer) });
 
 		lexer.eat();
 	} while (lexer.curr().type == TokenType::IF	  ||
@@ -192,7 +192,7 @@ Conditional parse_if(Lexer& lexer, ParserScope& scope)
 	return Conditional(lexer.loc, conditionals);
 }
 
-While parse_while(Lexer& lexer, ParserScope& scope)
+While parse_while(Lexer& lexer)
 {
 	lexer.expect(TokenType::OPEN_BRACKET);
 
@@ -200,22 +200,21 @@ While parse_while(Lexer& lexer, ParserScope& scope)
 
 	lexer.curr_expect(TokenType::CLOSE_BRACKET);
 
-	ParserScope stmt_scope{ scope.vars };
-	return While(lexer.loc, cond_expr, parse_stmts(lexer, stmt_scope));
+	return While(lexer.loc, cond_expr, parse_stmts(lexer));
 }
 
-For parse_for(Lexer& lexer, ParserScope& scope)
+For parse_for(Lexer& lexer)
 {
 	// initialization
 
 	lexer.expect(TokenType::OPEN_BRACKET);
 	auto var_init_name = lexer.expect(TokenType::VARIABLE).str;
 
-	auto var_init = parse_var_init(lexer, scope, var_init_name);
+	auto var_init = parse_var_init(lexer, var_init_name);
 	
 	// condition
 
-	auto cond_expr = parse_expr(lexer, scope, true);
+	auto cond_expr = parse_expr(lexer, true);
 
 	lexer.curr_expect(TokenType::SEMICOLON);
 
@@ -224,19 +223,18 @@ For parse_for(Lexer& lexer, ParserScope& scope)
 	auto var_assign_name = lexer.expect(TokenType::VARIABLE).str;
 	lexer.expect(TokenType::ASSIGN);
 
-	auto var_assign = parse_var_assign(lexer, scope, var_assign_name);
+	auto var_assign = parse_var_assign(lexer, var_assign_name);
 
 	// body
 
-	ParserScope stmt_scope{ scope.vars };
-	auto stmts = parse_stmts(lexer, stmt_scope);
+	auto stmts = parse_stmts(lexer);
 
 	stmts.push_back(std::make_shared<VariableAssign>(var_assign));
 
 	return For(lexer.loc, var_init, cond_expr, stmts);
 }
 
-Function parse_func(Lexer& lexer, ParserScope& scope)
+Function parse_func(Lexer& lexer)
 {
 	std::string func_name = lexer.expect(TokenType::VARIABLE).str;
 	lexer.expect(TokenType::OPEN_BRACKET);
@@ -265,18 +263,14 @@ Function parse_func(Lexer& lexer, ParserScope& scope)
 	}
 
 	auto rtn_type = lexer.eat();
-	ParserScope::curr_rtn_type = std::nullopt;
+
 	if (!rtn_type.is_type() && rtn_type.type != TokenType::VOID)
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected return type");
 
-	// parse the body
-
-	Function func(lexer.loc, func_name, param_names, param_types, rtn_type.type, parse_stmts(lexer, body_scope));
-
-	return func;
+	return Function(lexer.loc, func_name, param_names, param_types, rtn_type.str, parse_stmts(lexer));;
 }
 
-Return parse_return(Lexer& lexer, ParserScope& scope)
+Return parse_return(Lexer& lexer)
 {
 	auto expr = parse_expr(lexer, false);
 	lexer.curr_expect(TokenType::SEMICOLON);
@@ -370,7 +364,7 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, bool err_on_empty)
 		}
 		case TokenType::OPEN_BRACKET:
 		{
-			node = parse_expr(lexer, scope, err_on_empty);
+			node = parse_expr(lexer, err_on_empty);
 
 			if (lexer.curr().type != TokenType::CLOSE_BRACKET)
 				throw NIGHT_CREATE_FATAL("missing closing bracket in expression");
@@ -393,14 +387,4 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, bool err_on_empty)
 		else
 			head->insert_node(node, &head);
 	}
-}
-
-value_t token_var_type_to_val_type(std::string const& type)
-{
-	if (type == "bool") return (value_t)ValueType::BOOL;
-	else if (type == "char") return (value_t)ValueType::CHAR;
-	else if (type == "int") return (value_t)ValueType::INT;
-	else if (type == "float") return (value_t)ValueType::FLOAT;
-	else if (type == "str") return (value_t)ValueType::STRING;
-	else throw debug::unhandled_case(type);
 }
