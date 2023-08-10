@@ -27,7 +27,8 @@ std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, bool* curly_enclosed
 	{
 	case TokenType::OPEN_CURLY:
 	{
-		*curly_enclosed = true;
+		if (curly_enclosed)
+			*curly_enclosed = true;
 
 		std::vector<std::shared_ptr<AST>> block;
 
@@ -301,6 +302,12 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, bool err_on_empty)
 
 		switch (comp.type)
 		{
+		case TokenType::BOOL_LIT:
+		{
+			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::BOOL, lexer.curr().str);
+			allow_unary_next = false;
+			break;
+		}
 		case TokenType::CHAR_LIT:
 		{
 			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::CHAR, lexer.curr().str);

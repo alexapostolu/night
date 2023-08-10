@@ -196,8 +196,8 @@ bytecodes_t While::generate_codes() const
 		codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
 	}
 
-	codes.push_back((bytecode_t)BytecodeType::JUMP);
-	codes.push_back(offset_index);
+	codes.push_back((bytecode_t)BytecodeType::NJUMP);
+	codes.push_back(codes.size() - 2);
 
 	// insert offset after JUMP_IF_FALSE
 	codes.insert(std::begin(codes) + offset_index, codes.size() - offset_index);

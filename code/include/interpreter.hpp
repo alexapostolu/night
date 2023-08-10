@@ -4,6 +4,7 @@
 #include "bytecode.hpp"
 #include "debug.hpp"
 
+#include <math.h>
 #include <stack>
 #include <optional>
 
@@ -19,13 +20,13 @@ T get_int(bytecodes_t::const_iterator& it)
 
 	switch ((BytecodeType)(*it))
 	{
-	case BytecodeType::S_INT1: count = 8;  break;
-	case BytecodeType::S_INT2: count = 16; break;
-	case BytecodeType::S_INT4: count = 32; break;
-	case BytecodeType::S_INT8: count = 64; break;
+	case BytecodeType::S_INT1:
 	case BytecodeType::U_INT1: count = 8;  break;
+	case BytecodeType::S_INT2:
 	case BytecodeType::U_INT2: count = 16; break;
+	case BytecodeType::S_INT4:
 	case BytecodeType::U_INT4: count = 32; break;
+	case BytecodeType::S_INT8:
 	case BytecodeType::U_INT8: count = 64; break;
 	default: throw debug::unhandled_case(*it);
 	}
@@ -34,7 +35,7 @@ T get_int(bytecodes_t::const_iterator& it)
 	for (int i = 8; i < count; i *= 2)
 	{
 		auto byte = *(++it);
-		num += byte * (pow(2, i));
+		num += byte * pow(2, i);
 	}
 
 	return num;

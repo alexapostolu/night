@@ -120,6 +120,10 @@ expr::BinaryOp::BinaryOp(
 		type = BinaryOpType::MULT;
 	else if (_type == "/")
 		type = BinaryOpType::DIV;
+	else if (_type == "<")
+		type = BinaryOpType::LESSER;
+	else if (_type == ">")
+		type = BinaryOpType::GREATER;
 	else if (_type == ".")
 		type = BinaryOpType::DOT;
 	else
@@ -180,10 +184,10 @@ std::optional<value_t> expr::BinaryOp::type_check(ParserScope const& scope)
 		if (rhs_type.has_value() && is_object_t(*rhs_type))
 			night::error::get().create_minor_error("variable '' can not be used with operator +", loc);
 
+		if (*lhs_type == (value_t)ValueType::STRING && *lhs_type == *rhs_type)
+			return (value_t)ValueType::STRING;
 		if (*lhs_type == (value_t)ValueType::INT || *rhs_type == (value_t)ValueType::INT)
 			return (value_t)ValueType::INT;
-		//if (*lhs_type == (val::value_t)val::ValueType::U_INT || *rhs_type == (val::value_t)val::ValueType::U_INT)
-			//return (val::value_t)val::ValueType::U_INT;
 		if (*lhs_type == (value_t)ValueType::CHAR || *rhs_type == (value_t)ValueType::CHAR)
 			return (value_t)ValueType::CHAR;
 		return (value_t)ValueType::BOOL;
@@ -214,6 +218,12 @@ bytecodes_t expr::BinaryOp::generate_codes() const
 	case BinaryOpType::DIV:
 		codes.push_back((bytecode_t)BytecodeType::DIV);
 		break;
+	case BinaryOpType::LESSER:
+		codes.push_back((bytecode_t)BytecodeType::LESSER);
+		break;
+	case BinaryOpType::GREATER:
+		codes.push_back((bytecode_t)BytecodeType::GREATER);
+		break;
 	default:
 		throw debug::unhandled_case((int)type);
 	}
@@ -228,14 +238,17 @@ int expr::BinaryOp::precedence() const
 
 	switch (type)
 	{
+	case BinaryOpType::LESSER:
+	case BinaryOpType::GREATER:
+		return bin_op_prec + 1;
 	case BinaryOpType::ADD:
 	case BinaryOpType::SUB:
-		return bin_op_prec + 1;
+		return bin_op_prec + 2;
 	case BinaryOpType::MULT:
 	case BinaryOpType::DIV:
-		return bin_op_prec + 2;
-	case BinaryOpType::DOT:
 		return bin_op_prec + 3;
+	case BinaryOpType::DOT:
+		return bin_op_prec + 4;
 	default:
 		throw debug::unhandled_case((int)type);
 	}
@@ -296,7 +309,7 @@ bytecodes_t expr::Value::generate_codes() const
 	switch ((ValueType)type)
 	{
 	case ValueType::BOOL:
-		return { (bytecode_t)BytecodeType::BOOL, std::stod(val) != 0 };
+		return { (bytecode_t)BytecodeType::BOOL, val == "true" };
 	case ValueType::CHAR:
 		return { (bytecode_t)BytecodeType::CHAR1, (bytecode_t)std::stoi(val) };
 	case ValueType::INT:

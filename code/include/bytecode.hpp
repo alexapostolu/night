@@ -39,11 +39,15 @@ enum struct BytecodeType : bytecode_t
 	MULT,					//
 	DIV,					//
 
+	LESSER,
+	GREATER,
+
 	LOAD,					// LOAD  (var_id)
 	STORE,					// STORE (var_id)
 
 	JUMP_IF_FALSE,			// [cond] JUMP_IF_FALSE (offset)	// jumps to next in conditional chain
 	JUMP,					// JUMP (offset)					// jumps to end of conditional chain
+	NJUMP,
 
 	RETURN,					// [val] RETURN
 	CALL					// [parameters as variable initializations] FUNC_CALL

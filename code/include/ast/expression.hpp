@@ -97,6 +97,7 @@ private:
 enum class BinaryOpType
 {
 	ADD, SUB, MULT, DIV,
+	LESSER, GREATER,
 	DOT
 };
 

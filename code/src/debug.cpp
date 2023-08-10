@@ -7,6 +7,7 @@
 void debug::log_codes(bytecodes_t const& codes)
 {
 	return;
+
 	std::clog << "[printing bytecodes]\n";
 	for (auto it = std::cbegin(codes); it != std::cend(codes); ++it)
 	{
@@ -33,6 +34,7 @@ void debug::log_codes(bytecodes_t const& codes)
 			break;
 
 		case BytecodeType::STR:
+			(++it);
 			break;
 
 		case BytecodeType::NEGATIVE: std::clog << "NEGATIVE\n"; break;
