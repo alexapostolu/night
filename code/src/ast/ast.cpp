@@ -83,12 +83,14 @@ void VariableAssign::check(ParserScope& scope)
 
 bytecodes_t VariableAssign::generate_codes() const
 {
+	assert(id.has_value());
+
 	bytecodes_t codes = expr->generate_codes();
 
 	if (assign_op != "=")
 	{
 		codes.push_back((bytecode_t)BytecodeType::LOAD);
-		codes.push_back(id);
+		codes.push_back(*id);
 
 		if      (assign_op == "+=")	codes.push_back((bytecode_t)BytecodeType::ADD);
 		else if (assign_op == "-=") codes.push_back((bytecode_t)BytecodeType::SUB);
@@ -98,7 +100,7 @@ bytecodes_t VariableAssign::generate_codes() const
 	}
 
 	codes.push_back((bytecode_t)BytecodeType::STORE);
-	codes.push_back(id);
+	codes.push_back(*id);
 
 	return codes;
 }
@@ -185,6 +187,8 @@ void While::check(ParserScope& scope)
 
 bytecodes_t While::generate_codes() const
 {
+	//
+	// [0] [1] [2] [3] [4] [NJUMP] [x] 
 	auto codes = cond_expr->generate_codes();
 
 	codes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE);
@@ -197,7 +201,7 @@ bytecodes_t While::generate_codes() const
 	}
 
 	codes.push_back((bytecode_t)BytecodeType::NJUMP);
-	codes.push_back(codes.size() - 2);
+	codes.push_back(codes.size() + 2);
 
 	// insert offset after JUMP_IF_FALSE
 	codes.insert(std::begin(codes) + offset_index, codes.size() - offset_index);

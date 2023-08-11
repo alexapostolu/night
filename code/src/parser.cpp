@@ -300,6 +300,11 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, bool err_on_empty)
 			next.str = "";
 		}
 
+		if (comp.is_type())
+		{
+			comp.type = TokenType::VARIABLE;
+		}
+
 		switch (comp.type)
 		{
 		case TokenType::BOOL_LIT:

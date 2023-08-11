@@ -57,7 +57,7 @@ Token const& Lexer::expect(TokenType type, std::string const& err)
 void Lexer::curr_expect(TokenType type)
 {
 	if (curr_tok.type != type)
-		throw NIGHT_CREATE_FATAL_LEXER("found '" + night::to_str(type) + "', expected '" + night::to_str(type) + "'");
+		throw NIGHT_CREATE_FATAL_LEXER("found '" + night::to_str(curr_tok.type) + "', expected '" + night::to_str(type) + "'");
 }
 
 void Lexer::scan_code(std::string const& code)

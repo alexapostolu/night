@@ -68,7 +68,7 @@ private:
 	std::string assign_op;
 	std::shared_ptr<expr::Expression> expr;
 
-	bytecode_t id;
+	std::optional<bytecode_t> id;
 };
 
 

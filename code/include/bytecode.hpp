@@ -40,7 +40,7 @@ enum struct BytecodeType : bytecode_t
 	DIV,					//
 
 	LESSER,
-	GREATER,
+	GREATER, // 20
 
 	LOAD,					// LOAD  (var_id)
 	STORE,					// STORE (var_id)
@@ -50,7 +50,7 @@ enum struct BytecodeType : bytecode_t
 	NJUMP,
 
 	RETURN,					// [val] RETURN
-	CALL					// [parameters as variable initializations] FUNC_CALL
+	CALL					// [parameters as expressions] FUNC_CALL
 };
 
 //void bytecode_create_int(bytecodes_t& codes, int64_t num, int i = -1);

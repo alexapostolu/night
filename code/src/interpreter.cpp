@@ -84,7 +84,8 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		case BytecodeType::JUMP_IF_FALSE:
 			if (!pop(s).i)
 				std::advance(it, *(++it));
-			++it;
+			else
+				++it;
 			break;
 
 		case BytecodeType::JUMP:
@@ -111,6 +112,10 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 				std::string str;
 				std::cin >> str;
 				s.emplace(str);
+				break;
+			}
+			case 6: {
+				s.emplace((int64_t)std::stoi(pop(s).s));
 				break;
 			}
 			default: {
