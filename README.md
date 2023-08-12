@@ -33,7 +33,12 @@ night source.night
 
 **Linux Build:**
 
-Coming soon
+```
+cmake -G "Unix Makefiles" .
+cmake --build .
+
+./night source.night
+```
 
 ---
 
