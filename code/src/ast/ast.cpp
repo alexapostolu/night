@@ -151,15 +151,16 @@ bytecodes_t Conditional::generate_codes() const
 		}
 
 		// insert offset after JUMP_IF_FALSE
-		codes.insert(std::begin(codes) + offset_index, codes.size() - offset_index);
+		codes.insert(std::begin(codes) + offset_index, codes.size() - offset_index + 2);
 
 		codes.push_back((bytecode_t)BytecodeType::JUMP);
-		jumps.push_back(codes.size());
+		jumps.push_back(codes.size() + jumps.size());
 	}
 
 	// insert offsets after JUMP
-	for (int jump : jumps)
-		codes.insert(std::begin(codes) + jump, codes.size() - jump);
+	int final_size = codes.size() + jumps.size();
+	for (int i = 0; i < jumps.size(); ++i)
+		codes.insert(std::begin(codes) + jumps[i], final_size - jumps[i] - 1);
 
 	return codes;
 }

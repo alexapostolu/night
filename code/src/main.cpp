@@ -27,17 +27,16 @@ int main(int argc, char* argv[])
 
 		/* parser */
 
-		ParserScope global_scope;
 		AST_Block ast_block;
-		auto stmt = parse_stmts(lexer);
-		while (!stmt.empty())
-		{
+
+		do {
+			auto stmt = parse_stmts(lexer);
 			ast_block.insert(std::end(ast_block), std::begin(stmt), std::end(stmt));
-			stmt = parse_stmts(lexer);
-		}
+		} while (lexer.curr().type != TokenType::END_OF_FILE);
 
 		/* code gen */
 
+		ParserScope global_scope;
 		bytecodes_t codes = code_gen(ast_block, global_scope);
 
 		// debugging

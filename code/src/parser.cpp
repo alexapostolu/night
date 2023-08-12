@@ -51,9 +51,6 @@ std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, bool* curly_enclosed
 
 std::shared_ptr<AST> parse_stmt(Lexer& lexer)
 {
-	assert(lexer.curr().type != TokenType::CLOSE_CURLY);
-	assert(lexer.curr().type != TokenType::END_OF_FILE);
-
 	switch (lexer.curr().type)
 	{
 	case TokenType::VARIABLE: return parse_var(lexer);
@@ -172,7 +169,7 @@ Conditional parse_if(Lexer& lexer)
 	do {
 		// default for else statements
 		std::shared_ptr<expr::Expression> cond_expr =
-			std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::BOOL, "1");
+			std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::BOOL, "true");
 
 		// parse condition
 		if (lexer.curr().type != TokenType::ELSE)
