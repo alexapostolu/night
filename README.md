@@ -40,6 +40,8 @@ cmake --build .
 ./night source.night
 ```
 
+`source.night` is a generic path name to your source file
+
 ---
 
 Website is hosted here: https://github.com/alexapostolu/night-web
