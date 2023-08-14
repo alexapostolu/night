@@ -89,15 +89,20 @@ std::shared_ptr<AST> parse_var(Lexer& lexer)
 	
 	lexer.eat();
 
-	std::shared_ptr<AST> ast;
-
 	if (lexer.curr().is_type())
 	{
-		return std::make_shared<VariableInit>(parse_var_init(lexer, var_name));
+		auto const& ast = std::make_shared<VariableInit>(parse_var_init(lexer, var_name));
+
+		lexer.eat();
+		return ast;
 	}
 	else if (lexer.curr().type == TokenType::ASSIGN)
 	{
-		return std::make_shared<VariableAssign>(parse_var_assign(lexer, var_name));
+		auto const& ast = std::make_shared<VariableAssign>(parse_var_assign(lexer, var_name));
+		lexer.curr_expect(TokenType::SEMICOLON);
+
+		lexer.eat();
+		return ast;
 	}
 	else if (lexer.curr().type == TokenType::OPEN_BRACKET)
 	{
@@ -133,7 +138,6 @@ VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "' expected semicolon or assignment after variable type");
 	}
 
-	lexer.eat();
 	return VariableInit(lexer.loc, var_name, var_type, var_expr);
 }
 
@@ -141,8 +145,6 @@ VariableAssign parse_var_assign(Lexer& lexer, std::string const& var_name)
 {
 	auto assign_op = lexer.curr().str;
 	auto expr = parse_expr(lexer, true);
-
-	lexer.curr_expect(TokenType::SEMICOLON);
 
 	return VariableAssign(lexer.loc, var_name, assign_op, expr);
 }
@@ -215,6 +217,7 @@ While parse_while(Lexer& lexer)
 	auto cond_expr = parse_expr(lexer, true);
 
 	lexer.curr_expect(TokenType::CLOSE_BRACKET);
+	lexer.eat();
 
 	return While(lexer.loc, cond_expr, parse_stmts(lexer));
 }
@@ -225,6 +228,9 @@ For parse_for(Lexer& lexer)
 
 	lexer.expect(TokenType::OPEN_BRACKET);
 	auto var_init_name = lexer.expect(TokenType::VARIABLE).str;
+
+	if (!lexer.eat().is_type())
+		throw NIGHT_CREATE_FATAL("expected variable type after '" + var_init_name + "'");
 
 	auto var_init = parse_var_init(lexer, var_init_name);
 	
@@ -240,12 +246,16 @@ For parse_for(Lexer& lexer)
 	lexer.expect(TokenType::ASSIGN);
 
 	auto var_assign = parse_var_assign(lexer, var_assign_name);
+	lexer.curr_expect(TokenType::CLOSE_BRACKET);
 
 	// body
 
+	lexer.eat();
 	auto stmts = parse_stmts(lexer);
 
 	stmts.push_back(std::make_shared<VariableAssign>(var_assign));
+
+	lexer.eat();
 
 	return For(lexer.loc, var_init, cond_expr, stmts);
 }
@@ -283,13 +293,17 @@ Function parse_func(Lexer& lexer)
 	if (!rtn_type.is_type() && rtn_type.type != TokenType::VOID)
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected return type");
 
+	lexer.eat();
+
 	return Function(lexer.loc, func_name, param_names, param_types, rtn_type.str, parse_stmts(lexer));;
 }
 
 Return parse_return(Lexer& lexer)
 {
-	auto expr = parse_expr(lexer, false);
+	auto const& expr = parse_expr(lexer, false);
 	lexer.curr_expect(TokenType::SEMICOLON);
+
+	lexer.eat();
 
 	return Return(lexer.loc, expr);
 }

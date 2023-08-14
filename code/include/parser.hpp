@@ -36,7 +36,7 @@ std::shared_ptr<AST> parse_stmt(
 //   function call
 std::shared_ptr<AST> parse_var(Lexer& lexer);
 
-// lexer
+// lexer:
 //   start: variable type
 //   end: semicolon
 // examples:
@@ -44,28 +44,22 @@ std::shared_ptr<AST> parse_var(Lexer& lexer);
 //   my_var int = [expression];
 VariableInit parse_var_init(Lexer& lexer, std::string const& var_name);
 
-// caller's responsibility to check current token of lexer
-// lexer
-//   start: assignment
-//   end:   first token after expression
+// lexer:
+//   start: assignment operator
+//   end: first token of next statement
 // examples:
 //   my_var = [expression];
-//   my_var += [expression];
+//   for (;; my_var += 1) {}
 VariableAssign parse_var_assign(Lexer& lexer, std::string const& var_name);
 
-// lexer
-//   start: open bracket
-//   end: semicolon
+// for the follow functions,
+// the lexer should always end at the next statement
 FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name);
 
 Conditional parse_if(Lexer& lexer);
-
 While parse_while(Lexer& lexer);
-
 For parse_for(Lexer& lexer);
-
 Function parse_func(Lexer& lexer);
-
 Return parse_return(Lexer& lexer);
 
 // if expr is null, it is the callers responsibility to handle,
