@@ -1,5 +1,4 @@
 #include "parse_args.hpp"
-#include "lexer.hpp"
 #include "parser.hpp"
 #include "parser_scope.hpp"
 #include "code_gen.hpp"
@@ -21,23 +20,13 @@ int main(int argc, char* argv[])
 		return 0;
 
 	try {
-		/* lexer */
-
-		Lexer lexer(main_file);
-
 		/* parser */
 
-		AST_Block ast_block;
-
-		do {
-			auto stmt = parse_stmts(lexer);
-			ast_block.insert(std::end(ast_block), std::begin(stmt), std::end(stmt));
-		} while (lexer.curr().type != TokenType::END_OF_FILE);
+		AST_Block ast_block = parse_file(main_file);
 
 		/* code gen */
 
-		ParserScope global_scope;
-		bytecodes_t codes = code_gen(ast_block, global_scope);
+		bytecodes_t codes = code_gen(ast_block);
 
 		// debugging
 		debug::log_codes(codes);

@@ -44,12 +44,12 @@ Token const& Lexer::curr() const
 	return curr_tok;
 }
 
-Token const& Lexer::expect(TokenType type, std::string const& err)
+Token const& Lexer::expect(TokenType type, std::string const& err, std::source_location const& s_loc)
 {
 	eat();
 
 	if (curr().type != type)
-		throw NIGHT_CREATE_FATAL_LEXER("found '" + curr().str + "', expected " + night::to_str(type) + " " + err);
+		throw night::error::get().create_fatal_error("found '" + curr().str + "', expected " + night::to_str(type) + " " + err, loc, s_loc);
 
 	return curr();
 }

@@ -10,11 +10,26 @@
 #include "error.hpp"
 #include "debug.hpp"
 
-#include <algorithm>
+#include <unordered_map>
 #include <variant>
 #include <string>
 #include <assert.h>
-#include <unordered_map>
+
+AST_Block parse_file(std::string const& main_file)
+{
+	Lexer lexer(main_file);
+	AST_Block block;
+
+	lexer.eat();
+
+	while (lexer.curr().type != TokenType::END_OF_FILE)
+	{
+		auto stmt = parse_stmts(lexer);
+		block.insert(std::end(block), std::begin(stmt), std::end(stmt));
+	}
+
+	return block;
+}
 
 std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, bool* curly_enclosed)
 {
@@ -23,7 +38,7 @@ std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, bool* curly_enclosed
 	// two cases:
 	//   { stmt1; stmt2; ... }
 	//   stmt1;
-	switch (lexer.eat().type)
+	switch (lexer.curr().type)
 	{
 	case TokenType::OPEN_CURLY:
 	{
@@ -32,12 +47,14 @@ std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, bool* curly_enclosed
 
 		std::vector<std::shared_ptr<AST>> block;
 
-		while (lexer.eat().type != TokenType::CLOSE_CURLY)
+		lexer.eat();
+
+		while (lexer.curr().type != TokenType::CLOSE_CURLY)
 		{
+			block.push_back(parse_stmt(lexer));
+
 			if (lexer.curr().type == TokenType::END_OF_FILE)
 				throw NIGHT_CREATE_FATAL("missing closing curly bracket");
-
-			block.push_back(parse_stmt(lexer));
 		}
 
 		return block;
@@ -84,15 +101,12 @@ std::shared_ptr<AST> parse_var(Lexer& lexer)
 	}
 	else if (lexer.curr().type == TokenType::OPEN_BRACKET)
 	{
-		ast = std::make_shared<FunctionCall>(parse_func_call(lexer, var_name));
+		return std::make_shared<FunctionCall>(parse_func_call(lexer, var_name));
 	}
 	else
 	{
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected variable type or assignment after variable name '" + var_name + "'");
 	}
-
-	lexer.expect(TokenType::SEMICOLON);
-	return ast;
 }
 
 VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
@@ -119,6 +133,7 @@ VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "' expected semicolon or assignment after variable type");
 	}
 
+	lexer.eat();
 	return VariableInit(lexer.loc, var_name, var_type, var_expr);
 }
 
@@ -138,10 +153,12 @@ FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name)
 
 	std::vector<expr::expr_p> arg_exprs;
 
-	while (lexer.curr().type != TokenType::CLOSE_BRACKET)
+	while (true)
 	{
 		auto expr = parse_expr(lexer, false);
 
+		// case:
+		//   func_call();
 		if (!expr)
 		{
 			lexer.curr_expect(TokenType::CLOSE_BRACKET);
@@ -154,11 +171,11 @@ FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name)
 			break;
 
 		lexer.curr_expect(TokenType::COMMA);
-		lexer.eat();
-	}
+	};
 
-	// match the function call with its ParserScope function
+	lexer.expect(TokenType::SEMICOLON);
 
+	lexer.eat();
 	return FunctionCall(lexer.loc, func_name, arg_exprs);
 }
 
@@ -180,6 +197,7 @@ Conditional parse_if(Lexer& lexer)
 			lexer.curr_expect(TokenType::CLOSE_BRACKET);
 		}
 
+		lexer.eat();
 		conditionals.push_back({ cond_expr, parse_stmts(lexer) });
 
 		lexer.eat();

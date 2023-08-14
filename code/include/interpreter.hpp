@@ -8,7 +8,7 @@
 #include <stack>
 #include <optional>
 
-std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& i, bytecodes_t const& codes);
+std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes);
 
 // iterator
 //   start: int bytecode type
