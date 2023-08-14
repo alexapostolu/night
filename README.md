@@ -6,11 +6,15 @@ Night is a static, bytecode interpreted language with strong management on types
 
 ## Project Status
 
-Under Development
+`v0.0.0` Under Development
 
 **v0.0.0**
-- interpreter for functions
-- unit tests
+- variable initialization and assignment
+- arithmetic operators
+- bool, char, int, float, str
+- conditionals
+- for & while loops
+- functions
 
 ---
 
@@ -22,7 +26,7 @@ Windows executable coming soon
 
 dependenies
 
-`cmake` `gcc`
+`cmake` `g++`
 
 ```
 cmake -G "MinGW Makefiles" .
