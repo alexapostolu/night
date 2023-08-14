@@ -146,7 +146,7 @@ private:
 	std::string name;
 	std::vector<std::string> param_names;
 	std::vector<value_t> param_types;
-	value_t rtn_type;
+	std::optional<value_t> rtn_type;
 	AST_Block block;
 
 	bytecode_t id;

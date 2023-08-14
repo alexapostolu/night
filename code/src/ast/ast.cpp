@@ -244,16 +244,24 @@ Function::Function(
 	std::vector<std::string> const& _param_types,
 	std::string const& _rtn_type,
 	AST_Block const& _block)
-	: AST(_loc), name(_name), param_names(_param_names), rtn_type(token_var_type_to_val_type(_rtn_type)), block(_block)
+	: AST(_loc), name(_name), param_names(_param_names), block(_block)
 {
+	if (_rtn_type == "void")
+		rtn_type = std::nullopt;
+	else
+		rtn_type = token_var_type_to_val_type(_rtn_type);
+
 	for (auto const& param_type : _param_types)
 		param_types.push_back(token_var_type_to_val_type(param_type));
 
 	// create a function so it's return type can be referenced by `FunctionCall::type_check()`
-	auto [err_msg, _func_it] = ParserScope::create_function(name, param_names, param_types, ParserScope::curr_rtn_type);
+	auto [err_msg, func_it] = ParserScope::create_function(name, param_names, param_types, rtn_type);
+	ParserScope::curr_rtn_type = rtn_type;
 
 	if (!err_msg.empty())
 		night::error::get().create_minor_error(err_msg, loc);
+
+	id = func_it->second.id;
 }
 
 void Function::check(ParserScope& scope)

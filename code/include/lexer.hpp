@@ -21,7 +21,7 @@ public:
 	Token const& curr() const;
 
 	Token const& expect(TokenType type, std::string const& err = "\n", std::source_location const& s_loc = std::source_location::current());
-	void curr_expect(TokenType type, std::source_location const& s_loc = std::source_location::current());
+	void curr_check(TokenType type, std::source_location const& s_loc = std::source_location::current());
 
 	// used for testing
 	void scan_code(std::string const& code);

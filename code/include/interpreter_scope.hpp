@@ -50,4 +50,6 @@ struct InterpreterScope
 {
 	static func_container funcs;
 	var_container vars;
+
+	static int new_id();
 };

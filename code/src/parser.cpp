@@ -99,7 +99,7 @@ std::shared_ptr<AST> parse_var(Lexer& lexer)
 	else if (lexer.curr().type == TokenType::ASSIGN)
 	{
 		auto const& ast = std::make_shared<VariableAssign>(parse_var_assign(lexer, var_name));
-		lexer.curr_expect(TokenType::SEMICOLON);
+		lexer.curr_check(TokenType::SEMICOLON);
 
 		lexer.eat();
 		return ast;
@@ -127,7 +127,7 @@ VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 	if (lexer.curr().type == TokenType::ASSIGN && lexer.curr().str == "=")
 	{
 		var_expr = parse_expr(lexer, true);
-		lexer.curr_expect(TokenType::SEMICOLON);
+		lexer.curr_check(TokenType::SEMICOLON);
 	}
 	else if (lexer.curr().type == TokenType::ASSIGN && lexer.curr().str != "=")
 	{
@@ -163,7 +163,7 @@ FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name)
 		//   func_call();
 		if (!expr)
 		{
-			lexer.curr_expect(TokenType::CLOSE_BRACKET);
+			lexer.curr_check(TokenType::CLOSE_BRACKET);
 			break;
 		}
 
@@ -172,7 +172,7 @@ FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name)
 		if (lexer.curr().type == TokenType::CLOSE_BRACKET)
 			break;
 
-		lexer.curr_expect(TokenType::COMMA);
+		lexer.curr_check(TokenType::COMMA);
 	};
 
 	lexer.expect(TokenType::SEMICOLON);
@@ -196,7 +196,7 @@ Conditional parse_if(Lexer& lexer)
 			lexer.expect(TokenType::OPEN_BRACKET);
 
 			cond_expr = parse_expr(lexer, true);
-			lexer.curr_expect(TokenType::CLOSE_BRACKET);
+			lexer.curr_check(TokenType::CLOSE_BRACKET);
 		}
 
 		lexer.eat();
@@ -216,7 +216,7 @@ While parse_while(Lexer& lexer)
 
 	auto cond_expr = parse_expr(lexer, true);
 
-	lexer.curr_expect(TokenType::CLOSE_BRACKET);
+	lexer.curr_check(TokenType::CLOSE_BRACKET);
 	lexer.eat();
 
 	return While(lexer.loc, cond_expr, parse_stmts(lexer));
@@ -237,8 +237,7 @@ For parse_for(Lexer& lexer)
 	// condition
 
 	auto cond_expr = parse_expr(lexer, true);
-
-	lexer.curr_expect(TokenType::SEMICOLON);
+	lexer.curr_check(TokenType::SEMICOLON);
 
 	// assignment
 
@@ -246,7 +245,7 @@ For parse_for(Lexer& lexer)
 	lexer.expect(TokenType::ASSIGN);
 
 	auto var_assign = parse_var_assign(lexer, var_assign_name);
-	lexer.curr_expect(TokenType::CLOSE_BRACKET);
+	lexer.curr_check(TokenType::CLOSE_BRACKET);
 
 	// body
 
@@ -270,9 +269,14 @@ Function parse_func(Lexer& lexer)
 	std::vector<std::string> param_names;
 	std::vector<std::string> param_types;
 
-	while (lexer.curr().type != TokenType::CLOSE_BRACKET)
+	lexer.eat();
+	while (true)
 	{
-		param_names.push_back(lexer.expect(TokenType::VARIABLE).str);
+		if (lexer.curr().type == TokenType::CLOSE_BRACKET)
+			break;
+
+		lexer.curr_check(TokenType::VARIABLE);
+		param_names.push_back(lexer.curr().str);
 
 		if (!lexer.eat().is_type())
 			throw NIGHT_CREATE_FATAL("expected type after variable name in function parameter list, found '" + lexer.curr().str + "'");
@@ -284,7 +288,7 @@ Function parse_func(Lexer& lexer)
 		if (lexer.curr().type == TokenType::CLOSE_BRACKET)
 			break;
 
-		lexer.curr_expect(TokenType::COMMA);
+		lexer.curr_check(TokenType::COMMA);
 		lexer.eat();
 	}
 
@@ -293,15 +297,19 @@ Function parse_func(Lexer& lexer)
 	if (!rtn_type.is_type() && rtn_type.type != TokenType::VOID)
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected return type");
 
+	lexer.expect(TokenType::OPEN_CURLY);
+
+	auto body = parse_stmts(lexer);
+
 	lexer.eat();
 
-	return Function(lexer.loc, func_name, param_names, param_types, rtn_type.str, parse_stmts(lexer));;
+	return Function(lexer.loc, func_name, param_names, param_types, rtn_type.str, body);
 }
 
 Return parse_return(Lexer& lexer)
 {
 	auto const& expr = parse_expr(lexer, false);
-	lexer.curr_expect(TokenType::SEMICOLON);
+	lexer.curr_check(TokenType::SEMICOLON);
 
 	lexer.eat();
 

@@ -96,6 +96,8 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			break;
 
 		case BytecodeType::RETURN:
+			if (s.empty())
+				return std::optional<intpr::Value>(std::nullopt);
 			return pop(s);
 
 		case BytecodeType::CALL: {
@@ -124,7 +126,9 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 				for (int i = 0; i < scope.funcs[id].param_ids.size(); ++i)
 					func_scope.vars[InterpreterScope::funcs[id].param_ids[i]] = pop(s);
 
-				s.push(*interpret_bytecodes(func_scope, InterpreterScope::funcs[id].codes));
+				auto rtn_value = interpret_bytecodes(func_scope, InterpreterScope::funcs[id].codes);
+				if (rtn_value.has_value())
+					s.push(*rtn_value);
 
 				break;
 			}

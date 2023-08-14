@@ -17,3 +17,5 @@ intpr::Value::Value(std::string _s)
 
 intpr::Value::Value(Value const& _v)
 	: type(_v.type), i(_v.i), f(_v.f), s(_v.s) {}
+
+int InterpreterScope::new_id() { static int id = 7; return ++id; }
