@@ -10,8 +10,8 @@ Night is a static, bytecode interpreted language with strong management on types
 
 **v0.0.0**
 - variable initialization and assignment
-- arithmetic operators
-- bool, char, int, float, str
+- arithmetic and boolean operators, type casting
+- bool, char, int, float, str, arrays
 - conditionals
 - for & while loops
 - functions
