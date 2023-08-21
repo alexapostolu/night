@@ -29,6 +29,8 @@ dependenies
 `cmake` `g++`
 
 ```
+cd night
+
 cmake -G "MinGW Makefiles" .
 cmake --build .
 
@@ -38,6 +40,8 @@ night source.night
 **Linux Build:**
 
 ```
+cd night
+
 cmake -G "Unix Makefiles" .
 cmake --build .
 
