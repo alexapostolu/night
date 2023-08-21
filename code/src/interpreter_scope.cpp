@@ -19,6 +19,6 @@ intpr::Value::Value(std::vector<Value> const& _v)
 	: type(ValueType::ARR), v(_v) {}
 
 intpr::Value::Value(Value const& _v)
-	: type(_v.type), i(_v.i), f(_v.f), s(_v.s) {}
+	: type(_v.type), i(_v.i), f(_v.f), s(_v.s), v(_v.v) {}
 
 int InterpreterScope::new_id() { static int id = 7; return ++id; }

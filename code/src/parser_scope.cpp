@@ -6,18 +6,18 @@
 #include <string>
 
 scope_func_container ParserScope::funcs = {
-	{ "print", ParserFunction{ 0, {}, { (value_t)ValueType::BOOL }, std::nullopt } },
-	{ "print", ParserFunction{ 1, {}, { (value_t)ValueType::CHAR }, std::nullopt } },
-	{ "print", ParserFunction{ 2, {}, { (value_t)ValueType::INT }, std::nullopt } },
-	{ "print", ParserFunction{ 3, {}, { (value_t)ValueType::FLOAT }, std::nullopt } },
-	{ "print", ParserFunction{ 4, {}, { (value_t)ValueType::STRING }, std::nullopt } },
-	{ "input", ParserFunction{ 5, {}, {}, (value_t)ValueType::STRING } },
-	{ "int",   ParserFunction{ 6, {}, { (value_t)ValueType::STRING }, (value_t)ValueType::INT } }
+	{ "print", ParserFunction{ 0, {}, { ValueType::BOOL }, std::nullopt } },
+	{ "print", ParserFunction{ 1, {}, { ValueType::CHAR }, std::nullopt } },
+	{ "print", ParserFunction{ 2, {}, { ValueType::INT }, std::nullopt } },
+	{ "print", ParserFunction{ 3, {}, { ValueType::FLOAT }, std::nullopt } },
+	{ "print", ParserFunction{ 4, {}, { ValueType::STRING }, std::nullopt } },
+	{ "input", ParserFunction{ 5, {}, {}, ValueType::STRING } },
+	{ "int",   ParserFunction{ 6, {}, { ValueType::STRING }, ValueType::INT } }
 };
 
-std::optional<value_t> ParserScope::curr_rtn_type = std::nullopt;
+std::optional<ValueType> ParserScope::curr_rtn_type = std::nullopt;
 
-std::pair<std::string, bytecode_t> ParserScope::create_variable(std::string const& name, value_t type)
+std::pair<std::string, bytecode_t> ParserScope::create_variable(std::string const& name, ValueType type)
 {
 	static bytecode_t var_id = 0;
 
@@ -39,8 +39,8 @@ std::pair<std::string, bytecode_t> ParserScope::create_variable(std::string cons
 std::pair<std::string, scope_func_container::iterator> ParserScope::create_function(
 	std::string const& name,
 	std::vector<std::string> const& param_names,
-	std::vector<value_t> param_types,
-	std::optional<value_t> rtn_type)
+	std::vector<ValueType> param_types,
+	std::optional<ValueType> rtn_type)
 {
 	static bytecode_t func_id = ParserScope::funcs.size();
 

@@ -39,7 +39,7 @@ public:
 		expr_p const& node,
 		expr_p* prev = nullptr) = 0;
 
-	virtual std::optional<value_t> type_check(ParserScope const& scope) = 0;
+	virtual std::optional<ValueType> type_check(ParserScope const& scope) = 0;
 	virtual bytecodes_t generate_codes() const = 0;
 
 public:
@@ -61,29 +61,6 @@ protected:
 	static int bin_op_prec;
 	static int single_prec;
 };
-
-
-//struct SubscriptOp : public Expression
-//{
-//public:
-//	SubscriptOp(
-//		Location const& _loc,
-//		expr::expr_p const& _arr,
-//		expr::expr_p const& _index);
-//
-//	void insert_node(
-//		std::shared_ptr<Expression> const& node,
-//		std::shared_ptr<Expression>* prev = nullptr) override;
-//
-//	std::optional<value_t> type_check(ParserScope const& scope) override;
-//	bytecodes_t generate_codes() const;
-//
-//	int precedence() const override;
-//
-//private:
-//	expr::expr_p arr;
-//	expr::expr_p index;
-//};
 
 
 enum class UnaryOpType
@@ -108,7 +85,7 @@ public:
 		std::shared_ptr<Expression> const& node,
 		std::shared_ptr<Expression>* prev = nullptr) override;
 
-	std::optional<value_t> type_check(ParserScope const& scope) override;
+	std::optional<ValueType> type_check(ParserScope const& scope) override;
 	bytecodes_t generate_codes() const;
 
 	int precedence() const override;
@@ -146,7 +123,7 @@ public:
 		expr::expr_p* prev = nullptr) override;
 
 	bytecodes_t generate_codes() const override;
-	std::optional<value_t> type_check(ParserScope const& scope) override;
+	std::optional<ValueType> type_check(ParserScope const& scope) override;
 
 public:
 	int precedence() const override;
@@ -168,7 +145,7 @@ public:
 		std::shared_ptr<expr::Expression> const& node,
 		std::shared_ptr<expr::Expression>* prev = nullptr) override;
 
-	std::optional<value_t> type_check(ParserScope const& scope) override;
+	std::optional<ValueType> type_check(ParserScope const& scope) override;
 	bytecodes_t generate_codes() const override;
 
 	int precedence() const override;
@@ -189,7 +166,7 @@ public:
 		std::shared_ptr<Expression> const& node,
 		std::shared_ptr<Expression>* prev = nullptr) override;
 
-	std::optional<value_t> type_check(ParserScope const& scope) override;
+	std::optional<ValueType> type_check(ParserScope const& scope) override;
 	bytecodes_t generate_codes() const override;
 
 	int precedence() const override;
@@ -201,6 +178,8 @@ private:
 };
 
 
+// only stores single value literals
+// this does not include arrays!
 class Value : public Expression
 {
 public:
@@ -213,7 +192,7 @@ public:
 		std::shared_ptr<expr::Expression> const& node,
 		std::shared_ptr<expr::Expression>* prev = nullptr) override;
 
-	std::optional<value_t> type_check(ParserScope const& scope) override;
+	std::optional<ValueType> type_check(ParserScope const& scope) override;
 	bytecodes_t generate_codes() const override;
 
 	int precedence() const override;

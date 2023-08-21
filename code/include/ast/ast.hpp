@@ -44,7 +44,7 @@ public:
 
 private:
 	std::string name;
-	value_t type;
+	ValueType type;
 	expr::expr_p expr;
 
 	std::optional<bytecode_t> id;
@@ -145,8 +145,8 @@ public:
 private:
 	std::string name;
 	std::vector<std::string> param_names;
-	std::vector<value_t> param_types;
-	std::optional<value_t> rtn_type;
+	std::vector<ValueType> param_types;
+	std::optional<ValueType> rtn_type;
 	AST_Block block;
 
 	bytecode_t id;
@@ -181,7 +181,7 @@ public:
 		expr::expr_p const& node,
 		expr::expr_p* prev = nullptr);
 
-	std::optional<value_t> type_check(ParserScope const& scope) override;
+	std::optional<ValueType> type_check(ParserScope const& scope) override;
 	void check(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
 

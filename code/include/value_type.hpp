@@ -4,24 +4,38 @@
 
 using value_t = int;
 
-constexpr short primitive_count = 4;
+constexpr short primitive_count = 3;
 
-enum class ValueType
+struct ValueType
 {
-	BOOL,
-	CHAR,
-	INT,
-	FLOAT,
-	STRING,
-	ARRAY
+	enum _type {
+		BOOL,
+		CHAR,
+		INT,
+		FLOAT,
+		STRING
+	};
+
+	ValueType() = default;
+	ValueType(_type _type, bool _is_arr = false);
+	ValueType(value_t _type, bool _is_arr = false);
+
+	bool operator==(ValueType const& _vt) const;
+
+	bool is_object() const;
+
+	value_t type;
+	bool is_arr;
 };
 
-bool compare_value_t(value_t type1, value_t type2);
-bool is_object_t(value_t type);
+// returns
+//   true if both are primitive, or both are same object
+bool compare_value_t(ValueType vt1, ValueType vt2);
 
 namespace night
 {
 
 std::string to_str(value_t type, bool primitive = true);
+std::string to_str(ValueType vt, bool primitive = true);
 
 }

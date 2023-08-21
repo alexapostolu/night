@@ -124,7 +124,7 @@ VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 
 	// default value
 	expr::expr_p expr =
-		std::make_shared<expr::Value>(lexer.loc, token_var_type_to_val_type(var_type), "0");
+		std::make_shared<expr::Value>(lexer.loc, token_var_type_to_val_type(var_type).type, "0");
 
 	lexer.eat();
 
@@ -390,7 +390,7 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 		}
 		case TokenType::STRING_LIT:
 		{
-			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::STRING, lexer.curr().str);
+			node = std::make_shared<expr::Value>(lexer.loc, ValueType::STRING, lexer.curr().str);
 			allow_unary_next = false;
 			was_variable = true;
 			was_sub = false;
@@ -441,10 +441,10 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 						break;
 					}
 
+					arr.push_back(elem);
+
 					if (lexer.curr().type == TokenType::CLOSE_SQUARE)
 						break;
-
-					arr.push_back(elem);
 
 					lexer.curr_check(TokenType::COMMA);
 				}

@@ -5,6 +5,7 @@
 #include "error.hpp"
 #include "debug.hpp"
 
+#include <algorithm>
 #include <optional>
 #include <memory>
 #include <iostream>
@@ -21,57 +22,6 @@ int expr::Expression::subscript_prec = 0;
 int expr::Expression::unary_op_prec  = 10;
 int expr::Expression::bin_op_prec    = 100;
 int expr::Expression::single_prec	 = 1000;
-
-
-
-//expr::SubscriptOp::SubscriptOp(
-//	Location const& _loc,
-//	expr::expr_p const& _arr,
-//	expr::expr_p const& _index)
-//	: Expression(ExpressionType::UNARY_OP, _loc), arr(_arr), index(_index) {}
-//
-//void expr::SubscriptOp::insert_node(
-//	expr::expr_p const& node,
-//	expr::expr_p* prev)
-//{
-//	if (!arr)
-//	{
-//		arr = node;
-//	}
-//	else if (node->precedence() > precedence())
-//	{
-//		expr->insert_node(node, &expr);
-//	}
-//	else
-//	{
-//		node->insert_node(std::make_shared<UnaryOp>(loc, type, expr));
-//		*prev = node;
-//	}
-//}
-//
-//std::optional<value_t> expr::SubscriptOp::type_check(ParserScope const& scope)
-//{
-//	auto type = expr->type_check(scope);
-//	if (type.has_value() && is_object_t(*type))
-//		night::error::get().create_minor_error("expression under operator ! has type '" + night::to_str(*type) + "', expected primitive type", loc);
-//
-//	return type;
-//}
-//
-//bytecodes_t expr::SubscriptOp::generate_codes() const
-//{
-//	bytecodes_t codes = expr->generate_codes();
-//
-//	return codes;
-//}
-//
-//int expr::SubscriptOp::precedence() const
-//{
-//	if (guard)
-//		return single_prec;
-//
-//	return subscript_prec;
-//}
 
 
 expr::UnaryOp::UnaryOp(
@@ -113,10 +63,10 @@ void expr::UnaryOp::insert_node(
 	}
 }
 
-std::optional<value_t> expr::UnaryOp::type_check(ParserScope const& scope)
+std::optional<ValueType> expr::UnaryOp::type_check(ParserScope const& scope)
 {
 	auto type = expr->type_check(scope);
-	if (type.has_value() && is_object_t(*type))
+	if (type.has_value() && type->is_object())
 		night::error::get().create_minor_error("expression under operator ! has type '" + night::to_str(*type) + "', expected primitive type", loc);
 
 	return type;
@@ -176,8 +126,6 @@ expr::BinaryOp::BinaryOp(
 		type = BinaryOpType::LESSER;
 	else if (_type == ">")
 		type = BinaryOpType::GREATER;
-	/*else if (_type == ".")
-		type = BinaryOpType::DOT;*/
 	else if (_type == "[")
 		type = BinaryOpType::SUBSCRIPT;
 	else
@@ -214,32 +162,32 @@ void expr::BinaryOp::insert_node(
 	}
 }
 
-std::optional<value_t> expr::BinaryOp::type_check(ParserScope const& scope)
+std::optional<ValueType> expr::BinaryOp::type_check(ParserScope const& scope)
 {
 	assert(lhs);
 	auto lhs_type = lhs->type_check(scope);
-	if (lhs_type.has_value() && is_object_t(*lhs_type))
-		night::error::get().create_minor_error("variable '' can not be used with operator +", loc);
 
 	assert(rhs);
 	auto rhs_type = rhs->type_check(scope);
-	if (rhs_type.has_value() && is_object_t(*rhs_type))
-		night::error::get().create_minor_error("variable '' can not be used with operator +", loc);
 
 	if (!lhs_type.has_value() || !rhs_type.has_value())
 		return std::nullopt;
 
-	if (type == BinaryOpType::SUBSCRIPT && *lhs_type == (value_t)ValueType::INT && *rhs_type == (value_t)ValueType::STRING)
-		return (value_t)ValueType::STRING;
-	if (type == BinaryOpType::SUBSCRIPT && *lhs_type == (value_t)ValueType::INT && *rhs_type == (value_t)ValueType::ARRAY)
-		return (value_t)ValueType::STRING;
-	if (*lhs_type == (value_t)ValueType::STRING && *lhs_type == *rhs_type)
-		return (value_t)ValueType::STRING;
-	if (*lhs_type == (value_t)ValueType::INT || *rhs_type == (value_t)ValueType::INT)
-		return (value_t)ValueType::INT;
-	if (*lhs_type == (value_t)ValueType::CHAR || *rhs_type == (value_t)ValueType::CHAR)
-		return (value_t)ValueType::CHAR;
-	return (value_t)ValueType::BOOL;
+	if (type == BinaryOpType::SUBSCRIPT && *lhs_type == ValueType::INT && *rhs_type == ValueType::STRING)
+		return ValueType::STRING;
+	if (type == BinaryOpType::SUBSCRIPT && *lhs_type == ValueType::INT && (*rhs_type).is_arr)
+		return (*rhs_type).type;
+	if (*lhs_type == ValueType::STRING && *lhs_type == *rhs_type)
+		return ValueType::STRING;
+	if (*lhs_type == ValueType::INT && compare_value_t(*lhs_type, *rhs_type))
+		return ValueType::INT;
+	if (*lhs_type == ValueType::CHAR && compare_value_t(*lhs_type, *rhs_type))
+		return ValueType::CHAR;
+	if (*lhs_type == ValueType::BOOL && compare_value_t(*lhs_type, *rhs_type))
+		return ValueType::BOOL;
+
+	night::error::get().create_minor_error("type mismatch between '" + night::to_str(*lhs_type, false) + "' and '" + night::to_str(*rhs_type, false) + "'", loc);
+	return std::nullopt;
 }
 
 bytecodes_t expr::BinaryOp::generate_codes() const
@@ -320,9 +268,9 @@ void expr::Array::insert_node(
 	*prev = node;
 }
 
-std::optional<value_t> expr::Array::type_check(ParserScope const& scope)
+std::optional<ValueType> expr::Array::type_check(ParserScope const& scope)
 {
-	std::optional<value_t> arr_type(std::nullopt);
+	std::optional<ValueType> arr_type(std::nullopt);
 
 	for (auto const& elem : arr)
 	{
@@ -344,7 +292,7 @@ bytecodes_t expr::Array::generate_codes() const
 	for (auto const& elem : arr)
 	{
 		auto elem_codes = elem->generate_codes();
-		codes.insert(std::end(codes), std::begin(elem_codes), std::end(elem_codes));
+		codes.insert(std::begin(codes), std::begin(elem_codes), std::end(elem_codes));
 	}
 
 	codes.push_back((bytecode_t)BytecodeType::ARR);
@@ -372,7 +320,7 @@ void expr::Variable::insert_node(
 	*prev = node;
 }
 
-std::optional<value_t> expr::Variable::type_check(ParserScope const& scope)
+std::optional<ValueType> expr::Variable::type_check(ParserScope const& scope)
 {
 	id = scope.vars.at(name).id;
 	return scope.vars.at(name).type;
@@ -404,14 +352,14 @@ void expr::Value::insert_node(
 	*prev = node;
 }
 
-std::optional<value_t> expr::Value::type_check(ParserScope const& scope)
+std::optional<ValueType> expr::Value::type_check(ParserScope const& scope)
 {
 	return type;
 }
 
 bytecodes_t expr::Value::generate_codes() const
 {
-	switch ((ValueType)type)
+	switch (type)
 	{
 	case ValueType::BOOL:
 		return { (bytecode_t)BytecodeType::BOOL, val == "true" };

@@ -71,7 +71,7 @@ void VariableAssign::check(ParserScope& scope)
 
 	auto expr_type = expr->type_check(scope);
 
-	if (expr_type.has_value() && assign_op != "=" && is_object_t(*expr_type))
+	if (expr_type.has_value() && assign_op != "=" && expr_type->is_object())
 		night::error::get().create_minor_error(
 			"assignment '" + assign_op + "' can not be used on expression of type '" + night::to_str(*expr_type) + "'", loc);
 
@@ -120,7 +120,7 @@ void Conditional::check(ParserScope& scope)
 	{
 		auto cond_type = cond->type_check(scope);
 
-		if (cond_type.has_value() && is_object_t(*cond_type))
+		if (cond_type.has_value() && cond_type->is_object())
 			night::error::get().create_minor_error(
 				"expected type 'bool', 'char', or 'int',"
 				"condition is type '" + night::to_str(*cond_type) + "'", loc);
@@ -178,7 +178,7 @@ void While::check(ParserScope& scope)
 {
 	auto cond_type = cond_expr->type_check(scope);
 
-	if (cond_type.has_value() && is_object_t(*cond_type))
+	if (cond_type.has_value() && cond_type->is_object())
 		night::error::get().create_minor_error(
 			"condition is type '" + night::to_str(*cond_type) + "', "
 			"expected type 'bool', 'char', 'int', or 'float'", loc);
@@ -356,9 +356,9 @@ void FunctionCall::insert_node(
 	*prev = node;
 }
 
-std::optional<value_t> FunctionCall::type_check(ParserScope const& scope)
+std::optional<ValueType> FunctionCall::type_check(ParserScope const& scope)
 {
-	std::vector<value_t> arg_types;
+	std::vector<ValueType> arg_types;
 	for (auto& arg_expr : arg_exprs)
 		arg_types.push_back(*arg_expr->type_check(scope));
 
@@ -389,7 +389,7 @@ void FunctionCall::check(ParserScope& scope)
 
 	bool err_arg_types = false;
 
-	std::vector<value_t> arg_types;
+	std::vector<ValueType> arg_types;
 	for (auto& arg_expr : arg_exprs)
 	{
 		auto arg_type = arg_expr->type_check(scope);

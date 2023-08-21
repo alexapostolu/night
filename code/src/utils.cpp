@@ -4,12 +4,12 @@
 
 #include <string>
 
-value_t token_var_type_to_val_type(std::string const& type, std::source_location const& s_loc)
+ValueType token_var_type_to_val_type(std::string const& type, std::source_location const& s_loc)
 {
-	if (type == "bool") return (value_t)ValueType::BOOL;
-	else if (type == "char") return (value_t)ValueType::CHAR;
-	else if (type == "int") return (value_t)ValueType::INT;
-	else if (type == "float") return (value_t)ValueType::FLOAT;
-	else if (type == "str") return (value_t)ValueType::STRING;
+	if (type == "bool") return ValueType::BOOL;
+	else if (type == "char") return ValueType::CHAR;
+	else if (type == "int") return ValueType::INT;
+	else if (type == "float") return ValueType::FLOAT;
+	else if (type == "str") return ValueType::STRING;
 	else throw debug::unhandled_case("type", s_loc);
 }

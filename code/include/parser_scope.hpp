@@ -18,7 +18,7 @@ using scope_func_container = std::unordered_multimap<std::string, ParserFunction
 
 struct ParserVariable
 {
-	value_t type;
+	ValueType type;
 	bytecode_t id;
 };
 
@@ -28,8 +28,8 @@ struct ParserFunction
 	bytecode_t id;
 
 	std::vector<std::string> param_names;
-	std::vector<value_t> param_types;
-	std::optional<value_t> rtn_type;
+	std::vector<ValueType> param_types;
+	std::optional<ValueType> rtn_type;
 };
 
 struct ParserScope
@@ -39,14 +39,14 @@ struct ParserScope
 	// this value is set in parse_func()
 	// parse_return() will compare this value with its own expression type
 	// for type checking
-	static std::optional<value_t> curr_rtn_type;
+	static std::optional<ValueType> curr_rtn_type;
 	
 	scope_var_container vars;
 
 	// returns:
 	//    <"", id> if successful
 	//    <error message, 0> if unsuccessful
-	std::pair<std::string, bytecode_t> create_variable(std::string const& name, value_t type);
+	std::pair<std::string, bytecode_t> create_variable(std::string const& name, ValueType type);
 
 	// returns:
 	//    <"", it> if successful
@@ -54,6 +54,6 @@ struct ParserScope
 	static std::pair<std::string, scope_func_container::iterator> create_function(
 		std::string const& name,
 		std::vector<std::string> const& param_names,
-		std::vector<value_t> param_types,
-		std::optional<value_t> rtn_type);
+		std::vector<ValueType> param_types,
+		std::optional<ValueType> rtn_type);
 };
