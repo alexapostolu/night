@@ -185,8 +185,8 @@ Token Lexer::eat_symbol()
 		{ '/', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },
 		{ '%', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },
 
-		{ '>', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },
-		{ '<', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },
+		{ '>', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::BINARY_OP } } },
+		{ '<', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::BINARY_OP } } },
 
 		{ '|', { { '|', TokenType::BINARY_OP } } },
 		{ '&', { { '&', TokenType::BINARY_OP } } },

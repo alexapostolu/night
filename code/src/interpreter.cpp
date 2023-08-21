@@ -59,7 +59,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		}
 		case BytecodeType::MULT: s.emplace(pop(s).i * pop(s).i); break;
 		case BytecodeType::DIV:  s.emplace(pop(s).i / pop(s).i); break;
-		case BytecodeType::SUB:  s.emplace(pop(s).i - pop(s).i); break;
+		case BytecodeType::SUB:  s.emplace(-pop(s).i + pop(s).i); break;
 
 		// stack values are in opposite order, so we switch signs to account for that
 		case BytecodeType::LESSER: {
@@ -68,6 +68,33 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		}
 		case BytecodeType::GREATER: {
 			s.emplace((int64_t)(pop(s).i < pop(s).i));
+			break;
+		}
+		case BytecodeType::LESSER_EQUALS: {
+			s.emplace((int64_t)(pop(s).i >= pop(s).i));
+			break;
+		}
+		case BytecodeType::GREATER_EQUALS: {
+			s.emplace((int64_t)(pop(s).i <= pop(s).i));
+			break;
+		}
+
+		case BytecodeType::EQUALS: {
+			auto v1 = pop(s);
+			if (v1.type == intpr::ValueType::INT)
+				s.emplace(int64_t(pop(s).i == v1.i));
+			else if (v1.type == intpr::ValueType::STR)
+				s.emplace(int64_t(pop(s).s == v1.s));
+
+			break;
+		}
+
+		case BytecodeType::AND: {
+			s.emplace(int64_t(pop(s).i && pop(s).i));
+			break;
+		}
+		case BytecodeType::OR: {
+			s.emplace(int64_t(pop(s).i || pop(s).i));
 			break;
 		}
 
@@ -126,7 +153,23 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 				break;
 			}
 			case 6: {
+				s.emplace(std::string(1, char(pop(s).i)));
+				break;
+			}
+			case 7: {
 				s.emplace((int64_t)std::stoi(pop(s).s));
+				break;
+			}
+			case 8: {
+				s.emplace(std::to_string(pop(s).i));
+				break;
+			}
+			case 9: {
+				s.emplace((int64_t)pop(s).s.length());
+				break;
+			}
+			case 10: {
+				s.emplace((int64_t)int(pop(s).s[0]));
 				break;
 			}
 			default: {

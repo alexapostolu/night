@@ -42,6 +42,12 @@ enum struct BytecodeType : bytecode_t
 
 	LESSER,
 	GREATER,
+	LESSER_EQUALS,
+	GREATER_EQUALS,
+	EQUALS,
+	NOT_EQUALS,
+	AND,
+	OR,
 
 	SUBSCRIPT,
 

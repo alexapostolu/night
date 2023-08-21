@@ -126,6 +126,18 @@ expr::BinaryOp::BinaryOp(
 		type = BinaryOpType::LESSER;
 	else if (_type == ">")
 		type = BinaryOpType::GREATER;
+	else if (_type == "<=")
+		type = BinaryOpType::LESSER_EQUALS;
+	else if (_type == ">=")
+		type = BinaryOpType::GREATER_EQUALS;
+	else if (_type == "==")
+		type = BinaryOpType::EQUALS;
+	else if (_type == "!=")
+		type = BinaryOpType::NOT_EQUALS;
+	else if (_type == "&&")
+		type = BinaryOpType::AND;
+	else if (_type == "||")
+		type = BinaryOpType::OR;
 	else if (_type == "[")
 		type = BinaryOpType::SUBSCRIPT;
 	else
@@ -173,6 +185,10 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope const& scope)
 	if (!lhs_type.has_value() || !rhs_type.has_value())
 		return std::nullopt;
 
+	if (type == BinaryOpType::ADD && *lhs_type == ValueType::INT)
+		return ValueType::INT;
+	if (type == BinaryOpType::EQUALS || type == BinaryOpType::NOT_EQUALS || type == BinaryOpType::ADD || type == BinaryOpType::OR)
+		return ValueType::BOOL;
 	if (type == BinaryOpType::SUBSCRIPT && *lhs_type == ValueType::INT && *rhs_type == ValueType::STRING)
 		return ValueType::STRING;
 	if (type == BinaryOpType::SUBSCRIPT && *lhs_type == ValueType::INT && (*rhs_type).is_arr)
@@ -193,21 +209,17 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope const& scope)
 bytecodes_t expr::BinaryOp::generate_codes() const
 {
 	bytecodes_t codes;
-	
+
 	auto codes_lhs = lhs->generate_codes();
 	codes.insert(std::end(codes), std::begin(codes_lhs), std::end(codes_lhs));
-
+	
 	auto codes_rhs = rhs->generate_codes();
 	codes.insert(std::end(codes), std::begin(codes_rhs), std::end(codes_rhs));
 
 	switch (type)
 	{
-	case BinaryOpType::ADD:
-		codes.push_back((bytecode_t)BytecodeType::ADD);
-		break;
-	case BinaryOpType::SUB:
-		codes.push_back((bytecode_t)BytecodeType::SUB);
-		break;
+	case BinaryOpType::ADD: codes.push_back((bytecode_t)BytecodeType::ADD); break;
+	case BinaryOpType::SUB: codes.push_back((bytecode_t)BytecodeType::SUB); break;
 	case BinaryOpType::MULT:
 		codes.push_back((bytecode_t)BytecodeType::MULT);
 		break;
@@ -219,6 +231,24 @@ bytecodes_t expr::BinaryOp::generate_codes() const
 		break;
 	case BinaryOpType::GREATER:
 		codes.push_back((bytecode_t)BytecodeType::GREATER);
+		break;
+	case BinaryOpType::LESSER_EQUALS:
+		codes.push_back((bytecode_t)BytecodeType::LESSER_EQUALS);
+		break;
+	case BinaryOpType::GREATER_EQUALS:
+		codes.push_back((bytecode_t)BytecodeType::GREATER_EQUALS);
+		break;
+	case BinaryOpType::EQUALS:
+		codes.push_back((bytecode_t)BytecodeType::EQUALS);
+		break;
+	case BinaryOpType::NOT_EQUALS:
+		codes.push_back((bytecode_t)BytecodeType::NOT_EQUALS);
+		break;
+	case BinaryOpType::AND:
+		codes.push_back((bytecode_t)BytecodeType::AND);
+		break;
+	case BinaryOpType::OR:
+		codes.push_back((bytecode_t)BytecodeType::OR);
 		break;
 	case BinaryOpType::SUBSCRIPT:
 		codes.push_back((bytecode_t)BytecodeType::SUBSCRIPT);
@@ -237,17 +267,22 @@ int expr::BinaryOp::precedence() const
 
 	switch (type)
 	{
+	case BinaryOpType::AND:
+	case BinaryOpType::OR:
+		return bin_op_prec + 1;
 	case BinaryOpType::LESSER:
 	case BinaryOpType::GREATER:
-		return bin_op_prec + 1;
+	case BinaryOpType::LESSER_EQUALS:
+	case BinaryOpType::GREATER_EQUALS:
+		return bin_op_prec + 2;
 	case BinaryOpType::ADD:
 	case BinaryOpType::SUB:
-		return bin_op_prec + 2;
+		return bin_op_prec + 3;
 	case BinaryOpType::MULT:
 	case BinaryOpType::DIV:
-		return bin_op_prec + 3;
-	case BinaryOpType::SUBSCRIPT:
 		return bin_op_prec + 4;
+	case BinaryOpType::SUBSCRIPT:
+		return bin_op_prec + 5;
 	default:
 		throw debug::unhandled_case((int)type);
 	}

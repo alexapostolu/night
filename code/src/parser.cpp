@@ -310,8 +310,6 @@ Function parse_func(Lexer& lexer)
 
 	auto body = parse_stmts(lexer);
 
-	lexer.eat();
-
 	return Function(lexer.loc, func_name, param_names, param_types, rtn_type.str, body);
 }
 

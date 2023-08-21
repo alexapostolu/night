@@ -91,8 +91,8 @@ bytecodes_t VariableAssign::generate_codes() const
 
 	if (assign_op != "=")
 	{
-		codes.push_back((bytecode_t)BytecodeType::LOAD);
-		codes.push_back(*id);
+		codes.insert(std::begin(codes), *id);
+		codes.insert(std::begin(codes), (bytecode_t)BytecodeType::LOAD);
 
 		if      (assign_op == "+=")	codes.push_back((bytecode_t)BytecodeType::ADD);
 		else if (assign_op == "-=") codes.push_back((bytecode_t)BytecodeType::SUB);
@@ -262,7 +262,6 @@ Function::Function(
 	if (!err_msg.empty())
 		night::error::get().create_minor_error(err_msg, loc);
 
-	ParserScope::curr_rtn_type = rtn_type;
 	id = func_it->second.id;
 }
 
@@ -272,16 +271,20 @@ void Function::check(ParserScope& scope)
 
 	for (std::size_t i = 0; i < param_names.size(); ++i)
 	{
-		auto [err_msg, id] = block_scope.create_variable(param_names[i], param_types[i]);
+		auto [err_msg, param_id] = block_scope.create_variable(param_names[i], param_types[i]);
 
 		if (!err_msg.empty())
 			night::error::get().create_minor_error(err_msg, loc);
 
-		param_ids.push_back(id);
+		param_ids.push_back(param_id);
 	}
+
+	ParserScope::curr_rtn_type = rtn_type;
 
 	for (auto& stmt : block)
 		stmt->check(block_scope);
+
+	ParserScope::curr_rtn_type = std::nullopt;
 }
 
 bytecodes_t Function::generate_codes() const
@@ -327,8 +330,8 @@ void Return::check(ParserScope& scope)
 
 		if (expr_type.has_value() && !compare_value_t(*ParserScope::curr_rtn_type, *expr_type))
 			night::error::get().create_minor_error(
-				"return is type '" + night::to_str(*expr_type) + "', expected type '" +
-				night::to_str(*ParserScope::curr_rtn_type) + "'", loc);
+				"return is type '" + night::to_str(*expr_type, false) + "', expected type '" +
+				night::to_str(*ParserScope::curr_rtn_type, false) + "'", loc);
 	}
 }
 
@@ -374,10 +377,18 @@ std::optional<ValueType> FunctionCall::type_check(ParserScope const& scope)
 			break;
 	}
 
+
 	if (func == range_end)
+	{
+		std::string s_types;
+		for (auto const& type : arg_types)
+			s_types += night::to_str(type, false) + ", ";
+		s_types = s_types.substr(0, s_types.size() - 2);
+
 		night::error::get().create_minor_error(
-			"arguments in function call '" + name +
-			"' do not match with the parameters in its function definition", Expression::loc);
+			"arguments in function call '" + name + +"' are of type '" + s_types +
+			"', and do not match with the parameters in its function definition", Expression::loc);
+	}
 
 	id = func->second.id;
 	return func->second.rtn_type;
