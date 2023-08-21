@@ -57,6 +57,8 @@ std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, bool* curly_enclosed
 				throw NIGHT_CREATE_FATAL("missing closing curly bracket");
 		}
 
+		lexer.eat();
+
 		return block;
 	}
 	case TokenType::END_OF_FILE:
@@ -212,7 +214,6 @@ Conditional parse_if(Lexer& lexer)
 		lexer.eat();
 		conditionals.push_back({ cond_expr, parse_stmts(lexer) });
 
-		lexer.eat();
 	} while (lexer.curr().type == TokenType::IF	  ||
 			 lexer.curr().type == TokenType::ELIF ||
 			 lexer.curr().type == TokenType::ELSE);
@@ -260,11 +261,9 @@ For parse_for(Lexer& lexer)
 	// body
 
 	lexer.eat();
+
 	auto stmts = parse_stmts(lexer);
-
 	stmts.push_back(std::make_shared<VariableAssign>(var_assign));
-
-	lexer.eat();
 
 	return For(lexer.loc, var_init, cond_expr, stmts);
 }
