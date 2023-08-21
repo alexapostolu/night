@@ -37,6 +37,8 @@ public:
 		std::string const& msg, Location const& loc,
 		std::source_location const& s_loc = std::source_location::current()) noexcept;
 
+	void throw_minor_errors();
+
 public:
 	void operator=(error const&) = delete;
 

@@ -37,7 +37,7 @@ public:
 		Location const& _loc,
 		std::string const& _name,
 		std::string const& _type,
-		std::shared_ptr<expr::Expression> const& _expr);
+		expr::expr_p const& expr);
 
 	void check(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
@@ -45,9 +45,9 @@ public:
 private:
 	std::string name;
 	value_t type;
-	std::shared_ptr<expr::Expression> expr;
+	expr::expr_p expr;
 
-	bytecode_t id;
+	std::optional<bytecode_t> id;
 };
 
 
@@ -191,5 +191,5 @@ private:
 	std::string name;
 	std::vector<expr::expr_p> arg_exprs;
 
-	bytecode_t id;
+	std::optional<bytecode_t> id;
 };

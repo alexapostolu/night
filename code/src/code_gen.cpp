@@ -8,9 +8,12 @@ bytecodes_t code_gen(AST_Block const& block)
 	bytecodes_t codes;
 
 	for (auto const& ast : block)
-	{
 		ast->check(global_scope);
 
+	night::error::get().throw_minor_errors();
+
+	for (auto const& ast : block)
+	{
 		auto ast_codes = ast->generate_codes();
 		codes.insert(std::end(codes), std::begin(ast_codes), std::end(ast_codes));
 	}

@@ -30,6 +30,7 @@ enum struct BytecodeType : bytecode_t
 	FLOAT4,					//
 	FLOAT8,					//
 	STR,					// S_INT1 (length) (characters)
+	ARR,					// [elements] ARR (size)
 
 	NEGATIVE,				// [val] NEGATIVE 
 	NOT,					//
@@ -40,7 +41,9 @@ enum struct BytecodeType : bytecode_t
 	DIV,					//
 
 	LESSER,
-	GREATER, // 20
+	GREATER,
+
+	SUBSCRIPT,
 
 	LOAD,					// LOAD  (var_id)
 	STORE,					// STORE (var_id)

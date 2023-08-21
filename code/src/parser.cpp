@@ -106,7 +106,11 @@ std::shared_ptr<AST> parse_var(Lexer& lexer)
 	}
 	else if (lexer.curr().type == TokenType::OPEN_BRACKET)
 	{
-		return std::make_shared<FunctionCall>(parse_func_call(lexer, var_name));
+		auto const& ast = std::make_shared<FunctionCall>(parse_func_call(lexer, var_name));
+		lexer.expect(TokenType::SEMICOLON);
+		lexer.eat();
+
+		return ast;
 	}
 	else
 	{
@@ -116,17 +120,26 @@ std::shared_ptr<AST> parse_var(Lexer& lexer)
 
 VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 {
-	std::string var_type = lexer.curr().str;
+	auto var_type = lexer.curr().str;
 
 	// default value
-	std::shared_ptr<expr::Expression> var_expr =
+	expr::expr_p expr =
 		std::make_shared<expr::Value>(lexer.loc, token_var_type_to_val_type(var_type), "0");
 
 	lexer.eat();
 
+	std::optional<expr::expr_p> arr_size(std::nullopt);
+	if (lexer.curr().type == TokenType::OPEN_SQUARE)
+	{
+		arr_size = parse_expr(lexer, false);
+
+		lexer.curr_check(TokenType::CLOSE_SQUARE);
+		lexer.eat();
+	}
+
 	if (lexer.curr().type == TokenType::ASSIGN && lexer.curr().str == "=")
 	{
-		var_expr = parse_expr(lexer, true);
+		expr = parse_expr(lexer, true);
 		lexer.curr_check(TokenType::SEMICOLON);
 	}
 	else if (lexer.curr().type == TokenType::ASSIGN && lexer.curr().str != "=")
@@ -138,7 +151,7 @@ VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "' expected semicolon or assignment after variable type");
 	}
 
-	return VariableInit(lexer.loc, var_name, var_type, var_expr);
+	return VariableInit(lexer.loc, var_name, var_type, expr);
 }
 
 VariableAssign parse_var_assign(Lexer& lexer, std::string const& var_name)
@@ -173,11 +186,8 @@ FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name)
 			break;
 
 		lexer.curr_check(TokenType::COMMA);
-	};
+	}
 
-	lexer.expect(TokenType::SEMICOLON);
-
-	lexer.eat();
 	return FunctionCall(lexer.loc, func_name, arg_exprs);
 }
 
@@ -316,15 +326,17 @@ Return parse_return(Lexer& lexer)
 	return Return(lexer.loc, expr);
 }
 
-std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, bool err_on_empty)
+expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 {
-	std::shared_ptr<expr::Expression> head(nullptr);
+	expr::expr_p head(nullptr);
 	Token next{ .str = "" };
 	bool allow_unary_next = true;
+	bool was_variable = false;
+	bool was_sub = false;
 
 	while (true)
 	{
-		std::shared_ptr<expr::Expression> node(nullptr);
+		expr::expr_p node(nullptr);
 
 		Token comp;
 		if (next.str.empty())
@@ -348,30 +360,40 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, bool err_on_empty)
 		{
 			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::BOOL, lexer.curr().str);
 			allow_unary_next = false;
+			was_variable = false;
+			was_sub = false;
 			break;
 		}
 		case TokenType::CHAR_LIT:
 		{
 			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::CHAR, lexer.curr().str);
 			allow_unary_next = false;
+			was_variable = false;
+			was_sub = false;
 			break;
 		}
 		case TokenType::INT_LIT:
 		{
 			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::INT, lexer.curr().str);
 			allow_unary_next = false;
+			was_variable = false;
+			was_sub = false;
 			break;
 		}
 		case TokenType::FLOAT_LIT:
 		{
 			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::FLOAT, lexer.curr().str);
 			allow_unary_next = false;
+			was_variable = false;
+			was_sub = false;
 			break;
 		}
 		case TokenType::STRING_LIT:
 		{
 			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::STRING, lexer.curr().str);
 			allow_unary_next = false;
+			was_variable = true;
+			was_sub = false;
 			break;
 		}
 		case TokenType::VARIABLE:
@@ -389,12 +411,56 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, bool err_on_empty)
 			}
 
 			allow_unary_next = false;
+			was_variable = true;
+			was_sub = false;
+			break;
+		}
+		case TokenType::OPEN_SQUARE:
+		{
+			if (was_variable)
+			{
+				auto index_expr = parse_expr(lexer, true);
+				lexer.curr_check(TokenType::CLOSE_SQUARE);
+
+				node = std::make_shared<expr::BinaryOp>(lexer.loc, expr::BinaryOpType::SUBSCRIPT);
+				node->insert_node(index_expr);
+				//node->guard = true;
+
+				allow_unary_next = false;
+				was_sub = true;
+			}
+			else
+			{
+				std::vector<expr::expr_p> arr;
+				while (true)
+				{
+					auto elem = parse_expr(lexer, false);
+					if (!elem)
+					{
+						lexer.curr_check(TokenType::CLOSE_SQUARE);
+						break;
+					}
+
+					if (lexer.curr().type == TokenType::CLOSE_SQUARE)
+						break;
+
+					arr.push_back(elem);
+
+					lexer.curr_check(TokenType::COMMA);
+				}
+
+				node = std::make_shared<expr::Array>(lexer.loc, arr);
+				allow_unary_next = false;
+			}
+
+			was_variable = false;
 			break;
 		}
 		case TokenType::UNARY_OP:
 		{
 			node = std::make_shared<expr::UnaryOp>(lexer.loc, lexer.curr().str);
 			allow_unary_next = true;
+			was_sub = false;
 			break;
 		}
 		case TokenType::BINARY_OP:
@@ -408,6 +474,8 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, bool err_on_empty)
 				node = std::make_shared<expr::BinaryOp>(lexer.loc, lexer.curr().str);
 				allow_unary_next = true;
 			}
+			was_variable = false;
+			was_sub = false;
 
 			break;
 		}
@@ -420,10 +488,13 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, bool err_on_empty)
 
 			node->guard = true;
 			allow_unary_next = false;
+			was_variable = false;
+			was_sub = false;
 			break;
 		}
 		default:
 		{
+		END2:;
 			if (err_on_empty && !head)
 				throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected expression");
 
@@ -435,5 +506,7 @@ std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, bool err_on_empty)
 			head = node;
 		else
 			head->insert_node(node, &head);
+
+	END:;
 	}
 }

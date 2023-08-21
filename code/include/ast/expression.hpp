@@ -23,6 +23,7 @@ enum class ExpressionType
 	BINARY_OP,
 	UNARY_OP,
 	FUNCTION_CALL,
+	ARRAY,
 	VARIABLE,
 	VALUE,
 };
@@ -55,10 +56,34 @@ public:
 protected:
 	Location loc;
 
+	static int subscript_prec;
 	static int unary_op_prec;
 	static int bin_op_prec;
 	static int single_prec;
 };
+
+
+//struct SubscriptOp : public Expression
+//{
+//public:
+//	SubscriptOp(
+//		Location const& _loc,
+//		expr::expr_p const& _arr,
+//		expr::expr_p const& _index);
+//
+//	void insert_node(
+//		std::shared_ptr<Expression> const& node,
+//		std::shared_ptr<Expression>* prev = nullptr) override;
+//
+//	std::optional<value_t> type_check(ParserScope const& scope) override;
+//	bytecodes_t generate_codes() const;
+//
+//	int precedence() const override;
+//
+//private:
+//	expr::expr_p arr;
+//	expr::expr_p index;
+//};
 
 
 enum class UnaryOpType
@@ -98,7 +123,7 @@ enum class BinaryOpType
 {
 	ADD, SUB, MULT, DIV,
 	LESSER, GREATER,
-	DOT
+	SUBSCRIPT
 };
 
 class BinaryOp : public Expression
@@ -107,18 +132,18 @@ public:
 	BinaryOp(
 		Location const& _loc,
 		std::string const& _type,
-		std::shared_ptr<Expression> const& _lhs = nullptr,
-		std::shared_ptr<Expression> const& _rhs = nullptr);
+		expr::expr_p const& _lhs = nullptr,
+		expr::expr_p const& _rhs = nullptr);
 
 	BinaryOp(
 		Location const& _loc,
 		BinaryOpType _type,
-		std::shared_ptr<Expression> const& _lhs = nullptr,
-		std::shared_ptr<Expression> const& _rhs = nullptr);
+		expr::expr_p const& _lhs = nullptr,
+		expr::expr_p const& _rhs = nullptr);
 
 	void insert_node(
-		std::shared_ptr<Expression> const& node,
-		std::shared_ptr<Expression>* prev = nullptr) override;
+		expr::expr_p const& node,
+		expr::expr_p* prev = nullptr) override;
 
 	bytecodes_t generate_codes() const override;
 	std::optional<value_t> type_check(ParserScope const& scope) override;
@@ -128,7 +153,28 @@ public:
 
 private:
 	BinaryOpType type;
-	std::shared_ptr<Expression> lhs, rhs;
+	expr::expr_p lhs, rhs;
+};
+
+
+class Array : public Expression
+{
+public:
+	Array(
+		Location const& _loc,
+		std::vector<expr_p> const& _arr);
+
+	void insert_node(
+		std::shared_ptr<expr::Expression> const& node,
+		std::shared_ptr<expr::Expression>* prev = nullptr) override;
+
+	std::optional<value_t> type_check(ParserScope const& scope) override;
+	bytecodes_t generate_codes() const override;
+
+	int precedence() const override;
+
+private:
+	std::vector<expr_p> arr;
 };
 
 
@@ -150,11 +196,12 @@ public:
 
 private:
 	std::string name;
-	bytecode_t id;
+
+	std::optional<bytecode_t> id;
 };
 
 
-class Value : public expr::Expression
+class Value : public Expression
 {
 public:
 	Value(

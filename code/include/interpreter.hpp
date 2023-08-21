@@ -53,4 +53,9 @@ void push_float(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it);
 //   end:   last code of string
 void push_str(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it);
 
+// iterator
+//   start: bytecode type
+//   end:   last code of strarring
+void push_arr(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it);
+
 intpr::Value pop(std::stack<intpr::Value>& s);

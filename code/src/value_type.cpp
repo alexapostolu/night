@@ -6,6 +6,7 @@
 bool compare_value_t(value_t type1, value_t type2)
 {
 	return (type1 <= primitive_count && type2 <= primitive_count) ||
+		   (type1 == (value_t)ValueType::STRING && type1 == type2) ||
 		   (type1 == type2);
 }
 

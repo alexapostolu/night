@@ -43,9 +43,8 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			push_float(s, it);
 			break;
 
-		case BytecodeType::STR:
-			push_str(s, it);
-			break;
+		case BytecodeType::STR: push_str(s, it); break;
+		case BytecodeType::ARR: push_arr(s, it); break;
 
 		case BytecodeType::NEGATIVE: s.emplace(- pop(s).i); break;
 		case BytecodeType::NOT:		 s.emplace((int64_t)!pop(s).i); break;
@@ -69,6 +68,16 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		}
 		case BytecodeType::GREATER: {
 			s.emplace((int64_t)(pop(s).i < pop(s).i));
+			break;
+		}
+
+		case BytecodeType::SUBSCRIPT: {
+			auto str = pop(s);
+			auto index = pop(s);
+			if (str.type == intpr::ValueType::ARR)
+				s.emplace(str.v.at(index.i));
+			else
+				s.emplace(std::string(1, str.s.at(index.i)));
 			break;
 		}
 
@@ -172,6 +181,17 @@ void push_str(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it)
 	}
 
 	s.emplace(str);
+}
+
+void push_arr(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it)
+{
+	bytecode_t size = *(++it);
+
+	std::vector<intpr::Value> v;
+	for (int i = 0; i < size; ++i)
+		v.push_back(pop(s));
+
+	s.emplace(v);
 }
 
 intpr::Value pop(std::stack<intpr::Value>& s)

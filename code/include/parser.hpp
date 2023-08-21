@@ -52,8 +52,9 @@ VariableInit parse_var_init(Lexer& lexer, std::string const& var_name);
 //   for (;; my_var += 1) {}
 VariableAssign parse_var_assign(Lexer& lexer, std::string const& var_name);
 
-// for the follow functions,
-// the lexer should always end at the next statement
+// lexer
+//   start: open brakcet
+//   end: closing bracket
 FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name);
 
 Conditional parse_if(Lexer& lexer);

@@ -43,6 +43,12 @@ night::error const& night::error::create_fatal_error(
 	return *this;
 }
 
+void night::error::throw_minor_errors()
+{
+	if (!get().minor_errors.empty())
+		throw *this;
+}
+
 std::string night::error::format_error_msg(
 	std::string const& msg, Location const& loc,
 	std::source_location const& s_loc) const noexcept

@@ -17,8 +17,8 @@ VariableInit::VariableInit(
 	Location const& _loc,
 	std::string const& _name,
 	std::string const& _type,
-	std::shared_ptr<expr::Expression> const& _expr)
-	: AST(_loc), name(_name), type(token_var_type_to_val_type(_type)), expr(_expr) {}
+	expr::expr_p const& _expr)
+	: AST(_loc), name(_name), type(token_var_type_to_val_type(_type)), expr(_expr), id(std::nullopt) {}
 
 void VariableInit::check(ParserScope& scope)
 {
@@ -45,7 +45,9 @@ bytecodes_t VariableInit::generate_codes() const
 	bytecodes_t codes = expr->generate_codes();
 
 	codes.push_back((bytecode_t)BytecodeType::STORE);
-	codes.push_back(id);
+
+	assert(id.has_value());
+;	codes.push_back(*id);
 
 	return codes;
 }
@@ -73,7 +75,7 @@ void VariableAssign::check(ParserScope& scope)
 		night::error::get().create_minor_error(
 			"assignment '" + assign_op + "' can not be used on expression of type '" + night::to_str(*expr_type) + "'", loc);
 
-	if (expr_type.has_value() && compare_value_t(scope.vars.at(name).type, *expr_type))
+	if (expr_type.has_value() && !compare_value_t(scope.vars.at(name).type, *expr_type))
 		night::error::get().create_minor_error(
 			"variable '" + name + "' of type '" + night::to_str(scope.vars.at(name).type) +
 			"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", loc);
@@ -256,18 +258,17 @@ Function::Function(
 
 	// create a function so it's return type can be referenced by `FunctionCall::type_check()`
 	auto [err_msg, func_it] = ParserScope::create_function(name, param_names, param_types, rtn_type);
-	ParserScope::curr_rtn_type = rtn_type;
 
 	if (!err_msg.empty())
 		night::error::get().create_minor_error(err_msg, loc);
 
+	ParserScope::curr_rtn_type = rtn_type;
 	id = func_it->second.id;
 }
 
 void Function::check(ParserScope& scope)
 {
 	ParserScope block_scope{ scope.vars };
-	ParserScope::curr_rtn_type = rtn_type;
 
 	for (std::size_t i = 0; i < param_names.size(); ++i)
 	{
@@ -345,7 +346,7 @@ FunctionCall::FunctionCall(
 	Location const& _loc,
 	std::string const& _name,
 	std::vector<expr::expr_p> const& _arg_exprs)
-	: AST(_loc), Expression(expr::ExpressionType::FUNCTION_CALL, _loc), name(_name), arg_exprs(_arg_exprs) {}
+	: AST(_loc), Expression(expr::ExpressionType::FUNCTION_CALL, _loc), name(_name), arg_exprs(_arg_exprs), id(std::nullopt) {}
 
 void FunctionCall::insert_node(
 	expr::expr_p const& node,
@@ -384,28 +385,47 @@ std::optional<value_t> FunctionCall::type_check(ParserScope const& scope)
 
 void FunctionCall::check(ParserScope& scope)
 {
+	// check argument types
+
+	bool err_arg_types = false;
+
 	std::vector<value_t> arg_types;
 	for (auto& arg_expr : arg_exprs)
-		arg_types.push_back(*arg_expr->type_check(scope));
+	{
+		auto arg_type = arg_expr->type_check(scope);
+
+		if (!arg_type.has_value())
+			err_arg_types = true;
+		else if (!err_arg_types)
+			arg_types.push_back(*arg_type);
+	}
+
+	// check function name
 
 	auto [func, range_end] = ParserScope::funcs.equal_range(name);
 
 	if (func == range_end)
 		night::error::get().create_minor_error("function '" + name + "' is not defined", Expression::loc);
 
+	if (err_arg_types)
+		return;
+
+	// match call with function
+
 	for (; func != range_end; ++func)
 	{
-		if (std::equal(std::begin(arg_types), std::end(arg_types),
+		if (arg_types.size() == func->second.param_types.size() &&
+			std::equal(std::begin(arg_types), std::end(arg_types),
 			std::begin(func->second.param_types), std::end(func->second.param_types)))
 			break;
 	}
 
 	if (func == range_end)
-		night::error::get().create_minor_error(
+		throw night::error::get().create_fatal_error(
 			"arguments in function call '" + name +
 			"' do not match with the parameters in its function definition", Expression::loc);
-
-	id = func->second.id;
+	else
+		id = func->second.id;
 }
 
 bytecodes_t FunctionCall::generate_codes() const
@@ -419,7 +439,9 @@ bytecodes_t FunctionCall::generate_codes() const
 	}
 
 	codes.push_back((bytecode_t)BytecodeType::CALL);
-	codes.push_back(id);
+
+	assert(id.has_value());
+	codes.push_back(*id);
 
 	return codes;
 }

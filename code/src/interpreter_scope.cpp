@@ -15,6 +15,9 @@ intpr::Value::Value(float _f)
 intpr::Value::Value(std::string _s)
 	: type(ValueType::STR), s(_s) {}
 
+intpr::Value::Value(std::vector<Value> const& _v)
+	: type(ValueType::ARR), v(_v) {}
+
 intpr::Value::Value(Value const& _v)
 	: type(_v.type), i(_v.i), f(_v.f), s(_v.s) {}
 
