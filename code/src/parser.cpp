@@ -355,7 +355,7 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 		{
 		case TokenType::BOOL_LIT:
 		{
-			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::BOOL, lexer.curr().str);
+			node = std::make_shared<expr::Value>(lexer.loc, ValueType::BOOL, lexer.curr().str);
 			allow_unary_next = false;
 			was_variable = false;
 			was_sub = false;
@@ -363,7 +363,7 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 		}
 		case TokenType::CHAR_LIT:
 		{
-			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::CHAR, lexer.curr().str);
+			node = std::make_shared<expr::Value>(lexer.loc, ValueType::CHAR, lexer.curr().str);
 			allow_unary_next = false;
 			was_variable = false;
 			was_sub = false;
@@ -371,7 +371,7 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 		}
 		case TokenType::INT_LIT:
 		{
-			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::INT, lexer.curr().str);
+			node = std::make_shared<expr::Value>(lexer.loc, ValueType::INT, lexer.curr().str);
 			allow_unary_next = false;
 			was_variable = false;
 			was_sub = false;
@@ -379,7 +379,7 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 		}
 		case TokenType::FLOAT_LIT:
 		{
-			node = std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::FLOAT, lexer.curr().str);
+			node = std::make_shared<expr::Value>(lexer.loc, ValueType::FLOAT, lexer.curr().str);
 			allow_unary_next = false;
 			was_variable = false;
 			was_sub = false;

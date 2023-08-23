@@ -18,9 +18,8 @@ expr::Expression::Expression(
 bool expr::Expression::is_operator() const { return type == ExpressionType::BINARY_OP || type == ExpressionType::UNARY_OP; };
 bool expr::Expression::is_value() const { return type == ExpressionType::BRACKET || type == ExpressionType::UNARY_OP || type == ExpressionType::BINARY_OP; };
 
-int expr::Expression::subscript_prec = 0;
-int expr::Expression::unary_op_prec  = 10;
-int expr::Expression::bin_op_prec    = 100;
+int expr::Expression::bin_op_prec    = 10;
+int expr::Expression::unary_op_prec  = 100;
 int expr::Expression::single_prec	 = 1000;
 
 
@@ -30,12 +29,9 @@ expr::UnaryOp::UnaryOp(
 	std::shared_ptr<Expression> const& _expr)
 	: Expression(ExpressionType::UNARY_OP, _loc), expr(_expr)
 {
-	if (_type == "-")
-		type = UnaryOpType::NEGATIVE;
-	else if (_type == "!")
-		type = UnaryOpType::NOT;
-	else
-		throw debug::unhandled_case(_type);
+	if		(_type == "-") type = UnaryOpType::NEGATIVE;
+	else if (_type == "!") type = UnaryOpType::NOT;
+	else throw debug::unhandled_case(_type);
 }
 
 expr::UnaryOp::UnaryOp(
@@ -67,7 +63,7 @@ std::optional<ValueType> expr::UnaryOp::type_check(ParserScope const& scope)
 {
 	auto type = expr->type_check(scope);
 	if (type.has_value() && type->is_object())
-		night::error::get().create_minor_error("expression under operator ! has type '" + night::to_str(*type) + "', expected primitive type", loc);
+		night::error::get().create_minor_error("expression under unary operator has type '" + night::to_str(*type) + "', expected primitive type", loc);
 
 	return type;
 }
@@ -110,50 +106,36 @@ int expr::UnaryOp::precedence() const
 expr::BinaryOp::BinaryOp(
 	Location const& _loc,
 	std::string const& _type,
-	std::shared_ptr<Expression> const& _lhs,
-	std::shared_ptr<Expression> const& _rhs)
+	expr::expr_p const& _lhs,
+	expr::expr_p const& _rhs)
 	: Expression(ExpressionType::BINARY_OP, _loc), lhs(_lhs), rhs(_rhs)
 {
-	if (_type == "+")
-		type = BinaryOpType::ADD;
-	else if (_type == "-")
-		type = BinaryOpType::SUB;
-	else if (_type == "*")
-		type = BinaryOpType::MULT;
-	else if (_type == "/")
-		type = BinaryOpType::DIV;
-	else if (_type == "<")
-		type = BinaryOpType::LESSER;
-	else if (_type == ">")
-		type = BinaryOpType::GREATER;
-	else if (_type == "<=")
-		type = BinaryOpType::LESSER_EQUALS;
-	else if (_type == ">=")
-		type = BinaryOpType::GREATER_EQUALS;
-	else if (_type == "==")
-		type = BinaryOpType::EQUALS;
-	else if (_type == "!=")
-		type = BinaryOpType::NOT_EQUALS;
-	else if (_type == "&&")
-		type = BinaryOpType::AND;
-	else if (_type == "||")
-		type = BinaryOpType::OR;
-	else if (_type == "[")
-		type = BinaryOpType::SUBSCRIPT;
-	else
-		throw debug::unhandled_case(_type);
+	if (_type == "+")		type = BinaryOpType::ADD;
+	else if (_type == "-")  type = BinaryOpType::SUB;
+	else if (_type == "*")  type = BinaryOpType::MULT;
+	else if (_type == "/")  type = BinaryOpType::DIV;
+	else if (_type == "<")  type = BinaryOpType::LESSER;
+	else if (_type == ">")  type = BinaryOpType::GREATER;
+	else if (_type == "<=") type = BinaryOpType::LESSER_EQUALS;
+	else if (_type == ">=") type = BinaryOpType::GREATER_EQUALS;
+	else if (_type == "==") type = BinaryOpType::EQUALS;
+	else if (_type == "!=") type = BinaryOpType::NOT_EQUALS;
+	else if (_type == "&&") type = BinaryOpType::AND;
+	else if (_type == "||") type = BinaryOpType::OR;
+	else if (_type == "[")  type = BinaryOpType::SUBSCRIPT;
+	else throw debug::unhandled_case(_type);
 }
 
 expr::BinaryOp::BinaryOp(
 	Location const& _loc,
 	BinaryOpType _type,
-	std::shared_ptr<Expression> const& _lhs,
-	std::shared_ptr<Expression> const& _rhs)
+	expr::expr_p const& _lhs,
+	expr::expr_p const& _rhs)
 	: Expression(ExpressionType::BINARY_OP, _loc), type(_type), lhs(_lhs), rhs(_rhs) {}
 
 void expr::BinaryOp::insert_node(
-	std::shared_ptr<Expression> const& node,
-	std::shared_ptr<Expression>* prev)
+	expr::expr_p const& node,
+	expr::expr_p* prev)
 {
 	if (!lhs)
 	{
