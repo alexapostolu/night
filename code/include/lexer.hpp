@@ -28,6 +28,7 @@ public:
 
 private:
 	Token eat_string();
+	Token eat_character();
 	Token eat_keyword();
 	Token eat_number();
 	Token eat_symbol();

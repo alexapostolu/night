@@ -33,6 +33,9 @@ Token const& Lexer::eat()
 	if (file_line[loc.col] == '"')
 		return curr_tok = eat_string();
 
+	if (file_line[loc.col] == '\'')
+		return curr_tok = eat_character();
+
 	if (std::isalpha(file_line[loc.col]) || file_line[loc.col] == '_')
 		return curr_tok = eat_keyword();
 
@@ -114,6 +117,43 @@ Token Lexer::eat_string()
 
 	++loc.col;
 	return { TokenType::STRING_LIT, str };
+}
+
+Token Lexer::eat_character()
+{
+	++loc.col;
+
+	if (loc.col == file_line.length())
+		throw night::error::get().create_fatal_error("", loc);
+
+	if (file_line[loc.col] == '\'')
+		throw night::error::get().create_fatal_error("character can not not be empty", loc);
+
+	std::string chr;
+
+	if (file_line[loc.col] == '\\')
+	{
+		++loc.col;
+		switch (file_line[loc.col])
+		{
+		case '\\': chr = "\\"; break;
+		case 'n':  chr = "\n"; break;
+		case 't':  chr = "\t"; break;
+		case '"':  chr = "\""; break;
+		default:
+			throw night::error::get().create_fatal_error("unknown character '\\'" + file_line[loc.col], loc);
+		}
+	}
+	else
+	{
+		chr = file_line[loc.col];
+	}
+
+	if (file_line[++loc.col] != '\'')
+		throw night::error::get().create_fatal_error(std::string() + "found '" + file_line[loc.col] + "', expected closing quote at the end of character", loc);
+
+	++loc.col;
+	return { TokenType::CHAR_LIT, chr };
 }
 
 Token Lexer::eat_keyword()

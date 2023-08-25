@@ -169,6 +169,8 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope const& scope)
 
 	if (type == BinaryOpType::ADD && *lhs_type == ValueType::INT)
 		return ValueType::INT;
+	if (type == BinaryOpType::ADD && *lhs_type == ValueType::CHAR)
+		return ValueType::CHAR;
 	if (type == BinaryOpType::EQUALS || type == BinaryOpType::NOT_EQUALS || type == BinaryOpType::ADD || type == BinaryOpType::OR)
 		return ValueType::BOOL;
 	if (type == BinaryOpType::SUBSCRIPT && *lhs_type == ValueType::INT && *rhs_type == ValueType::STRING)
@@ -269,7 +271,6 @@ int expr::BinaryOp::precedence() const
 		throw debug::unhandled_case((int)type);
 	}
 }
-
 
 
 expr::Array::Array(
@@ -381,7 +382,8 @@ bytecodes_t expr::Value::generate_codes() const
 	case ValueType::BOOL:
 		return { (bytecode_t)BytecodeType::BOOL, val == "true" };
 	case ValueType::CHAR:
-		return { (bytecode_t)BytecodeType::CHAR1, (bytecode_t)std::stoi(val) };
+		assert(val.length() == 1);
+		return { (bytecode_t)BytecodeType::CHAR1, (bytecode_t)(val[0])};
 	case ValueType::INT:
 	{
 		return int_to_bytecodes(std::stoll(val));

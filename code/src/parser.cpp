@@ -421,7 +421,6 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 
 				node = std::make_shared<expr::BinaryOp>(lexer.loc, expr::BinaryOpType::SUBSCRIPT);
 				node->insert_node(index_expr);
-				//node->guard = true;
 
 				allow_unary_next = false;
 				was_sub = true;
@@ -491,7 +490,6 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 		}
 		default:
 		{
-		END2:;
 			if (err_on_empty && !head)
 				throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected expression");
 
@@ -503,7 +501,5 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 			head = node;
 		else
 			head->insert_node(node, &head);
-
-	END:;
 	}
 }
