@@ -329,7 +329,7 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope const& scope)
 				return ValueType::CHAR;
 
 			if (rhs_type->dim)
-				return rhs_type->type;
+				return ValueType(rhs_type->type, rhs_type->dim - 1);
 		}
 
 		break;

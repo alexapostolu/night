@@ -420,6 +420,7 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 
 				allow_unary_next = false;
 				was_sub = true;
+				was_variable = true;
 			}
 			else
 			{
@@ -443,9 +444,9 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 
 				node = std::make_shared<expr::Array>(lexer.loc, arr);
 				allow_unary_next = false;
+				was_variable = false;
 			}
 
-			was_variable = false;
 			break;
 		}
 		case TokenType::UNARY_OP:

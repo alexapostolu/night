@@ -87,7 +87,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		}
 		case BytecodeType::DIV_F: {
 			auto s2 = pop(s);
-			s.emplace(pop(s).f + s2.f);
+			s.emplace(pop(s).f / s2.f);
 			break;
 		}
 
@@ -151,15 +151,9 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			break;
 		}
 
-		case BytecodeType::SUBSCRIPT: {
-			auto str = pop(s);
-			auto index = pop(s);
-			if (str.type == intpr::ValueType::ARR)
-				s.emplace(str.v.at(index.i));
-			else
-				s.emplace(int64_t(str.s.at(index.i)));
+		case BytecodeType::SUBSCRIPT:
+			push_subscript(s);
 			break;
-		}
 
 		case BytecodeType::I2F:
 			s.emplace(float(pop(s).i));
@@ -302,6 +296,17 @@ void push_arr(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it)
 		v.push_back(pop(s));
 
 	s.emplace(v);
+}
+
+void push_subscript(std::stack<intpr::Value>& s)
+{
+	auto container = pop(s);
+	auto index = pop(s);
+
+	if (container.type == intpr::ValueType::ARR)
+		s.emplace(container.v.at(index.i));
+	else
+		s.emplace(int64_t(container.s.at(index.i)));
 }
 
 intpr::Value pop(std::stack<intpr::Value>& s)

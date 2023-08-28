@@ -59,4 +59,6 @@ void push_str(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it);
 //   end:   last code of strarring
 void push_arr(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it);
 
+void push_subscript(std::stack<intpr::Value>& s);
+
 intpr::Value pop(std::stack<intpr::Value>& s);
