@@ -6,9 +6,6 @@ func_container InterpreterScope::funcs = {};
 intpr::Value::Value(int64_t _i)
 	: type(ValueType::INT), i(_i) {}
 
-intpr::Value::Value(uint64_t _ui)
-	: type(ValueType::UINT), ui(_ui) {}
-
 intpr::Value::Value(float _f)
 	: type(ValueType::FLOAT), f(_f) {}
 

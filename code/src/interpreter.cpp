@@ -25,13 +25,6 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			s.emplace(get_int<int64_t>(it));
 			break;
 
-		case BytecodeType::U_INT1:
-		case BytecodeType::U_INT2:
-		case BytecodeType::U_INT4:
-		case BytecodeType::U_INT8:
-			s.emplace(get_int<uint64_t>(it));
-			break;
-
 		case BytecodeType::FLOAT4:
 		case BytecodeType::FLOAT8:
 			push_float(s, it);

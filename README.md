@@ -16,6 +16,12 @@ Night is a static, bytecode interpreted language with strong management on types
 - for & while loops
 - functions
 
+## Example Code
+
+`tests/programs` contain simple example programs written in Night to solve various online computer science problem sets, including [`cs50`](https://cs50.harvard.edu/college/2023/spring/)
+
+those programs are also used for functional testing
+
 ---
 
 ## Build

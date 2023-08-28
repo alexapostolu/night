@@ -8,11 +8,13 @@
 #include <stack>
 #include <functional>
 #include <optional>
+#include <bitset>
+#include <iostream>
 
 std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes);
 
 // iterator
-//   start: int bytecode type
+//   start: int code type
 //   end:   last code of int
 template <typename T>
 T get_int(bytecodes_t::const_iterator& it)
@@ -22,21 +24,24 @@ T get_int(bytecodes_t::const_iterator& it)
 	switch ((BytecodeType)(*it))
 	{
 	case BytecodeType::S_INT1:
-	case BytecodeType::U_INT1: count = 8;  break;
+	case BytecodeType::U_INT1: count = 1;  break;
 	case BytecodeType::S_INT2:
-	case BytecodeType::U_INT2: count = 16; break;
+	case BytecodeType::U_INT2: count = 2; break;
 	case BytecodeType::S_INT4:
-	case BytecodeType::U_INT4: count = 32; break;
+	case BytecodeType::U_INT4: count = 4; break;
 	case BytecodeType::S_INT8:
-	case BytecodeType::U_INT8: count = 64; break;
+	case BytecodeType::U_INT8: count = 8; break;
 	default: throw debug::unhandled_case(*it);
 	}
 
-	T num = *(++it);
-	for (int i = 8; i < count; i *= 2)
+	T num = 0;
+	for (int i = 0; i < count; ++i)
 	{
-		auto byte = *(++it);
-		num += byte * pow(2, i);
+		T it_n = *(++it);
+		for (int j = 0; j < i; ++j)
+			it_n <<= 8;
+
+		num |= it_n;
 	}
 
 	return num;

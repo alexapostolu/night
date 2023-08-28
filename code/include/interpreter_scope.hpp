@@ -20,14 +20,12 @@ struct Value
 	ValueType type;
 	
 	int64_t i;
-	uint64_t ui;
 	float f;
 	std::string s;
 	std::vector<Value> v;
 
 	Value() = default;
 	explicit Value(int64_t _i);
-	explicit Value(uint64_t _ui);
 	explicit Value(float _i);
 	explicit Value(std::string _s);
 	explicit Value(std::vector<Value> const& _v);

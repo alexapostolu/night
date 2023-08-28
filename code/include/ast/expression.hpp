@@ -209,7 +209,7 @@ public:
 	int precedence() const override;
 
 private:
-	static bytecodes_t int_to_bytecodes(int64_t int64);
+	static bytecodes_t int_to_bytecodes(uint64_t uint64);
 
 private:
 	ValueType::PrimType type;

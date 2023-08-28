@@ -600,14 +600,16 @@ bytecodes_t expr::Value::generate_codes() const
 	switch (type)
 	{
 	case ValueType::BOOL:
+		assert(val == "true" || val == "false");
 		return { (bytecode_t)BytecodeType::S_INT1, val == "true" };
+
 	case ValueType::CHAR:
 		assert(val.length() == 1);
-		return { (bytecode_t)BytecodeType::S_INT1, (bytecode_t)(val[0])};
+		return { (bytecode_t)BytecodeType::S_INT1, (bytecode_t)val[0] };
+
 	case ValueType::INT:
-	{
-		return int_to_bytecodes(std::stoll(val));
-	}
+		return Value::int_to_bytecodes(std::stoull(val));
+
 	case ValueType::FLOAT: {
 		bytecodes_t codes(sizeof(float));
 
@@ -638,24 +640,39 @@ int expr::Value::precedence() const
 	return single_prec;
 }
 
-bytecodes_t expr::Value::int_to_bytecodes(int64_t int64)
+bytecodes_t expr::Value::int_to_bytecodes(uint64_t uint64)
 {
 	bytecodes_t codes;
+	int count;
 
-	if (int64 <= std::numeric_limits<uint8_t>::max())
+	if (uint64 <= std::numeric_limits<uint8_t>::max())
+	{
 		codes.push_back((bytecode_t)BytecodeType::S_INT1);
-	else if (int64 <= std::numeric_limits<uint16_t>::max())
+		count = 1;
+	}
+	else if (uint64 <= std::numeric_limits<uint16_t>::max())
+	{
 		codes.push_back((bytecode_t)BytecodeType::S_INT2);
-	else if (int64 <= std::numeric_limits<uint32_t>::max())
+		count = 2;
+	}
+	else if (uint64 <= std::numeric_limits<uint32_t>::max())
+	{
 		codes.push_back((bytecode_t)BytecodeType::S_INT4);
-	else if (int64 <= std::numeric_limits<uint64_t>::max())
+		count = 4;
+	}
+	else if (uint64 <= std::numeric_limits<uint64_t>::max())
+	{
 		codes.push_back((bytecode_t)BytecodeType::S_INT8);
+		count = 8;
+	}
 	else
-		throw debug::unhandled_case(int64);
+		throw debug::unhandled_case(uint64);
 
-	do {
-		codes.push_back(int64 & 0xFF);
-	} while (int64 >>= 8);
+	while (count--)
+	{
+		codes.push_back(uint64 & 0xFF);
+		uint64 >>= 8;
+	}
 
 	return codes;
 }
