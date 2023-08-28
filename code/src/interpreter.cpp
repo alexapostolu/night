@@ -190,7 +190,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			{
 			case 0: std::cout << (pop(s).i ? "true" : "false"); break;
 			case 1: std::cout << (char)pop(s).i; break;
-			case 2: std::cout << (int)pop(s).i; break;
+			case 2: std::cout << pop(s).i; break;
 			case 3: std::cout << (float)pop(s).f; break;
 			case 4: std::cout << pop(s).s; break;
 			case 5: {
