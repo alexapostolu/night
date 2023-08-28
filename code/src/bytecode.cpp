@@ -162,21 +162,29 @@ std::string night::to_str(BytecodeType type)
 		return "FLOAT4";
 	case BytecodeType::FLOAT8:
 		return "FLOAT8";
-	case BytecodeType::BOOL:
-		return "BOOL";
-	case BytecodeType::CHAR1:
-		return "CHAR1";
 
-	case BytecodeType::NOT:
-		return "NOT";
-	case BytecodeType::ADD:
-		return "ADD";
-	case BytecodeType::SUB:
-		return "SUB";
-	case BytecodeType::MULT:
-		return "MULT";
-	case BytecodeType::DIV:
-		return "DIV";
+	case BytecodeType::NOT_I:
+		return "NOT_I";
+	case BytecodeType::NOT_F:
+		return "NOT_F";
+	case BytecodeType::ADD_I:
+		return "ADD_I";
+	case BytecodeType::ADD_F:
+		return "ADD_F";
+	case BytecodeType::ADD_S:
+		return "ADD_S";
+	case BytecodeType::SUB_I:
+		return "SUB_I";
+	case BytecodeType::SUB_F:
+		return "SUB_F";
+	case BytecodeType::MULT_I:
+		return "MULT_I";
+	case BytecodeType::MULT_F:
+		return "MULT_F";
+	case BytecodeType::DIV_I:
+		return "DIV_I";
+	case BytecodeType::DIV_F:
+		return "DIV_F";
 
 	case BytecodeType::LOAD:
 		return "LOAD";

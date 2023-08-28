@@ -7,6 +7,7 @@
 #include <cmath>
 #include <stack>
 #include <optional>
+#include <cstring>
 #include <assert.h>
 
 std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes)
@@ -17,13 +18,6 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 	{
 		switch ((BytecodeType)*it)
 		{
-		case BytecodeType::BOOL:
-			s.emplace((int64_t)*(++it));
-			break;
-		case BytecodeType::CHAR1:
-			s.emplace((int64_t)*(++it));
-			break;
-
 		case BytecodeType::S_INT1:
 		case BytecodeType::S_INT2:
 		case BytecodeType::S_INT4:
@@ -46,48 +40,107 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		case BytecodeType::STR: push_str(s, it); break;
 		case BytecodeType::ARR: push_arr(s, it); break;
 
-		case BytecodeType::NEGATIVE: s.emplace(- pop(s).i); break;
-		case BytecodeType::NOT:		 s.emplace((int64_t)!pop(s).i); break;
+		case BytecodeType::NEGATIVE_I:
+			s.emplace(-pop(s).i);
+			break;
+		case BytecodeType::NEGATIVE_F:
+			s.emplace(-pop(s).f);
+			break;
 
-		case BytecodeType::ADD: {
-			auto v1 = pop(s);
-			if (v1.type == intpr::ValueType::STR)
-				s.emplace(pop(s).s + v1.s);
-			else
-				s.emplace(v1.i + pop(s).i);
+		case BytecodeType::NOT_I:
+			s.emplace((int64_t)!pop(s).i);
+			break;
+		case BytecodeType::NOT_F:
+			s.emplace((int64_t)!pop(s).f);
+			break;
+
+		case BytecodeType::ADD_I:
+			s.emplace(pop(s).i + pop(s).i);
+			break;
+		case BytecodeType::ADD_F:
+			s.emplace(pop(s).f + pop(s).f);
+			break;
+		case BytecodeType::ADD_S: {
+			auto s2 = pop(s);
+			s.emplace(pop(s).s + s2.s);
 			break;
 		}
-		case BytecodeType::MULT: s.emplace(pop(s).i * pop(s).i); break;
-		case BytecodeType::DIV:  s.emplace(pop(s).i / pop(s).i); break;
-		case BytecodeType::SUB:  s.emplace(-pop(s).i + pop(s).i); break;
+
+		case BytecodeType::SUB_I:
+			s.emplace(-pop(s).i + pop(s).i);
+			break;
+		case BytecodeType::SUB_F:
+			s.emplace(-pop(s).f + pop(s).f);
+			break;
+
+		case BytecodeType::MULT_I:
+			s.emplace(pop(s).i * pop(s).i);
+			break;
+		case BytecodeType::MULT_F:
+			s.emplace(pop(s).f * pop(s).f);
+			break;
+
+		case BytecodeType::DIV_I: {
+			auto s2 = pop(s);
+			s.emplace(pop(s).i / s2.i);
+			break;
+		}
+		case BytecodeType::DIV_F: {
+			auto s2 = pop(s);
+			s.emplace(pop(s).f + s2.f);
+			break;
+		}
 
 		// stack values are in opposite order, so we switch signs to account for that
-		case BytecodeType::LESSER: {
-			s.emplace((int64_t)(pop(s).i > pop(s).i));
+		case BytecodeType::LESSER_I:
+			s.emplace(int64_t(pop(s).i > pop(s).i));
 			break;
-		}
-		case BytecodeType::GREATER: {
-			s.emplace((int64_t)(pop(s).i < pop(s).i));
+		case BytecodeType::LESSER_F:
+			s.emplace(int64_t(pop(s).f > pop(s).f));
 			break;
-		}
-		case BytecodeType::LESSER_EQUALS: {
+		case BytecodeType::LESSER_S:
+			s.emplace(int64_t(pop(s).s < pop(s).s));
+			break;
+
+		case BytecodeType::GREATER_I:
+			s.emplace(int64_t(pop(s).i < pop(s).i));
+			break;
+		case BytecodeType::GREATER_F:
+			s.emplace(int64_t(pop(s).f < pop(s).f));
+			break;
+		case BytecodeType::GREATER_S:
+			s.emplace(int64_t(pop(s).s > pop(s).s));
+			break;
+
+		case BytecodeType::LESSER_EQUALS_I:
 			s.emplace((int64_t)(pop(s).i >= pop(s).i));
 			break;
-		}
-		case BytecodeType::GREATER_EQUALS: {
+		case BytecodeType::LESSER_EQUALS_F:
+			s.emplace((int64_t)(pop(s).f >= pop(s).f));
+			break;
+		case BytecodeType::LESSER_EQUALS_S:
+			s.emplace((int64_t)(pop(s).s >= pop(s).s));
+			break;
+
+		case BytecodeType::GREATER_EQUALS_I:
 			s.emplace((int64_t)(pop(s).i <= pop(s).i));
 			break;
-		}
-
-		case BytecodeType::EQUALS: {
-			auto v1 = pop(s);
-			if (v1.type == intpr::ValueType::INT)
-				s.emplace(int64_t(pop(s).i == v1.i));
-			else if (v1.type == intpr::ValueType::STR)
-				s.emplace(int64_t(pop(s).s == v1.s));
-
+		case BytecodeType::GREATER_EQUALS_F:
+			s.emplace((int64_t)(pop(s).f <= pop(s).f));
 			break;
-		}
+		case BytecodeType::GREATER_EQUALS_S:
+			s.emplace((int64_t)(pop(s).s <= pop(s).s));
+			break;
+
+		case BytecodeType::EQUALS_I:
+			s.emplace(int64_t(pop(s).i == pop(s).i));
+			break;
+		case BytecodeType::EQUALS_F:
+			s.emplace(int64_t(pop(s).f == pop(s).f));
+			break;
+		case BytecodeType::EQUALS_S:
+			s.emplace(int64_t(pop(s).s == pop(s).s));
+			break;
 
 		case BytecodeType::AND: {
 			s.emplace(int64_t(pop(s).i && pop(s).i));
@@ -104,9 +157,16 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			if (str.type == intpr::ValueType::ARR)
 				s.emplace(str.v.at(index.i));
 			else
-				s.emplace(std::string(1, str.s.at(index.i)));
+				s.emplace(int64_t(str.s.at(index.i)));
 			break;
 		}
+
+		case BytecodeType::I2F:
+			s.emplace(float(pop(s).i));
+			break;
+		case BytecodeType::F2I:
+			s.emplace(int64_t(pop(s).f));
+			break;
 
 		case BytecodeType::LOAD:
 			++it;
@@ -141,7 +201,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 
 			switch (id)
 			{
-			case 0: std::cout << (bool)pop(s).i; break;
+			case 0: std::cout << (pop(s).i ? "true" : "false"); break;
 			case 1: std::cout << (char)pop(s).i; break;
 			case 2: std::cout << (int)pop(s).i; break;
 			case 3: std::cout << (float)pop(s).f; break;
@@ -161,15 +221,15 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 				break;
 			}
 			case 8: {
-				s.emplace(std::to_string(pop(s).i));
+				// char is already stored as an int, so int(char) does nothing
 				break;
 			}
 			case 9: {
-				s.emplace((int64_t)pop(s).s.length());
+				s.emplace(std::to_string(pop(s).i));
 				break;
 			}
 			case 10: {
-				s.emplace((int64_t)int(pop(s).s[0]));
+				s.emplace((int64_t)pop(s).s.length());
 				break;
 			}
 			default: {
@@ -199,15 +259,22 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 
 void push_float(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it)
 {
+	int count;
 	switch ((BytecodeType)(*(it++)))
 	{
-	case BytecodeType::FLOAT4:
-		break;
-	case BytecodeType::FLOAT8:
-		break;
+	case BytecodeType::FLOAT4: count = 4; break;
+	case BytecodeType::FLOAT8: count = 8; break;
 	default:
 		throw debug::unhandled_case(*it);
 	}
+
+	float restoredFloat;
+	std::memcpy(&restoredFloat, &(*it), count);
+
+	s.emplace(restoredFloat);
+
+	// -1 to account for the advancement in the main for loop
+	std::advance(it, count - 1);
 }
 
 void push_str(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it)

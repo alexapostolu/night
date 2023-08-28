@@ -17,8 +17,12 @@ VariableInit::VariableInit(
 	Location const& _loc,
 	std::string const& _name,
 	std::string const& _type,
+	std::vector<std::optional<expr::expr_p>> const& _arr_sizes,
 	expr::expr_p const& _expr)
-	: AST(_loc), name(_name), type(token_var_type_to_val_type(_type)), expr(_expr), id(std::nullopt) {}
+	: AST(_loc), name(_name), type(token_var_type_to_val_type(_type)), arr_sizes(_arr_sizes), expr(_expr), id(std::nullopt)
+{
+	type.dim = arr_sizes.size();
+}
 
 void VariableInit::check(ParserScope& scope)
 {
@@ -34,7 +38,7 @@ void VariableInit::check(ParserScope& scope)
 
 	auto expr_type = expr->type_check(scope);
 
-	if (expr_type.has_value() && !compare_value_t(type, *expr_type))
+	if (expr_type.has_value() && type != *expr_type)
 		night::error::get().create_minor_error(
 			"variable '" + name + "' of type '" + night::to_str(type) +
 			"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", loc);
@@ -71,21 +75,19 @@ void VariableAssign::check(ParserScope& scope)
 
 	auto expr_type = expr->type_check(scope);
 
-	if (expr_type.has_value() && assign_op != "=" && expr_type->is_object())
-		night::error::get().create_minor_error(
-			"assignment '" + assign_op + "' can not be used on expression of type '" + night::to_str(*expr_type) + "'", loc);
-
-	if (expr_type.has_value() && !compare_value_t(scope.vars.at(name).type, *expr_type))
+	if (expr_type.has_value() && scope.vars.at(name).type != *expr_type)
 		night::error::get().create_minor_error(
 			"variable '" + name + "' of type '" + night::to_str(scope.vars.at(name).type) +
 			"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", loc);
 
 	id = scope.vars[name].id;
+	assign_type = scope.vars[name].type;
 }
 
 bytecodes_t VariableAssign::generate_codes() const
 {
 	assert(id.has_value());
+	assert(assign_type.has_value());
 
 	bytecodes_t codes = expr->generate_codes();
 
@@ -94,11 +96,38 @@ bytecodes_t VariableAssign::generate_codes() const
 		codes.insert(std::begin(codes), *id);
 		codes.insert(std::begin(codes), (bytecode_t)BytecodeType::LOAD);
 
-		if      (assign_op == "+=")	codes.push_back((bytecode_t)BytecodeType::ADD);
-		else if (assign_op == "-=") codes.push_back((bytecode_t)BytecodeType::SUB);
-		else if (assign_op == "*=") codes.push_back((bytecode_t)BytecodeType::MULT);
-		else if (assign_op == "/=") codes.push_back((bytecode_t)BytecodeType::DIV);
-		else throw debug::unhandled_case(assign_op);
+		if (assign_op == "+=")
+		{
+			if (assign_type == ValueType::FLOAT)
+				codes.push_back((bytecode_t)BytecodeType::ADD_F);
+			else if (assign_type == ValueType::STR)
+				codes.push_back((bytecode_t)BytecodeType::ADD_S);
+			else
+				codes.push_back((bytecode_t)BytecodeType::ADD_I);
+		}
+		else if (assign_op == "-=")
+		{
+			if (assign_type == ValueType::FLOAT)
+				codes.push_back((bytecode_t)BytecodeType::SUB_F);
+			else
+				codes.push_back((bytecode_t)BytecodeType::SUB_I);
+		}
+		else if (assign_op == "*=")
+		{
+			if (assign_type == ValueType::FLOAT)
+				codes.push_back((bytecode_t)BytecodeType::MULT_F);
+			else
+				codes.push_back((bytecode_t)BytecodeType::MULT_I);
+		}
+		else if (assign_op == "/=")
+		{
+			if (assign_type == ValueType::FLOAT)
+				codes.push_back((bytecode_t)BytecodeType::DIV_F);
+			else
+				codes.push_back((bytecode_t)BytecodeType::DIV_I);
+		}
+		else
+			throw debug::unhandled_case(assign_op);
 	}
 
 	codes.push_back((bytecode_t)BytecodeType::STORE);
@@ -120,7 +149,7 @@ void Conditional::check(ParserScope& scope)
 	{
 		auto cond_type = cond->type_check(scope);
 
-		if (cond_type.has_value() && cond_type->is_object())
+		if (cond_type.has_value() && !cond_type->is_prim())
 			night::error::get().create_minor_error(
 				"expected type 'bool', 'char', or 'int',"
 				"condition is type '" + night::to_str(*cond_type) + "'", loc);
@@ -178,7 +207,7 @@ void While::check(ParserScope& scope)
 {
 	auto cond_type = cond_expr->type_check(scope);
 
-	if (cond_type.has_value() && cond_type->is_object())
+	if (cond_type.has_value() && !cond_type->is_prim())
 		night::error::get().create_minor_error(
 			"condition is type '" + night::to_str(*cond_type) + "', "
 			"expected type 'bool', 'char', 'int', or 'float'", loc);
@@ -328,10 +357,10 @@ void Return::check(ParserScope& scope)
 
 		auto expr_type = expr->type_check(scope);
 
-		if (expr_type.has_value() && !compare_value_t(*ParserScope::curr_rtn_type, *expr_type))
+		if (expr_type.has_value() && *ParserScope::curr_rtn_type != *expr_type)
 			night::error::get().create_minor_error(
-				"return is type '" + night::to_str(*expr_type, false) + "', expected type '" +
-				night::to_str(*ParserScope::curr_rtn_type, false) + "'", loc);
+				"return is type '" + night::to_str(*expr_type) + "', expected type '" +
+				night::to_str(*ParserScope::curr_rtn_type) + "'", loc);
 	}
 }
 
@@ -368,7 +397,10 @@ std::optional<ValueType> FunctionCall::type_check(ParserScope const& scope)
 	auto [func, range_end] = ParserScope::funcs.equal_range(name);
 
 	if (func == range_end)
+	{
 		night::error::get().create_minor_error("function '" + name + "' is not defined", Expression::loc);
+		return std::nullopt;
+	}
 
 	for (; func != range_end; ++func)
 	{
@@ -377,17 +409,20 @@ std::optional<ValueType> FunctionCall::type_check(ParserScope const& scope)
 			break;
 	}
 
-
 	if (func == range_end)
 	{
 		std::string s_types;
 		for (auto const& type : arg_types)
-			s_types += night::to_str(type, false) + ", ";
+			s_types += night::to_str(type) + ", ";
+
+		// remove extra comma at the end
 		s_types = s_types.substr(0, s_types.size() - 2);
 
 		night::error::get().create_minor_error(
-			"arguments in function call '" + name + +"' are of type '" + s_types +
+			"arguments in function call '" + name + + "' are of type '" + s_types +
 			"', and do not match with the parameters in its function definition", Expression::loc);
+
+		return std::nullopt;
 	}
 
 	id = func->second.id;

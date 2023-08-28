@@ -2,64 +2,42 @@
 #include "debug.hpp"
 
 #include <string>
+#include <memory>
 
-ValueType::ValueType(_type _type, bool _is_arr)
-	: type((value_t)_type), is_arr(_is_arr) {}
+ValueType::ValueType(PrimType _type, int _dim)
+	: type(_type), dim(_dim) {}
 
-ValueType::ValueType(value_t _type, bool _is_arr)
-	: type(_type), is_arr(_is_arr) {}
+bool ValueType::operator==(PrimType _type) const
+{
+	return !dim && type == _type;
+}
 
 bool ValueType::operator==(ValueType const& _vt) const
 {
-	return type == _vt.type && is_arr == _vt.is_arr;
+	return dim == _vt.dim && type == _vt.type;
 }
 
-bool ValueType::is_object() const
+bool ValueType::is_prim() const
 {
-	return type > primitive_count;
+	return !dim && type <= primitive_count;
 }
 
-bool compare_value_t(ValueType vt1, ValueType vt2)
+std::string night::to_str(ValueType const& vt)
 {
-	return (!vt1.is_object() && !vt2.is_object()) ||
-		   (vt1 == vt2);
-}
-
-bool is_object_t(value_t type)
-{
-	return type > primitive_count;
-}
-
-std::string night::to_str(value_t type, bool primitive)
-{
-	if (primitive)
+	std::string type_s;
+	switch (vt.type)
 	{
-		switch (type)
-		{
-		case ValueType::BOOL:
-		case ValueType::CHAR:
-		case ValueType::INT:
-		case ValueType::STRING:
-			return "primitive";
-		default:
-			throw debug::unhandled_case((int)type);
-		}
+	case ValueType::BOOL:  type_s = "bool"; break;
+	case ValueType::CHAR:  type_s = "char"; break;
+	case ValueType::INT:   type_s = "int"; break;
+	case ValueType::FLOAT: type_s = "float"; break;
+	case ValueType::STR:   type_s = "str"; break;
+	default:
+		throw debug::unhandled_case(vt.type);
 	}
-	else
-	{
-		switch (type)
-		{
-		case ValueType::BOOL:  return "bool";
-		case ValueType::CHAR:  return "char";
-		case ValueType::INT:	return "int";
-		case ValueType::STRING: return "string";
-		default:
-			throw debug::unhandled_case((int)type);
-		}
-	}
-}
 
-std::string night::to_str(ValueType vt, bool primitive)
-{
-	return night::to_str(vt.type, primitive);
+	if (vt.dim)
+		return vt.dim + " dimensional " + type_s + " array";
+
+	return type_s;
 }

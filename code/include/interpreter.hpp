@@ -6,6 +6,7 @@
 
 #include <math.h>
 #include <stack>
+#include <functional>
 #include <optional>
 
 std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes);

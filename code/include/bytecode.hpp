@@ -16,9 +16,6 @@ using bytecodes_t = std::vector<bytecode_t>;
 // () indicate the next bytecode value
 enum struct BytecodeType : bytecode_t
 {
-	BOOL,					// BOOL (val)
-	CHAR1,					//
-
 	S_INT1,					// S_INT1 (val)
 	S_INT2,					// S_INT2 (val) (val)
 	S_INT4,					//
@@ -32,24 +29,26 @@ enum struct BytecodeType : bytecode_t
 	STR,					// S_INT1 (length) (characters)
 	ARR,					// [elements] ARR (size)
 
-	NEGATIVE,				// [val] NEGATIVE 
-	NOT,					//
+	NEGATIVE_I, NEGATIVE_F,				// [val] NEGATIVE 
+	NOT_I, NOT_F,					//
 
-	ADD,					// [val] [val] ADD
-	SUB,					//
-	MULT,					//
-	DIV,					//
+	ADD_I, ADD_F, ADD_S,
+	SUB_I, SUB_F,
+	MULT_I, MULT_F,
+	DIV_I, DIV_F,
 
-	LESSER,
-	GREATER,
-	LESSER_EQUALS,
-	GREATER_EQUALS,
-	EQUALS,
-	NOT_EQUALS,
+	LESSER_I, LESSER_F, LESSER_S,
+	GREATER_I, GREATER_F, GREATER_S,
+	LESSER_EQUALS_I, LESSER_EQUALS_F, LESSER_EQUALS_S,
+	GREATER_EQUALS_I, GREATER_EQUALS_F, GREATER_EQUALS_S,
+	EQUALS_I, EQUALS_F, EQUALS_S,
+	NOT_EQUALS_I, NOT_EQUALS_F, NOT_EQUALS_S,
 	AND,
 	OR,
 
 	SUBSCRIPT,
+
+	I2F, F2I,
 
 	LOAD,					// LOAD  (var_id)
 	STORE,					// STORE (var_id)

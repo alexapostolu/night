@@ -2,40 +2,35 @@
 
 #include <string>
 
-using value_t = int;
-
 constexpr short primitive_count = 3;
 
 struct ValueType
 {
-	enum _type {
+	enum PrimType {
 		BOOL,
 		CHAR,
 		INT,
 		FLOAT,
-		STRING
-	};
+		STR
+	} type;
+
+	// dimension of the array
+	// elements of an array must be the same type, so for any n dimensional array,
+	//  we just need one type, which is the type of the very bottom element
+	int dim;
 
 	ValueType() = default;
-	ValueType(_type _type, bool _is_arr = false);
-	ValueType(value_t _type, bool _is_arr = false);
+	ValueType(PrimType _type, int _dim = 0);
+	bool operator==(PrimType _type) const;
+	bool operator==(ValueType const& _type) const;
 
-	bool operator==(ValueType const& _vt) const;
-
-	bool is_object() const;
-
-	value_t type;
-	bool is_arr;
+	// is primitive (bool, char, int, float)
+	bool is_prim() const;
 };
-
-// returns
-//   true if both are primitive, or both are same object
-bool compare_value_t(ValueType vt1, ValueType vt2);
 
 namespace night
 {
 
-std::string to_str(value_t type, bool primitive = true);
-std::string to_str(ValueType vt, bool primitive = true);
+std::string to_str(ValueType const& vt);
 
 }

@@ -19,6 +19,8 @@ std::string night::error::what() const
 	for (auto const& msg : minor_errors)
 		s += msg + '\n';
 
+	s += '\n';
+
 	for (auto const& msg : warnings)
 		s += msg + '\n';
 
@@ -59,6 +61,6 @@ std::string night::error::format_error_msg(
 	if (debug_flag)
 		base += std::string() + s_loc.file_name() + " " + std::to_string(s_loc.line()) + '\n';
 	
-	base += '\n' + msg;
+	base += '\n' + msg + '\n';
 	return base;
 }

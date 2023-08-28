@@ -10,13 +10,13 @@ scope_func_container ParserScope::funcs = {
 	{ "print", ParserFunction{ 1, {}, { ValueType::CHAR }, std::nullopt } },
 	{ "print", ParserFunction{ 2, {}, { ValueType::INT }, std::nullopt } },
 	{ "print", ParserFunction{ 3, {}, { ValueType::FLOAT }, std::nullopt } },
-	{ "print", ParserFunction{ 4, {}, { ValueType::STRING }, std::nullopt } },
-	{ "input", ParserFunction{ 5, {}, {}, ValueType::STRING } },
-	{ "char",   ParserFunction{ 6, {}, { ValueType::INT }, ValueType::STRING } },
-	{ "int",   ParserFunction{ 7, {}, { ValueType::STRING }, ValueType::INT } },
-	{ "str",   ParserFunction{ 8, {}, { ValueType::INT }, ValueType::STRING } },
-	{ "len",   ParserFunction{ 9, {}, { ValueType::STRING }, ValueType::INT } },
-	{ "ord",   ParserFunction{ 10, {}, { ValueType::STRING }, ValueType::INT } }
+	{ "print", ParserFunction{ 4, {}, { ValueType::STR }, std::nullopt } },
+	{ "input", ParserFunction{ 5, {}, {}, ValueType::STR } },
+	{ "char",   ParserFunction{ 6, {}, { ValueType::INT }, ValueType::CHAR } },
+	{ "int",   ParserFunction{ 7, {}, { ValueType::STR }, ValueType::INT } },
+	{ "int",   ParserFunction{ 8, {}, { ValueType::CHAR }, ValueType::INT } },
+	{ "str",   ParserFunction{ 9, {}, { ValueType::INT }, ValueType::STR } },
+	{ "len",   ParserFunction{ 10, {}, { ValueType::STR }, ValueType::INT } }
 };
 
 std::optional<ValueType> ParserScope::curr_rtn_type = std::nullopt;

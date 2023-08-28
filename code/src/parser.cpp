@@ -124,20 +124,16 @@ VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 {
 	auto var_type = lexer.curr().str;
 
+	std::vector<std::optional<expr::expr_p>> arr_sizes;
+	while (lexer.eat().type == TokenType::OPEN_SQUARE)
+	{
+		arr_sizes.push_back(parse_expr(lexer, false));
+		lexer.curr_check(TokenType::CLOSE_SQUARE);
+	}
+
 	// default value
 	expr::expr_p expr =
-		std::make_shared<expr::Value>(lexer.loc, token_var_type_to_val_type(var_type).type, "0");
-
-	lexer.eat();
-
-	std::optional<expr::expr_p> arr_size(std::nullopt);
-	if (lexer.curr().type == TokenType::OPEN_SQUARE)
-	{
-		arr_size = parse_expr(lexer, false);
-
-		lexer.curr_check(TokenType::CLOSE_SQUARE);
-		lexer.eat();
-	}
+		std::make_shared<expr::Value>(lexer.loc, token_var_type_to_val_type(var_type), "0");
 
 	if (lexer.curr().type == TokenType::ASSIGN && lexer.curr().str == "=")
 	{
@@ -153,7 +149,7 @@ VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "' expected semicolon or assignment after variable type");
 	}
 
-	return VariableInit(lexer.loc, var_name, var_type, expr);
+	return VariableInit(lexer.loc, var_name, var_type, arr_sizes, expr);
 }
 
 VariableAssign parse_var_assign(Lexer& lexer, std::string const& var_name)
@@ -199,8 +195,8 @@ Conditional parse_if(Lexer& lexer)
 
 	do {
 		// default for else statements
-		std::shared_ptr<expr::Expression> cond_expr =
-			std::make_shared<expr::Value>(lexer.loc, (value_t)ValueType::BOOL, "true");
+		expr::expr_p cond_expr =
+			std::make_shared<expr::Value>(lexer.loc, ValueType::BOOL, "true");
 
 		// parse condition
 		if (lexer.curr().type != TokenType::ELSE)
@@ -387,7 +383,7 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 		}
 		case TokenType::STRING_LIT:
 		{
-			node = std::make_shared<expr::Value>(lexer.loc, ValueType::STRING, lexer.curr().str);
+			node = std::make_shared<expr::Value>(lexer.loc, ValueType::STR, lexer.curr().str);
 			allow_unary_next = false;
 			was_variable = true;
 			was_sub = false;

@@ -26,7 +26,7 @@ int expr::Expression::single_prec	 = 1000;
 expr::UnaryOp::UnaryOp(
 	Location const& _loc,
 	std::string const& _type,
-	std::shared_ptr<Expression> const& _expr)
+	expr::expr_p const& _expr)
 	: Expression(ExpressionType::UNARY_OP, _loc), expr(_expr)
 {
 	if		(_type == "-") type = UnaryOpType::NEGATIVE;
@@ -37,12 +37,12 @@ expr::UnaryOp::UnaryOp(
 expr::UnaryOp::UnaryOp(
 	Location const& _loc,
 	UnaryOpType _type,
-	std::shared_ptr<Expression> const& _expr)
+	expr::expr_p const& _expr)
 	: Expression(ExpressionType::UNARY_OP, _loc), type(_type), expr(_expr) {}
 
 void expr::UnaryOp::insert_node(
-	std::shared_ptr<Expression> const& node,
-	std::shared_ptr<Expression>* prev)
+	expr::expr_p const& node,
+	expr::expr_p* prev)
 {
 	if (!expr)
 	{
@@ -61,11 +61,55 @@ void expr::UnaryOp::insert_node(
 
 std::optional<ValueType> expr::UnaryOp::type_check(ParserScope const& scope)
 {
-	auto type = expr->type_check(scope);
-	if (type.has_value() && type->is_object())
-		night::error::get().create_minor_error("expression under unary operator has type '" + night::to_str(*type) + "', expected primitive type", loc);
+	assert(expr);
 
-	return type;
+	auto expr_type = expr->type_check(scope);
+
+	if (!expr_type)
+		return std::nullopt;
+
+	switch (type)
+	{
+	case UnaryOpType::NEGATIVE:
+		if (!expr_type->dim)
+		{
+			switch (expr_type->type)
+			{
+			case ValueType::BOOL:
+			case ValueType::CHAR:
+			case ValueType::INT:
+				return op_code = ValueType::INT;
+			case ValueType::FLOAT:
+				return op_code = ValueType::FLOAT;
+			}
+		}
+
+		break;
+		
+	case UnaryOpType::NOT:
+		if (!expr_type->dim)
+		{
+			switch (expr_type->type)
+			{
+			case ValueType::BOOL:
+			case ValueType::CHAR:
+			case ValueType::INT:
+				op_code = ValueType::INT;
+				return ValueType::BOOL;
+			case ValueType::FLOAT:
+				op_code = ValueType::FLOAT;
+				return ValueType::BOOL;
+			}
+		}
+
+		break;
+
+	default:
+		throw debug::unhandled_case((int)type);
+	}
+
+	night::error::get().create_minor_error("expression under unary operator has type '" + night::to_str(*expr_type) + "', expected primitive type", loc);
+	return std::nullopt;
 }
 
 bytecodes_t expr::UnaryOp::generate_codes() const
@@ -75,11 +119,21 @@ bytecodes_t expr::UnaryOp::generate_codes() const
 	switch (type)
 	{
 	case UnaryOpType::NEGATIVE:
-		codes.push_back((bytecode_t)BytecodeType::NEGATIVE);
+		if (op_code == ValueType::INT)
+			codes.push_back((bytecode_t)BytecodeType::NEGATIVE_I);
+		if (op_code == ValueType::FLOAT)
+			codes.push_back((bytecode_t)BytecodeType::NEGATIVE_F);
+
 		break;
+
 	case UnaryOpType::NOT:
-		codes.push_back((bytecode_t)BytecodeType::NOT);
+		if (op_code == ValueType::INT)
+			codes.push_back((bytecode_t)BytecodeType::NOT_I);
+		if (op_code == ValueType::FLOAT)
+			codes.push_back((bytecode_t)BytecodeType::NOT_F);
+
 		break;
+
 	default:
 		throw debug::unhandled_case((int)type);
 	}
@@ -159,34 +213,132 @@ void expr::BinaryOp::insert_node(
 std::optional<ValueType> expr::BinaryOp::type_check(ParserScope const& scope)
 {
 	assert(lhs);
-	auto lhs_type = lhs->type_check(scope);
-
 	assert(rhs);
+
+	auto lhs_type = lhs->type_check(scope);
 	auto rhs_type = rhs->type_check(scope);
 
 	if (!lhs_type.has_value() || !rhs_type.has_value())
 		return std::nullopt;
 
-	if (type == BinaryOpType::ADD && *lhs_type == ValueType::INT)
-		return ValueType::INT;
-	if (type == BinaryOpType::ADD && *lhs_type == ValueType::CHAR)
-		return ValueType::CHAR;
-	if (type == BinaryOpType::EQUALS || type == BinaryOpType::NOT_EQUALS || type == BinaryOpType::ADD || type == BinaryOpType::OR)
-		return ValueType::BOOL;
-	if (type == BinaryOpType::SUBSCRIPT && *lhs_type == ValueType::INT && *rhs_type == ValueType::STRING)
-		return ValueType::STRING;
-	if (type == BinaryOpType::SUBSCRIPT && *lhs_type == ValueType::INT && (*rhs_type).is_arr)
-		return (*rhs_type).type;
-	if (*lhs_type == ValueType::STRING && *lhs_type == *rhs_type)
-		return ValueType::STRING;
-	if (*lhs_type == ValueType::INT && compare_value_t(*lhs_type, *rhs_type))
-		return ValueType::INT;
-	if (*lhs_type == ValueType::CHAR && compare_value_t(*lhs_type, *rhs_type))
-		return ValueType::CHAR;
-	if (*lhs_type == ValueType::BOOL && compare_value_t(*lhs_type, *rhs_type))
-		return ValueType::BOOL;
+	switch (type)
+	{
+	case BinaryOpType::ADD:
+		if (!lhs_type->dim && !rhs_type->dim)
+		{
+			if (lhs_type == ValueType::STR && rhs_type == ValueType::STR)
+				return op_code = ValueType::STR;
+		}
 
-	night::error::get().create_minor_error("type mismatch between '" + night::to_str(*lhs_type, false) + "' and '" + night::to_str(*rhs_type, false) + "'", loc);
+	case BinaryOpType::SUB:
+	case BinaryOpType::MULT:
+	case BinaryOpType::DIV:
+		if (lhs_type->is_prim() && rhs_type->is_prim())
+		{
+			if (lhs_type == ValueType::FLOAT)
+			{
+				if (rhs_type != ValueType::FLOAT)
+					cast_rhs = BytecodeType::I2F;
+
+				return op_code = ValueType::FLOAT;
+			}
+
+			if (rhs_type == ValueType::FLOAT)
+			{
+				if (lhs_type != ValueType::FLOAT)
+					cast_rhs = BytecodeType::I2F;
+
+				return op_code = ValueType::FLOAT;
+			}
+
+			return op_code = ValueType::INT;
+		}
+
+		break;
+
+	case BinaryOpType::LESSER:
+	case BinaryOpType::GREATER:
+	case BinaryOpType::LESSER_EQUALS:
+	case BinaryOpType::GREATER_EQUALS:
+	case BinaryOpType::EQUALS:
+	case BinaryOpType::NOT_EQUALS:
+		if (!lhs_type->dim && !rhs_type->dim)
+		{
+			if (lhs_type == ValueType::STR && rhs_type == ValueType::STR)
+			{
+				op_code = ValueType::STR;
+				return ValueType::BOOL;
+			}
+		}
+
+		if (lhs_type->is_prim() && rhs_type->is_prim())
+		{
+			if (rhs_type == ValueType::FLOAT)
+			{
+				if (lhs_type != ValueType::FLOAT)
+					cast_lhs = BytecodeType::I2F;
+
+				op_code = ValueType::FLOAT;
+				return ValueType::BOOL;
+			}
+			
+			if (lhs_type == ValueType::FLOAT && rhs_type != ValueType::FLOAT)
+			{
+				if (lhs_type != ValueType::FLOAT)
+					cast_lhs = BytecodeType::I2F;
+
+				op_code = ValueType::FLOAT;
+				return ValueType::BOOL;
+			}
+
+			op_code = ValueType::INT;
+			return ValueType::BOOL;
+		}
+
+		break;
+
+	case BinaryOpType::AND:
+	case BinaryOpType::OR:
+		if (lhs_type->is_prim() && rhs_type->is_prim())
+		{
+			if (rhs_type == ValueType::FLOAT)
+			{
+				if (lhs_type != ValueType::FLOAT)
+					cast_lhs = BytecodeType::I2F;
+
+				return ValueType::BOOL;
+			}
+
+			if (lhs_type == ValueType::FLOAT && rhs_type != ValueType::FLOAT)
+			{
+				if (!lhs_type != ValueType::FLOAT)
+					cast_lhs = BytecodeType::I2F;
+
+				return ValueType::BOOL;
+			}
+
+			return ValueType::BOOL;
+		}
+
+		break;
+
+	case BinaryOpType::SUBSCRIPT:
+		if (lhs_type == ValueType::INT)
+		{
+			if (rhs_type == ValueType::STR)
+				return ValueType::CHAR;
+
+			if (rhs_type->dim)
+				return rhs_type->type;
+		}
+
+		break;
+
+	default:
+		throw debug::unhandled_case((int)type);
+	}
+
+	night::error::get().create_minor_error("type mismatch between '" + night::to_str(*lhs_type) + "' and '" + night::to_str(*rhs_type) + "'", loc);
 	return std::nullopt;
 }
 
@@ -196,37 +348,104 @@ bytecodes_t expr::BinaryOp::generate_codes() const
 
 	auto codes_lhs = lhs->generate_codes();
 	codes.insert(std::end(codes), std::begin(codes_lhs), std::end(codes_lhs));
+
+	if (cast_lhs.has_value())
+		codes.push_back((bytecode_t)*cast_lhs);
 	
 	auto codes_rhs = rhs->generate_codes();
 	codes.insert(std::end(codes), std::begin(codes_rhs), std::end(codes_rhs));
 
+	if (cast_rhs.has_value())
+		codes.push_back((bytecode_t)*cast_rhs);
+
 	switch (type)
 	{
-	case BinaryOpType::ADD: codes.push_back((bytecode_t)BytecodeType::ADD); break;
-	case BinaryOpType::SUB: codes.push_back((bytecode_t)BytecodeType::SUB); break;
+	case BinaryOpType::ADD:
+		if (op_code == ValueType::INT)
+			codes.push_back((bytecode_t)BytecodeType::ADD_I);
+		else if (op_code == ValueType::FLOAT)
+			codes.push_back((bytecode_t)BytecodeType::ADD_F);
+		else if (op_code == ValueType::STR)
+			codes.push_back((bytecode_t)BytecodeType::ADD_S);
+
+		break;
+
+	case BinaryOpType::SUB:
+		if (op_code == ValueType::INT)
+			codes.push_back((bytecode_t)BytecodeType::SUB_I);
+		else if (op_code == ValueType::FLOAT)
+			codes.push_back((bytecode_t)BytecodeType::SUB_F);
+
+		break;
+
 	case BinaryOpType::MULT:
-		codes.push_back((bytecode_t)BytecodeType::MULT);
+		if (op_code == ValueType::INT)
+			codes.push_back((bytecode_t)BytecodeType::MULT_I);
+		else if (op_code == ValueType::FLOAT)
+			codes.push_back((bytecode_t)BytecodeType::MULT_F);
+
 		break;
+
 	case BinaryOpType::DIV:
-		codes.push_back((bytecode_t)BytecodeType::DIV);
+		if (op_code == ValueType::INT)
+			codes.push_back((bytecode_t)BytecodeType::DIV_I);
+		else if (op_code == ValueType::FLOAT)
+			codes.push_back((bytecode_t)BytecodeType::DIV_F);
+
 		break;
+
 	case BinaryOpType::LESSER:
-		codes.push_back((bytecode_t)BytecodeType::LESSER);
+		if (op_code == ValueType::INT)
+			codes.push_back((bytecode_t)BytecodeType::LESSER_I);
+		else if (op_code == ValueType::FLOAT)
+			codes.push_back((bytecode_t)BytecodeType::LESSER_F);
+		else if (op_code == ValueType::STR)
+			codes.push_back((bytecode_t)BytecodeType::LESSER_S);
+
 		break;
+
 	case BinaryOpType::GREATER:
-		codes.push_back((bytecode_t)BytecodeType::GREATER);
+		if (op_code == ValueType::INT)
+			codes.push_back((bytecode_t)BytecodeType::GREATER_I);
+		else if (op_code == ValueType::FLOAT)
+			codes.push_back((bytecode_t)BytecodeType::GREATER_F);
+		else if (op_code == ValueType::STR)
+			codes.push_back((bytecode_t)BytecodeType::GREATER_S);
+
 		break;
+
 	case BinaryOpType::LESSER_EQUALS:
-		codes.push_back((bytecode_t)BytecodeType::LESSER_EQUALS);
+		if (op_code == ValueType::INT)
+			codes.push_back((bytecode_t)BytecodeType::LESSER_EQUALS_I);
+		else if (op_code == ValueType::FLOAT)
+			codes.push_back((bytecode_t)BytecodeType::LESSER_EQUALS_F);
+		else if (op_code == ValueType::STR)
+			codes.push_back((bytecode_t)BytecodeType::LESSER_EQUALS_S);
+
 		break;
 	case BinaryOpType::GREATER_EQUALS:
-		codes.push_back((bytecode_t)BytecodeType::GREATER_EQUALS);
+		if (op_code == ValueType::INT)
+			codes.push_back((bytecode_t)BytecodeType::GREATER_EQUALS_I);
+		else if (op_code == ValueType::FLOAT)
+			codes.push_back((bytecode_t)BytecodeType::GREATER_EQUALS_F);
+		else if (op_code == ValueType::STR)
+			codes.push_back((bytecode_t)BytecodeType::GREATER_EQUALS_S);
 		break;
 	case BinaryOpType::EQUALS:
-		codes.push_back((bytecode_t)BytecodeType::EQUALS);
+		if (op_code == ValueType::INT)
+			codes.push_back((bytecode_t)BytecodeType::EQUALS_I);
+		else if (op_code == ValueType::FLOAT)
+			codes.push_back((bytecode_t)BytecodeType::EQUALS_F);
+		else if (op_code == ValueType::STR)
+			codes.push_back((bytecode_t)BytecodeType::EQUALS_S);
 		break;
 	case BinaryOpType::NOT_EQUALS:
-		codes.push_back((bytecode_t)BytecodeType::NOT_EQUALS);
+		if (op_code == ValueType::INT)
+			codes.push_back((bytecode_t)BytecodeType::NOT_EQUALS_I);
+		else if (op_code == ValueType::FLOAT)
+			codes.push_back((bytecode_t)BytecodeType::NOT_EQUALS_F);
+		else if (op_code == ValueType::STR)
+			codes.push_back((bytecode_t)BytecodeType::NOT_EQUALS_S);
 		break;
 	case BinaryOpType::AND:
 		codes.push_back((bytecode_t)BytecodeType::AND);
@@ -294,12 +513,13 @@ std::optional<ValueType> expr::Array::type_check(ParserScope const& scope)
 	{
 		auto elem_type = elem->type_check(scope);
 
-		if (arr_type.has_value() && elem_type.has_value() && !compare_value_t(*arr_type, *elem_type))
+		if (arr_type.has_value() && elem_type.has_value() && arr_type != elem_type)
 			night::error::get().create_minor_error("all values of an array must be the same", loc);
 		else if (!arr_type.has_value())
 			arr_type = elem_type;
 	}
 
+	arr_type->dim += 1;
 	return arr_type;
 }
 
@@ -331,8 +551,8 @@ expr::Variable::Variable(
 	: Expression(ExpressionType::VARIABLE, _loc), name(_name), id(std::nullopt) {}
 
 void expr::Variable::insert_node(
-	std::shared_ptr<expr::Expression> const& node,
-	std::shared_ptr<expr::Expression>* prev)
+	expr::expr_p const& node,
+	expr::expr_p* prev)
 {
 	node->insert_node(std::make_shared<expr::Variable>(loc, name));
 	*prev = node;
@@ -358,13 +578,13 @@ int expr::Variable::precedence() const
 
 expr::Value::Value(
 	Location const& _loc,
-	value_t _type,
+	ValueType::PrimType _type,
 	std::string const& _val)
 	: Expression(ExpressionType::VALUE, _loc), type(_type), val(_val) {}
 
 void expr::Value::insert_node(
-	std::shared_ptr<Expression> const& node,
-	std::shared_ptr<Expression>* prev)
+	expr::expr_p const& node,
+	expr::expr_p* prev)
 {
 	node->insert_node(std::make_shared<expr::Value>(loc, type, val));
 	*prev = node;
@@ -380,18 +600,24 @@ bytecodes_t expr::Value::generate_codes() const
 	switch (type)
 	{
 	case ValueType::BOOL:
-		return { (bytecode_t)BytecodeType::BOOL, val == "true" };
+		return { (bytecode_t)BytecodeType::S_INT1, val == "true" };
 	case ValueType::CHAR:
 		assert(val.length() == 1);
-		return { (bytecode_t)BytecodeType::CHAR1, (bytecode_t)(val[0])};
+		return { (bytecode_t)BytecodeType::S_INT1, (bytecode_t)(val[0])};
 	case ValueType::INT:
 	{
 		return int_to_bytecodes(std::stoll(val));
 	}
 	case ValueType::FLOAT: {
-		break;
+		bytecodes_t codes(sizeof(float));
+
+		float val_f = std::stof(val);
+		memcpy(codes.data(), &val_f, sizeof(float));
+
+		codes.insert(std::begin(codes), (bytecode_t)BytecodeType::FLOAT4);
+		return codes;
 	}
-	case ValueType::STRING: {
+	case ValueType::STR: {
 		bytecodes_t codes{ (bytecode_t)BytecodeType::STR };
 		
 		auto length_codes = Value::int_to_bytecodes(val.length());
