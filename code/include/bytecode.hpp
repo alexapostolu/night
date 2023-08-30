@@ -46,7 +46,7 @@ enum struct BytecodeType : bytecode_t
 	AND,
 	OR,
 
-	SUBSCRIPT,
+	SUBSCRIPT, // 45
 
 	I2F, F2I,
 

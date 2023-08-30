@@ -135,14 +135,12 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			s.emplace(int64_t(pop(s).s == pop(s).s));
 			break;
 
-		case BytecodeType::AND: {
+		case BytecodeType::AND:
 			s.emplace(int64_t(pop(s).i && pop(s).i));
 			break;
-		}
-		case BytecodeType::OR: {
+		case BytecodeType::OR:
 			s.emplace(int64_t(pop(s).i || pop(s).i));
 			break;
-		}
 
 		case BytecodeType::SUBSCRIPT:
 			push_subscript(s);

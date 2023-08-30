@@ -98,6 +98,8 @@ std::shared_ptr<AST> parse_var(Lexer& lexer)
 	}
 	else if (lexer.peek().type == TokenType::ASSIGN)
 	{
+		lexer.eat();
+
 		auto const& ast = std::make_shared<VariableAssign>(parse_var_assign(lexer, var_name));
 		lexer.curr_check(TokenType::SEMICOLON);
 
@@ -121,6 +123,7 @@ std::shared_ptr<AST> parse_var(Lexer& lexer)
 
 VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 {
+	assert(lexer.curr().is_type());
 	auto var_type = lexer.curr().str;
 
 	std::vector<std::optional<expr::expr_p>> arr_sizes;
@@ -280,12 +283,15 @@ For parse_for(Lexer& lexer)
 	
 	// condition
 
-	auto cond_expr = parse_expr(lexer, true, true);
+	lexer.eat();
+	auto cond_expr = parse_expr(lexer, false, true);
 	lexer.curr_check(TokenType::SEMICOLON);
 
 	// assignment
 
 	std::string var_assign_name = lexer.expect(TokenType::VARIABLE).str;
+
+	lexer.eat();
 
 	auto var_assign = parse_var_assign(lexer, var_assign_name);
 	lexer.curr_check(TokenType::CLOSE_BRACKET);

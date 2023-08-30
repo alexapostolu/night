@@ -53,7 +53,8 @@ std::pair<std::string, scope_func_container::iterator> ParserScope::create_funct
 	for (; it != range_end; ++it)
 	{
 		if (std::equal(std::begin(param_types), std::end(param_types),
-					   std::begin(it->second.param_types), std::end(it->second.param_types)))
+					   std::begin(it->second.param_types), std::end(it->second.param_types),
+					   compare_absolute_vt))
 			return std::make_pair("function is already defined", range_end);
 	}
 

@@ -313,7 +313,7 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope const& scope)
 
 			if (lhs_type == ValueType::FLOAT && rhs_type != ValueType::FLOAT)
 			{
-				if (!lhs_type != ValueType::FLOAT)
+				if (lhs_type != ValueType::FLOAT)
 					cast_lhs = BytecodeType::I2F;
 
 				return ValueType::BOOL;
@@ -515,13 +515,15 @@ std::optional<ValueType> expr::Array::type_check(ParserScope const& scope)
 	{
 		auto elem_type = elem->type_check(scope);
 
-		if (arr_type.has_value() && elem_type.has_value() && arr_type != elem_type)
+		if (arr_type.has_value() && elem_type.has_value() && !compare_relative_vt(*arr_type, *elem_type))
 			night::error::get().create_minor_error("all values of an array must be the same", loc);
 		else if (!arr_type.has_value())
 			arr_type = elem_type;
 	}
 
-	arr_type->dim += 1;
+	if (arr_type.has_value())
+		arr_type->dim += 1;
+
 	return arr_type;
 }
 

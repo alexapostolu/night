@@ -38,7 +38,7 @@ void VariableInit::check(ParserScope& scope)
 
 	auto expr_type = expr->type_check(scope);
 
-	if (expr_type.has_value() && type != *expr_type)
+	if (expr_type.has_value() && !compare_relative_vt(type, *expr_type))
 		night::error::get().create_minor_error(
 			"variable '" + name + "' of type '" + night::to_str(type) +
 			"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", loc);
@@ -46,11 +46,12 @@ void VariableInit::check(ParserScope& scope)
 
 bytecodes_t VariableInit::generate_codes() const
 {
+	assert(expr);
+	assert(id.has_value());
+
 	bytecodes_t codes = expr->generate_codes();
 
 	codes.push_back((bytecode_t)BytecodeType::STORE);
-
-	assert(id.has_value());
 ;	codes.push_back(*id);
 
 	return codes;
@@ -62,7 +63,7 @@ VariableAssign::VariableAssign(
 	std::string const& _var_name,
 	std::string const& _assign_op,
 	expr::expr_p const& _expr)
-	: AST(_loc), assign_op(_assign_op), expr(_expr), assign_type(std::nullopt), id(std::nullopt) {}
+	: AST(_loc), var_name(_var_name), assign_op(_assign_op), expr(_expr), assign_type(std::nullopt), id(std::nullopt) {}
 
 void VariableAssign::check(ParserScope& scope)
 {
@@ -72,7 +73,7 @@ void VariableAssign::check(ParserScope& scope)
 	if (!expr_type.has_value())
 		return;
 
-	if (scope.vars[var_name].type != expr_type)
+	if (!compare_relative_vt(scope.vars[var_name].type, *expr_type))
 		night::error::get().create_minor_error(
 			"variable of type '" + night::to_str(scope.vars[var_name].type) +
 			"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", loc);
@@ -83,12 +84,15 @@ void VariableAssign::check(ParserScope& scope)
 
 bytecodes_t VariableAssign::generate_codes() const
 {
-	bytecodes_t codes = expr->generate_codes();
+	bytecodes_t codes;// = expr->generate_codes();
 
 	if (assign_op != "=")
 	{
 		codes.push_back((bytecode_t)BytecodeType::LOAD);
 		codes.push_back(*id);
+
+		auto expr_codes = expr->generate_codes();
+		codes.insert(std::end(codes), std::begin(expr_codes), std::end(expr_codes));
 
 		if (assign_op == "+=")
 		{
@@ -122,6 +126,11 @@ bytecodes_t VariableAssign::generate_codes() const
 		}
 		else
 			throw debug::unhandled_case(assign_op);
+	}
+	else
+	{
+		auto expr_codes = expr->generate_codes();
+		codes.insert(std::end(codes), std::begin(expr_codes), std::end(expr_codes));
 	}
 
 	codes.push_back((bytecode_t)BytecodeType::STORE);
@@ -213,8 +222,6 @@ void While::check(ParserScope& scope)
 
 bytecodes_t While::generate_codes() const
 {
-	//
-	// [0] [1] [2] [3] [4] [NJUMP] [x] 
 	auto codes = cond_expr->generate_codes();
 
 	codes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE);
@@ -351,7 +358,7 @@ void Return::check(ParserScope& scope)
 
 		auto expr_type = expr->type_check(scope);
 
-		if (expr_type.has_value() && *ParserScope::curr_rtn_type != *expr_type)
+		if (expr_type.has_value() && !compare_relative_vt(*ParserScope::curr_rtn_type, *expr_type))
 			night::error::get().create_minor_error(
 				"return is type '" + night::to_str(*expr_type) + "', expected type '" +
 				night::to_str(*ParserScope::curr_rtn_type) + "'", loc);
@@ -396,7 +403,8 @@ void ArrayMethod::check(ParserScope& scope)
 	if (assign_expr)
 	{
 		auto const& assign_type = assign_expr->type_check(scope);
-		if (assign_type.has_value() && ValueType(var.type.type, var.type.dim - subscripts.size()) != *assign_type)
+
+		if (assign_type.has_value() && !compare_relative_vt(ValueType(var.type.type, var.type.dim - subscripts.size()), *assign_type))
 			night::error::get().create_minor_error("array of type '" + night::to_str(var.type) + "' can not be assigned to expression of type '" +
 				night::to_str(assign_type->type) + "'", loc);
 	}
@@ -470,7 +478,8 @@ std::optional<ValueType> expr::FunctionCall::type_check(ParserScope const& scope
 	for (; func != range_end; ++func)
 	{
 		if (std::equal(std::begin(arg_types), std::end(arg_types),
-			std::begin(func->second.param_types), std::end(func->second.param_types)))
+				std::begin(func->second.param_types), std::end(func->second.param_types),
+				compare_absolute_vt))
 			break;
 	}
 

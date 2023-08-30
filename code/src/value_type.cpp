@@ -13,14 +13,21 @@ bool ValueType::operator==(PrimType _type) const
 	return !dim && type == _type;
 }
 
-bool ValueType::operator==(ValueType const& _vt) const
-{
-	return dim == _vt.dim && type == _vt.type;
-}
-
 bool ValueType::is_prim() const
 {
 	return !dim && type <= primitive_count;
+}
+
+bool compare_absolute_vt(ValueType const& vt1, ValueType const& vt2)
+{
+	return vt1.dim == vt2.dim && vt1.type == vt2.type;
+}
+
+bool compare_relative_vt(ValueType const& vt1, ValueType const& vt2)
+{
+	return vt1.dim == vt2.dim &&
+		((vt1.type <= primitive_count && vt2.type <= primitive_count) ||
+			vt1.type == vt2.type);
 }
 
 std::string night::to_str(ValueType const& vt)
