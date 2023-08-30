@@ -16,10 +16,10 @@ AST::AST(Location const& _loc)
 VariableInit::VariableInit(
 	Location const& _loc,
 	std::string const& _name,
-	std::string const& _type,
+	ValueType const& _type,
 	std::vector<std::optional<expr::expr_p>> const& _arr_sizes,
 	expr::expr_p const& _expr)
-	: AST(_loc), name(_name), type(token_var_type_to_val_type(_type)), arr_sizes(_arr_sizes), expr(_expr), id(std::nullopt)
+	: AST(_loc), name(_name), type(_type), arr_sizes(_arr_sizes), expr(_expr), id(std::nullopt)
 {
 	type.dim = arr_sizes.size();
 }
@@ -49,12 +49,43 @@ bytecodes_t VariableInit::generate_codes() const
 	assert(expr);
 	assert(id.has_value());
 
-	bytecodes_t codes = expr->generate_codes();
 
-	codes.push_back((bytecode_t)BytecodeType::STORE);
-;	codes.push_back(*id);
+	if (!arr_sizes.empty() && *arr_sizes[0])
+	{
+		bytecodes_t codes;
+		
+		if (type.type == ValueType::INT)
+		{
+			codes.push_back((bytecode_t)BytecodeType::S_INT1);
+			codes.push_back(0);
+		}
+		else
+		{
+			debug::unhandled_case(type.type);
+		}
 
-	return codes;
+		for (int i = arr_sizes.size() - 1; i >= 0; --i)
+		{
+			auto size_codes = (*arr_sizes[i])->generate_codes();
+			codes.insert(std::end(codes), std::begin(size_codes), std::end(size_codes));
+
+			codes.push_back((bytecode_t)BytecodeType::ALLOCATE);
+		}
+
+		codes.push_back((bytecode_t)BytecodeType::STORE);
+		codes.push_back(*id);
+
+		return codes;
+	}
+	else
+	{
+		bytecodes_t codes = expr->generate_codes();
+
+		codes.push_back((bytecode_t)BytecodeType::STORE);
+		codes.push_back(*id);
+		
+		return codes;
+	}
 }
 
 

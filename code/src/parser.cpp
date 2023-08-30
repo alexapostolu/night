@@ -124,18 +124,26 @@ std::shared_ptr<AST> parse_var(Lexer& lexer)
 VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 {
 	assert(lexer.curr().is_type());
-	auto var_type = lexer.curr().str;
+	ValueType var_type(token_var_type_to_val_type(lexer.curr().str));
 
+	bool is_arr = false;
 	std::vector<std::optional<expr::expr_p>> arr_sizes;
 	while (lexer.eat().type == TokenType::OPEN_SQUARE)
 	{
 		arr_sizes.push_back(parse_expr(lexer, true, false));
 		lexer.curr_check(TokenType::CLOSE_SQUARE);
+		
+		is_arr = true;
 	}
 
+	var_type.dim = arr_sizes.size();
+
 	// default value
-	expr::expr_p expr =
-		std::make_shared<expr::Value>(lexer.loc, token_var_type_to_val_type(var_type), "0");
+	expr::expr_p expr;
+	if (is_arr)
+		expr = std::make_shared<expr::Array>(lexer.loc, std::vector<expr::expr_p>());
+	else
+		expr = std::make_shared<expr::Value>(lexer.loc, var_type.type, "0");
 
 	if (lexer.curr().type == TokenType::ASSIGN && lexer.curr().str == "=")
 	{

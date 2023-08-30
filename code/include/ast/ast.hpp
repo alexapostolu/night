@@ -36,7 +36,7 @@ public:
 	VariableInit(
 		Location const& _loc,
 		std::string const& _name,
-		std::string const& _type,
+		ValueType const& _type,
 		std::vector<std::optional<expr::expr_p>> const& _arr_sizes,
 		expr::expr_p const& expr);
 

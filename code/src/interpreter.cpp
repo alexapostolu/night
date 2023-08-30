@@ -146,6 +146,13 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			push_subscript(s);
 			break;
 
+		case BytecodeType::ALLOCATE: {
+			auto size = pop(s);
+			auto expr = pop(s);
+			s.emplace(std::vector<intpr::Value>(size.i, expr));
+			break;
+		}
+
 		case BytecodeType::I2F:
 			s.emplace(float(pop(s).i));
 			break;

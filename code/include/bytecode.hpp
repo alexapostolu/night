@@ -47,12 +47,14 @@ enum struct BytecodeType : bytecode_t
 	OR,
 
 	SUBSCRIPT, // 45
+	ALLOCATE,
 
 	I2F, F2I,
 
 	LOAD,					// LOAD  (var_id)
 	STORE,					// STORE (id)
 	SET_INDEX,				// indicies, id
+	STORE_A,
 
 	JUMP_IF_FALSE,			// [cond] JUMP_IF_FALSE (offset)	// jumps to next in conditional chain
 	JUMP,					// JUMP (offset)					// jumps to end of conditional chain

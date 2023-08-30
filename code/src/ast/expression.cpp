@@ -509,10 +509,11 @@ void expr::Array::insert_node(
 
 std::optional<ValueType> expr::Array::type_check(ParserScope const& scope)
 {
-	std::optional<ValueType> arr_type(std::nullopt);
-
+	std::optional<ValueType> arr_type;
 	for (auto const& elem : arr)
 	{
+		assert(elem);
+
 		auto elem_type = elem->type_check(scope);
 
 		if (arr_type.has_value() && elem_type.has_value() && !compare_relative_vt(*arr_type, *elem_type))
