@@ -170,6 +170,7 @@ expr::BinaryOp::BinaryOp(
 	else if (_type == "-")  type = BinaryOpType::SUB;
 	else if (_type == "*")  type = BinaryOpType::MULT;
 	else if (_type == "/")  type = BinaryOpType::DIV;
+	else if (_type == "%")  type = BinaryOpType::MOD;
 	else if (_type == "<")  type = BinaryOpType::LESSER;
 	else if (_type == ">")  type = BinaryOpType::GREATER;
 	else if (_type == "<=") type = BinaryOpType::LESSER_EQUALS;
@@ -235,6 +236,7 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope const& scope)
 	case BinaryOpType::SUB:
 	case BinaryOpType::MULT:
 	case BinaryOpType::DIV:
+	case BinaryOpType::MOD:
 		if (lhs_type->is_prim() && rhs_type->is_prim())
 		{
 			if (lhs_type == ValueType::FLOAT)
@@ -396,6 +398,12 @@ bytecodes_t expr::BinaryOp::generate_codes() const
 
 		break;
 
+	case BinaryOpType::MOD:
+		if (op_code == ValueType::INT)
+			codes.push_back((bytecode_t)BytecodeType::MOD_I);
+
+		break;
+
 	case BinaryOpType::LESSER:
 		if (op_code == ValueType::INT)
 			codes.push_back((bytecode_t)BytecodeType::LESSER_I);
@@ -475,19 +483,23 @@ int expr::BinaryOp::precedence() const
 	case BinaryOpType::AND:
 	case BinaryOpType::OR:
 		return bin_op_prec + 1;
+	case BinaryOpType::EQUALS:
+	case BinaryOpType::NOT_EQUALS:
+		return bin_op_prec + 2;
 	case BinaryOpType::LESSER:
 	case BinaryOpType::GREATER:
 	case BinaryOpType::LESSER_EQUALS:
 	case BinaryOpType::GREATER_EQUALS:
-		return bin_op_prec + 2;
+		return bin_op_prec + 3;
 	case BinaryOpType::ADD:
 	case BinaryOpType::SUB:
-		return bin_op_prec + 3;
+		return bin_op_prec + 4;
 	case BinaryOpType::MULT:
 	case BinaryOpType::DIV:
-		return bin_op_prec + 4;
-	case BinaryOpType::SUBSCRIPT:
+	case BinaryOpType::MOD:
 		return bin_op_prec + 5;
+	case BinaryOpType::SUBSCRIPT:
+		return bin_op_prec + 6;
 	default:
 		throw debug::unhandled_case((int)type);
 	}

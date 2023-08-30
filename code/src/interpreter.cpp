@@ -83,6 +83,11 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			s.emplace(pop(s).f / s2.f);
 			break;
 		}
+		case BytecodeType::MOD_I: {
+			auto s2 = pop(s);
+			s.emplace(pop(s).i % s2.i);
+			break;
+		}
 
 		// stack values are in opposite order, so we switch signs to account for that
 		case BytecodeType::LESSER_I:
@@ -181,12 +186,12 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			break;
 		}
 
-		case BytecodeType::JUMP_IF_FALSE:
+		case BytecodeType::JUMP_IF_FALSE: {
+			auto offset = pop(s).i;
 			if (!pop(s).i)
-				std::advance(it, *(++it));
-			else
-				++it;
+				std::advance(it, offset);
 			break;
+		}
 
 		case BytecodeType::JUMP:
 			std::advance(it, *(++it));

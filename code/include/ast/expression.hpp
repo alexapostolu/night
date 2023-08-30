@@ -100,7 +100,7 @@ private:
 
 enum class BinaryOpType
 {
-	ADD, SUB, MULT, DIV,
+	ADD, SUB, MULT, DIV, MOD,
 	LESSER, GREATER,
 	LESSER_EQUALS, GREATER_EQUALS,
 	EQUALS, NOT_EQUALS,
@@ -208,7 +208,7 @@ public:
 
 	int precedence() const override;
 
-private:
+public:
 	static bytecodes_t int_to_bytecodes(uint64_t uint64);
 
 private:

@@ -239,6 +239,8 @@ expr::FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name)
 
 Conditional parse_if(Lexer& lexer)
 {
+	assert(lexer.curr().type == TokenType::IF);
+
 	std::vector<std::pair<expr::expr_p, AST_Block>> conditionals;
 
 	do {

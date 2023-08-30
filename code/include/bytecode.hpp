@@ -36,6 +36,7 @@ enum struct BytecodeType : bytecode_t
 	SUB_I, SUB_F,
 	MULT_I, MULT_F,
 	DIV_I, DIV_F,
+	MOD_I,
 
 	LESSER_I, LESSER_F, LESSER_S,
 	GREATER_I, GREATER_F, GREATER_S,
@@ -46,7 +47,7 @@ enum struct BytecodeType : bytecode_t
 	AND,
 	OR,
 
-	SUBSCRIPT, // 45
+	SUBSCRIPT,
 	ALLOCATE,
 
 	I2F, F2I,
