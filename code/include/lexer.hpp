@@ -6,6 +6,7 @@
 #include <source_location>
 #include <fstream>
 #include <string>
+#include <optional>
 
 struct Location;
 
@@ -18,6 +19,7 @@ public:
 
 public:
 	Token const& eat();
+	Token const& peek();
 	Token const& curr() const;
 
 	Token const& expect(TokenType type, std::string const& err = "\n", std::source_location const& s_loc = std::source_location::current());
@@ -45,4 +47,5 @@ private:
 	std::string file_line;
 
 	Token curr_tok;
+	std::optional<Token> prev_tok;
 };

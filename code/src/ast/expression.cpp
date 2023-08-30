@@ -1,4 +1,5 @@
 #include "ast/expression.hpp"
+#include "ast/ast.hpp"
 #include "bytecode.hpp"
 #include "parser_scope.hpp"
 #include "parser.hpp"
@@ -8,6 +9,7 @@
 #include <algorithm>
 #include <optional>
 #include <memory>
+#include <vector>
 #include <iostream>
 #include <assert.h>
 

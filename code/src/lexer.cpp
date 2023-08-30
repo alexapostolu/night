@@ -8,18 +8,27 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <assert.h>
 
 Lexer::Lexer(std::string const& _file_name)
-	: file(_file_name), loc({ _file_name, 1, 0 })
+	: file(_file_name), loc({ _file_name, 1, 0 }), prev_tok(std::nullopt)
 {
 	if (!file.is_open())
 		throw NIGHT_CREATE_FATAL_LEXER("file '" + loc.file + "' could not be found/opened");
 
 	std::getline(file, file_line);
+
+	eat();
 }
 
 Token const& Lexer::eat()
 {
+	if (prev_tok.has_value())
+	{
+		prev_tok.reset();
+		return curr_tok;
+	}
+
 	while (loc.col < file_line.size() && std::isspace(file_line[loc.col]))
 		++loc.col;
 
@@ -42,14 +51,30 @@ Token const& Lexer::eat()
 	return curr_tok = eat_symbol();
 }
 
+Token const& Lexer::peek()
+{
+	if (prev_tok.has_value())
+		return curr_tok;
+
+	auto tmp_tok = curr_tok;
+	auto eat_tok = eat();
+
+	prev_tok = tmp_tok;
+	return eat_tok;
+}
+
 Token const& Lexer::curr() const
 {
+	if (prev_tok.has_value())
+		return *prev_tok;
+
 	return curr_tok;
 }
 
 Token const& Lexer::expect(TokenType type, std::string const& err, std::source_location const& s_loc)
 {
-	eat();
+	if (!prev_tok.has_value())
+		eat();
 
 	if (curr().type != type)
 		throw night::error::get().create_fatal_error("found '" + curr().str + "', expected " + night::to_str(type) + " " + err, loc, s_loc);
@@ -59,7 +84,7 @@ Token const& Lexer::expect(TokenType type, std::string const& err, std::source_l
 
 void Lexer::curr_check(TokenType type, std::source_location const& s_loc)
 {
-	if (curr_tok.type != type)
+	if (curr().type != type)
 		throw night::error::get().create_fatal_error("found '" + night::to_str(curr_tok.type) + "', expected '" + night::to_str(type) + "'", loc, s_loc);
 }
 

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <memory>
+#include <iostream>
 
 ValueType::ValueType(PrimType _type, int _dim)
 	: type(_type), dim(_dim) {}
@@ -37,7 +38,7 @@ std::string night::to_str(ValueType const& vt)
 	}
 
 	if (vt.dim)
-		return vt.dim + " dimensional " + type_s + " array";
+		return std::to_string(vt.dim) + " dimensional " + type_s + " array";
 
 	return type_s;
 }

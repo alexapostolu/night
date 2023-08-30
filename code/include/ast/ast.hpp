@@ -58,20 +58,20 @@ class VariableAssign : public AST
 public:
 	VariableAssign(
 		Location const& _loc,
-		std::string const& _name,
-		std::string const& assign_op,
+		std::string const& _var_name,
+		std::string const& _assign_op,
 		expr::expr_p const& _expr);
 
 	void check(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
-	std::string name;
+	std::string var_name;
 	std::string assign_op;
 	expr::expr_p expr;
 
-	std::optional<bytecode_t> id;
 	std::optional<ValueType> assign_type;
+	std::optional<bytecode_t> id;
 };
 
 
@@ -162,7 +162,7 @@ class Return : public AST
 public:
 	Return(
 		Location const& _loc,
-		expr::expr_p _expr);
+		expr::expr_p const& _expr);
 
 	void check(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
@@ -172,27 +172,52 @@ private:
 };
 
 
-class FunctionCall : public AST, public expr::Expression
+class ArrayMethod : public AST
 {
 public:
-	FunctionCall(
+	ArrayMethod(
 		Location const& _loc,
-		std::string const& _name,
-		std::vector<expr::expr_p> const& _arg_exprs);
+		std::string const& _var_name,
+		std::vector<expr::expr_p> const& _subscripts,
+		expr::expr_p const& _assign_expr);
 
-	void insert_node(
-		expr::expr_p const& node,
-		expr::expr_p* prev = nullptr);
-
-	std::optional<ValueType> type_check(ParserScope const& scope) override;
 	void check(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
-	int precedence() const;
-
 private:
-	std::string name;
-	std::vector<expr::expr_p> arg_exprs;
+	std::string var_name;
+	std::vector<expr::expr_p> subscripts;
+	expr::expr_p assign_expr;
 
 	std::optional<bytecode_t> id;
 };
+
+
+namespace expr {
+
+	class FunctionCall : public AST, public expr::Expression
+	{
+	public:
+		FunctionCall(
+			Location const& _loc,
+			std::string const& _name,
+			std::vector<expr::expr_p> const& _arg_exprs);
+
+		void insert_node(
+			expr::expr_p const& node,
+			expr::expr_p* prev = nullptr);
+
+		void check(ParserScope& scope) override;
+		std::optional<ValueType> type_check(ParserScope const& scope) override;
+		bytecodes_t generate_codes() const override;
+
+		int precedence() const;
+
+	private:
+		std::string name;
+		std::vector<expr::expr_p> arg_exprs;
+
+		std::optional<bytecode_t> id;
+	};
+
+}

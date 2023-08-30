@@ -59,42 +59,36 @@ bytecodes_t VariableInit::generate_codes() const
 
 VariableAssign::VariableAssign(
 	Location const& _loc,
-	std::string const& _name,
+	std::string const& _var_name,
 	std::string const& _assign_op,
 	expr::expr_p const& _expr)
-	: AST(_loc), name(_name), assign_op(_assign_op), expr(_expr) {}
+	: AST(_loc), assign_op(_assign_op), expr(_expr), assign_type(std::nullopt), id(std::nullopt) {}
 
 void VariableAssign::check(ParserScope& scope)
 {
-	// check variable name
-
-	if (!scope.vars.contains(name))
-		night::error::get().create_minor_error("variable '" + name + "' is undefined", loc);
-
-	// check expression
+	assert(expr);
 
 	auto expr_type = expr->type_check(scope);
+	if (!expr_type.has_value())
+		return;
 
-	if (expr_type.has_value() && scope.vars.at(name).type != *expr_type)
+	if (scope.vars[var_name].type != expr_type)
 		night::error::get().create_minor_error(
-			"variable '" + name + "' of type '" + night::to_str(scope.vars.at(name).type) +
+			"variable of type '" + night::to_str(scope.vars[var_name].type) +
 			"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", loc);
 
-	id = scope.vars[name].id;
-	assign_type = scope.vars[name].type;
+	assign_type = *expr_type;
+	id = scope.vars[var_name].id;
 }
 
 bytecodes_t VariableAssign::generate_codes() const
 {
-	assert(id.has_value());
-	assert(assign_type.has_value());
-
 	bytecodes_t codes = expr->generate_codes();
 
 	if (assign_op != "=")
 	{
-		codes.insert(std::begin(codes), *id);
-		codes.insert(std::begin(codes), (bytecode_t)BytecodeType::LOAD);
+		codes.push_back((bytecode_t)BytecodeType::LOAD);
+		codes.push_back(*id);
 
 		if (assign_op == "+=")
 		{
@@ -337,7 +331,7 @@ bytecodes_t Function::generate_codes() const
 
 Return::Return(
 	Location const& _loc,
-	expr::expr_p _expr)
+	expr::expr_p const& _expr)
 	: AST(_loc), expr(_expr) {}
 
 void Return::check(ParserScope& scope)
@@ -374,13 +368,74 @@ bytecodes_t Return::generate_codes() const
 }
 
 
-FunctionCall::FunctionCall(
+ArrayMethod::ArrayMethod(
+	Location const& _loc,
+	std::string const& _var_name,
+	std::vector<expr::expr_p> const& _subscripts,
+	expr::expr_p const& _assign_expr)
+	: AST(_loc), var_name(_var_name), subscripts(_subscripts), assign_expr(_assign_expr), id(std::nullopt) {}
+
+void ArrayMethod::check(ParserScope& scope)
+{
+	assert(scope.vars.contains(var_name));
+
+	auto const& var = scope.vars[var_name];
+
+	if (var.type.dim != subscripts.size())
+		night::error::get().create_minor_error("too many subscripts for variable of dimension '" + std::to_string(var.type.dim) + "'", loc);
+
+	for (auto const& subscript : subscripts)
+	{
+		assert(subscript);
+
+		auto subscript_type = subscript->type_check(scope);
+		if (subscript_type.has_value() && !subscript_type->is_prim())
+			night::error::get().create_minor_error("subscript is type '" + night::to_str(*subscript_type) + "', expected type bool, char, or int'", loc);
+	}
+
+	if (assign_expr)
+	{
+		auto const& assign_type = assign_expr->type_check(scope);
+		if (assign_type.has_value() && ValueType(var.type.type, var.type.dim - subscripts.size()) != *assign_type)
+			night::error::get().create_minor_error("array of type '" + night::to_str(var.type) + "' can not be assigned to expression of type '" +
+				night::to_str(assign_type->type) + "'", loc);
+	}
+
+	id = var.id;
+}
+
+bytecodes_t ArrayMethod::generate_codes() const
+{
+	assert(id.has_value());
+	assert(assign_expr);
+
+	bytecodes_t codes;
+
+	for (int i = subscripts.size() - 1; i >= 0; --i)
+	{
+		assert(subscripts[i]);
+
+		auto subscript_codes = subscripts[i]->generate_codes();
+		codes.insert(std::end(codes), std::begin(subscript_codes), std::end(subscript_codes));
+	}
+
+	auto assign_codes = assign_expr->generate_codes();
+	codes.insert(std::end(codes), std::begin(assign_codes), std::end(assign_codes));
+
+	codes.push_back((bytecode_t)BytecodeType::SET_INDEX);
+	codes.push_back(*id);
+
+	return codes;
+}
+
+
+expr::FunctionCall::FunctionCall(
 	Location const& _loc,
 	std::string const& _name,
 	std::vector<expr::expr_p> const& _arg_exprs)
 	: AST(_loc), Expression(expr::ExpressionType::FUNCTION_CALL, _loc), name(_name), arg_exprs(_arg_exprs), id(std::nullopt) {}
 
-void FunctionCall::insert_node(
+void expr::FunctionCall::insert_node(
 	expr::expr_p const& node,
 	expr::expr_p* prev)
 {
@@ -388,11 +443,21 @@ void FunctionCall::insert_node(
 	*prev = node;
 }
 
-std::optional<ValueType> FunctionCall::type_check(ParserScope const& scope)
+void expr::FunctionCall::check(ParserScope& scope)
+{
+	type_check(scope);
+}
+
+std::optional<ValueType> expr::FunctionCall::type_check(ParserScope const& scope)
 {
 	std::vector<ValueType> arg_types;
 	for (auto& arg_expr : arg_exprs)
-		arg_types.push_back(*arg_expr->type_check(scope));
+	{
+		auto arg_type = arg_expr->type_check(scope);
+
+		if (arg_type.has_value())
+			arg_types.push_back(*arg_expr->type_check(scope));
+	}
 
 	auto [func, range_end] = ParserScope::funcs.equal_range(name);
 
@@ -416,10 +481,11 @@ std::optional<ValueType> FunctionCall::type_check(ParserScope const& scope)
 			s_types += night::to_str(type) + ", ";
 
 		// remove extra comma at the end
-		s_types = s_types.substr(0, s_types.size() - 2);
+		if (s_types.length() >= 2)
+			s_types = s_types.substr(0, s_types.size() - 2);
 
 		night::error::get().create_minor_error(
-			"arguments in function call '" + name + + "' are of type '" + s_types +
+			"arguments in function call '" + name + "' are of type '" + s_types +
 			"', and do not match with the parameters in its function definition", Expression::loc);
 
 		return std::nullopt;
@@ -429,52 +495,7 @@ std::optional<ValueType> FunctionCall::type_check(ParserScope const& scope)
 	return func->second.rtn_type;
 }
 
-void FunctionCall::check(ParserScope& scope)
-{
-	// check argument types
-
-	bool err_arg_types = false;
-
-	std::vector<ValueType> arg_types;
-	for (auto& arg_expr : arg_exprs)
-	{
-		auto arg_type = arg_expr->type_check(scope);
-
-		if (!arg_type.has_value())
-			err_arg_types = true;
-		else if (!err_arg_types)
-			arg_types.push_back(*arg_type);
-	}
-
-	// check function name
-
-	auto [func, range_end] = ParserScope::funcs.equal_range(name);
-
-	if (func == range_end)
-		night::error::get().create_minor_error("function '" + name + "' is not defined", Expression::loc);
-
-	if (err_arg_types)
-		return;
-
-	// match call with function
-
-	for (; func != range_end; ++func)
-	{
-		if (arg_types.size() == func->second.param_types.size() &&
-			std::equal(std::begin(arg_types), std::end(arg_types),
-			std::begin(func->second.param_types), std::end(func->second.param_types)))
-			break;
-	}
-
-	if (func == range_end)
-		throw night::error::get().create_fatal_error(
-			"arguments in function call '" + name +
-			"' do not match with the parameters in its function definition", Expression::loc);
-	else
-		id = func->second.id;
-}
-
-bytecodes_t FunctionCall::generate_codes() const
+bytecodes_t expr::FunctionCall::generate_codes() const
 {
 	bytecodes_t codes;
 
@@ -492,7 +513,7 @@ bytecodes_t FunctionCall::generate_codes() const
 	return codes;
 }
 
-int FunctionCall::precedence() const
+int expr::FunctionCall::precedence() const
 {
 	return single_prec;
 }

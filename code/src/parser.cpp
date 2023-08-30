@@ -19,9 +19,7 @@ AST_Block parse_file(std::string const& main_file)
 {
 	Lexer lexer(main_file);
 	AST_Block block;
-
-	lexer.eat();
-
+	
 	while (lexer.curr().type != TokenType::END_OF_FILE)
 	{
 		auto stmt = parse_stmts(lexer);
@@ -88,17 +86,17 @@ std::shared_ptr<AST> parse_stmt(Lexer& lexer)
 std::shared_ptr<AST> parse_var(Lexer& lexer)
 {
 	std::string var_name = lexer.curr().str;
-	
-	lexer.eat();
 
-	if (lexer.curr().is_type())
+	if (lexer.peek().is_type())
 	{
+		lexer.eat();
+
 		auto const& ast = std::make_shared<VariableInit>(parse_var_init(lexer, var_name));
 
 		lexer.eat();
 		return ast;
 	}
-	else if (lexer.curr().type == TokenType::ASSIGN)
+	else if (lexer.peek().type == TokenType::ASSIGN)
 	{
 		auto const& ast = std::make_shared<VariableAssign>(parse_var_assign(lexer, var_name));
 		lexer.curr_check(TokenType::SEMICOLON);
@@ -106,17 +104,18 @@ std::shared_ptr<AST> parse_var(Lexer& lexer)
 		lexer.eat();
 		return ast;
 	}
-	else if (lexer.curr().type == TokenType::OPEN_BRACKET)
+	else if (lexer.peek().type == TokenType::OPEN_SQUARE)
 	{
-		auto const& ast = std::make_shared<FunctionCall>(parse_func_call(lexer, var_name));
-		lexer.expect(TokenType::SEMICOLON);
-		lexer.eat();
-
+		auto const& ast = std::make_shared<ArrayMethod>(parse_array_method(lexer, var_name));
 		return ast;
 	}
-	else
+	else if (lexer.peek().type == TokenType::OPEN_BRACKET)
 	{
-		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected variable type or assignment after variable name '" + var_name + "'");
+		lexer.eat();
+		auto const& ast = std::make_shared<expr::FunctionCall>(parse_func_call(lexer, var_name));
+		lexer.expect(TokenType::SEMICOLON);
+		lexer.eat();
+		return ast;
 	}
 }
 
@@ -127,7 +126,7 @@ VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 	std::vector<std::optional<expr::expr_p>> arr_sizes;
 	while (lexer.eat().type == TokenType::OPEN_SQUARE)
 	{
-		arr_sizes.push_back(parse_expr(lexer, false));
+		arr_sizes.push_back(parse_expr(lexer, true, false));
 		lexer.curr_check(TokenType::CLOSE_SQUARE);
 	}
 
@@ -137,7 +136,7 @@ VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 
 	if (lexer.curr().type == TokenType::ASSIGN && lexer.curr().str == "=")
 	{
-		expr = parse_expr(lexer, true);
+		expr = parse_expr(lexer, true, true);
 		lexer.curr_check(TokenType::SEMICOLON);
 	}
 	else if (lexer.curr().type == TokenType::ASSIGN && lexer.curr().str != "=")
@@ -154,21 +153,59 @@ VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 
 VariableAssign parse_var_assign(Lexer& lexer, std::string const& var_name)
 {
+	assert(lexer.curr().type == TokenType::ASSIGN);
+
 	auto assign_op = lexer.curr().str;
-	auto expr = parse_expr(lexer, true);
+
+	lexer.eat();
+	auto expr = parse_expr(lexer, false, true);
 
 	return VariableAssign(lexer.loc, var_name, assign_op, expr);
 }
 
-FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name)
+ArrayMethod parse_array_method(Lexer& lexer, std::string const& var_name)
 {
+	assert(lexer.curr().type == TokenType::VARIABLE);
+
+	std::vector<expr::expr_p> subscripts;
+
+	while (lexer.eat().type == TokenType::OPEN_SQUARE)
+	{
+		lexer.eat();
+		subscripts.push_back(parse_expr(lexer, false, true));
+
+		lexer.curr_check(TokenType::CLOSE_SQUARE);
+	}
+
+
+	if (lexer.curr().type == TokenType::SEMICOLON)
+	{
+		lexer.eat();
+		return ArrayMethod(lexer.loc, var_name, subscripts, nullptr);
+	}
+
+	lexer.curr_check(TokenType::ASSIGN);
+
+	lexer.eat();
+	auto assign_expr = parse_expr(lexer, false, true);
+	lexer.curr_check(TokenType::SEMICOLON);
+
+	lexer.eat();
+	return ArrayMethod(lexer.loc, var_name, subscripts, assign_expr);
+}
+
+expr::FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name)
+{
+	assert(lexer.curr().type == TokenType::OPEN_BRACKET);
+
 	// parse argument expressions and types
 
 	std::vector<expr::expr_p> arg_exprs;
 
 	while (true)
 	{
-		auto expr = parse_expr(lexer, false);
+		lexer.eat();
+		auto expr = parse_expr(lexer, false, false);
 
 		// case:
 		//   func_call();
@@ -186,7 +223,7 @@ FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name)
 		lexer.curr_check(TokenType::COMMA);
 	}
 
-	return FunctionCall(lexer.loc, func_name, arg_exprs);
+	return expr::FunctionCall(lexer.loc, func_name, arg_exprs);
 }
 
 Conditional parse_if(Lexer& lexer)
@@ -203,7 +240,7 @@ Conditional parse_if(Lexer& lexer)
 		{
 			lexer.expect(TokenType::OPEN_BRACKET);
 
-			cond_expr = parse_expr(lexer, true);
+			cond_expr = parse_expr(lexer, true, true);
 			lexer.curr_check(TokenType::CLOSE_BRACKET);
 		}
 
@@ -221,7 +258,7 @@ While parse_while(Lexer& lexer)
 {
 	lexer.expect(TokenType::OPEN_BRACKET);
 
-	auto cond_expr = parse_expr(lexer, true);
+	auto cond_expr = parse_expr(lexer, true, true);
 
 	lexer.curr_check(TokenType::CLOSE_BRACKET);
 	lexer.eat();
@@ -243,13 +280,12 @@ For parse_for(Lexer& lexer)
 	
 	// condition
 
-	auto cond_expr = parse_expr(lexer, true);
+	auto cond_expr = parse_expr(lexer, true, true);
 	lexer.curr_check(TokenType::SEMICOLON);
 
 	// assignment
 
-	auto var_assign_name = lexer.expect(TokenType::VARIABLE).str;
-	lexer.expect(TokenType::ASSIGN);
+	std::string var_assign_name = lexer.expect(TokenType::VARIABLE).str;
 
 	auto var_assign = parse_var_assign(lexer, var_assign_name);
 	lexer.curr_check(TokenType::CLOSE_BRACKET);
@@ -311,7 +347,7 @@ Function parse_func(Lexer& lexer)
 
 Return parse_return(Lexer& lexer)
 {
-	auto const& expr = parse_expr(lexer, false);
+	auto const& expr = parse_expr(lexer, true, false);
 	lexer.curr_check(TokenType::SEMICOLON);
 
 	lexer.eat();
@@ -319,10 +355,12 @@ Return parse_return(Lexer& lexer)
 	return Return(lexer.loc, expr);
 }
 
-expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
+expr::expr_p parse_expr(Lexer& lexer, bool eat_tok, bool err_on_empty)
 {
+	if (eat_tok)
+		lexer.eat();
+
 	expr::expr_p head(nullptr);
-	Token next{ .str = "" };
 	bool allow_unary_next = true;
 	bool was_variable = false;
 	bool was_sub = false;
@@ -331,23 +369,12 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 	{
 		expr::expr_p node(nullptr);
 
-		Token comp;
-		if (next.str.empty())
-		{
-			comp = lexer.eat();
-		}
-		else
-		{
-			comp = next;
-			next.str = "";
-		}
+		auto curr = lexer.curr();
 
-		if (comp.is_type())
-		{
-			comp.type = TokenType::VARIABLE;
-		}
+		if (curr.is_type())
+			curr.type = TokenType::VARIABLE;
 
-		switch (comp.type)
+		switch (curr.type)
 		{
 		case TokenType::BOOL_LIT:
 		{
@@ -392,16 +419,14 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 		case TokenType::VARIABLE:
 		{
 			auto var_name = lexer.curr().str;
-			next = lexer.eat();
-			if (next.type == TokenType::OPEN_BRACKET)
+
+			if (lexer.peek().type == TokenType::OPEN_BRACKET)
 			{
-				node = std::make_shared<FunctionCall>(parse_func_call(lexer, var_name));
-				next.str = "";
+				lexer.eat();
+				node = std::make_shared<expr::FunctionCall>(parse_func_call(lexer, var_name));
 			}
 			else
-			{
 				node = std::make_shared<expr::Variable>(lexer.loc, var_name);
-			}
 
 			allow_unary_next = false;
 			was_variable = true;
@@ -412,7 +437,7 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 		{
 			if (was_variable)
 			{
-				auto index_expr = parse_expr(lexer, true);
+				auto index_expr = parse_expr(lexer, true, true);
 				lexer.curr_check(TokenType::CLOSE_SQUARE);
 
 				node = std::make_shared<expr::BinaryOp>(lexer.loc, expr::BinaryOpType::SUBSCRIPT);
@@ -427,7 +452,7 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 				std::vector<expr::expr_p> arr;
 				while (true)
 				{
-					auto elem = parse_expr(lexer, false);
+					auto elem = parse_expr(lexer, true, false);
 					if (!elem)
 					{
 						lexer.curr_check(TokenType::CLOSE_SQUARE);
@@ -474,7 +499,7 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 		}
 		case TokenType::OPEN_BRACKET:
 		{
-			node = parse_expr(lexer, err_on_empty);
+			node = parse_expr(lexer, true, err_on_empty);
 
 			if (lexer.curr().type != TokenType::CLOSE_BRACKET)
 				throw NIGHT_CREATE_FATAL("missing closing bracket in expression");
@@ -498,5 +523,7 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 			head = node;
 		else
 			head->insert_node(node, &head);
+
+		lexer.eat();
 	}
 }

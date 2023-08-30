@@ -52,10 +52,12 @@ VariableInit parse_var_init(Lexer& lexer, std::string const& var_name);
 //   for (;; my_var += 1) {}
 VariableAssign parse_var_assign(Lexer& lexer, std::string const& var_name);
 
+ArrayMethod parse_array_method(Lexer& lexer, std::string const& var_name);
+
 // lexer
 //   start: open brakcet
 //   end: closing bracket
-FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name);
+expr::FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name);
 
 Conditional parse_if(Lexer& lexer);
 While parse_while(Lexer& lexer);
@@ -66,8 +68,8 @@ Return parse_return(Lexer& lexer);
 // if expr is null, it is the callers responsibility to handle,
 // or set err_on_empty to true to display an error message in that event
 // lexer
-//   start: token before expression
+//   start: first token of expression
 //   end: first token after expression
 // turns tokens into AST
 // 'bracket' is for recursive call only
-std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, bool err_on_empty);
+std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, bool eat_tok, bool err_on_empty);

@@ -156,13 +156,25 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			break;
 
 		case BytecodeType::LOAD:
-			++it;
-			s.push(scope.vars[*it]);
+			s.emplace(scope.vars[*(++it)]);
 			break;
 
 		case BytecodeType::STORE:
 			scope.vars[*(++it)] = pop(s);
 			break;
+
+		case BytecodeType::SET_INDEX: {
+			auto expr = pop(s);
+			auto id = *(++it);
+			intpr::Value* val = &scope.vars[id];
+			while (!s.empty())
+			{
+				auto i = pop(s).i;
+				val = &val->v[i];
+			}
+			*val = expr;
+			break;
+		}
 
 		case BytecodeType::JUMP_IF_FALSE:
 			if (!pop(s).i)
@@ -204,7 +216,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 				break;
 			}
 			case 7: {
-				s.emplace((int64_t)std::stoi(pop(s).s));
+				s.emplace((int64_t)std::stoll(pop(s).s));
 				break;
 			}
 			case 8: {
@@ -298,12 +310,18 @@ void push_subscript(std::stack<intpr::Value>& s)
 
 	if (container.type == intpr::ValueType::ARR)
 		s.emplace(container.v.at(index.i));
-	else
+	else if (container.type == intpr::ValueType::PTR)
+		s.emplace(container.p->v[index.i]);
+	else if (container.type == intpr::ValueType::STR)
 		s.emplace(int64_t(container.s.at(index.i)));
+	else
+		debug::unhandled_case((int)container.type);
 }
 
 intpr::Value pop(std::stack<intpr::Value>& s)
 {
+	assert(!s.empty());
+
 	auto val = s.top();
 	s.pop();
 

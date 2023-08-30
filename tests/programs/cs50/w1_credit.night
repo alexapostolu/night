@@ -1,60 +1,54 @@
-#include <stdio.h>
-#include <math.h>
+print("Number: ");
+num int = int(input());
 
-int main() 
+int res = 0;
+int length = 0;
+int digits[16];
+
+for (; num; ++length)
 {
-	long long num;
-	printf("num: ");
-	scanf("%lld", &num);
+	digits[length] = num % 10;
+	num /= 10;
 
-	int res = 0;
-	int length = 0;
-	int digits[16];
-	for (; num; ++length)
+	if (length % 2 == 0)
+		res += digits[length];
+	else
+		res += (digits[length] * 2 % 10) + (digits[length] * 2 / 10);
+}
+
+printf("%d\n", res);
+
+if (res % 10 == 0)
+{
+	if (length == 15)
 	{
-		digits[length] = num % 10;
-		num /= 10;
-
-		if (length % 2 == 0)
-			res += digits[length];
+		if (digits[length - 1] == 3 && (digits[length - 2] == 4 || digits[length - 2] == 7))
+			printf("AMEX");
 		else
-			res += (digits[length] * 2 % 10) + (digits[length] * 2 / 10);
-	}
-
-	printf("%d\n", res);
-
-	if (res % 10 == 0)
-	{
-		if (length == 15)
-		{
-			if (digits[length - 1] == 3 && (digits[length - 2] == 4 || digits[length - 2] == 7))
-				printf("AMEX");
-			else
-				printf("INVALID");
-		}
-		else if (length == 13)
-		{
-			if (digits[length - 1] == 4)
-				printf("VISA");
-			else
-				printf("INVALID");
-		}
-		else if (length == 16)
-		{
-			if (digits[length - 1] == 4)
-				printf("VISA");
-			else if (digits[length - 1] == 5 && (digits[length - 2] >= 1  && digits[length - 2] <= 5))
-				printf("MASTERCARD");
-			else
-				printf("INVALID");
-		}
-		else
-		{
 			printf("INVALID");
-		}
+	}
+	else if (length == 13)
+	{
+		if (digits[length - 1] == 4)
+			printf("VISA");
+		else
+			printf("INVALID");
+	}
+	else if (length == 16)
+	{
+		if (digits[length - 1] == 4)
+			printf("VISA");
+		else if (digits[length - 1] == 5 && (digits[length - 2] >= 1  && digits[length - 2] <= 5))
+			printf("MASTERCARD");
+		else
+			printf("INVALID");
 	}
 	else
 	{
 		printf("INVALID");
 	}
+}
+else
+{
+	printf("INVALID");
 }
