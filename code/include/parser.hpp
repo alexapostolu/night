@@ -15,14 +15,13 @@ AST_Block parse_file(std::string const& main_file);
 
 // lexer
 //   start: first token of statements
-//   end:   first token of next statements
+//   end:   first token of next statements (the reason is parse_if() has to know the next token for if-elif-else chain)
 // curly_enclosed
-//   modifies to true if the statements are enclosed with curly braces
-//   this is useful to know as a function with statements not enclosed by curly
-//     braces will throw a syntax error
+//   if true, throws an error if statements are not enclosed in curly brackets
+//     functions are the only statement type that require curly brackets
 AST_Block parse_stmts(
 	Lexer& lexer,
-	bool* curly_enclosed = nullptr);
+	bool requires_curly);
 
 // lexer
 //   start: first token of statement
@@ -71,5 +70,4 @@ Return parse_return(Lexer& lexer);
 //   start: first token of expression
 //   end: first token after expression
 // turns tokens into AST
-// 'bracket' is for recursive call only
-std::shared_ptr<expr::Expression> parse_expr(Lexer& lexer, bool eat_tok, bool err_on_empty);
+expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty);

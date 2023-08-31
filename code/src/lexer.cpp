@@ -17,8 +17,6 @@ Lexer::Lexer(std::string const& _file_name)
 		throw NIGHT_CREATE_FATAL_LEXER("file '" + loc.file + "' could not be found/opened");
 
 	std::getline(file, file_line);
-
-	eat();
 }
 
 Token const& Lexer::eat()
