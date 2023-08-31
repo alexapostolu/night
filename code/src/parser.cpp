@@ -18,21 +18,19 @@
 AST_Block parse_file(std::string const& main_file)
 {
 	Lexer lexer(main_file);
-	AST_Block block;
+	AST_Block stmts;
 	
 	while (lexer.curr().type != TokenType::END_OF_FILE)
 	{
 		auto stmt = parse_stmts(lexer);
-		block.insert(std::end(block), std::begin(stmt), std::end(stmt));
+		stmts.insert(std::end(stmts), std::begin(stmt), std::end(stmt));
 	}
 
-	return block;
+	return stmts;
 }
 
-std::vector<std::shared_ptr<AST>> parse_stmts(Lexer& lexer, bool* curly_enclosed)
+AST_Block parse_stmts(Lexer& lexer, bool* curly_enclosed)
 {
-	bool conditional = false;
-
 	// two cases:
 	//   { stmt1; stmt2; ... }
 	//   stmt1;
@@ -269,6 +267,8 @@ Conditional parse_if(Lexer& lexer)
 
 While parse_while(Lexer& lexer)
 {
+	assert(lexer.curr().type == TokenType::WHILE);
+
 	lexer.expect(TokenType::OPEN_BRACKET);
 
 	auto cond_expr = parse_expr(lexer, true, true);
@@ -281,6 +281,8 @@ While parse_while(Lexer& lexer)
 
 For parse_for(Lexer& lexer)
 {
+	assert(lexer.curr().type == TokenType::FOR);
+
 	// initialization
 
 	lexer.expect(TokenType::OPEN_BRACKET);
@@ -318,6 +320,8 @@ For parse_for(Lexer& lexer)
 
 Function parse_func(Lexer& lexer)
 {
+	assert(lexer.curr().type == TokenType::DEF);
+
 	std::string func_name = lexer.expect(TokenType::VARIABLE).str;
 	lexer.expect(TokenType::OPEN_BRACKET);
 
@@ -363,6 +367,8 @@ Function parse_func(Lexer& lexer)
 
 Return parse_return(Lexer& lexer)
 {
+	assert(lexer.curr().type == TokenType::RETURN);
+
 	auto const& expr = parse_expr(lexer, true, false);
 	lexer.curr_check(TokenType::SEMICOLON);
 
@@ -379,7 +385,6 @@ expr::expr_p parse_expr(Lexer& lexer, bool eat_tok, bool err_on_empty)
 	expr::expr_p head(nullptr);
 	bool allow_unary_next = true;
 	bool was_variable = false;
-	bool was_sub = false;
 
 	while (true)
 	{
@@ -397,7 +402,6 @@ expr::expr_p parse_expr(Lexer& lexer, bool eat_tok, bool err_on_empty)
 			node = std::make_shared<expr::Value>(lexer.loc, ValueType::BOOL, lexer.curr().str);
 			allow_unary_next = false;
 			was_variable = false;
-			was_sub = false;
 			break;
 		}
 		case TokenType::CHAR_LIT:
@@ -405,7 +409,6 @@ expr::expr_p parse_expr(Lexer& lexer, bool eat_tok, bool err_on_empty)
 			node = std::make_shared<expr::Value>(lexer.loc, ValueType::CHAR, lexer.curr().str);
 			allow_unary_next = false;
 			was_variable = false;
-			was_sub = false;
 			break;
 		}
 		case TokenType::INT_LIT:
@@ -413,7 +416,6 @@ expr::expr_p parse_expr(Lexer& lexer, bool eat_tok, bool err_on_empty)
 			node = std::make_shared<expr::Value>(lexer.loc, ValueType::INT, lexer.curr().str);
 			allow_unary_next = false;
 			was_variable = false;
-			was_sub = false;
 			break;
 		}
 		case TokenType::FLOAT_LIT:
@@ -421,7 +423,6 @@ expr::expr_p parse_expr(Lexer& lexer, bool eat_tok, bool err_on_empty)
 			node = std::make_shared<expr::Value>(lexer.loc, ValueType::FLOAT, lexer.curr().str);
 			allow_unary_next = false;
 			was_variable = false;
-			was_sub = false;
 			break;
 		}
 		case TokenType::STRING_LIT:
@@ -429,7 +430,6 @@ expr::expr_p parse_expr(Lexer& lexer, bool eat_tok, bool err_on_empty)
 			node = std::make_shared<expr::Value>(lexer.loc, ValueType::STR, lexer.curr().str);
 			allow_unary_next = false;
 			was_variable = true;
-			was_sub = false;
 			break;
 		}
 		case TokenType::VARIABLE:
@@ -446,7 +446,6 @@ expr::expr_p parse_expr(Lexer& lexer, bool eat_tok, bool err_on_empty)
 
 			allow_unary_next = false;
 			was_variable = true;
-			was_sub = false;
 			break;
 		}
 		case TokenType::OPEN_SQUARE:
@@ -460,7 +459,6 @@ expr::expr_p parse_expr(Lexer& lexer, bool eat_tok, bool err_on_empty)
 				node->insert_node(index_expr);
 
 				allow_unary_next = false;
-				was_sub = true;
 				was_variable = true;
 			}
 			else
@@ -494,7 +492,6 @@ expr::expr_p parse_expr(Lexer& lexer, bool eat_tok, bool err_on_empty)
 		{
 			node = std::make_shared<expr::UnaryOp>(lexer.loc, lexer.curr().str);
 			allow_unary_next = true;
-			was_sub = false;
 			break;
 		}
 		case TokenType::BINARY_OP:
@@ -508,22 +505,21 @@ expr::expr_p parse_expr(Lexer& lexer, bool eat_tok, bool err_on_empty)
 				node = std::make_shared<expr::BinaryOp>(lexer.loc, lexer.curr().str);
 				allow_unary_next = true;
 			}
+
 			was_variable = false;
-			was_sub = false;
 
 			break;
 		}
 		case TokenType::OPEN_BRACKET:
 		{
 			node = parse_expr(lexer, true, err_on_empty);
+			node->guard = true;
 
 			if (lexer.curr().type != TokenType::CLOSE_BRACKET)
 				throw NIGHT_CREATE_FATAL("missing closing bracket in expression");
 
-			node->guard = true;
 			allow_unary_next = false;
 			was_variable = false;
-			was_sub = false;
 			break;
 		}
 		default:

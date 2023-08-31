@@ -23,6 +23,8 @@ Lexer::Lexer(std::string const& _file_name)
 
 Token const& Lexer::eat()
 {
+	assert(curr().type != TokenType::END_OF_FILE);
+
 	if (prev_tok.has_value())
 	{
 		prev_tok.reset();
