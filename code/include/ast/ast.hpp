@@ -50,6 +50,7 @@ private:
 	expr::expr_p expr;
 
 	std::optional<bytecode_t> id;
+	std::optional<ValueType> expr_type;
 };
 
 

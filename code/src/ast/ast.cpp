@@ -36,7 +36,7 @@ void VariableInit::check(ParserScope& scope)
 
 	// check expression
 
-	auto expr_type = expr->type_check(scope);
+	expr_type = expr->type_check(scope);
 
 	if (expr_type.has_value() && !compare_relative_vt(type, *expr_type))
 		night::error::get().create_minor_error(
@@ -48,7 +48,6 @@ bytecodes_t VariableInit::generate_codes() const
 {
 	assert(expr);
 	assert(id.has_value());
-
 
 	if (!arr_sizes.empty() && *arr_sizes[0])
 	{
@@ -80,6 +79,9 @@ bytecodes_t VariableInit::generate_codes() const
 	else
 	{
 		bytecodes_t codes = expr->generate_codes();
+
+		if (expr_type == ValueType::FLOAT && type == ValueType::INT)
+			codes.push_back((bytecode_t)BytecodeType::F2I);
 
 		codes.push_back((bytecode_t)BytecodeType::STORE);
 		codes.push_back(*id);

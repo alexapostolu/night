@@ -16,7 +16,8 @@ scope_func_container ParserScope::funcs = {
 	{ "int",   ParserFunction{ 7, {}, { ValueType::STR }, ValueType::INT } },
 	{ "int",   ParserFunction{ 8, {}, { ValueType::CHAR }, ValueType::INT } },
 	{ "str",   ParserFunction{ 9, {}, { ValueType::INT }, ValueType::STR } },
-	{ "len",   ParserFunction{ 10, {}, { ValueType::STR }, ValueType::INT } }
+	{ "str",   ParserFunction{ 10, {}, { ValueType::FLOAT }, ValueType::STR } },
+	{ "len",   ParserFunction{ 11, {}, { ValueType::STR }, ValueType::INT } }
 };
 
 std::optional<ValueType> ParserScope::curr_rtn_type = std::nullopt;

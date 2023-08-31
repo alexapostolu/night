@@ -238,6 +238,10 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 				break;
 			}
 			case 10: {
+				s.emplace(std::to_string(pop(s).f));
+				break;
+			}
+			case 11: {
 				s.emplace((int64_t)pop(s).s.length());
 				break;
 			}
