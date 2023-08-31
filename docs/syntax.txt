@@ -1,4 +1,0 @@
-var int = 5;
-var int32* = 9;
-var char = 'c';
-var char = 'd';
