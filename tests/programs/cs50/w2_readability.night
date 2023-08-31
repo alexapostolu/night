@@ -1,0 +1,31 @@
+def is_alpha(c char) bool { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
+
+print("Text: ");
+text str = input();
+
+letters int = 0;
+sentences int = 0;
+words int = 1;
+
+for (i int = 0; i < len(text); i += 1)
+{
+	if (is_alpha(text[i]))
+		letters += 1;
+	else if (text[i] == ' ')
+		words += 1;
+	else if (text[i] == '.' || text[i] == '!' || text[i] == '?')
+		sentences += 1;
+}
+
+L float = 1.0 * letters / words * 100;
+S float = 1.0 * sentences / words * 100;
+
+# +0.5 is so that float gets rounded to nearest integer
+index int = 0.0588 * L - 0.2965 * S - 15.8 + 0.5;
+
+if (index < 1)
+	print("Before Grade 1");
+elif (index >= 16)
+	print("Grade 16+");
+else
+	print("Grade " + str(index));
