@@ -19,9 +19,9 @@ Night is a static, bytecode interpreted language with strong management on types
 - variable initialization and assignment
 - arithmetic and boolean operators, type casting
 - bool, char, int, float, str, arrays (including multi-dimensional arrays)
-- conditionals
+- conditionals (if, elif and else statements)
 - for & while loops
-- functions
+- functions (including recursion)
 
 I have already planned future functionality, including pointers, OOP, modules, and a standard library.
 
@@ -31,6 +31,22 @@ You will need a Night binary file, and a source file with Night code. To run the
 
 ```
 night source.night
+```
+
+Try it out now with this simple Night code!
+
+> source.night
+```py
+def fib(n int) int
+{
+	if (n <= 1)
+		return n;
+
+	return fib(n - 1) + fib(n - 2);
+}
+
+for (i int = 0; i < 15; i += 1)
+	print(str(fib(i)) + " ");
 ```
 
 Binary files can be found under releases, or compiled manually as shown in the [Build](#build) section.
@@ -45,7 +61,7 @@ Binary files can be found under releases, or compiled manually as shown in the [
 
 Windows executable coming soon
 
-dependenies
+Dependenies
 
 `cmake` `g++`
 
