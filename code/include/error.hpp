@@ -37,7 +37,7 @@ public:
 		std::string const& msg, Location const& loc,
 		std::source_location const& s_loc = std::source_location::current()) noexcept;
 
-	void throw_minor_errors();
+	bool has_minor_errors() const;
 
 public:
 	void operator=(error const&) = delete;
@@ -46,15 +46,17 @@ private:
 	error();
 
 	std::string format_error_msg(
-		std::string const& msg, Location const& loc,
-		std::source_location const& s_loc) const noexcept;
+		std::string const& type,
+		std::string const& msg,
+		Location const& loc,
+		std::source_location const& s_loc
+	) const noexcept;
 
 public:
 	bool debug_flag;
 
 private:
-	std::vector<std::string> warnings,
-							 minor_errors;
+	std::vector<std::string> minor_errors;
 
 	std::string fatal_error_msg;
 };

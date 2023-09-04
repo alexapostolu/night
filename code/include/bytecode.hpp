@@ -65,11 +65,6 @@ enum struct BytecodeType : bytecode_t
 	CALL					// [parameters as expressions] FUNC_CALL
 };
 
-void number_to_bytecode(bytecodes_t& codes, uint64_t num);
-void number_to_bytecode(bytecodes_t& codes, int64_t num);
-
-bytecodes_t number_to_bytecode(int64_t num);
-
 namespace night
 {
 

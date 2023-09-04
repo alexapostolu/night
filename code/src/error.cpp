@@ -14,48 +14,46 @@ night::error& night::error::get()
 
 std::string night::error::what() const
 {
-	std::string s = fatal_error_msg + "\n";
+	std::string s;
 
 	for (auto const& msg : minor_errors)
 		s += msg + '\n';
 
-	s += '\n';
-
-	for (auto const& msg : warnings)
-		s += msg + '\n';
+	s += '\n' + fatal_error_msg + '\n';
 
 	return s;
 }
 
 void night::error::create_warning(std::string const& msg, Location const& loc, std::source_location const& s_loc) noexcept
 {
-	warnings.push_back(format_error_msg(msg, loc, s_loc));
+	minor_errors.push_back(format_error_msg("warning", msg, loc, s_loc));
 }
 
 void night::error::create_minor_error(std::string const& msg, Location const& loc, std::source_location const& s_loc) noexcept
 {
-	minor_errors.push_back(format_error_msg(msg, loc, s_loc));
+	minor_errors.push_back(format_error_msg("minor error", msg, loc, s_loc));
 }
 
 night::error const& night::error::create_fatal_error(
 	std::string const& msg, Location const& loc,
 	std::source_location const& s_loc) noexcept
 {
-	fatal_error_msg = format_error_msg(msg, loc, s_loc);
+	fatal_error_msg = format_error_msg("fatal error", msg, loc, s_loc);
 	return *this;
 }
 
-void night::error::throw_minor_errors()
+bool night::error::has_minor_errors() const
 {
-	if (!get().minor_errors.empty())
-		throw *this;
+	return !minor_errors.empty();
 }
 
 std::string night::error::format_error_msg(
-	std::string const& msg, Location const& loc,
+	std::string const& type,
+	std::string const& msg,
+	Location const& loc,
 	std::source_location const& s_loc) const noexcept
 {
-	std::string base = "[ error fatal ]\n" +
+	std::string base = "[ " + type + " ]\n" +
 						loc.file + " (" + std::to_string(loc.line) + ":" + std::to_string(loc.col) + ")\n";
 
 	if (debug_flag)

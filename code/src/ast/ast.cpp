@@ -1,6 +1,7 @@
 #include "ast/ast.hpp"
 #include "bytecode.hpp"
 #include "interpreter_scope.hpp"
+#include "parser_scope.hpp"
 #include "utils.hpp"
 #include "error.hpp"
 #include "debug.hpp"
@@ -9,6 +10,7 @@
 #include <vector>
 #include <memory>
 #include <assert.h>
+#include <ranges>
 
 AST::AST(Location const& _loc)
 	: loc(_loc) {}
@@ -26,13 +28,11 @@ VariableInit::VariableInit(
 
 void VariableInit::check(ParserScope& scope)
 {
-	// check variable name
+	assert(expr);
 
-	auto [msg, _id] = scope.create_variable(name, type);
-	id = _id;
-
-	if (!msg.empty())
-		night::error::get().create_minor_error(msg, loc);
+	auto _id = scope.create_variable(name, type, loc);
+	if (_id.has_value())
+		id = _id;
 
 	// check expression
 
@@ -58,9 +58,14 @@ bytecodes_t VariableInit::generate_codes() const
 			codes.push_back((bytecode_t)BytecodeType::S_INT1);
 			codes.push_back(0);
 		}
+		else if (type.type == ValueType::FLOAT)
+		{
+			codes.push_back((bytecode_t)BytecodeType::FLOAT4);
+			codes.push_back(0);
+		}
 		else
 		{
-			debug::unhandled_case(type.type);
+			throw debug::unhandled_case(type.type);
 		}
 
 		for (int i = arr_sizes.size() - 1; i >= 0; --i)
@@ -102,17 +107,23 @@ void VariableAssign::check(ParserScope& scope)
 {
 	assert(expr);
 
+	if (!scope.vars.contains(var_name))
+		night::error::get().create_minor_error("variable '" + var_name + "' is undefined", loc);
+
 	auto expr_type = expr->type_check(scope);
-	if (!expr_type.has_value())
+
+	if (!expr_type.has_value() || night::error::get().has_minor_errors())
 		return;
+
+	id = scope.vars[var_name].id;
 
 	if (!compare_relative_vt(scope.vars[var_name].type, *expr_type))
 		night::error::get().create_minor_error(
-			"variable of type '" + night::to_str(scope.vars[var_name].type) +
-			"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", loc);
+			"variable '" + var_name + "' of type '" + night::to_str(scope.vars[var_name].type) +
+			"can not be assigned to type '" + night::to_str(*expr_type) + "'", loc);
 
 	assign_type = *expr_type;
-	id = scope.vars[var_name].id;
+
 }
 
 bytecodes_t VariableAssign::generate_codes() const
@@ -190,9 +201,9 @@ void Conditional::check(ParserScope& scope)
 				"expected type 'bool', 'char', or 'int',"
 				"condition is type '" + night::to_str(*cond_type) + "'", loc);
 
-		ParserScope block_scope{ scope.vars };
+		ParserScope conditional_scope(scope);
 		for (auto& stmt : block)
-			stmt->check(block_scope);
+			stmt->check(conditional_scope);
 	}
 }
 
@@ -250,9 +261,10 @@ void While::check(ParserScope& scope)
 			"condition is type '" + night::to_str(*cond_type) + "', "
 			"expected type 'bool', 'char', 'int', or 'float'", loc);
 
-	ParserScope block_scope{ scope.vars };
+	ParserScope while_scope(scope);
+
 	for (auto& stmt : block)
-		stmt->check(block_scope);
+		stmt->check(while_scope);
 }
 
 bytecodes_t While::generate_codes() const
@@ -290,10 +302,10 @@ For::For(
 
 void For::check(ParserScope& scope)
 {
-	ParserScope block_scope{ scope.vars };
+	ParserScope for_scope(scope);
 
-	var_init.check(block_scope);
-	loop.check(block_scope);
+	var_init.check(for_scope);
+	loop.check(for_scope);
 }
 
 bytecodes_t For::generate_codes() const
@@ -323,36 +335,31 @@ Function::Function(
 
 	for (auto const& param_type : _param_types)
 		param_types.push_back(token_var_type_to_val_type(param_type));
-
-	// create a function so it's return type can be referenced by `FunctionCall::type_check()`
-	auto [err_msg, func_it] = ParserScope::create_function(name, param_names, param_types, rtn_type);
-
-	if (!err_msg.empty())
-		night::error::get().create_minor_error(err_msg, loc);
-
-	id = func_it->second.id;
 }
 
-void Function::check(ParserScope& scope)
+void Function::check(ParserScope& global_scope)
 {
-	ParserScope block_scope{ scope.vars };
+	ParserScope func_scope(global_scope, rtn_type);
 
 	for (std::size_t i = 0; i < param_names.size(); ++i)
 	{
-		auto [err_msg, param_id] = block_scope.create_variable(param_names[i], param_types[i]);
+		auto param_id = func_scope.create_variable(param_names[i], param_types[i], loc);
 
-		if (!err_msg.empty())
-			night::error::get().create_minor_error(err_msg, loc);
-
-		param_ids.push_back(param_id);
+		if (param_id.has_value())
+			param_ids.push_back(*param_id);
 	}
 
-	ParserScope::curr_rtn_type = rtn_type;
+	try {
+		// define the function now in ParserScope so it will be defined in recursive calls
+		auto func_it = ParserScope::create_function(name, param_names, param_types, rtn_type);
+		id = func_it->second.id;
+	}
+	catch (std::string const& e) {
+		night::error::get().create_minor_error(e, loc);
+	}
 
 	for (auto& stmt : block)
-		stmt->check(block_scope);
-
-	ParserScope::curr_rtn_type = std::nullopt;
+		stmt->check(func_scope);
 }
 
 bytecodes_t Function::generate_codes() const
@@ -381,25 +388,13 @@ Return::Return(
 
 void Return::check(ParserScope& scope)
 {
-	if (!expr)
-	{
-		if (ParserScope::curr_rtn_type.has_value())
-			night::error::get().create_minor_error(
-				"return statement does nto return a value, yet function expects one of type '" +
-				night::to_str(*ParserScope::curr_rtn_type) + "'", loc);
+	auto expr_type = expr->type_check(scope);
+
+	try {
+		scope.check_return_type(expr_type);
 	}
-	else
-	{
-		if (!ParserScope::curr_rtn_type.has_value())
-			night::error::get().create_minor_error(
-				"return statement found, yet function does not return a value", loc);
-
-		auto expr_type = expr->type_check(scope);
-
-		if (expr_type.has_value() && !compare_relative_vt(*ParserScope::curr_rtn_type, *expr_type))
-			night::error::get().create_minor_error(
-				"return is type '" + night::to_str(*expr_type) + "', expected type '" +
-				night::to_str(*ParserScope::curr_rtn_type) + "'", loc);
+	catch (std::string const& e) {
+		night::error::get().create_minor_error(e, loc);
 	}
 }
 
@@ -422,12 +417,8 @@ ArrayMethod::ArrayMethod(
 
 void ArrayMethod::check(ParserScope& scope)
 {
-	assert(scope.vars.contains(var_name));
-
-	auto const& var = scope.vars[var_name];
-
-	if (var.type.dim != subscripts.size())
-		night::error::get().create_minor_error("too many subscripts for variable of dimension '" + std::to_string(var.type.dim) + "'", loc);
+	if (scope.vars[var_name].type.dim != subscripts.size())
+		night::error::get().create_minor_error("too many subscripts for variable of dimension '" + std::to_string(scope.vars[var_name].type.dim) + "'", loc);
 
 	for (auto const& subscript : subscripts)
 	{
@@ -442,12 +433,12 @@ void ArrayMethod::check(ParserScope& scope)
 	{
 		auto const& assign_type = assign_expr->type_check(scope);
 
-		if (assign_type.has_value() && !compare_relative_vt(ValueType(var.type.type, var.type.dim - subscripts.size()), *assign_type))
-			night::error::get().create_minor_error("array of type '" + night::to_str(var.type) + "' can not be assigned to expression of type '" +
+		if (assign_type.has_value() && !compare_relative_vt(ValueType(scope.vars[var_name].type.type, scope.vars[var_name].type.dim - subscripts.size()), *assign_type))
+			night::error::get().create_minor_error("array of type '" + night::to_str(scope.vars[var_name].type) + "' can not be assigned to expression of type '" +
 				night::to_str(assign_type->type) + "'", loc);
 	}
 
-	id = var.id;
+	id = scope.vars[var_name].id;
 }
 
 bytecodes_t ArrayMethod::generate_codes() const
@@ -479,7 +470,7 @@ expr::FunctionCall::FunctionCall(
 	Location const& _loc,
 	std::string const& _name,
 	std::vector<expr::expr_p> const& _arg_exprs)
-	: AST(_loc), Expression(expr::ExpressionType::FUNCTION_CALL, _loc), name(_name), arg_exprs(_arg_exprs), id(std::nullopt) {}
+	: AST(_loc), Expression(expr::ExpressionType::FUNCTION_CALL, _loc), name(_name), arg_exprs(_arg_exprs), id(std::nullopt), is_expr(true) {}
 
 void expr::FunctionCall::insert_node(
 	expr::expr_p const& node,
@@ -491,33 +482,40 @@ void expr::FunctionCall::insert_node(
 
 void expr::FunctionCall::check(ParserScope& scope)
 {
+	is_expr = false;
 	type_check(scope);
 }
 
 std::optional<ValueType> expr::FunctionCall::type_check(ParserScope const& scope)
 {
+	// check argument types
+
 	std::vector<ValueType> arg_types;
 	for (auto& arg_expr : arg_exprs)
 	{
+		assert(arg_expr);
+
 		auto arg_type = arg_expr->type_check(scope);
 
 		if (arg_type.has_value())
-			arg_types.push_back(*arg_expr->type_check(scope));
+			arg_types.push_back(*arg_type);
 	}
+
+	if (arg_types.size() != arg_exprs.size())
+		return std::nullopt;
+
+	// match function with ParserScope function based on name and argument types
 
 	auto [func, range_end] = ParserScope::funcs.equal_range(name);
 
 	if (func == range_end)
-	{
-		night::error::get().create_minor_error("function '" + name + "' is not defined", Expression::loc);
-		return std::nullopt;
-	}
+		night::error::get().create_minor_error("function '" + name + "' is undefined", AST::loc);
 
 	for (; func != range_end; ++func)
 	{
 		if (std::equal(std::begin(arg_types), std::end(arg_types),
-				std::begin(func->second.param_types), std::end(func->second.param_types),
-				compare_absolute_vt))
+					   std::begin(func->second.param_types), std::end(func->second.param_types),
+			compare_absolute_vt))
 			break;
 	}
 
@@ -531,12 +529,12 @@ std::optional<ValueType> expr::FunctionCall::type_check(ParserScope const& scope
 		if (s_types.length() >= 2)
 			s_types = s_types.substr(0, s_types.size() - 2);
 
-		night::error::get().create_minor_error(
-			"arguments in function call '" + name + "' are of type '" + s_types +
-			"', and do not match with the parameters in its function definition", Expression::loc);
-
-		return std::nullopt;
+		night::error::get().create_minor_error("arguments in function call '" + name + "' are of type '" + s_types +
+			"', and do not match with the parameters in its function definition", AST::loc);
 	}
+
+	if (is_expr && !func->second.rtn_type.has_value())
+		night::error::get().create_minor_error("function '" + func->first + "' can not have a return type of void when used in an expression", AST::loc);
 
 	id = func->second.id;
 	return func->second.rtn_type;
@@ -544,17 +542,19 @@ std::optional<ValueType> expr::FunctionCall::type_check(ParserScope const& scope
 
 bytecodes_t expr::FunctionCall::generate_codes() const
 {
+	assert(id.has_value());
+
 	bytecodes_t codes;
 
 	for (auto const& param : arg_exprs)
 	{
+		assert(param);
+
 		auto param_codes = param->generate_codes();
 		codes.insert(std::end(codes), std::begin(param_codes), std::end(param_codes));
 	}
 
 	codes.push_back((bytecode_t)BytecodeType::CALL);
-
-	assert(id.has_value());
 	codes.push_back(*id);
 
 	return codes;

@@ -329,7 +329,7 @@ void push_subscript(std::stack<intpr::Value>& s)
 	else if (container.type == intpr::ValueType::STR)
 		s.emplace(int64_t(container.s.at(index.i)));
 	else
-		debug::unhandled_case((int)container.type);
+		throw debug::unhandled_case((int)container.type);
 }
 
 intpr::Value pop(std::stack<intpr::Value>& s)

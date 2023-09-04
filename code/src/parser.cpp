@@ -90,8 +90,9 @@ std::shared_ptr<AST> parse_var(Lexer& lexer)
 {
 	std::string var_name = lexer.curr().str;
 
-	if (lexer.peek().is_type())
+	switch (lexer.peek().type)
 	{
+	case TokenType::TYPE: {
 		lexer.eat();
 
 		auto const& ast = std::make_shared<VariableInit>(parse_var_init(lexer, var_name));
@@ -99,8 +100,7 @@ std::shared_ptr<AST> parse_var(Lexer& lexer)
 		lexer.eat();
 		return ast;
 	}
-	else if (lexer.peek().type == TokenType::ASSIGN)
-	{
+	case TokenType::ASSIGN: {
 		lexer.eat();
 
 		auto const& ast = std::make_shared<VariableAssign>(parse_var_assign(lexer, var_name));
@@ -109,24 +109,26 @@ std::shared_ptr<AST> parse_var(Lexer& lexer)
 		lexer.eat();
 		return ast;
 	}
-	else if (lexer.peek().type == TokenType::OPEN_SQUARE)
-	{
+	case TokenType::OPEN_SQUARE: {
 		auto const& ast = std::make_shared<ArrayMethod>(parse_array_method(lexer, var_name));
 		return ast;
 	}
-	else if (lexer.peek().type == TokenType::OPEN_BRACKET)
-	{
+	case TokenType::OPEN_BRACKET: {
 		lexer.eat();
 		auto const& ast = std::make_shared<expr::FunctionCall>(parse_func_call(lexer, var_name));
 		lexer.expect(TokenType::SEMICOLON);
 		lexer.eat();
 		return ast;
 	}
+	default:
+		throw debug::unhandled_case((int)lexer.peek().type);
+	}
 }
 
 VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 {
-	assert(lexer.curr().is_type());
+	assert(lexer.curr().type == TokenType::TYPE);
+
 	ValueType var_type(token_var_type_to_val_type(lexer.curr().str));
 
 	bool is_arr = false;
@@ -139,7 +141,10 @@ VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 		is_arr = true;
 	}
 
-	var_type.dim = arr_sizes.size();
+	if (arr_sizes.size() > 255)
+		throw NIGHT_CREATE_FATAL("RELAX WITH THE SUBSCRIPTS");
+
+	var_type.dim = (int)arr_sizes.size();
 
 	// default value
 	expr::expr_p expr;
@@ -272,7 +277,7 @@ While parse_while(Lexer& lexer)
 	lexer.expect(TokenType::OPEN_BRACKET);
 
 	auto cond_expr = parse_expr(lexer, true);
-
+	
 	lexer.curr_check(TokenType::CLOSE_BRACKET);
 
 	lexer.eat();
@@ -283,13 +288,12 @@ For parse_for(Lexer& lexer)
 {
 	assert(lexer.curr().type == TokenType::FOR);
 
+	lexer.expect(TokenType::OPEN_BRACKET);
+
 	// initialization
 
-	lexer.expect(TokenType::OPEN_BRACKET);
 	auto var_init_name = lexer.expect(TokenType::VARIABLE).str;
-
-	if (!lexer.eat().is_type())
-		throw NIGHT_CREATE_FATAL("expected variable type after '" + var_init_name + "'");
+	lexer.expect(TokenType::TYPE);
 
 	auto var_init = parse_var_init(lexer, var_init_name);
 	
@@ -301,7 +305,6 @@ For parse_for(Lexer& lexer)
 	// assignment
 
 	std::string var_assign_name = lexer.expect(TokenType::VARIABLE).str;
-
 	lexer.eat();
 
 	auto var_assign = parse_var_assign(lexer, var_assign_name);
@@ -311,6 +314,9 @@ For parse_for(Lexer& lexer)
 
 	lexer.eat();
 	auto stmts = parse_stmts(lexer, false);
+
+	// increment
+
 	stmts.push_back(std::make_shared<VariableAssign>(var_assign));
 
 	return For(lexer.loc, var_init, cond_expr, stmts);
@@ -337,8 +343,7 @@ Function parse_func(Lexer& lexer)
 		lexer.curr_check(TokenType::VARIABLE);
 		param_names.push_back(lexer.curr().str);
 
-		if (!lexer.eat().is_type())
-			throw NIGHT_CREATE_FATAL("expected type after variable name in function parameter list, found '" + lexer.curr().str + "'");
+		lexer.expect(TokenType::TYPE);
 
 		param_types.push_back(lexer.curr().str);
 
@@ -353,7 +358,7 @@ Function parse_func(Lexer& lexer)
 
 	auto rtn_type = lexer.eat();
 
-	if (!rtn_type.is_type() && rtn_type.type != TokenType::VOID)
+	if (rtn_type.type != TokenType::TYPE && rtn_type.type != TokenType::VOID)
 		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected return type");
 
 	lexer.eat();
@@ -388,7 +393,7 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 
 		auto curr = lexer.curr();
 
-		if (curr.is_type())
+		if (curr.type == TokenType::TYPE)
 			curr.type = TokenType::VARIABLE;
 
 		switch (curr.type)
@@ -509,10 +514,9 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 		case TokenType::OPEN_BRACKET:
 		{
 			node = parse_expr(lexer, err_on_empty);
-			node->guard = true;
+			lexer.curr_check(TokenType::CLOSE_BRACKET);
 
-			if (lexer.curr().type != TokenType::CLOSE_BRACKET)
-				throw NIGHT_CREATE_FATAL("missing closing bracket in expression");
+			node->guard = true;
 
 			allow_unary_next = false;
 			was_variable = false;

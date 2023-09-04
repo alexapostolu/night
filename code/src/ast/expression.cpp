@@ -3,6 +3,7 @@
 #include "bytecode.hpp"
 #include "parser_scope.hpp"
 #include "parser.hpp"
+#include "scope_check.hpp"
 #include "error.hpp"
 #include "debug.hpp"
 
@@ -577,6 +578,9 @@ void expr::Variable::insert_node(
 
 std::optional<ValueType> expr::Variable::type_check(ParserScope const& scope)
 {
+	if (!check_variable_defined(scope, name, loc))
+		return std::nullopt;
+
 	id = scope.vars.at(name).id;
 	return scope.vars.at(name).type;
 }

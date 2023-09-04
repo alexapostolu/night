@@ -196,29 +196,31 @@ private:
 
 namespace expr {
 
-	class FunctionCall : public AST, public expr::Expression
-	{
-	public:
-		FunctionCall(
-			Location const& _loc,
-			std::string const& _name,
-			std::vector<expr::expr_p> const& _arg_exprs);
+class FunctionCall : public AST, public expr::Expression
+{
+public:
+	FunctionCall(
+		Location const& _loc,
+		std::string const& _name,
+		std::vector<expr::expr_p> const& _arg_exprs);
 
-		void insert_node(
-			expr::expr_p const& node,
-			expr::expr_p* prev = nullptr);
+	void insert_node(
+		expr::expr_p const& node,
+		expr::expr_p* prev = nullptr);
 
-		void check(ParserScope& scope) override;
-		std::optional<ValueType> type_check(ParserScope const& scope) override;
-		bytecodes_t generate_codes() const override;
+	void check(ParserScope& scope) override;
+	std::optional<ValueType> type_check(ParserScope const& scope) override;
+	bytecodes_t generate_codes() const override;
 
-		int precedence() const;
+	int precedence() const;
 
-	private:
-		std::string name;
-		std::vector<expr::expr_p> arg_exprs;
+private:
+	std::string name;
+	std::vector<expr::expr_p> arg_exprs;
 
-		std::optional<bytecode_t> id;
-	};
+	std::optional<bytecode_t> id;
+
+	bool is_expr;
+};
 
 }

@@ -1,7 +1,7 @@
 #include "parser_scope.hpp"
 #include "value_type.hpp"
+#include "error.hpp"
 
-#include <iostream>
 #include <optional>
 #include <string>
 
@@ -20,32 +20,40 @@ scope_func_container ParserScope::funcs = {
 	{ "len",   ParserFunction{ 11, {}, { ValueType::STR }, ValueType::INT } }
 };
 
-std::optional<ValueType> ParserScope::curr_rtn_type = std::nullopt;
+ParserScope::ParserScope()
+	: vars() {}
 
-std::pair<std::string, bytecode_t> ParserScope::create_variable(std::string const& name, ValueType type)
+ParserScope::ParserScope(ParserScope const& upper_scope)
+	: vars(upper_scope.vars), rtn_type(upper_scope.rtn_type) {}
+
+ParserScope::ParserScope(ParserScope const& upper_scope, std::optional<ValueType> const& _rtn_type)
+	: vars(upper_scope.vars), rtn_type(_rtn_type) {}
+
+std::optional<bytecode_t> ParserScope::create_variable(
+	std::string const& name,
+	ValueType const& type,
+	Location const& loc)
 {
 	static bytecode_t var_id = 0;
 
 	if (vars.contains(name))
-		return std::make_pair("variable '" + name + "' is already defined", 0);
+		night::error::get().create_minor_error("variable '" + name + "' is already defined", loc);
 
 	if (var_id == bytecode_t_lim)
-	{
-		vars[name] = { type };
+		night::error::get().create_minor_error("only " + std::to_string(bytecode_t_lim) + " variables allowed per scope", loc);
 
-		return std::make_pair("only " + std::to_string(bytecode_t_lim) + " variables allowed per scope", 0);
-	}
+	if (night::error::get().has_minor_errors())
+		return std::nullopt;
 
 	vars[name] = { type, var_id };
-
-	return std::make_pair("", var_id++);
+	return var_id++;
 }
 
-std::pair<std::string, scope_func_container::iterator> ParserScope::create_function(
+scope_func_container::iterator ParserScope::create_function(
 	std::string const& name,
 	std::vector<std::string> const& param_names,
-	std::vector<ValueType> param_types,
-	std::optional<ValueType> rtn_type)
+	std::vector<ValueType> const& param_types,
+	std::optional<ValueType> const& rtn_type)
 {
 	static bytecode_t func_id = ParserScope::funcs.size();
 
@@ -56,10 +64,35 @@ std::pair<std::string, scope_func_container::iterator> ParserScope::create_funct
 		if (std::equal(std::begin(param_types), std::end(param_types),
 					   std::begin(it->second.param_types), std::end(it->second.param_types),
 					   compare_absolute_vt))
-			return std::make_pair("function is already defined", range_end);
+			throw "function is already defined";
 	}
 
-	return std::make_pair(
-		"",
-		funcs.emplace(name, ParserFunction{ func_id++, param_names, param_types, rtn_type }));
+	return funcs.emplace(name, ParserFunction{ func_id++, param_names, param_types, rtn_type });
+}
+
+void ParserScope::check_return_type(std::optional<ValueType> const& _rtn_type) const
+{
+	if (_rtn_type.has_value())
+	{
+		if (!rtn_type.has_value())
+			throw "found return type '" + night::to_str(*_rtn_type) + "', expected void return type";
+
+		if (!compare_relative_vt(*rtn_type, *_rtn_type))
+			throw "found return type '" + night::to_str(*_rtn_type) + "', expected return type '" + night::to_str(*rtn_type) + "'";
+	}
+	else
+	{
+		if (rtn_type.has_value())
+			throw "found void return type, expected return type '" + night::to_str(*rtn_type) + "'";
+	}
+}
+
+std::optional<ValueType> const& ParserScope::get_curr_rtn_type() const
+{
+	return rtn_type;
+}
+
+void ParserScope::set_curr_rtn_type(std::optional<ValueType> const& _curr_rtn_type)
+{
+	rtn_type = _curr_rtn_type;
 }

@@ -10,7 +10,8 @@ bytecodes_t code_gen(AST_Block const& block)
 	for (auto const& ast : block)
 		ast->check(global_scope);
 
-	night::error::get().throw_minor_errors();
+	if (night::error::get().has_minor_errors())
+		throw night::error::get();
 
 	for (auto const& ast : block)
 	{

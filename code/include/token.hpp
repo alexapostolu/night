@@ -27,11 +27,7 @@ enum class TokenType
 
 	VARIABLE,
 
-	BOOL_TYPE,
-	CHAR_TYPE,
-	INT_TYPE,
-	FLOAT_TYPE,
-	STRING_TYPE,
+	TYPE,
 
 	IF,
 	ELIF,
@@ -51,8 +47,6 @@ struct Token
 {
 	TokenType type;
 	std::string str;
-
-	bool is_type() const;
 };
 
 namespace night

@@ -3,15 +3,6 @@
 
 #include <string>
 
-bool Token::is_type() const
-{
-	return type == TokenType::BOOL_TYPE ||
-		   type == TokenType::CHAR_TYPE ||
-		   type == TokenType::INT_TYPE ||
-		   type == TokenType::FLOAT_TYPE ||
-		   type == TokenType::STRING_TYPE;
-}
-
 std::string night::to_str(TokenType type)
 {
 	switch (type)

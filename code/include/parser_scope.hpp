@@ -1,8 +1,8 @@
-
 #pragma once
 
 #include "bytecode.hpp"
 #include "value_type.hpp"
+#include "error.hpp"
 
 #include <unordered_map>
 #include <vector>
@@ -34,26 +34,38 @@ struct ParserFunction
 
 struct ParserScope
 {
-	static scope_func_container funcs;
+	ParserScope();
+	ParserScope(ParserScope const& upper_scope);
+	ParserScope(ParserScope const& upper_scope, std::optional<ValueType> const& _rtn_type);
 
-	// this value is set in parse_func()
-	// parse_return() will compare this value with its own expression type
-	// for type checking
-	static std::optional<ValueType> curr_rtn_type;
-	
-	scope_var_container vars;
+	// returns id for new variable if successful
+	// returns nullopt if unsuccessful - redefinition or variable scope limit
+	std::optional<bytecode_t> create_variable(
+		std::string const& name,
+		ValueType const& type,
+		Location const& loc
+	);
 
-	// returns:
-	//    <"", id> if successful
-	//    <error message, 0> if unsuccessful
-	std::pair<std::string, bytecode_t> create_variable(std::string const& name, ValueType type);
+	// returns func it if successful
+	// throws const char* if unsuccessful
 
-	// returns:
-	//    <"", it> if successful
-	//    <error message, it::end()> if unsuccessful
-	static std::pair<std::string, scope_func_container::iterator> create_function(
+	static scope_func_container::iterator create_function(
 		std::string const& name,
 		std::vector<std::string> const& param_names,
-		std::vector<ValueType> param_types,
-		std::optional<ValueType> rtn_type);
+		std::vector<ValueType> const& param_types,
+		std::optional<ValueType> const& rtn_type
+	);
+
+	// throws const char* if types do not match
+	void check_return_type(std::optional<ValueType> const& _rtn_type) const;
+
+	std::optional<ValueType> const& get_curr_rtn_type() const;
+	void set_curr_rtn_type(std::optional<ValueType> const& _curr_rtn_type);
+
+	static scope_func_container funcs;
+
+	scope_var_container vars;
+
+private:
+	std::optional<ValueType> rtn_type;
 };
