@@ -13,7 +13,7 @@ Night is a static, bytecode interpreted language with strong management on types
 
 ## Project Status
 
-`v0.0.0` Under Development
+`v0.0.0` is released!
 
 **v0.0.0**
 - variable initialization and assignment
@@ -59,7 +59,7 @@ Binary files can be found under releases, or compiled manually as shown in the [
 
 **Windows Build:**
 
-Windows executable coming soon
+The following is intructions on how to build from source. If you want download the exe file, head over to the releases section.
 
 Dependenies
 
