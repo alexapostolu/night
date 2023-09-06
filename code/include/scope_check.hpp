@@ -4,4 +4,5 @@
 
 #include <string>
 
-bool check_variable_defined(ParserScope const& scope, std::string const& var_name, Location const& loc);
+bool check_variable_defined(ParserScope const& scope, std::string const& name, Location const& loc);
+bool check_function_defined(ParserScope const& scope, std::string const& name, Location const& loc);

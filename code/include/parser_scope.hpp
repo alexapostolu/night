@@ -56,8 +56,7 @@ struct ParserScope
 		std::optional<ValueType> const& rtn_type
 	);
 
-	// throws const char* if types do not match
-	void check_return_type(std::optional<ValueType> const& _rtn_type) const;
+	void check_return_type(std::optional<ValueType> const& _rtn_type, Location const& loc) const;
 
 	std::optional<ValueType> const& get_curr_rtn_type() const;
 	void set_curr_rtn_type(std::optional<ValueType> const& _curr_rtn_type);

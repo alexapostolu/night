@@ -2,6 +2,7 @@
 #include "bytecode.hpp"
 #include "interpreter_scope.hpp"
 #include "parser_scope.hpp"
+#include "scope_check.hpp"
 #include "utils.hpp"
 #include "error.hpp"
 #include "debug.hpp"
@@ -389,13 +390,7 @@ Return::Return(
 void Return::check(ParserScope& scope)
 {
 	auto expr_type = expr->type_check(scope);
-
-	try {
-		scope.check_return_type(expr_type);
-	}
-	catch (std::string const& e) {
-		night::error::get().create_minor_error(e, loc);
-	}
+	scope.check_return_type(expr_type, loc);
 }
 
 bytecodes_t Return::generate_codes() const
@@ -488,6 +483,10 @@ void expr::FunctionCall::check(ParserScope& scope)
 
 std::optional<ValueType> expr::FunctionCall::type_check(ParserScope const& scope)
 {
+	auto [func, range_end] = ParserScope::funcs.equal_range(name);
+
+	check_function_defined(scope, name, AST::loc);
+
 	// check argument types
 
 	std::vector<ValueType> arg_types;
@@ -501,15 +500,12 @@ std::optional<ValueType> expr::FunctionCall::type_check(ParserScope const& scope
 			arg_types.push_back(*arg_type);
 	}
 
-	if (arg_types.size() != arg_exprs.size())
+	if (night::error::get().has_minor_errors())
 		return std::nullopt;
 
+	assert(arg_types.size() == arg_exprs.size());
+
 	// match function with ParserScope function based on name and argument types
-
-	auto [func, range_end] = ParserScope::funcs.equal_range(name);
-
-	if (func == range_end)
-		night::error::get().create_minor_error("function '" + name + "' is undefined", AST::loc);
 
 	for (; func != range_end; ++func)
 	{

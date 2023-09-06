@@ -4,19 +4,32 @@
 #include <unordered_set>
 #include <string>
 
-bool check_variable_defined(ParserScope const& scope, std::string const& var_name, Location const& loc)
+bool check_variable_defined(ParserScope const& scope, std::string const& name, Location const& loc)
 {
 	static std::unordered_set<std::string> undefined_variables;
 
-	if (!scope.vars.contains(var_name))
+	if (!scope.vars.contains(name))
 	{
-		// Make sure this error message is only displayed once for each undefined variable
-		// as to not crowd the error message list with indentical messages.
+		if (!undefined_variables.contains(name))
+			night::error::get().create_minor_error("variable '" + name + "' is undefined", loc);
 
-		if (!undefined_variables.contains(var_name))
-			night::error::get().create_minor_error("variable '" + var_name + "' is undefined", loc);
+		undefined_variables.insert(name);
+		return false;
+	}
 
-		undefined_variables.insert(var_name);
+	return true;
+}
+
+bool check_function_defined(ParserScope const& scope, std::string const& name, Location const& loc)
+{
+	static std::unordered_set<std::string> undefined_functions;
+
+	if (!scope.funcs.contains(name))
+	{
+		if (!undefined_functions.contains(name))
+			night::error::get().create_minor_error("function '" + name + "' is undefined", loc);
+
+		undefined_functions.insert(name);
 		return false;
 	}
 

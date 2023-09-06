@@ -70,20 +70,26 @@ scope_func_container::iterator ParserScope::create_function(
 	return funcs.emplace(name, ParserFunction{ func_id++, param_names, param_types, rtn_type });
 }
 
-void ParserScope::check_return_type(std::optional<ValueType> const& _rtn_type) const
+void ParserScope::check_return_type(std::optional<ValueType> const& _rtn_type, Location const& loc) const
 {
 	if (_rtn_type.has_value())
 	{
 		if (!rtn_type.has_value())
-			throw "found return type '" + night::to_str(*_rtn_type) + "', expected void return type";
+			night::error::get().create_minor_error(
+				"found return type '" + night::to_str(*_rtn_type) + "', "
+				"expected void return type", loc);
 
 		if (!compare_relative_vt(*rtn_type, *_rtn_type))
-			throw "found return type '" + night::to_str(*_rtn_type) + "', expected return type '" + night::to_str(*rtn_type) + "'";
+			night::error::get().create_minor_error(
+				"found return type '" + night::to_str(*_rtn_type) + "', "
+				"expected return type '" + night::to_str(*rtn_type) + "'", loc);
 	}
 	else
 	{
 		if (rtn_type.has_value())
-			throw "found void return type, expected return type '" + night::to_str(*rtn_type) + "'";
+			night::error::get().create_minor_error(
+				"found void return type, expected return type '" +
+				night::to_str(*rtn_type) + "'", loc);
 	}
 }
 
