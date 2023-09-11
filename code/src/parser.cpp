@@ -19,16 +19,11 @@ AST_Block parse_file(std::string const& main_file)
 {
 	Lexer lexer(main_file);
 	AST_Block stmts;
-	
-	lexer.eat();
 
-	while (true)
+	while (lexer.curr().type != TokenType::END_OF_FILE)
 	{
 		auto stmt = parse_stmts(lexer, false);
 		stmts.insert(std::end(stmts), std::begin(stmt), std::end(stmt));
-
-		if (lexer.curr().type == TokenType::END_OF_FILE)
-			break;
 	}
 
 	return stmts;

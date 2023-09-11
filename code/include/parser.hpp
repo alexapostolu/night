@@ -11,18 +11,23 @@
 #include <memory>
 #include <string>
 
+// The starting function of the Parsing stage.
 AST_Block parse_file(std::string const& main_file);
 
+// Parses a scope of statements.
 // lexer
-//   start: first token of statements
-//   end:   first token of next statements (the reason is parse_if() has to know the next token for if-elif-else chain)
-// curly_enclosed
-//   if true, throws an error if statements are not enclosed in curly brackets
-//     functions are the only statement type that require curly brackets
+//   Starts at first token of statements.
+//   Ends at first token of next statement.
+//     (the reason is parse_if() has to know the next token for if-elif-else chain)
+// requires_curly
+//   Throws an error if statements are not enclosed in curly brackets.
+//     (functions are the only statement type that require curly brackets)
 AST_Block parse_stmts(
 	Lexer& lexer,
 	bool requires_curly);
 
+// Parses a singular statement. Note that a singular statement could also be
+// the only statement in a scope.
 // lexer
 //   start: first token of statement
 //   end:   first token of next statement

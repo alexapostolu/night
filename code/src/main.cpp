@@ -20,19 +20,21 @@ int main(int argc, char* argv[])
 		return 0;
 
 	try {
-		/* parser */
-
+		/* Parser */
+		// Calls the Lexer to get tokens, and
+		// then returns ASTs containing type and value information.
 		AST_Block ast_block = parse_file(main_file);
 
-		/* code gen */
-
+		/* Bytecode Generation */
+		// Each AST first correctness checks itself using its type information,
+		// and then it generates bytecodes using its value information.
 		bytecodes_t codes = code_gen(ast_block);
 
 		// debugging
 		debug::log_codes(codes);
 
-		/* interpreter */
-
+		/* Interpreter */
+		// Interprets the bytecodes.
 		InterpreterScope scope;
 		interpret_bytecodes(scope, codes);
 	}

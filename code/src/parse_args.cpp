@@ -11,10 +11,6 @@ std::string parse_args(std::vector<std::string_view> const& args)
 	std::string more_info = "for more info, type:\n"
 							"    night --help\n\n";
 
-	// make sure to use SPACES not tabs when formatting console output
-	// different consoles will format tabs differently!
-	// fuck 8 space tabs fuck 8 space tabs fuck 8 space tabs so much
-	// 4 space tab superiority
 	std::string help = "usage:\n"
 					   "    night <file>\n"
 					   "    night <file> <flag..>\n"
