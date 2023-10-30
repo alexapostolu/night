@@ -10,6 +10,7 @@ std::string night::to_str(TokenType type)
 	case TokenType::UNARY_OP: return "unary operator";
 	case TokenType::BINARY_OP: return "binary operator";
 	case TokenType::ASSIGN: return "assignment";
+	case TokenType::OPERATOR_ASSIGN: return "assignment";
 	case TokenType::OPEN_BRACKET: return "open bracket";
 	case TokenType::CLOSE_BRACKET: return "close bracket";
 	case TokenType::OPEN_SQUARE: return "open square";
@@ -25,11 +26,14 @@ std::string night::to_str(TokenType type)
 	case TokenType::FLOAT_LIT: return "float";
 	case TokenType::STRING_LIT: return "string";
 	case TokenType::VARIABLE: return "variable";
+	case TokenType::TYPE: return "type";
 	case TokenType::IF: return "if";
 	case TokenType::ELIF: return "elif";
 	case TokenType::ELSE: return "else";
 	case TokenType::FOR:return "for";
 	case TokenType::WHILE: return "while";
+	case TokenType::DEF: return "def";
+	case TokenType::VOID: return "void";
 	case TokenType::RETURN: return "return";
 	case TokenType::END_OF_FILE: return "end of file";
 	default: throw debug::unhandled_case((int)type);

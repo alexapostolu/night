@@ -1,24 +1,20 @@
 #include "interpreter_scope.hpp"
-#include <string>
 
 func_container InterpreterScope::funcs = {};
 
-intpr::Value::Value(int64_t _i)
-	: type(ValueType::INT), i(_i) {}
-
-intpr::Value::Value(float _f)
-	: type(ValueType::FLOAT), f(_f) {}
-
-intpr::Value::Value(std::string _s)
-	: type(ValueType::STR), s(_s) {}
-
-intpr::Value::Value(std::vector<Value> const& _v)
-	: type(ValueType::ARR), v(_v) {}
-
-intpr::Value::Value(Value* _p)
-	: type(ValueType::PTR), p(_p) {}
+intpr::Value::Value(int64_t _i) { as.i = _i; }
+intpr::Value::Value(uint64_t _ui) { as.ui = _ui; }
+intpr::Value::Value(double _d) { as.d = _d; }
+intpr::Value::Value(char* _s) { as.s = _s; }
+intpr::Value::Value(Value* _a) { as.a = _a; }
 
 intpr::Value::Value(Value const& _v)
-	: type(_v.type), i(_v.i), f(_v.f), s(_v.s), v(_v.v), p(_v.p) {}
+{
+	as.i = _v.as.i;
+	as.ui = _v.as.ui;
+	as.d = _v.as.d;
+	as.s = _v.as.s;
+	as.a = _v.as.a;
+}
 
 int InterpreterScope::new_id() { static int id = 7; return ++id; }

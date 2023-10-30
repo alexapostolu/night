@@ -1,10 +1,9 @@
 #pragma once
 
-#include <list>
-#include <vector>
-#include <string>
 #include <limits>
 #include <stdint.h>
+#include <vector>
+#include <string>
 
 using bytecode_t = uint8_t;
 constexpr bytecode_t bytecode_t_lim = std::numeric_limits<bytecode_t>::max();;
@@ -26,8 +25,6 @@ enum struct BytecodeType : bytecode_t
 	U_INT8,					//
 	FLOAT4,					//
 	FLOAT8,					//
-	STR,					// S_INT1 (length) (characters)
-	ARR,					// [elements] ARR (size)
 
 	NEGATIVE_I, NEGATIVE_F,				// [val] NEGATIVE 
 	NOT_I, NOT_F,					//
@@ -47,15 +44,19 @@ enum struct BytecodeType : bytecode_t
 	AND,
 	OR,
 
-	SUBSCRIPT,
-	ALLOCATE,
+	INDEX_S,
+	INDEX_A,
 
+	// Primitive to float/int type conversions
 	I2F, F2I,
+	F2B,
 
 	LOAD,					// LOAD  (var_id)
+	LOAD_ELEM,				// [id: S_INT] [size: S_INT] [indices: S_INT ...]
 	STORE,					// STORE (id)
-	SET_INDEX,				// indicies, id
-	STORE_A,
+	STORE_INDEX,			// [indicies, id]
+	ALLOCATE_STR,			// [size: S_INT] [elements: Value ...]
+	ALLOCATE_ARR,			// [size: S_INT] [elements: Value ...]
 
 	JUMP_IF_FALSE,			// [cond] JUMP_IF_FALSE (offset)	// jumps to next in conditional chain
 	JUMP,					// JUMP (offset)					// jumps to end of conditional chain
@@ -72,3 +73,5 @@ std::string to_str(BytecodeType type);
 std::string to_str(bytecode_t type);
 
 }
+
+bytecodes_t int_to_bytecodes(uint64_t uint64);

@@ -1,24 +1,28 @@
 #include "parser_scope.hpp"
+#include "ast/expression.hpp"
 #include "value_type.hpp"
 #include "error.hpp"
 
 #include <optional>
 #include <string>
+#include <assert.h>
 
 scope_func_container ParserScope::funcs = {
 	{ "print", ParserFunction{ 0, {}, { ValueType::BOOL }, std::nullopt } },
 	{ "print", ParserFunction{ 1, {}, { ValueType::CHAR }, std::nullopt } },
 	{ "print", ParserFunction{ 2, {}, { ValueType::INT }, std::nullopt } },
 	{ "print", ParserFunction{ 3, {}, { ValueType::FLOAT }, std::nullopt } },
-	{ "print", ParserFunction{ 4, {}, { ValueType::STR }, std::nullopt } },
-	{ "input", ParserFunction{ 5, {}, {}, ValueType::STR } },
+	{ "print", ParserFunction{ 4, {}, { value_type_str }, std::nullopt } },
+	{ "input", ParserFunction{ 5, {}, {}, value_type_str } },
 	{ "char",   ParserFunction{ 6, {}, { ValueType::INT }, ValueType::CHAR } },
-	{ "int",   ParserFunction{ 7, {}, { ValueType::STR }, ValueType::INT } },
+	{ "int",   ParserFunction{ 7, {}, { value_type_str }, ValueType::INT } },
 	{ "int",   ParserFunction{ 8, {}, { ValueType::CHAR }, ValueType::INT } },
-	{ "str",   ParserFunction{ 9, {}, { ValueType::INT }, ValueType::STR } },
-	{ "str",   ParserFunction{ 10, {}, { ValueType::FLOAT }, ValueType::STR } },
-	{ "len",   ParserFunction{ 11, {}, { ValueType::STR }, ValueType::INT } }
+	{ "str",   ParserFunction{ 9, {}, { ValueType::INT }, value_type_str } },
+	{ "str",   ParserFunction{ 10, {}, { ValueType::FLOAT }, value_type_str } },
+	{ "len",   ParserFunction{ 11, {}, { value_type_str }, ValueType::INT } }
 };
+
+bool ParserScope::inside_false_conditional = false;
 
 ParserScope::ParserScope()
 	: vars() {}
@@ -45,8 +49,29 @@ std::optional<bytecode_t> ParserScope::create_variable(
 	if (night::error::get().has_minor_errors())
 		return std::nullopt;
 
-	vars[name] = { type, var_id };
+	vars[name] = { type, var_id, 0 };
 	return var_id++;
+}
+
+ParserVariable const* ParserScope::get_var(std::string const& name)
+{
+	auto var = vars.find(name);
+	if (var == std::end(vars))
+		return nullptr;
+
+	use(name);
+	return &var->second;
+}
+
+bool ParserScope::is_var_used(std::string const& name) const
+{
+	return vars.at(name).times_used;
+}
+
+void ParserScope::use(std::string const& name)
+{
+	if (!inside_false_conditional)
+		++vars[name].times_used;
 }
 
 scope_func_container::iterator ParserScope::create_function(
@@ -63,42 +88,9 @@ scope_func_container::iterator ParserScope::create_function(
 	{
 		if (std::equal(std::begin(param_types), std::end(param_types),
 					   std::begin(it->second.param_types), std::end(it->second.param_types),
-					   compare_absolute_vt))
+					   is_same))
 			throw "function is already defined";
 	}
 
 	return funcs.emplace(name, ParserFunction{ func_id++, param_names, param_types, rtn_type });
-}
-
-void ParserScope::check_return_type(std::optional<ValueType> const& _rtn_type, Location const& loc) const
-{
-	if (_rtn_type.has_value())
-	{
-		if (!rtn_type.has_value())
-			night::error::get().create_minor_error(
-				"found return type '" + night::to_str(*_rtn_type) + "', "
-				"expected void return type", loc);
-
-		if (!compare_relative_vt(*rtn_type, *_rtn_type))
-			night::error::get().create_minor_error(
-				"found return type '" + night::to_str(*_rtn_type) + "', "
-				"expected return type '" + night::to_str(*rtn_type) + "'", loc);
-	}
-	else
-	{
-		if (rtn_type.has_value())
-			night::error::get().create_minor_error(
-				"found void return type, expected return type '" +
-				night::to_str(*rtn_type) + "'", loc);
-	}
-}
-
-std::optional<ValueType> const& ParserScope::get_curr_rtn_type() const
-{
-	return rtn_type;
-}
-
-void ParserScope::set_curr_rtn_type(std::optional<ValueType> const& _curr_rtn_type)
-{
-	rtn_type = _curr_rtn_type;
 }

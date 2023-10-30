@@ -4,33 +4,26 @@
 
 #include <unordered_map>
 #include <vector>
-#include <variant>
-#include <string>
 
 namespace intpr
 {
 
-enum class ValueType
-{
-	INT, UINT, FLOAT, STR, ARR, PTR
-};
-
 struct Value
 {
-	ValueType type;
-	
-	int64_t i;
-	float f;
-	std::string s;
-	std::vector<Value> v;
-	Value* p;
+	union {
+		int64_t i;
+		uint64_t ui;
+		double d;
+		char* s;
+		Value* a;
+	} as;
 
 	Value() = default;
-	explicit Value(int64_t _i);
-	explicit Value(float _i);
-	explicit Value(std::string _s);
-	explicit Value(std::vector<Value> const& _v);
-	explicit Value(Value* _p);
+	Value(int64_t _i);
+	Value(uint64_t _ui);
+	Value(double _d);
+	Value(char* _d);
+	Value(Value* _a);
 	Value(Value const& _v);
 };
 

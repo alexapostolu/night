@@ -9,13 +9,17 @@
 #include <functional>
 #include <optional>
 #include <bitset>
-#include <iostream>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes);
 
+// template can either be int64_t or uint64_t
 // iterator
 //   start: int code type
-//   end:   last code of int
+//   end: last code of int
 template <typename T>
 T get_int(bytecodes_t::const_iterator& it)
 {
@@ -24,7 +28,7 @@ T get_int(bytecodes_t::const_iterator& it)
 	switch ((BytecodeType)(*it))
 	{
 	case BytecodeType::S_INT1:
-	case BytecodeType::U_INT1: count = 1;  break;
+	case BytecodeType::U_INT1: count = 1; break;
 	case BytecodeType::S_INT2:
 	case BytecodeType::U_INT2: count = 2; break;
 	case BytecodeType::S_INT4:
@@ -53,17 +57,11 @@ T get_int(bytecodes_t::const_iterator& it)
 //   end:   last code of float
 void push_float(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it);
 
+void push_str(std::stack<intpr::Value>& s);
+void push_arr(std::stack<intpr::Value>& s);
 
-// iterator
-//   start: bytecode type
-//   end:   last code of string
-void push_str(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it);
-
-// iterator
-//   start: bytecode type
-//   end:   last code of strarring
-void push_arr(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it);
-
-void push_subscript(std::stack<intpr::Value>& s);
+void push_subscript(std::stack<intpr::Value>& s, bool is_string);
 
 intpr::Value pop(std::stack<intpr::Value>& s);
+
+char* night_get_line();

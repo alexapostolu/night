@@ -81,3 +81,40 @@ std::string night::to_str(bytecode_t val)
 		return std::to_string((int)val);
 	}
 }
+
+bytecodes_t int_to_bytecodes(uint64_t uint64)
+{
+	bytecodes_t codes;
+	int count;
+
+	if (uint64 <= std::numeric_limits<uint8_t>::max())
+	{
+		codes.push_back((bytecode_t)BytecodeType::S_INT1);
+		count = 1;
+	}
+	else if (uint64 <= std::numeric_limits<uint16_t>::max())
+	{
+		codes.push_back((bytecode_t)BytecodeType::S_INT2);
+		count = 2;
+	}
+	else if (uint64 <= std::numeric_limits<uint32_t>::max())
+	{
+		codes.push_back((bytecode_t)BytecodeType::S_INT4);
+		count = 4;
+	}
+	else if (uint64 <= std::numeric_limits<uint64_t>::max())
+	{
+		codes.push_back((bytecode_t)BytecodeType::S_INT8);
+		count = 8;
+	}
+	else
+		throw debug::unhandled_case(uint64);
+
+	while (count--)
+	{
+		codes.push_back(uint64 & 0xFF);
+		uint64 >>= 8;
+	}
+
+	return codes;
+}

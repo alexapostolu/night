@@ -1,6 +1,8 @@
 #pragma once
 
+#include "ast/statement.hpp"
 #include "bytecode.hpp"
-#include "ast/ast.hpp"
 
-bytecodes_t code_gen(AST_Block const& block);
+#include <vector>
+
+bytecodes_t code_gen(std::vector<stmt_p>& block);

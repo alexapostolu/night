@@ -6,23 +6,51 @@
 #include "value_type.hpp"
 #include "error.hpp"
 
-#include <memory>
 #include <vector>
+#include <memory>
 #include <string>
 
-namespace expr { class Expression; }
-
-class AST;
-using AST_Block = std::vector<std::shared_ptr<AST>>;
+class Statement;
+using stmt_p = std::shared_ptr<Statement>;
 
 
-class AST
+/* check() MUST be called before optimize() and generate_codes().
+ * 
+ * Usage:
+ *   statement->check(scope);
+ * 
+ *   if (night::error::get().has_minor_errors())
+ *       throw night::error::get();
+ * 
+ *   if (statement->optimize(scope))
+ *	     auto codes = statement->generate_codes();
+ */
+class Statement
 {
 public:
-	AST(Location const& loc);
+	Statement(Location const& loc);
 
-	// this function must be called before generate_codes()
-	virtual void check(ParserScope& scope) = 0;
+	/* This method MUST be called before optimize() and generate_codes().
+	 * 
+	 * The purpose of this method is to ensure the statement is correct for
+	 * optimizing and generating bytecodes. After this method is called, and if
+	 * there are no minor errors, then it is guaranteed for optimize() and
+	 * generate_codes() to work.
+	 * 
+	 * This method also initializes certain std::optional member variables,
+	 * such as variable id for the VariableInit statement.
+	 */
+	virtual void check(ParserScope& global_scope) = 0;
+	
+	/* Return true to keep the statement. Return false to delete the statement.
+	 * A statement should be deleted if it's redundant, for example unused
+	 * variables or loops that never run.
+	 * Sample Usage:
+	 *   if (!stmt->optimize(global_scope))
+	 *      remove stmt;
+	 */
+	virtual bool optimize(ParserScope& global_scope) = 0;
+	
 	virtual bytecodes_t generate_codes() const = 0;
 
 protected:
@@ -30,23 +58,30 @@ protected:
 };
 
 
-class VariableInit : public AST
+class VariableInit : public Statement
 {
 public:
 	VariableInit(
 		Location const& _loc,
 		std::string const& _name,
-		ValueType const& _type,
-		std::vector<std::optional<expr::expr_p>> const& _arr_sizes,
+		std::string const& _type,
+		std::vector<expr::expr_p> const& _arr_sizes,
 		expr::expr_p const& expr);
 
 	void check(ParserScope& scope) override;
+	bool optimize(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
+	bytecodes_t populate_array(expr::expr_p arr, int level) const;
+
+public:
 	std::string name;
-	ValueType type;
-	std::vector<std::optional<expr::expr_p>> arr_sizes;
+
+private:
+	std::string type;
+	ValueType var_type;
+	std::vector<expr::expr_p> arr_sizes;
 	expr::expr_p expr;
 
 	std::optional<bytecode_t> id;
@@ -54,7 +89,7 @@ private:
 };
 
 
-class VariableAssign : public AST
+class VariableAssign : public Statement
 {
 public:
 	VariableAssign(
@@ -64,6 +99,7 @@ public:
 		expr::expr_p const& _expr);
 
 	void check(ParserScope& scope) override;
+	bool optimize(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
@@ -76,43 +112,45 @@ private:
 };
 
 
-class Conditional : public AST
+class Conditional : public Statement
 {
 public:
 	Conditional(
 		Location const& _loc,
 		std::vector<
-			std::pair<std::shared_ptr<expr::Expression>, AST_Block>
+			std::pair<expr::expr_p, std::vector<stmt_p>>
 		> const& _conditionals);
 
 	void check(ParserScope& scope) override;
+	bool optimize(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
 	std::vector<
-		std::pair<std::shared_ptr<expr::Expression>, AST_Block>
+		std::pair<expr::expr_p, std::vector<stmt_p>>
 	> conditionals;
 };
 
 
-class While : public AST
+class While : public Statement
 {
 public:
 	While(
 		Location const& _loc,
 		expr::expr_p const& _cond,
-		AST_Block const& _block);
+		std::vector<stmt_p> const& _block);
 
 	void check(ParserScope& scope) override;
+	bool optimize(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
 	expr::expr_p cond_expr;
-	AST_Block block;
+	std::vector<stmt_p> block;
 };
 
 
-class For : public AST
+class For : public Statement
 {
 public:
 	// params:
@@ -121,9 +159,10 @@ public:
 		Location const& _loc,
 		VariableInit const& _var_init,
 		expr::expr_p const& _cond_expr,
-		AST_Block const& _block);
+		std::vector<stmt_p> const& _block);
 
 	void check(ParserScope& scope) override;
+	bool optimize(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
@@ -132,18 +171,18 @@ private:
 };
 
 
-class Function : public AST
+class Function : public Statement
 {
 public:
 	Function(
 		Location const& _loc,
 		std::string const& _name,
-		std::vector<std::string> const& _param_names,
-		std::vector<std::string> const& _param_types,
+		std::vector<std::pair<std::string, std::string>> const& _parameters,
 		std::string const& _rtn_type,
-		AST_Block const& _block);
+		std::vector<stmt_p> const& _block);
 
 	void check(ParserScope& scope) override;
+	bool optimize(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
@@ -151,14 +190,14 @@ private:
 	std::vector<std::string> param_names;
 	std::vector<ValueType> param_types;
 	std::optional<ValueType> rtn_type;
-	AST_Block block;
+	std::vector<stmt_p> block;
 
 	bytecode_t id;
 	std::vector<bytecode_t> param_ids;
 };
 
 
-class Return : public AST
+class Return : public Statement
 {
 public:
 	Return(
@@ -166,6 +205,7 @@ public:
 		expr::expr_p const& _expr);
 
 	void check(ParserScope& scope) override;
+	bool optimize(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
@@ -173,43 +213,51 @@ private:
 };
 
 
-class ArrayMethod : public AST
+class ArrayMethod : public Statement
 {
 public:
 	ArrayMethod(
 		Location const& _loc,
 		std::string const& _var_name,
+		std::string const& _assign_op,
 		std::vector<expr::expr_p> const& _subscripts,
 		expr::expr_p const& _assign_expr);
 
 	void check(ParserScope& scope) override;
+	bool optimize(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
 	std::string var_name;
+	std::string assign_op;
 	std::vector<expr::expr_p> subscripts;
 	expr::expr_p assign_expr;
 
 	std::optional<bytecode_t> id;
+	std::optional<ValueType> assign_type;
 };
 
 
 namespace expr {
 
-class FunctionCall : public AST, public expr::Expression
+class FunctionCall : public Statement, public expr::Expression
 {
 public:
 	FunctionCall(
 		Location const& _loc,
 		std::string const& _name,
-		std::vector<expr::expr_p> const& _arg_exprs);
+		std::vector<expr::expr_p> const& _arg_exprs,
+		std::optional<bytecode_t> const& _id = std::nullopt);
 
 	void insert_node(
-		expr::expr_p const& node,
-		expr::expr_p* prev = nullptr);
+		expr_p node,
+		expr_p* prev = nullptr);
 
 	void check(ParserScope& scope) override;
-	std::optional<ValueType> type_check(ParserScope const& scope) override;
+	std::optional<ValueType> type_check(ParserScope const& scope) noexcept override;
+	bool optimize(ParserScope& scope) override;
+	[[nodiscard]]
+	expr_p optimize(ParserScope const& scope) override;
 	bytecodes_t generate_codes() const override;
 
 	int precedence() const;

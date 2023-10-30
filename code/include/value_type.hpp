@@ -1,9 +1,10 @@
 #pragma once
 
+#include <deque>
 #include <optional>
 #include <string>
 
-constexpr short primitive_count = 3;
+using array_dim = std::deque<std::optional<std::size_t>>;
 
 struct ValueType
 {
@@ -11,29 +12,27 @@ struct ValueType
 		BOOL,
 		CHAR,
 		INT,
-		FLOAT,
-		STR
+		FLOAT
 	} type;
 
-	// dimension of the array
-	// elements of an array must be the same type, so for any n dimensional array,
-	//  we just need one type, which is the type of the very bottom element
-	int dim;
+	// If an array, dimension of the array. If std::optional is nullopt, then array can be any size.
+	array_dim dim;
+
+	bool is_arr() const;
+	bool is_str() const;
 
 	ValueType() = default;
-	ValueType(PrimType _type, int _dim = 0);
-	bool operator==(PrimType _type) const;
 
-	// is primitive (bool, char, int, float)
-	bool is_prim() const;
+	ValueType(std::string const& _type, array_dim const& _dim = {});
+	ValueType(PrimType _type, array_dim const& _dim = {});
+
+	bool operator==(PrimType _type) const;
 };
 
-// treats primitive types as the same
-// used to differentiate print() overloads
-bool compare_absolute_vt(ValueType const& vt1, ValueType const& vt2);
+inline ValueType const value_type_str = ValueType(ValueType::CHAR, { std::nullopt });
 
-// treats primitive types as different
-bool compare_relative_vt(ValueType const& vt1, ValueType const& vt2);
+bool is_same(ValueType const& vt1, ValueType const& vt2);
+bool is_same_or_primitive(ValueType const& vt1, ValueType const& vt2);
 
 namespace night
 {

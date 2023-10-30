@@ -1,49 +1,33 @@
 #include "parse_args.hpp"
-#include "parser.hpp"
-#include "parser_scope.hpp"
+#include "parser/statement_parser.hpp"
 #include "code_gen.hpp"
 #include "interpreter.hpp"
 #include "error.hpp"
-#include "debug.hpp"
 
 #include <iostream>
 #include <exception>
-#include <string>
-#include <vector>
 
 int main(int argc, char* argv[])
 {
-	std::vector<std::string_view> args(argv, argv + argc);
-	auto main_file = parse_args(args);
+	auto main_file = parse_args(argc, argv);
 
 	if (main_file.empty())
 		return 0;
 
 	try {
-		/* Parser */
-		// Calls the Lexer to get tokens, and
-		// then returns ASTs containing type and value information.
-		AST_Block ast_block = parse_file(main_file);
+		auto statements = parse_file(main_file);
 
-		/* Bytecode Generation */
-		// Each AST first correctness checks itself using its type information,
-		// and then it generates bytecodes using its value information.
-		bytecodes_t codes = code_gen(ast_block);
+		auto bytecodes = code_gen(statements);
 
-		// debugging
-		debug::log_codes(codes);
-
-		/* Interpreter */
-		// Interprets the bytecodes.
 		InterpreterScope scope;
-		interpret_bytecodes(scope, codes);
+		interpret_bytecodes(scope, bytecodes);
 	}
 	catch (night::error const& e) {
 		std::cout << e.what() << '\n';
 	}
 	catch (std::exception const& e) {
-		std::cout << "oops! we've come across and unexpected error!\n\n"
+		std::cout << "oops! we have come across an unexpected error!\n\n"
 				  << e.what() << "\n\n"
-				  << "please submit an issue on github: https://github.com/DynamicSquid/night\n";
+				  << "please submit an issue on github: https://github.com/alexapostolu/night\n";
 	}
 }

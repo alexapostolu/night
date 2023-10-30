@@ -1,4 +1,5 @@
 #include "parse_args.hpp"
+
 #include "error.hpp"
 #include "version.hpp"
 
@@ -6,29 +7,30 @@
 #include <vector>
 #include <string>
 
-std::string parse_args(std::vector<std::string_view> const& args)
+std::string parse_args(int argc, char* argv[])
 {
-	std::string more_info = "for more info, type:\n"
-							"    night --help\n\n";
+	std::string const more_info = "for more info, type:\n"
+								  "    night --help\n\n";
 
-	std::string help = "usage:\n"
-					   "    night <file>\n"
-					   "    night <file> <flag..>\n"
-					   "    night <option>\n"
-					   "flags:\n"
-					   "    -b           generates a bytecode file for each source file\n"
-					   "    -d           shows debug info for compiler source code (for developers)\n"
-					   "options:\n"
-					   "    --help       displays this message\n"
-					   "    --version    displays the version\n\n";
+	std::string const help = "usage:\n"
+							 "    night <file>\n"
+							 "    night <file> <flag..>\n"
+							 "    night <option>\n"
+							 "flags:\n"
+							 "    -d           shows debug info for compiler source code (for developers)\n"
+							 "options:\n"
+							 "    --help       displays this message\n"
+							 "    --version    displays the version\n\n";
 
-	if (args.size() == 1)
+	std::vector<std::string> args(argv, argv + argc);
+
+	if (argc == 1)
 	{
 		std::cout << "you need to type some arguments!\n\n" << more_info;
 		return "";
 	}
 
-	if (args.size() == 2 && args[1].find("--") == 0)
+	if (argc == 2 && args[1].find("--") == 0)
 	{
 		if (args[1] == "--help")
 		{

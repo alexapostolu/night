@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <vector>
 #include <utility>
+#include <memory>
 #include <optional>
 #include <string>
 
@@ -20,6 +21,10 @@ struct ParserVariable
 {
 	ValueType type;
 	bytecode_t id;
+	
+	// Keep track of the number of times used so we can eliminate variables
+	// that are never used in the optimizing stage.
+	int times_used;
 };
 
 struct ParserFunction
@@ -46,9 +51,12 @@ struct ParserScope
 		Location const& loc
 	);
 
+	ParserVariable const* get_var(std::string const& name);
+	bool is_var_used(std::string const& name) const;
+	void use(std::string const& name);
+
 	// returns func it if successful
 	// throws const char* if unsuccessful
-
 	static scope_func_container::iterator create_function(
 		std::string const& name,
 		std::vector<std::string> const& param_names,
@@ -56,15 +64,10 @@ struct ParserScope
 		std::optional<ValueType> const& rtn_type
 	);
 
-	void check_return_type(std::optional<ValueType> const& _rtn_type, Location const& loc) const;
-
-	std::optional<ValueType> const& get_curr_rtn_type() const;
-	void set_curr_rtn_type(std::optional<ValueType> const& _curr_rtn_type);
-
 	static scope_func_container funcs;
 
-	scope_var_container vars;
+	static bool inside_false_conditional;
 
-private:
+	scope_var_container vars;
 	std::optional<ValueType> rtn_type;
 };

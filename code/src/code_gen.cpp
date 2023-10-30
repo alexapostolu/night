@@ -1,14 +1,21 @@
 #include "code_gen.hpp"
-#include "bytecode.hpp"
-#include "ast/ast.hpp"
 
-bytecodes_t code_gen(AST_Block const& block)
+#include "ast/statement.hpp"
+#include "bytecode.hpp"
+
+bytecodes_t code_gen(std::vector<stmt_p>& block)
 {
 	ParserScope global_scope;
 	bytecodes_t codes;
 
-	for (auto const& ast : block)
+	for (auto& ast : block)
 		ast->check(global_scope);
+
+	if (night::error::get().has_minor_errors())
+		throw night::error::get();
+
+	for (auto& ast : block)
+		ast->optimize(global_scope);
 
 	if (night::error::get().has_minor_errors())
 		throw night::error::get();

@@ -37,6 +37,11 @@ public:
 		std::string const& msg, Location const& loc,
 		std::source_location const& s_loc = std::source_location::current()) noexcept;
 
+	[[nodiscard]]
+	error const& create_runtime_error(
+		std::string const& msg,
+		std::source_location const& s_loc = std::source_location::current()) noexcept;
+
 	bool has_minor_errors() const;
 
 public:

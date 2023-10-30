@@ -191,7 +191,6 @@ Token Lexer::eat_keyword()
 		{ "bool", TokenType::TYPE },
 		{ "int", TokenType::TYPE },
 		{ "float", TokenType::TYPE },
-		{ "str", TokenType::TYPE },
 		{ "if", TokenType::IF },
 		{ "elif", TokenType::ELIF },
 		{ "else", TokenType::ELSE },
@@ -245,11 +244,11 @@ Token Lexer::eat_number()
 Token Lexer::eat_symbol()
 {
 	static std::unordered_map<char, std::vector<std::pair<char, TokenType> > > const symbols{
-		{ '+', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },
-		{ '-', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },
-		{ '*', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },
-		{ '/', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },
-		{ '%', { { '=', TokenType::ASSIGN }, { '\0', TokenType::BINARY_OP } } },
+		{ '+', { { '=', TokenType::OPERATOR_ASSIGN }, { '\0', TokenType::BINARY_OP } } },
+		{ '-', { { '=', TokenType::OPERATOR_ASSIGN }, { '\0', TokenType::BINARY_OP } } },
+		{ '*', { { '=', TokenType::OPERATOR_ASSIGN }, { '\0', TokenType::BINARY_OP } } },
+		{ '/', { { '=', TokenType::OPERATOR_ASSIGN }, { '\0', TokenType::BINARY_OP } } },
+		{ '%', { { '=', TokenType::OPERATOR_ASSIGN }, { '\0', TokenType::BINARY_OP } } },
 
 		{ '>', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::BINARY_OP } } },
 		{ '<', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::BINARY_OP } } },
