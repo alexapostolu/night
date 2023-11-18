@@ -4,11 +4,11 @@
 #include <unordered_set>
 #include <string>
 
-bool check_variable_defined(ParserScope const& scope, std::string const& name, Location const& loc)
+bool check_variable_defined(ParserScope& scope, std::string const& name, Location const& loc)
 {
 	static std::unordered_set<std::string> undefined_variables;
 
-	if (!scope.vars.contains(name))
+	if (!scope.get_var(name))
 	{
 		if (!undefined_variables.contains(name))
 			night::error::get().create_minor_error("variable '" + name + "' is undefined", loc);

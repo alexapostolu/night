@@ -94,7 +94,8 @@ stmt_p parse_var(Lexer& lexer)
 		lexer.eat();
 		return ast;
 	}
-	case TokenType::ASSIGN: {
+	case TokenType::ASSIGN: 
+	case TokenType::ASSIGN_OPERATOR: {
 		lexer.eat();
 
 		auto const& ast = std::make_shared<VariableAssign>(parse_var_assign(lexer, var_name));
@@ -132,10 +133,7 @@ VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 
 	std::vector<expr::expr_p> arr_sizes;
 	while (lexer.eat().type == TokenType::OPEN_SQUARE)
-	{
-		arr_sizes.push_back(parse_expr(lexer, false));
-		lexer.curr_check(TokenType::CLOSE_SQUARE);
-	}
+		arr_sizes.push_back(parse_expr(lexer, false, TokenType::CLOSE_SQUARE));
 
 	// Determine the expression the variable is being assigned to, if any.
 
@@ -151,7 +149,8 @@ VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 
 VariableAssign parse_var_assign(Lexer& lexer, std::string const& var_name)
 {
-	assert(lexer.curr().type == TokenType::ASSIGN);
+	assert(lexer.curr().type == TokenType::ASSIGN ||
+		   lexer.curr().type == TokenType::ASSIGN_OPERATOR);
 
 	auto assign_operator = lexer.curr().str;
 	auto expression		 = parse_expr(lexer, true);
@@ -168,18 +167,12 @@ ArrayMethod parse_array_method(Lexer& lexer, std::string const& var_name)
 	std::vector<expr::expr_p> subscripts;
 
 	while (lexer.eat().type == TokenType::OPEN_SQUARE)
-	{
-		subscripts.push_back(parse_expr(lexer, true));
-		lexer.curr_check(TokenType::CLOSE_SQUARE);
-	}
+		subscripts.push_back(parse_expr(lexer, true, TokenType::CLOSE_SQUARE));
 
 	// Parse operator and expression.
 
-	lexer.curr_check(TokenType::ASSIGN);
-	auto assign_operator = lexer.curr().str;
-
-	auto assign_expr = parse_expr(lexer, true);
-	lexer.curr_check(TokenType::SEMICOLON);
+	auto assign_operator = lexer.curr_check(TokenType::ASSIGN).str;
+	auto assign_expr	 = parse_expr(lexer, true, TokenType::SEMICOLON);
 
 	lexer.eat();
 	return ArrayMethod(lexer.loc, var_name, assign_operator, subscripts, assign_expr);
@@ -216,7 +209,7 @@ Conditional parse_if(Lexer& lexer)
 {
 	assert(lexer.curr().type == TokenType::IF);
 
-	std::vector<std::pair<expr::expr_p, std::vector<stmt_p>>> conditionals;
+	conditional_container conditionals;
 
 	do {
 		// Default for else statements.
@@ -228,8 +221,7 @@ Conditional parse_if(Lexer& lexer)
 		{
 			lexer.expect(TokenType::OPEN_BRACKET);
 
-			cond_expr = parse_expr(lexer, true);
-			lexer.curr_check(TokenType::CLOSE_BRACKET);
+			cond_expr = parse_expr(lexer, true, TokenType::CLOSE_BRACKET);
 		}
 
 		// Parse body.
@@ -250,8 +242,7 @@ While parse_while(Lexer& lexer)
 	// Parse condition.
 	lexer.expect(TokenType::OPEN_BRACKET);
 
-	auto cond_expr = parse_expr(lexer, true);
-	lexer.curr_check(TokenType::CLOSE_BRACKET);
+	auto cond_expr = parse_expr(lexer, true, TokenType::CLOSE_BRACKET);
 
 	// Parse body.
 	lexer.eat();
@@ -273,8 +264,7 @@ For parse_for(Lexer& lexer)
 	
 	// Parse condition.
 
-	auto condition = parse_expr(lexer, true);
-	lexer.curr_check(TokenType::SEMICOLON);
+	auto condition = parse_expr(lexer, true, TokenType::SEMICOLON);
 
 	// Parse assignment.
 
@@ -344,10 +334,8 @@ Return parse_return(Lexer& lexer)
 {
 	assert(lexer.curr().type == TokenType::RETURN);
 
-	auto const& expr = parse_expr(lexer, false);
-	lexer.curr_check(TokenType::SEMICOLON);
+	auto const& expr = parse_expr(lexer, false, TokenType::SEMICOLON);
 
 	lexer.eat();
-
 	return Return(lexer.loc, expr);
 }

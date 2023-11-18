@@ -39,6 +39,7 @@ struct ParserFunction
 
 struct ParserScope
 {
+public:
 	ParserScope();
 	ParserScope(ParserScope const& upper_scope);
 	ParserScope(ParserScope const& upper_scope, std::optional<ValueType> const& _rtn_type);
@@ -53,7 +54,6 @@ struct ParserScope
 
 	ParserVariable const* get_var(std::string const& name);
 	bool is_var_used(std::string const& name) const;
-	void use(std::string const& name);
 
 	// returns func it if successful
 	// throws const char* if unsuccessful
@@ -68,6 +68,8 @@ struct ParserScope
 
 	static bool inside_false_conditional;
 
-	scope_var_container vars;
 	std::optional<ValueType> rtn_type;
+
+private:
+	scope_var_container vars;
 };

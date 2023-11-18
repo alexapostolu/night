@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <assert.h>
 
-expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
+expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty, std::optional<TokenType> const& end_token)
 {
 	// The root node of the expression.
 	expr::expr_p head(nullptr);
@@ -76,6 +76,9 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty)
 			if (err_on_empty && !head)
 				throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected expression");
 
+			if (end_token.has_value())
+				lexer.curr_check(*end_token);
+
 			return head;
 		}
 		}
@@ -126,7 +129,7 @@ expr::expr_p parse_subscript_or_array(Lexer& lexer, std::optional<TokenType> pre
 		auto index_expr = parse_expr(lexer, true);
 		lexer.curr_check(TokenType::CLOSE_SQUARE);
 
-		auto node = std::make_shared<expr::BinaryOp>(lexer.loc, expr::BinaryOpType::SUBSCRIPT);
+		auto node = std::make_shared<expr::BinaryOp>(lexer.loc, "[");
 		node->insert_node(index_expr);
 
 		return node;
@@ -170,7 +173,7 @@ expr::expr_p parse_subtract_or_negative(Lexer& lexer, std::optional<TokenType> p
 expr::expr_p parse_bracket(Lexer& lexer, bool err_on_empty)
 {
 	auto node = parse_expr(lexer, err_on_empty);
-	node->guard = true;
+	node->set_guard();
 
 	lexer.curr_check(TokenType::CLOSE_BRACKET);
 	

@@ -10,7 +10,7 @@ std::string night::to_str(TokenType type)
 	case TokenType::UNARY_OP: return "unary operator";
 	case TokenType::BINARY_OP: return "binary operator";
 	case TokenType::ASSIGN: return "assignment";
-	case TokenType::OPERATOR_ASSIGN: return "assignment";
+	case TokenType::ASSIGN_OPERATOR: return "assignment operator";
 	case TokenType::OPEN_BRACKET: return "open bracket";
 	case TokenType::CLOSE_BRACKET: return "close bracket";
 	case TokenType::OPEN_SQUARE: return "open square";

@@ -11,7 +11,11 @@
  *   start: first token of expression
  *   end: last token after expression
  */
-expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty);
+expr::expr_p parse_expr(
+	Lexer& lexer,
+	bool err_on_empty,
+	std::optional<TokenType> const& end_token = std::nullopt
+);
 
 expr::expr_p parse_string(Lexer& lexer);
 expr::expr_p parse_variable_or_call(Lexer& lexer);

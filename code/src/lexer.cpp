@@ -83,10 +83,12 @@ Token const& Lexer::expect(TokenType type, std::string const& err, std::source_l
 	return curr();
 }
 
-void Lexer::curr_check(TokenType type, std::source_location const& s_loc)
+Token const& Lexer::curr_check(TokenType type, std::source_location const& s_loc)
 {
 	if (curr().type != type)
 		throw night::error::get().create_fatal_error("found '" + night::to_str(curr_tok.type) + "', expected '" + night::to_str(type) + "'", loc, s_loc);
+
+	return curr();
 }
 
 void Lexer::scan_code(std::string const& code)
@@ -244,11 +246,11 @@ Token Lexer::eat_number()
 Token Lexer::eat_symbol()
 {
 	static std::unordered_map<char, std::vector<std::pair<char, TokenType> > > const symbols{
-		{ '+', { { '=', TokenType::OPERATOR_ASSIGN }, { '\0', TokenType::BINARY_OP } } },
-		{ '-', { { '=', TokenType::OPERATOR_ASSIGN }, { '\0', TokenType::BINARY_OP } } },
-		{ '*', { { '=', TokenType::OPERATOR_ASSIGN }, { '\0', TokenType::BINARY_OP } } },
-		{ '/', { { '=', TokenType::OPERATOR_ASSIGN }, { '\0', TokenType::BINARY_OP } } },
-		{ '%', { { '=', TokenType::OPERATOR_ASSIGN }, { '\0', TokenType::BINARY_OP } } },
+		{ '+', { { '=', TokenType::ASSIGN_OPERATOR }, { '\0', TokenType::BINARY_OP } } },
+		{ '-', { { '=', TokenType::ASSIGN_OPERATOR }, { '\0', TokenType::BINARY_OP } } },
+		{ '*', { { '=', TokenType::ASSIGN_OPERATOR }, { '\0', TokenType::BINARY_OP } } },
+		{ '/', { { '=', TokenType::ASSIGN_OPERATOR }, { '\0', TokenType::BINARY_OP } } },
+		{ '%', { { '=', TokenType::ASSIGN_OPERATOR }, { '\0', TokenType::BINARY_OP } } },
 
 		{ '>', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::BINARY_OP } } },
 		{ '<', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::BINARY_OP } } },

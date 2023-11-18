@@ -22,7 +22,7 @@ struct Value
 	Value(int64_t _i);
 	Value(uint64_t _ui);
 	Value(double _d);
-	Value(char* _d);
+	Value(char* _s);
 	Value(Value* _a);
 	Value(Value const& _v);
 };

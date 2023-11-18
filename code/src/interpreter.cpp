@@ -242,10 +242,8 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			case 1: std::cout << (char)pop(s).as.i; break;
 			case 2: std::cout << pop(s).as.i; break;
 			case 3: std::cout << pop(s).as.d; break;
-			case 4: std::cout << pop(s).as.s; break;
-			case 5:
-				s.emplace(night_get_line());
-				break;
+			case 4: printf("%s", pop(s).as.s); break;
+			case 5: { char* str = new char[100]; scanf("%s", str); s.emplace(str); }; break;
 			case 6: break; // char(int); can not remove bytecode because of char(2 + 3) => 2 + 3, and now we have 2, 3, + on the stack that does nothing
 			case 7: {
 				s.emplace((int64_t)std::stoll(pop(s).as.s));
@@ -340,8 +338,17 @@ void push_arr(std::stack<intpr::Value>& s)
 	auto size = pop(s).as.i;
 
 	intpr::Value* arr = new intpr::Value[size];
+
 	for (auto i = 0; i < size; ++i)
-		arr[i] = pop(s);
+	{
+		if (s.empty())
+		{
+			arr[i] = intpr::Value();
+			arr[i].as.a = nullptr;
+		}
+		else
+			arr[i] = pop(s);
+	}
 
 	s.push(arr);
 }
@@ -365,41 +372,4 @@ intpr::Value pop(std::stack<intpr::Value>& s)
 	s.pop();
 
 	return val;
-}
-
-char* night_get_line()
-{
-	char* line = (char*)malloc(100), * linep = line;
-	size_t lenmax = 100, len = lenmax;
-	int c;
-
-	if (line == NULL)
-		return NULL;
-
-	for (;;) {
-		c = fgetc(stdin);
-		if (c == EOF)
-			break;
-
-		if (--len == 0)
-		{
-			len = lenmax;
-			char* linen = (char*)realloc(linep, lenmax *= 2);
-
-			if (linen == NULL)
-			{
-				free(linep);
-				return NULL;
-			}
-
-			line = linen + (line - linep);
-			linep = linen;
-		}
-
-		if ((*line++ = c) == '\n')
-			break;
-	}
-
-	*line = '\0';
-	return linep;
 }

@@ -12,6 +12,7 @@
 #include <memory>
 #include <assert.h>
 
+
 Statement::Statement(Location const& _loc)
 	: loc(_loc) {}
 
@@ -22,28 +23,29 @@ VariableInit::VariableInit(
 	std::string const& _type,
 	std::vector<expr::expr_p> const& _arr_sizes,
 	expr::expr_p const& _expr)
-	: Statement(_loc), name(_name), type(_type), arr_sizes(_arr_sizes), expr(_expr) {}
+	: Statement(_loc), name(_name), type(_type), arr_sizes(_arr_sizes)
+	, expr(_expr) {}
 
 void VariableInit::check(ParserScope& scope)
 {
-	// Process
-	//   1. Determine the type of the variable.
-	//   2. Determine the type of the expression.
-	//   3. If there are minor errors, return.
-	//   4. Compare variable and expression types.
-
-	id = scope.create_variable(name, type, loc);
+	/* Process
+	 *   1. Determine the type of the variable.
+	 *   2. Determine the type of the expression.
+	 *   3. If there are minor errors, return.
+	 *   4. Compare variable and expression types.
+	 */
 
 	// Determine type of variable.
 
 	array_dim dimensions;
-	for (auto const& arr_size : arr_sizes)
+	for (auto& arr_size : arr_sizes)
 	{
-		// For each array size:
-		//   1. If null, add std::nullopt.
-		//   2. Type check, skip if null type, and create error if not a primitive.
-		//   3. Optimize, create error if not numeric.
-		//   4. If no minor errors, push numeric into 'dimensions'
+		/* For each array size:
+		 *   1. If null, add std::nullopt.
+		 *   2. Type check, skip if null type, and create error if not a primitive.
+		 *   3. Optimize.
+		 *   4. If no minor errors, push numeric into 'dimensions'
+		 */
 
 		// Check null
 
@@ -67,29 +69,31 @@ void VariableInit::check(ParserScope& scope)
 
 		// Optimize
 
-		auto arr_size_optimize = arr_size->optimize(scope);
-		auto arr_size_numeric = std::dynamic_pointer_cast<expr::Numeric>(arr_size_optimize);
+		arr_size = arr_size->optimize(scope);
 
-		if (!arr_size_numeric)
-			night::error::get().create_minor_error(
-				"array size must evaluate to a numeric constant", loc);
+		//auto arr_size_optimize = arr_size->optimize(scope);
+		//auto arr_size_numeric = std::dynamic_pointer_cast<expr::Numeric>(arr_size_optimize);
 
-		// If type is ok and evaluates to a numeric constant
+		//if (!arr_size_numeric)
+		//	night::error::get().create_minor_error(
+		//		"array size must evaluate to a numeric constant", loc);
 
-		if (!night::error::get().has_minor_errors())
-			std::visit([&dimensions](auto&& arg)
-				{ dimensions.push_back((std::size_t)arg); },
-				arr_size_numeric->val);
+		//// If type is ok
+
+		//if (!night::error::get().has_minor_errors())
+		//	std::visit([&dimensions](auto&& arg)
+		//		{ dimensions.push_back((std::size_t)arg); },
+		//		arr_size_numeric->val);
 	}
 
 	var_type = ValueType(type, dimensions);
+	id = scope.create_variable(name, var_type, loc);
 
 	// Determine type of expression.
 
-	if (expr)
-		expr_type = expr->type_check(scope);
-	else
-		expr_type = std::nullopt;
+	expr_type = expr 
+				? expr->type_check(scope)
+				: std::nullopt;
 
 	// Return if there are minor errors.
 
@@ -108,6 +112,17 @@ void VariableInit::check(ParserScope& scope)
 
 bool VariableInit::optimize(ParserScope& scope)
 {
+	/* Process
+	 *   1. If variable is never used, return false, else,
+	 *   2. Optimize expression if it exists.
+	 * 
+	 * Note: Array sizes have already been optimized in check(), so there is no
+	 * need to optimize them here.
+	 */
+
+	if (!scope.is_var_used(name))
+		return false;
+
 	if (expr)
 		expr = expr->optimize(scope);
 
@@ -120,7 +135,9 @@ bytecodes_t VariableInit::generate_codes() const
 
 	// Populate expression array
 
-	bytecodes_t codes = populate_array(expr, 0);
+	//bytecodes_t codes = populate_array(expr, 0);
+
+	bytecodes_t codes;
 
 	if (var_type == ValueType::BOOL && expr_type == ValueType::FLOAT)
 		codes.push_back((bytecode_t)BytecodeType::F2B);
@@ -174,6 +191,7 @@ bytecodes_t VariableInit::populate_array(expr::expr_p expr, int level) const
 
 	int actual_elements   = arr->elements.size();
 	int expected_elements = actual_elements;
+
 	if (var_type.dim[level].has_value())
 		expected_elements = *var_type.dim[level];
 
@@ -217,7 +235,8 @@ VariableAssign::VariableAssign(
 	std::string const& _var_name,
 	std::string const& _assign_op,
 	expr::expr_p const& _expr)
-	: Statement(_loc), var_name(_var_name), assign_op(_assign_op), expr(_expr), assign_type(std::nullopt), id(std::nullopt) {}
+	: Statement(_loc), var_name(_var_name), assign_op(_assign_op), expr(_expr)
+	, assign_type(std::nullopt), id(std::nullopt) {}
 
 void VariableAssign::check(ParserScope& scope)
 {
@@ -247,8 +266,6 @@ void VariableAssign::check(ParserScope& scope)
 
 bool VariableAssign::optimize(ParserScope& scope)
 {
-	scope.use(var_name);
-
 	expr = expr->optimize(scope);
 	return true;
 }
@@ -313,7 +330,7 @@ bytecodes_t VariableAssign::generate_codes() const
 
 Conditional::Conditional(
 	Location const& _loc,
-	std::vector<std::pair<expr::expr_p, std::vector<stmt_p>> > const& _conditionals)
+	conditional_container const& _conditionals)
 	: Statement(_loc), conditionals(_conditionals) {}
 
 void Conditional::check(ParserScope& scope)
@@ -642,7 +659,6 @@ void ArrayMethod::check(ParserScope& scope)
 	if (assign_expr)
 	{
 		assign_type = assign_expr->type_check(scope);
-
 	}
 
 	id = var->id;
@@ -734,7 +750,7 @@ expr::FunctionCall::FunctionCall(
 	std::string const& _name,
 	std::vector<expr::expr_p> const& _arg_exprs,
 	std::optional<bytecode_t> const& _id)
-	: Statement(_loc), Expression(_loc, expr::ExpressionType::FUNCTION_CALL), name(_name), arg_exprs(_arg_exprs), id(_id), is_expr(true) {}
+	: Statement(_loc), Expression(_loc, Expression::single_precedence), name(_name), arg_exprs(_arg_exprs), id(_id), is_expr(true) {}
 
 void expr::FunctionCall::insert_node(
 	expr::expr_p node,
@@ -750,7 +766,7 @@ void expr::FunctionCall::check(ParserScope& scope)
 	this->type_check(scope);
 }
 
-std::optional<ValueType> expr::FunctionCall::type_check(ParserScope const& scope) noexcept
+std::optional<ValueType> expr::FunctionCall::type_check(ParserScope& scope) noexcept
 {
 	auto [func, range_end] = ParserScope::funcs.equal_range(name);
 
@@ -839,9 +855,4 @@ bytecodes_t expr::FunctionCall::generate_codes() const
 	codes.push_back(*id);
 
 	return codes;
-}
-
-int expr::FunctionCall::precedence() const
-{
-	return single_prec;
 }

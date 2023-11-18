@@ -18,33 +18,55 @@ class Expression;
 using expr_p = std::shared_ptr<Expression>;
 
 
-enum class ExpressionType
-{
-	BINARY_OP,
-	UNARY_OP,
-	FUNCTION_CALL,
-	VARIABLE,
-	ARRAY,
-	LITERAL,
-};
-
+/*
+ * Each Expression needs to do four things in order,
+ *   1. Insert node for expression parsing
+ *   2. Type check its children and itself
+ *   3. Optimize its children and itself
+ *   4. Generate bytecodes
+ */
 class Expression
 {
 public:
+	/*
+	 * Parameters:
+	 *   _loc Location of error messages used in optimize() and generate_codes()
+	 */
 	Expression(
 		Location const& _loc,
-		ExpressionType _type);
+		int _precedence_ = 0
+	);
 
+	/* Inserts a node into the AST. There are three cases:
+	 *   1. Node needs to be inserted in the current position.
+	 *      In this case, 'prev' will be assigned to the node, and then the node
+	 *        will be assigned to the current position.
+	 *   2. Node needs to be inserted as a child.
+	 *      In this case, the 'node' will be appropriately inserted as a child node.
+	 *   3. Node needs to be inserted further down the AST.
+	 *      In this case, the 'node' will be passed down to the children using
+	 *        this->child.insert(node).
+	 *
+	 * Parameters:
+	 *   node  The new node to be inserted into the AST.
+	 *   prev  The connection between the higher node and this. It is nullptr if
+	 *             this is the head node.
+	 */
 	virtual void insert_node(
 		expr_p node,
-		expr_p* prev = nullptr) = 0;
+		expr_p* prev = nullptr
+	) = 0;
+
+	int precedence() const;
+	void set_guard();
 
 	/* Returns the type of the expression. If std::nullopt is returned, then
 	 * type_check() has failed and at least one minor error has been created.
 	 * No fatal errors should be thrown here.
 	 */
 	virtual std::optional<ValueType> type_check(
-		ParserScope const& scope) noexcept = 0;
+		ParserScope& scope
+	) noexcept = 0;
 
 	/* Evaluates constant expressions and returns the new expression. Leaves
 	 * non-constant expressions unchanged.
@@ -53,23 +75,18 @@ public:
 	 */
 	[[nodiscard]]
 	virtual expr_p optimize(
-		ParserScope const& scope) = 0;
+		ParserScope const& scope
+	) = 0;
 	
 	virtual bytecodes_t generate_codes() const = 0;
 
-	virtual int precedence() const = 0;
-
-public:
-	ExpressionType type;
-	bool guard;
-
 protected:
-	Location loc;
+	constexpr static int single_precedence = 10;
+	constexpr static int unary_precedence = 100;
+	constexpr static int binary_precedence = 1000;
 
-	static int subscript_prec;
-	static int unary_op_prec;
-	static int bin_op_prec;
-	static int single_prec;
+	Location loc;
+	int precedence_;
 };
 
 
@@ -83,28 +100,21 @@ struct UnaryOp : public Expression
 public:
 	UnaryOp(
 		Location const& _loc,
-		std::string const& _op_type,
-		expr_p const& _expr = nullptr,
-		std::optional<BytecodeType> const& _op_code = std::nullopt);
+		std::string const& _operator);
 
 	UnaryOp(
-		Location const& _loc,
-		UnaryOpType _type,
-		expr_p const& _expr = nullptr,
-		std::optional<BytecodeType> const& _op_code = std::nullopt);
+		UnaryOp const& other);
 
 	void insert_node(
 		expr_p node,
 		expr_p* prev = nullptr) override;
 
-	std::optional<ValueType> type_check(ParserScope const& scope) noexcept override;
+	std::optional<ValueType> type_check(ParserScope& scope) noexcept override;
 
 	[[nodiscard]]
 	expr_p optimize(ParserScope const& scope) override;
 	
 	bytecodes_t generate_codes() const;
-
-	int precedence() const override;
 
 private:
 	UnaryOpType op_type;
@@ -129,33 +139,20 @@ class BinaryOp : public Expression
 public:
 	BinaryOp(
 		Location const& _loc,
-		std::string const& _type,
-		expr_p const& _lhs = nullptr,
-		expr_p const& _rhs = nullptr,
-		std::optional<BytecodeType> const& _cast_lhs = std::nullopt,
-		std::optional<BytecodeType> const& _cast_rhs = std::nullopt,
-		BytecodeType const& _op_code = (BytecodeType)0);
+		std::string const& _operator
+	);
 
 	BinaryOp(
-		Location const& _loc,
-		BinaryOpType _op_type,
-		expr_p const& _lhs = nullptr,
-		expr_p const& _rhs = nullptr,
-		std::optional<BytecodeType> const& _cast_lhs = std::nullopt,
-		std::optional<BytecodeType> const& _cast_rhs = std::nullopt,
-		BytecodeType const& _op_code = (BytecodeType)0);
+		BinaryOp const& other
+	);
 
 	void insert_node(
 		expr_p node,
 		expr_p* prev = nullptr) override;
 
-	std::optional<ValueType> type_check(
-		ParserScope const& scope) noexcept override;
+	std::optional<ValueType> type_check(ParserScope& scope) noexcept override;
 	expr_p optimize(ParserScope const& scope) override;
 	bytecodes_t generate_codes() const override;
-
-public:
-	int precedence() const override;
 
 private:
 	BinaryOpType op_type;
@@ -178,15 +175,12 @@ public:
 		expr_p node,
 		expr_p* prev = nullptr) override;
 
-	std::optional<ValueType> type_check(
-		ParserScope const& scope) noexcept override;
+	std::optional<ValueType> type_check(ParserScope& scope) noexcept override;
 
 	[[nodiscard]]
 	expr_p optimize(ParserScope const& scope) override;
 	
 	bytecodes_t generate_codes() const override;
-
-	int precedence() const override;
 
 private:
 	std::string name;
@@ -209,15 +203,12 @@ public:
 		expr_p node,
 		expr_p* prev = nullptr) override;
 
-	std::optional<ValueType> type_check(
-		ParserScope const& scope) noexcept override;
+	std::optional<ValueType> type_check(ParserScope& scope) noexcept override;
 
 	[[nodiscard]]
 	expr_p optimize(ParserScope const& scope) override;
 
 	bytecodes_t generate_codes() const override;
-
-	int precedence() const override;
 
 	bool is_str() const;
 
@@ -248,16 +239,13 @@ public:
 		expr_p node,
 		expr_p* prev = nullptr) override;
 
-	std::optional<ValueType> type_check(
-		ParserScope const& scope) noexcept override;
+	std::optional<ValueType> type_check(ParserScope& scope) noexcept override;
 
 	[[nodiscard]]
 	expr_p optimize(
 		ParserScope const& scope) override;
 	
 	bytecodes_t generate_codes() const override;
-
-	int precedence() const override;
 
 	bool is_true() const;
 

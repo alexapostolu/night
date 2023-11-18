@@ -31,8 +31,16 @@ bool is_same(ValueType const& vt1, ValueType const& vt2)
 
 	for (auto i = 0; i < vt1.dim.size(); ++i)
 	{
-		if ((!vt1.dim[i].has_value() && !vt2.dim[i].has_value()) ||
-			(vt1.dim[i] != vt2.dim[i]))
+		// In the past, we had the following code, however, we decided to
+		// remove it because `input()` is of unknown size, and you are
+		// likely to assign `input()` to an array of unspecified size. And I
+		// can not think of any other scenario of two arrays with unspecified
+		// sizes, so I think its fine if we omit that if statement.
+		//
+		// if (!vt1.dim[i].has_value() && !vt2.dim[i].has_value())
+		//     return false;
+		//
+		if (vt1.dim[i].has_value() && vt2.dim[i].has_value() && vt1.dim[i] != vt2.dim[i])
 			return false;
 	}
 
@@ -59,6 +67,9 @@ bool is_same_or_primitive(ValueType const& vt1, ValueType const& vt2)
 
 std::string night::to_str(ValueType const& vt)
 {
+	if (vt.type == ValueType::CHAR && vt.dim.size() == 1)
+		return "string";
+
 	std::string type_s;
 	switch (vt.type)
 	{

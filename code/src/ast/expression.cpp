@@ -16,32 +16,34 @@
 #include <assert.h>
 
 expr::Expression::Expression(
-	Location const& _loc, expr::ExpressionType _type)
-	: guard(false), type(_type), loc(_loc) {}
+	Location const& _loc, int _precedence_)
+	: loc(_loc), precedence_(_precedence_) {}
 
-int expr::Expression::bin_op_prec    = 10;
-int expr::Expression::unary_op_prec  = 100;
-int expr::Expression::single_prec	 = 1000;
+int expr::Expression::precedence() const
+{
+	return precedence_;
+}
+
+void expr::Expression::set_guard()
+{
+	precedence_ = 1000;
+}
 
 
 expr::UnaryOp::UnaryOp(
 	Location const& _loc,
-	std::string const& _op_type,
-	expr::expr_p const& _expr,
-	std::optional<BytecodeType> const& _op_code)
-	: Expression(_loc, ExpressionType::UNARY_OP), expr(_expr), op_code(_op_code)
+	std::string const& _operator)
+	: Expression(_loc, Expression::unary_precedence), expr(nullptr)
 {
-	if		(_op_type == "-") op_type = UnaryOpType::NEGATIVE;
-	else if (_op_type == "!") op_type = UnaryOpType::NOT;
-	else throw debug::unhandled_case(_op_type);
+	if (_operator == "-")	   op_type = UnaryOpType::NEGATIVE;
+	else if (_operator == "!") op_type = UnaryOpType::NOT;
+	else throw debug::unhandled_case(_operator);
 }
 
 expr::UnaryOp::UnaryOp(
-	Location const& _loc,
-	UnaryOpType _type,
-	expr::expr_p const& _expr,
-	std::optional<BytecodeType> const& _op_code)
-	: Expression(_loc, ExpressionType::UNARY_OP), op_type(_type), expr(_expr), op_code(_op_code) {}
+	UnaryOp const& other)
+	: Expression(other.loc, other.precedence_), op_type(other.op_type)
+	, expr(other.expr), op_code(other.op_code) {}
 
 void expr::UnaryOp::insert_node(
 	expr::expr_p node,
@@ -57,12 +59,13 @@ void expr::UnaryOp::insert_node(
 	}
 	else
 	{
-		node->insert_node(std::make_shared<UnaryOp>(loc, op_type, expr, op_code));
+		node->insert_node(std::make_shared<UnaryOp>(*this));
 		*prev = node;
 	}
 }
 
-std::optional<ValueType> expr::UnaryOp::type_check(ParserScope const& scope) noexcept
+std::optional<ValueType> expr::UnaryOp::type_check(
+	ParserScope& scope) noexcept
 {
 	assert(expr);
 
@@ -108,7 +111,8 @@ std::optional<ValueType> expr::UnaryOp::type_check(ParserScope const& scope) noe
 	}
 }
 
-expr::expr_p expr::UnaryOp::optimize(ParserScope const& scope)
+expr::expr_p expr::UnaryOp::optimize(
+	ParserScope const& scope)
 {
 	assert(expr);
 
@@ -117,7 +121,7 @@ expr::expr_p expr::UnaryOp::optimize(ParserScope const& scope)
 	auto num = std::dynamic_pointer_cast<Numeric>(expr);
 
 	if (!num)
-		return std::make_shared<UnaryOp>(loc, op_type, expr, op_code);
+		return std::make_shared<UnaryOp>(*this);
 
 	switch (op_type)
 	{
@@ -133,7 +137,7 @@ expr::expr_p expr::UnaryOp::optimize(ParserScope const& scope)
 		std::visit([](auto&& arg) { arg = !arg; }, num->val);
 		break;
 
-	default: throw debug::unhandled_case((int)type);
+	default: throw debug::unhandled_case((int)op_type);
 	}
 
 	return num;
@@ -147,58 +151,42 @@ bytecodes_t expr::UnaryOp::generate_codes() const
 	return codes;
 }
 
-int expr::UnaryOp::precedence() const
-{
-	if (guard)
-		return single_prec;
-
-	switch (op_type)
-	{
-	case UnaryOpType::NOT:
-	case UnaryOpType::NEGATIVE:
-		return unary_op_prec + 1;
-	default:
-		throw debug::unhandled_case((int)type);
-	}
-}
-
 
 expr::BinaryOp::BinaryOp(
 	Location const& _loc,
-	std::string const& _op_type,
-	expr::expr_p const& _lhs,
-	expr::expr_p const& _rhs,
-	std::optional<BytecodeType> const& _cast_lhs,
-	std::optional<BytecodeType> const& _cast_rhs,
-	BytecodeType const& _op_code)
-	: Expression(_loc, ExpressionType::BINARY_OP), lhs(_lhs), rhs(_rhs), cast_lhs(_cast_lhs), cast_rhs(_cast_rhs), op_code(_op_code)
+	std::string const& _operator)
+	: Expression(loc)
 {
-	if (_op_type == "+")	   op_type = BinaryOpType::ADD;
-	else if (_op_type == "-")  op_type = BinaryOpType::SUB;
-	else if (_op_type == "*")  op_type = BinaryOpType::MULT;
-	else if (_op_type == "/")  op_type = BinaryOpType::DIV;
-	else if (_op_type == "%")  op_type = BinaryOpType::MOD;
-	else if (_op_type == "<")  op_type = BinaryOpType::LESSER;
-	else if (_op_type == ">")  op_type = BinaryOpType::GREATER;
-	else if (_op_type == "<=") op_type = BinaryOpType::LESSER_EQUALS;
-	else if (_op_type == ">=") op_type = BinaryOpType::GREATER_EQUALS;
-	else if (_op_type == "==") op_type = BinaryOpType::EQUALS;
-	else if (_op_type == "!=") op_type = BinaryOpType::NOT_EQUALS;
-	else if (_op_type == "&&") op_type = BinaryOpType::AND;
-	else if (_op_type == "||") op_type = BinaryOpType::OR;
-	else if (_op_type == "[")  op_type = BinaryOpType::SUBSCRIPT;
-	else throw debug::unhandled_case(_op_type);
+	static std::unordered_map<std::string, std::tuple<int, BinaryOpType>> binary_operator_map{
+		{ "&&", std::make_tuple(1, BinaryOpType::AND) },
+		{ "||", std::make_tuple(1, BinaryOpType::OR) },
+		{ "==", std::make_tuple(2, BinaryOpType::EQUALS) },
+		{ "!=", std::make_tuple(2, BinaryOpType::NOT_EQUALS) },
+		{ "<", std::make_tuple(3, BinaryOpType::LESSER) },
+		{ "<=", std::make_tuple(3, BinaryOpType::LESSER_EQUALS) },
+		{ ">", std::make_tuple(3, BinaryOpType::GREATER) },
+		{ ">=", std::make_tuple(3, BinaryOpType::GREATER_EQUALS) },
+		{ "+", std::make_tuple(4, BinaryOpType::ADD) },
+		{ "-", std::make_tuple(4, BinaryOpType::SUB) },
+		{ "*", std::make_tuple(5, BinaryOpType::MULT) },
+		{ "/", std::make_tuple(5, BinaryOpType::DIV) },
+		{ "%", std::make_tuple(5, BinaryOpType::MOD) },
+		{ "[", std::make_tuple(6, BinaryOpType::SUBSCRIPT) }
+	};
+
+	assert(binary_operator_map.contains(_operator));
+
+	precedence_ = Expression::binary_precedence + std::get<int>(binary_operator_map[_operator]);
+	op_type	= std::get<BinaryOpType>(binary_operator_map[_operator]);
 }
 
 expr::BinaryOp::BinaryOp(
-	Location const& _loc,
-	BinaryOpType _op_type,
-	expr::expr_p const& _lhs,
-	expr::expr_p const& _rhs,
-	std::optional<BytecodeType> const& _cast_lhs,
-	std::optional<BytecodeType> const& _cast_rhs,
-	BytecodeType const& _op_code)
-	: Expression(_loc, ExpressionType::BINARY_OP), op_type(_op_type), lhs(_lhs), rhs(_rhs), cast_lhs(_cast_lhs), cast_rhs(_cast_rhs) {}
+	BinaryOp const& other)
+	: Expression(other.loc, other.precedence_), lhs(other.lhs), rhs(other.rhs)
+	, cast_lhs(other.cast_lhs), cast_rhs(other.cast_rhs), op_code(other.op_code)
+{
+
+}
 
 void expr::BinaryOp::insert_node(
 	expr::expr_p node,
@@ -218,12 +206,12 @@ void expr::BinaryOp::insert_node(
 	}
 	else
 	{
-		node->insert_node(std::make_shared<BinaryOp>(loc, op_type, lhs, rhs));
+		node->insert_node(std::make_shared<BinaryOp>(*this));
 		*prev = node;
 	}
 }
 
-std::optional<ValueType> expr::BinaryOp::type_check(ParserScope const& scope) noexcept
+std::optional<ValueType> expr::BinaryOp::type_check(ParserScope& scope) noexcept
 {
 	// Operations where strings are supported are handled seperately in the
 	// switch statement.
@@ -378,7 +366,7 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope const& scope) no
 		break;
 
 	default:
-		throw debug::unhandled_case((int)type);
+		throw debug::unhandled_case((int)op_type);
 	}
 
 	night::error::get().create_minor_error("type mismatch between '" + night::to_str(*lhs_type) + "' and '" + night::to_str(*rhs_type) + "'", loc);
@@ -412,7 +400,7 @@ expr::expr_p expr::BinaryOp::optimize(ParserScope const& scope)
 	auto rhs_lit = std::dynamic_pointer_cast<Numeric>(rhs);
 
 	if (!lhs_lit || !rhs_lit)
-		return std::make_shared<BinaryOp>(loc, op_type, lhs, rhs, cast_lhs, cast_rhs, op_code);
+		return std::make_shared<BinaryOp>(*this);
 
 	auto op = [&loc = this->loc, &lhs_lit, &rhs_lit](bool is_bool, auto eval) -> std::shared_ptr<Numeric> {
 		if (std::holds_alternative<double>(lhs_lit->val) || std::holds_alternative<double>(rhs_lit->val))
@@ -446,7 +434,7 @@ expr::expr_p expr::BinaryOp::optimize(ParserScope const& scope)
 	case BinaryOpType::OR:			   return op(true, [](auto p1, auto p2) { return (int64_t)(p1 || p2); });
 	}
 
-	return std::make_shared<BinaryOp>(loc, op_type, lhs, rhs, cast_lhs, cast_rhs, op_code);
+	return std::make_shared<BinaryOp>(*this);
 }
 
 bytecodes_t expr::BinaryOp::generate_codes() const
@@ -470,44 +458,12 @@ bytecodes_t expr::BinaryOp::generate_codes() const
 	return codes;
 }
 
-int expr::BinaryOp::precedence() const
-{
-	if (guard)
-		return single_prec;
-
-	switch (op_type)
-	{
-	case BinaryOpType::AND:
-	case BinaryOpType::OR:
-		return bin_op_prec + 1;
-	case BinaryOpType::EQUALS:
-	case BinaryOpType::NOT_EQUALS:
-		return bin_op_prec + 2;
-	case BinaryOpType::LESSER:
-	case BinaryOpType::GREATER:
-	case BinaryOpType::LESSER_EQUALS:
-	case BinaryOpType::GREATER_EQUALS:
-		return bin_op_prec + 3;
-	case BinaryOpType::ADD:
-	case BinaryOpType::SUB:
-		return bin_op_prec + 4;
-	case BinaryOpType::MULT:
-	case BinaryOpType::DIV:
-	case BinaryOpType::MOD:
-		return bin_op_prec + 5;
-	case BinaryOpType::SUBSCRIPT:
-		return bin_op_prec + 6;
-	default:
-		throw debug::unhandled_case((int)type);
-	}
-}
-
 
 expr::Variable::Variable(
 	Location const& _loc,
 	std::string const& _name,
 	std::optional<bytecode_t> const& _id)
-	: Expression(_loc, ExpressionType::VARIABLE), name(_name), id(_id) {}
+	: Expression(_loc, Expression::single_precedence), name(_name), id(_id) {}
 
 void expr::Variable::insert_node(
 	expr::expr_p node,
@@ -517,13 +473,13 @@ void expr::Variable::insert_node(
 	*prev = node;
 }
 
-std::optional<ValueType> expr::Variable::type_check(ParserScope const& scope) noexcept
+std::optional<ValueType> expr::Variable::type_check(ParserScope& scope) noexcept
 {
 	if (!check_variable_defined(scope, name, loc))
 		return std::nullopt;
 
-	id = scope.vars.at(name).id;
-	return scope.vars.at(name).type;
+	id = scope.get_var(name)->id;
+	return scope.get_var(name)->type;
 }
 
 expr::expr_p expr::Variable::optimize(ParserScope const& scope)
@@ -537,11 +493,6 @@ bytecodes_t expr::Variable::generate_codes() const
 	return { (bytecode_t)BytecodeType::LOAD, *id };
 }
 
-int expr::Variable::precedence() const
-{
-	return single_prec;
-}
-
 
 expr::Array::Array(
 	Location const& _loc,
@@ -549,7 +500,7 @@ expr::Array::Array(
 	bool _is_str_,
 	std::optional<ValueType> const& _type_convert,
 	std::vector<std::optional<BytecodeType>> const& _type_conversion)
-	: Expression(_loc, ExpressionType::ARRAY), elements(_elements), is_str_(_is_str_), type_convert(_type_convert), type_conversion(_type_conversion) {}
+	: Expression(_loc, Expression::single_precedence), elements(_elements), is_str_(_is_str_), type_convert(_type_convert), type_conversion(_type_conversion) {}
 
 void expr::Array::insert_node(
 	expr_p node,
@@ -559,7 +510,7 @@ void expr::Array::insert_node(
 	*prev = node;
 }
 
-std::optional<ValueType> expr::Array::type_check(ParserScope const& scope) noexcept
+std::optional<ValueType> expr::Array::type_check(ParserScope& scope) noexcept
 {
 	// Deduce the array type based on the elements. Create error if elements
 	// are different types.
@@ -649,11 +600,6 @@ bytecodes_t expr::Array::generate_codes() const
 	return codes;
 }
 
-int expr::Array::precedence() const
-{
-	return single_prec;
-}
-
 bool expr::Array::is_str() const
 {
 	return is_str_;
@@ -664,7 +610,7 @@ expr::Numeric::Numeric(
 	Location const& _loc,
 	ValueType::PrimType _type,
 	std::variant<int64_t, uint64_t, double> const& _val)
-	: Expression(_loc, ExpressionType::LITERAL), type(_type), val(_val) {}
+	: Expression(_loc, Expression::single_precedence), type(_type), val(_val) {}
 
 void expr::Numeric::insert_node(
 	expr_p node,
@@ -674,7 +620,7 @@ void expr::Numeric::insert_node(
 	*prev = node;
 }
 
-std::optional<ValueType> expr::Numeric::type_check(ParserScope const& scope) noexcept
+std::optional<ValueType> expr::Numeric::type_check(ParserScope& scope) noexcept
 {
 	return type;
 }
@@ -703,11 +649,6 @@ bytecodes_t expr::Numeric::generate_codes() const
 	{
 		return std::visit([](auto&& arg) { return int_to_bytecodes((uint64_t)arg); }, val);
 	}
-}
-
-int expr::Numeric::precedence() const
-{
-	return single_prec;
 }
 
 bool expr::Numeric::is_true() const

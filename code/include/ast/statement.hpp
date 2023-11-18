@@ -13,8 +13,14 @@
 class Statement;
 using stmt_p = std::shared_ptr<Statement>;
 
+using conditional_container = std::vector<
+	std::pair<expr::expr_p, std::vector<stmt_p>>
+>;
 
-/* check() MUST be called before optimize() and generate_codes().
+
+/* This class represents *all* valid statements in Night.
+ * 
+ * check() MUST be called before optimize() and generate_codes().
  * 
  * Usage:
  *   statement->check(scope);
@@ -58,6 +64,16 @@ protected:
 };
 
 
+/* Variable Initialization
+ * 
+ * If 'arr_sizes' is empty, then the variable is not an array.
+ * 
+ * Use Cases:
+ *    my_var int;
+ *    my_var int = 3;
+ *    my_var int[3];
+ *    my_var int[3] = [];
+ */
 class VariableInit : public Statement
 {
 public:
@@ -66,7 +82,8 @@ public:
 		std::string const& _name,
 		std::string const& _type,
 		std::vector<expr::expr_p> const& _arr_sizes,
-		expr::expr_p const& expr);
+		expr::expr_p const& expr
+	);
 
 	void check(ParserScope& scope) override;
 	bool optimize(ParserScope& scope) override;
@@ -96,7 +113,8 @@ public:
 		Location const& _loc,
 		std::string const& _var_name,
 		std::string const& _assign_op,
-		expr::expr_p const& _expr);
+		expr::expr_p const& _expr
+	);
 
 	void check(ParserScope& scope) override;
 	bool optimize(ParserScope& scope) override;
@@ -117,18 +135,15 @@ class Conditional : public Statement
 public:
 	Conditional(
 		Location const& _loc,
-		std::vector<
-			std::pair<expr::expr_p, std::vector<stmt_p>>
-		> const& _conditionals);
+		conditional_container const& _conditionals
+	);
 
 	void check(ParserScope& scope) override;
 	bool optimize(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
-	std::vector<
-		std::pair<expr::expr_p, std::vector<stmt_p>>
-	> conditionals;
+	conditional_container conditionals;
 };
 
 
@@ -138,7 +153,8 @@ public:
 	While(
 		Location const& _loc,
 		expr::expr_p const& _cond,
-		std::vector<stmt_p> const& _block);
+		std::vector<stmt_p> const& _block
+	);
 
 	void check(ParserScope& scope) override;
 	bool optimize(ParserScope& scope) override;
@@ -159,7 +175,8 @@ public:
 		Location const& _loc,
 		VariableInit const& _var_init,
 		expr::expr_p const& _cond_expr,
-		std::vector<stmt_p> const& _block);
+		std::vector<stmt_p> const& _block
+	);
 
 	void check(ParserScope& scope) override;
 	bool optimize(ParserScope& scope) override;
@@ -179,7 +196,8 @@ public:
 		std::string const& _name,
 		std::vector<std::pair<std::string, std::string>> const& _parameters,
 		std::string const& _rtn_type,
-		std::vector<stmt_p> const& _block);
+		std::vector<stmt_p> const& _block
+	);
 
 	void check(ParserScope& scope) override;
 	bool optimize(ParserScope& scope) override;
@@ -202,7 +220,8 @@ class Return : public Statement
 public:
 	Return(
 		Location const& _loc,
-		expr::expr_p const& _expr);
+		expr::expr_p const& _expr
+	);
 
 	void check(ParserScope& scope) override;
 	bool optimize(ParserScope& scope) override;
@@ -221,7 +240,8 @@ public:
 		std::string const& _var_name,
 		std::string const& _assign_op,
 		std::vector<expr::expr_p> const& _subscripts,
-		expr::expr_p const& _assign_expr);
+		expr::expr_p const& _assign_expr
+	);
 
 	void check(ParserScope& scope) override;
 	bool optimize(ParserScope& scope) override;
@@ -247,20 +267,19 @@ public:
 		Location const& _loc,
 		std::string const& _name,
 		std::vector<expr::expr_p> const& _arg_exprs,
-		std::optional<bytecode_t> const& _id = std::nullopt);
+		std::optional<bytecode_t> const& _id = std::nullopt
+	);
 
 	void insert_node(
 		expr_p node,
 		expr_p* prev = nullptr);
 
 	void check(ParserScope& scope) override;
-	std::optional<ValueType> type_check(ParserScope const& scope) noexcept override;
+	std::optional<ValueType> type_check(ParserScope& scope) noexcept override;
 	bool optimize(ParserScope& scope) override;
 	[[nodiscard]]
 	expr_p optimize(ParserScope const& scope) override;
 	bytecodes_t generate_codes() const override;
-
-	int precedence() const;
 
 private:
 	std::string name;
