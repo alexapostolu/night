@@ -5,7 +5,6 @@
 #include "value_type.hpp"
 #include "error.hpp"
 
-#include <functional>
 #include <memory>
 #include <variant>
 #include <optional>
@@ -19,8 +18,8 @@ using expr_p = std::shared_ptr<Expression>;
 
 
 /*
- * Each Expression needs to do four things in order,
- *   1. Insert node for expression parsing
+ * For each Expression, the following steps must be performed in order,
+ *   1. Insert a node for expression parsing
  *   2. Type check its children and itself
  *   3. Optimize its children and itself
  *   4. Generate bytecodes

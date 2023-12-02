@@ -9,6 +9,7 @@
 #include "debug.hpp"
 
 #include <vector>
+#include <tuple>
 #include <string>
 #include <assert.h>
 
@@ -295,24 +296,32 @@ Function parse_func(Lexer& lexer)
 	lexer.expect(TokenType::OPEN_BRACKET);
 
 	// Name and types.
-	std::vector<std::pair<std::string, std::string>> parameters;
-	std::vector<std::string> param_types;
+	std::vector<std::tuple<std::string, std::string, bool>> parameters;
 
 	while (true)
 	{
 		if (lexer.eat().type == TokenType::CLOSE_BRACKET)
 			break;
 
-		lexer.curr_check(TokenType::VARIABLE);
-
-		parameters.push_back(std::make_pair(
-			lexer.curr().str,
-			lexer.expect(TokenType::TYPE).str));
+		auto name = lexer.curr_check(TokenType::VARIABLE).str;
+		auto type = lexer.expect(TokenType::TYPE).str;
+		auto is_arr = false;
 
 		if (lexer.eat().type == TokenType::CLOSE_BRACKET)
+		{
+			parameters.push_back(std::make_tuple(name, type, is_arr));
 			break;
+		}
+
+		if (lexer.curr().type == TokenType::OPEN_SQUARE)
+		{
+			lexer.expect(TokenType::CLOSE_SQUARE);
+			is_arr = true;
+		}
 		
 		lexer.curr_check(TokenType::COMMA);
+
+		parameters.push_back(std::make_tuple(name, type, is_arr));
 	}
 
 	// Parse return type.

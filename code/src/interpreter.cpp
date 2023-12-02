@@ -192,7 +192,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			while (num--)
 			{
 				auto i = pop(s).as.i;
-				val = &val->as.a[i];
+				val = &val->as.a.data[i];
 			}
 			s.push(*val);
 			break;
@@ -200,6 +200,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 
 		case BytecodeType::ALLOCATE_STR: push_str(s); break;
 		case BytecodeType::ALLOCATE_ARR: push_arr(s); break;
+		case BytecodeType::RESIZE_ARRAY: push_resize_arr(s); break;
 
 		case BytecodeType::STORE_INDEX: {
 			auto expr = pop(s);
@@ -208,7 +209,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			while (!s.empty())
 			{
 				auto i = pop(s).as.i;
-				val = &val->as.a[i];
+				val = &val->as.a.data[i];
 			}
 			*val = expr;
 			break;
@@ -322,9 +323,9 @@ void push_float(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it)
 
 void push_str(std::stack<intpr::Value>& s)
 {
-	auto size = pop(s).as.i;
-
+	int size = pop(s).as.i;
 	char* arr = new char[size + 1];
+
 	for (auto i = 0; i < size; ++i)
 		arr[i] = pop(s).as.i;
 
@@ -335,22 +336,29 @@ void push_str(std::stack<intpr::Value>& s)
 
 void push_arr(std::stack<intpr::Value>& s)
 {
-	auto size = pop(s).as.i;
-
+	int size = pop(s).as.i;
 	intpr::Value* arr = new intpr::Value[size];
 
 	for (auto i = 0; i < size; ++i)
-	{
-		if (s.empty())
-		{
-			arr[i] = intpr::Value();
-			arr[i].as.a = nullptr;
-		}
-		else
-			arr[i] = pop(s);
-	}
+		arr[i] = pop(s);
 
-	s.push(arr);
+	s.push(intpr::Array(arr, size));
+}
+
+void push_resize_arr(std::stack<intpr::Value>& s)
+{
+	auto new_size = pop(s).as.i;
+	auto new_arr = new intpr::Value[new_size];
+
+	auto old_arr = pop(s).as.a;
+
+	for (int i = 0; i < new_size; ++i)
+	{
+		if (i < old_arr.size)
+			new_arr[i] = old_arr.data[i];
+		else
+			new_arr[i] = intpr::Value();
+	}
 }
 
 void push_subscript(std::stack<intpr::Value>& s, bool is_string)
@@ -361,7 +369,7 @@ void push_subscript(std::stack<intpr::Value>& s, bool is_string)
 	if (is_string)
 		s.emplace((int64_t)container.as.s[index.as.i]);
 	else
-		s.emplace(container.as.a[index.as.i]);
+		s.emplace(container.as.a.data[index.as.i]);
 }
 
 intpr::Value pop(std::stack<intpr::Value>& s)

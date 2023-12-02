@@ -1,8 +1,9 @@
 #include "ast/expression.hpp"
-#include "ast/statement.hpp"
-#include "bytecode.hpp"
+
 #include "parser_scope.hpp"
 #include "scope_check.hpp"
+#include "bytecode.hpp"
+#include "value_type.hpp"
 #include "error.hpp"
 #include "debug.hpp"
 
@@ -26,7 +27,7 @@ int expr::Expression::precedence() const
 
 void expr::Expression::set_guard()
 {
-	precedence_ = 1000;
+	precedence_ = single_precedence;
 }
 
 
@@ -215,7 +216,7 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope& scope) noexcept
 {
 	// Operations where strings are supported are handled seperately in the
 	// switch statement.
-	static std::unordered_map<BinaryOpType, std::tuple<BytecodeType, BytecodeType, std::optional<BytecodeType>>> m{
+	std::unordered_map<BinaryOpType, std::tuple<BytecodeType, BytecodeType, std::optional<BytecodeType>>> m{
 		{ BinaryOpType::ADD,			std::make_tuple(BytecodeType::ADD_I,			BytecodeType::ADD_F,			BytecodeType::ADD_S) },
 		{ BinaryOpType::SUB,			std::make_tuple(BytecodeType::SUB_I,			BytecodeType::SUB_F,			std::nullopt) },
 		{ BinaryOpType::MULT,			std::make_tuple(BytecodeType::MULT_I,			BytecodeType::MULT_F,			std::nullopt) },
@@ -228,9 +229,9 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope& scope) noexcept
 		{ BinaryOpType::NOT_EQUALS,		std::make_tuple(BytecodeType::NOT_EQUALS_I,		BytecodeType::NOT_EQUALS_F,		BytecodeType::NOT_EQUALS_S) }
 	};
 
-	static int const code_i = 0;
-	static int const code_f = 1;
-	static int const code_s = 2;
+	auto op_code_int = std::get<0>(m[op_type]);
+	auto op_code_float = std::get<1>(m[op_type]);
+	auto op_code_str = std::get<2>(m[op_type]);
 
 	assert(lhs);
 	assert(rhs);
@@ -250,10 +251,10 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope& scope) noexcept
 				break;
 
 			op_code = BytecodeType::ADD_S;
-			return value_type_str;
+			return ValueType(ValueType::CHAR, 1);
 		}
 
-		break;
+		// Fall through 
 
 	case BinaryOpType::SUB:
 	case BinaryOpType::MULT:
@@ -266,20 +267,20 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope& scope) noexcept
 				if (rhs_type != ValueType::FLOAT)
 					cast_rhs = BytecodeType::I2F;
 
-				op_code = std::get<code_f>(m[op_type]);
+				op_code = op_code_float;
 				return ValueType::FLOAT;
 			}
 
 			if (rhs_type == ValueType::FLOAT)
 			{
 				if (lhs_type != ValueType::FLOAT)
-					cast_rhs = BytecodeType::I2F;
+					cast_lhs = BytecodeType::I2F;
 
-				op_code = std::get<code_f>(m[op_type]);
+				op_code = op_code_float;
 				return ValueType::FLOAT;
 			}
 
-			op_code = std::get<code_i>(m[op_type]);
+			op_code = op_code_int;
 			return ValueType::INT;
 		}
 
@@ -293,7 +294,8 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope& scope) noexcept
 	case BinaryOpType::NOT_EQUALS:
 		if (lhs_type->is_str() && rhs_type->is_str())
 		{
-			op_code = *std::get<code_s>(m[op_type]);
+			assert(op_code_str.has_value());
+			op_code = *op_code_str;
 			return ValueType::BOOL;
 		}
 
@@ -304,18 +306,18 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope& scope) noexcept
 				if (rhs_type != ValueType::FLOAT)
 					cast_rhs = BytecodeType::I2F;
 
-				op_code = std::get<code_f>(m[op_type]);
+				op_code = op_code_float;
 			}
 			else if (rhs_type == ValueType::FLOAT)
 			{
 				if (lhs_type != ValueType::FLOAT)
 					cast_lhs = BytecodeType::I2F;
 
-				op_code = std::get<code_f>(m[op_type]);
+				op_code = op_code_float;
 			}
 			else
 			{
-				op_code = std::get<code_i>(m[op_type]);
+				op_code = op_code_int;
 			}
 
 			return ValueType::BOOL;
@@ -358,8 +360,10 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope& scope) noexcept
 			{
 				op_code = BytecodeType::INDEX_A;
 
-				rhs_type->dim.pop_front();
-				return rhs_type;
+				if (rhs_type->dim == 1)
+					return rhs_type->type;
+
+				return ValueType(rhs_type->type, rhs_type->dim - 1);
 			}
 		}
 
@@ -557,7 +561,7 @@ std::optional<ValueType> expr::Array::type_check(ParserScope& scope) noexcept
 	}
 
 	if (arr_type.has_value())
-		arr_type->dim.push_back(elements.size());
+		++arr_type->dim;
 
 	return arr_type;
 }

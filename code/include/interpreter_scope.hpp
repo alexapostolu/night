@@ -8,6 +8,14 @@
 namespace intpr
 {
 
+struct Value;
+
+struct Array
+{
+	Value* data;
+	int size;
+};
+
 struct Value
 {
 	union {
@@ -15,7 +23,7 @@ struct Value
 		uint64_t ui;
 		double d;
 		char* s;
-		Value* a;
+		Array a;
 	} as;
 
 	Value() = default;
@@ -23,7 +31,7 @@ struct Value
 	Value(uint64_t _ui);
 	Value(double _d);
 	Value(char* _s);
-	Value(Value* _a);
+	Value(Array _a);
 	Value(Value const& _v);
 };
 

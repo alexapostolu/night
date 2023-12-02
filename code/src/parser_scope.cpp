@@ -12,14 +12,14 @@ scope_func_container ParserScope::funcs = {
 	{ "print", ParserFunction{ 1,  {}, { ValueType::CHAR  }, std::nullopt    } },
 	{ "print", ParserFunction{ 2,  {}, { ValueType::INT   }, std::nullopt    } },
 	{ "print", ParserFunction{ 3,  {}, { ValueType::FLOAT }, std::nullopt    } },
-	{ "print", ParserFunction{ 4,  {}, { ValueType(ValueType::CHAR, {std::nullopt})}, std::nullopt}},
-	{ "input", ParserFunction{ 5,  {}, {},					 ValueType(ValueType::CHAR, {std::nullopt}) } },
+	{ "print", ParserFunction{ 4,  {}, { ValueType(ValueType::CHAR, true)}, std::nullopt}},
+	{ "input", ParserFunction{ 5,  {}, {},					 ValueType(ValueType::CHAR, true ) } },
 	{ "char",  ParserFunction{ 6,  {}, { ValueType::INT   }, ValueType::CHAR } },
-	{ "int",   ParserFunction{ 7,  {}, { value_type_str   }, ValueType::INT  } },
+	{ "int",   ParserFunction{ 7,  {}, { ValueType(ValueType::CHAR, true)   }, ValueType::INT  } },
 	{ "int",   ParserFunction{ 8,  {}, { ValueType::CHAR  }, ValueType::INT  } },
-	{ "str",   ParserFunction{ 9,  {}, { ValueType::INT   }, value_type_str  } },
-	{ "str",   ParserFunction{ 10, {}, { ValueType::FLOAT }, value_type_str  } },
-	{ "len",   ParserFunction{ 11, {}, { value_type_str   }, ValueType::INT  } }
+	{ "str",   ParserFunction{ 9,  {}, { ValueType::INT   }, ValueType(ValueType::CHAR, true)  } },
+	{ "str",   ParserFunction{ 10, {}, { ValueType::FLOAT }, ValueType(ValueType::CHAR, true)  } },
+	{ "len",   ParserFunction{ 11, {}, { ValueType(ValueType::CHAR, true)   }, ValueType::INT  } }
 };
 
 bool ParserScope::inside_false_conditional = false;

@@ -4,6 +4,7 @@
 #include "interpreter_scope.hpp"
 #include "parser_scope.hpp"
 #include "scope_check.hpp"
+#include "value_type.hpp"
 #include "error.hpp"
 #include "debug.hpp"
 
@@ -28,83 +29,34 @@ VariableInit::VariableInit(
 
 void VariableInit::check(ParserScope& scope)
 {
-	/* Process
-	 *   1. Determine the type of the variable.
-	 *   2. Determine the type of the expression.
-	 *   3. If there are minor errors, return.
-	 *   4. Compare variable and expression types.
-	 */
-
 	// Determine type of variable.
 
-	array_dim dimensions;
 	for (auto& arr_size : arr_sizes)
 	{
-		/* For each array size:
-		 *   1. If null, add std::nullopt.
-		 *   2. Type check, skip if null type, and create error if not a primitive.
-		 *   3. Optimize.
-		 *   4. If no minor errors, push numeric into 'dimensions'
-		 */
-
-		// Check null
-
 		if (!arr_size)
-		{
-			dimensions.push_back(std::nullopt);
 			continue;
-		}
 
 		// Type check
 
 		auto arr_size_type = arr_size->type_check(scope);
 
-		if (!arr_size_type.has_value())
-			continue;
-
-		if (arr_size_type->is_arr())
+		if (arr_size_type.has_value() && arr_size_type->is_arr())
 			night::error::get().create_minor_error(
-				"found type '" + night::to_str(*arr_size_type) + "' in array size,"
+				"found type '" + night::to_str(*arr_size_type) + "' in array size, "
 				"expected primitive type", loc);
-
-		// Optimize
-
-		arr_size = arr_size->optimize(scope);
-
-		//auto arr_size_optimize = arr_size->optimize(scope);
-		//auto arr_size_numeric = std::dynamic_pointer_cast<expr::Numeric>(arr_size_optimize);
-
-		//if (!arr_size_numeric)
-		//	night::error::get().create_minor_error(
-		//		"array size must evaluate to a numeric constant", loc);
-
-		//// If type is ok
-
-		//if (!night::error::get().has_minor_errors())
-		//	std::visit([&dimensions](auto&& arg)
-		//		{ dimensions.push_back((std::size_t)arg); },
-		//		arr_size_numeric->val);
 	}
 
-	var_type = ValueType(type, dimensions);
+	var_type = ValueType(type, !arr_sizes.empty());
 	id = scope.create_variable(name, var_type, loc);
-
-	// Determine type of expression.
-
-	expr_type = expr 
-				? expr->type_check(scope)
-				: std::nullopt;
 
 	// Return if there are minor errors.
 
-	if (night::error::get().has_minor_errors() || !expr_type.has_value())
+	if (night::error::get().has_minor_errors())
 		return;
-
-	assert(var_type.dim.size() == arr_sizes.size());
 
 	// Compare variable type with expression type.
 
-	if (var_type.type != var_type.type || expr_type->dim.size() != expr_type->dim.size())
+	if (expr && is_same_or_primitive(var_type, expr->type_check(scope)))
 		night::error::get().create_minor_error(
 			"variable '" + name + "' of type '" + night::to_str(type) +
 			"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", loc);
@@ -119,6 +71,9 @@ bool VariableInit::optimize(ParserScope& scope)
 	 * Note: Array sizes have already been optimized in check(), so there is no
 	 * need to optimize them here.
 	 */
+
+	for (auto& arr_size : arr_sizes)
+		arr_size = arr_size->optimize(scope);
 
 	if (!scope.is_var_used(name))
 		return false;
@@ -135,9 +90,26 @@ bytecodes_t VariableInit::generate_codes() const
 
 	// Populate expression array
 
-	//bytecodes_t codes = populate_array(expr, 0);
-
 	bytecodes_t codes;
+	
+	if (expr)
+		codes = expr->generate_codes();
+	
+	if (var_type.is_arr())
+	{
+		auto arr_size_1_codes = arr_sizes[0]->generate_codes();
+		codes.insert(std::end(codes), std::begin(arr_size_1_codes), std::end(arr_size_1_codes));
+
+		for (auto i = 1; i < arr_sizes.size(); ++i)
+		{
+			auto arr_size_codes = arr_sizes[i]->generate_codes();
+			codes.insert(std::end(codes), std::begin(arr_size_codes), std::end(arr_size_codes));
+
+			codes.push_back((bytecode_t)BytecodeType::MULT_I);
+		}
+
+		codes.push_back((bytecode_t)BytecodeType::RESIZE_ARRAY);
+	}
 
 	if (var_type == ValueType::BOOL && expr_type == ValueType::FLOAT)
 		codes.push_back((bytecode_t)BytecodeType::F2B);
@@ -152,82 +124,82 @@ bytecodes_t VariableInit::generate_codes() const
 	return codes;
 }
 
-bytecodes_t VariableInit::populate_array(expr::expr_p expr, int level) const
-{
-	if (!expr)
-	{
-		if (level == var_type.dim.size())
-		{
-			auto num = std::make_shared<expr::Numeric>(loc, var_type.type, (int64_t)0);
-			return num->generate_codes();
-		}
-		else
-		{
-			assert(var_type.dim[level].has_value());
-
-			int expected_elements = *var_type.dim[level];
-
-			bytecodes_t codes;
-
-			for (int i = 0; i < expected_elements; ++i)
-			{
-				auto elem_codes = populate_array(nullptr, level + 1);
-				codes.insert(std::end(codes), std::begin(elem_codes), std::end(elem_codes));
-			}
-
-			auto size_codes = int_to_bytecodes(expected_elements);
-			codes.insert(std::end(codes), std::begin(size_codes), std::end(size_codes));
-
-			codes.push_back((bytecode_t)BytecodeType::ALLOCATE_ARR);
-			return codes;
-		}
-	}
-
-
-	auto arr = std::dynamic_pointer_cast<expr::Array>(expr);
-
-	if (!arr)
-		return expr->generate_codes();
-
-	int actual_elements   = arr->elements.size();
-	int expected_elements = actual_elements;
-
-	if (var_type.dim[level].has_value())
-		expected_elements = *var_type.dim[level];
-
-	bytecodes_t codes;
-
-	if (actual_elements < expected_elements)
-	{
-		int i = 0;
-
-		for (; i < actual_elements; ++i)
-		{
-			auto elem_codes = populate_array(arr->elements[i], level + 1);
-			codes.insert(std::end(codes), std::begin(elem_codes), std::end(elem_codes));
-		}
-
-		for (; i < expected_elements; ++i)
-		{
-			auto elem_codes = populate_array(nullptr, level + 1);
-			codes.insert(std::end(codes), std::begin(elem_codes), std::end(elem_codes));
-		}
-	}
-	else
-	{
-		for (int i = 0; i < expected_elements; ++i)
-		{
-			auto elem_codes = populate_array(arr->elements[i], level + 1);
-			codes.insert(std::end(codes), std::begin(elem_codes), std::end(elem_codes));
-		}
-	}
-
-	auto size_codes = int_to_bytecodes(expected_elements);
-	codes.insert(std::end(codes), std::begin(size_codes), std::end(size_codes));
-
-	codes.push_back((bytecode_t)BytecodeType::ALLOCATE_ARR);
-	return codes;
-}
+//bytecodes_t VariableInit::populate_array(expr::expr_p expr, int level) const
+//{
+//	if (!expr)
+//	{
+//		if (level == var_type.dim.size())
+//		{
+//			auto num = std::make_shared<expr::Numeric>(loc, var_type.type, (int64_t)0);
+//			return num->generate_codes();
+//		}
+//		else
+//		{
+//			assert(var_type.dim[level].has_value());
+//
+//			int expected_elements = *var_type.dim[level];
+//
+//			bytecodes_t codes;
+//
+//			for (int i = 0; i < expected_elements; ++i)
+//			{
+//				auto elem_codes = populate_array(nullptr, level + 1);
+//				codes.insert(std::end(codes), std::begin(elem_codes), std::end(elem_codes));
+//			}
+//
+//			auto size_codes = int_to_bytecodes(expected_elements);
+//			codes.insert(std::end(codes), std::begin(size_codes), std::end(size_codes));
+//
+//			codes.push_back((bytecode_t)BytecodeType::ALLOCATE_ARR);
+//			return codes;
+//		}
+//	}
+//
+//
+//	auto arr = std::dynamic_pointer_cast<expr::Array>(expr);
+//
+//	if (!arr)
+//		return expr->generate_codes();
+//
+//	int actual_elements   = arr->elements.size();
+//	int expected_elements = actual_elements;
+//
+//	if (var_type.dim[level].has_value())
+//		expected_elements = *var_type.dim[level];
+//
+//	bytecodes_t codes;
+//
+//	if (actual_elements < expected_elements)
+//	{
+//		int i = 0;
+//
+//		for (; i < actual_elements; ++i)
+//		{
+//			auto elem_codes = populate_array(arr->elements[i], level + 1);
+//			codes.insert(std::end(codes), std::begin(elem_codes), std::end(elem_codes));
+//		}
+//
+//		for (; i < expected_elements; ++i)
+//		{
+//			auto elem_codes = populate_array(nullptr, level + 1);
+//			codes.insert(std::end(codes), std::begin(elem_codes), std::end(elem_codes));
+//		}
+//	}
+//	else
+//	{
+//		for (int i = 0; i < expected_elements; ++i)
+//		{
+//			auto elem_codes = populate_array(arr->elements[i], level + 1);
+//			codes.insert(std::end(codes), std::begin(elem_codes), std::end(elem_codes));
+//		}
+//	}
+//
+//	auto size_codes = int_to_bytecodes(expected_elements);
+//	codes.insert(std::end(codes), std::begin(size_codes), std::end(size_codes));
+//
+//	codes.push_back((bytecode_t)BytecodeType::ALLOCATE_ARR);
+//	return codes;
+//}
 
 
 VariableAssign::VariableAssign(
@@ -284,7 +256,7 @@ bytecodes_t VariableAssign::generate_codes() const
 
 		if (assign_op == "+=")
 		{
-			if (is_same(*assign_type, value_type_str))
+			if (is_same(*assign_type, ValueType(ValueType::CHAR, true)))
 				codes.push_back((bytecode_t)BytecodeType::ADD_S);
 			else if (assign_type == ValueType::FLOAT)
 				codes.push_back((bytecode_t)BytecodeType::ADD_F);
@@ -520,15 +492,15 @@ bytecodes_t For::generate_codes() const
 Function::Function(
 	Location const& _loc,
 	std::string const& _name,
-	std::vector<std::pair<std::string, std::string>> const& _parameters,
+	std::vector<std::tuple<std::string, std::string, bool>> const& _parameters,
 	std::string const& _rtn_type,
 	std::vector<stmt_p> const& _block)
 	: Statement(_loc), name(_name), block(_block)
 {
 	for (const auto& param : _parameters)
 	{
-		param_names.push_back(param.first);
-		param_types.emplace_back(param.second);
+		param_names.push_back(std::get<0>(param));
+		param_types.emplace_back(std::get<1>(param));
 	}
 
 	if (_rtn_type == "void")
@@ -708,7 +680,7 @@ bytecodes_t ArrayMethod::generate_codes() const
 		{
 			if (assign_type == ValueType::FLOAT)
 				codes.push_back((bytecode_t)BytecodeType::ADD_F);
-			else if (is_same(*assign_type, value_type_str))
+			else if (is_same(*assign_type, ValueType(ValueType::CHAR, 1)))
 				codes.push_back((bytecode_t)BytecodeType::ADD_S);
 			else
 				codes.push_back((bytecode_t)BytecodeType::ADD_I);

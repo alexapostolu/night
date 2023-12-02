@@ -3,7 +3,7 @@
 
 #include <string>
 
-ValueType::ValueType(std::string const& _type, array_dim const& _dim)
+ValueType::ValueType(std::string const& _type, int _dim)
 	: dim(_dim)
 {
 	if (_type == "bool")	   type = PrimType::BOOL;
@@ -13,75 +13,46 @@ ValueType::ValueType(std::string const& _type, array_dim const& _dim)
 	else throw debug::unhandled_case(_type);
 }
 
-ValueType::ValueType(PrimType _type, array_dim const& _dim)
+ValueType::ValueType(PrimType _type, int _dim)
 	: type(_type), dim(_dim) {}
 
 bool ValueType::operator==(PrimType _type) const
 {
-	return dim.empty() && type == _type;
+	return type == _type && !is_arr();
 }
 
-bool ValueType::is_arr() const { return !dim.empty(); }
-bool ValueType::is_str() const { return type == PrimType::CHAR && dim.size() == 1; }
+bool ValueType::is_arr() const { return dim; }
 
-bool is_same(ValueType const& vt1, ValueType const& vt2)
+bool ValueType::is_str() const { return type == PrimType::CHAR && is_arr(); }
+
+bool is_same(std::optional<ValueType> const& vt1, std::optional<ValueType> const& vt2)
 {
-	if (vt1.type != vt2.type || vt1.dim.size() != vt2.dim.size())
-		return false;
-
-	for (auto i = 0; i < vt1.dim.size(); ++i)
-	{
-		// In the past, we had the following code, however, we decided to
-		// remove it because `input()` is of unknown size, and you are
-		// likely to assign `input()` to an array of unspecified size. And I
-		// can not think of any other scenario of two arrays with unspecified
-		// sizes, so I think its fine if we omit that if statement.
-		//
-		// if (!vt1.dim[i].has_value() && !vt2.dim[i].has_value())
-		//     return false;
-		//
-		if (vt1.dim[i].has_value() && vt2.dim[i].has_value() && vt1.dim[i] != vt2.dim[i])
-			return false;
-	}
-
-	return true;
-}
-
-bool is_same_or_primitive(ValueType const& vt1, ValueType const& vt2)
-{
-	if (vt1.dim.empty() && vt2.dim.empty())
+	if (!vt1.has_value() || !vt2.has_value())
 		return true;
 
-	if (vt1.type != vt2.type || vt1.dim.size() != vt2.dim.size())
-		return false;
+	return vt1->type == vt2->type && vt1->dim == vt2->dim;
+}
 
-	for (auto i = 0; i < vt1.dim.size(); ++i)
-	{
-		if ((!vt1.dim[i].has_value() && !vt2.dim[i].has_value()) ||
-			(vt1.dim[i] != vt2.dim[i]))
-			return false;
-	}
+bool is_same_or_primitive(std::optional<ValueType> const& vt1, std::optional<ValueType> const& vt2)
+{
+	if (!vt1.has_value() || !vt2.has_value())
+		return true;
 
-	return true;
+	return vt1->dim == vt2->dim;
 }
 
 std::string night::to_str(ValueType const& vt)
 {
-	if (vt.type == ValueType::CHAR && vt.dim.size() == 1)
+	if (vt.type == ValueType::CHAR && vt.is_arr())
 		return "string";
 
-	std::string type_s;
+	std::string is_arr_str = (vt.is_arr() ? " array" : "");
 	switch (vt.type)
 	{
-	case ValueType::BOOL:  type_s = "bool"; break;
-	case ValueType::CHAR:  type_s = "char"; break;
-	case ValueType::INT:   type_s = "int"; break;
-	case ValueType::FLOAT: type_s = "float"; break;
+	case ValueType::BOOL:  return "bool" + is_arr_str;
+	case ValueType::CHAR:  return "char" + is_arr_str;
+	case ValueType::INT:   return "int" + is_arr_str;
+	case ValueType::FLOAT: return "float" + is_arr_str;
 	default: throw debug::unhandled_case(vt.type);
 	}
-
-	if (!vt.dim.empty())
-		return std::to_string(vt.dim.size()) + " dimensional " + type_s + " array";
-
-	return type_s;
 }

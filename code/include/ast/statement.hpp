@@ -7,6 +7,7 @@
 #include "error.hpp"
 
 #include <vector>
+#include <tuple>
 #include <memory>
 #include <string>
 
@@ -90,7 +91,7 @@ public:
 	bytecodes_t generate_codes() const override;
 
 private:
-	bytecodes_t populate_array(expr::expr_p arr, int level) const;
+	//bytecodes_t populate_array(expr::expr_p arr, int level) const;
 
 public:
 	std::string name;
@@ -194,7 +195,7 @@ public:
 	Function(
 		Location const& _loc,
 		std::string const& _name,
-		std::vector<std::pair<std::string, std::string>> const& _parameters,
+		std::vector<std::tuple<std::string, std::string, bool>> const& _parameters,
 		std::string const& _rtn_type,
 		std::vector<stmt_p> const& _block
 	);
