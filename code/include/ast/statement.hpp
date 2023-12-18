@@ -90,9 +90,6 @@ public:
 	bool optimize(ParserScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
-private:
-	//bytecodes_t populate_array(expr::expr_p arr, int level) const;
-
 public:
 	std::string name;
 

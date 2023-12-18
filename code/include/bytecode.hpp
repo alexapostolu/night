@@ -53,11 +53,14 @@ enum struct BytecodeType : bytecode_t
 
 	LOAD,					// LOAD  (var_id)
 	LOAD_ELEM,				// [id: S_INT] [size: S_INT] [indices: S_INT ...]
+	
 	STORE,					// STORE (id)
 	STORE_INDEX,			// [indicies, id]
+	
 	ALLOCATE_STR,			// [elements: Value ...] [size: S_INT]
-	ALLOCATE_ARR,			// [elements: Value ...] [size: S_INT]
-	RESIZE_ARRAY,			// [array: Value] [size: S_INT]
+	ALLOCATE_ARR,			//
+	FREE_STR,				// [id: S_INT]
+	FREE_ARR,				//
 
 	JUMP_IF_FALSE,			// [cond] JUMP_IF_FALSE (offset)	// jumps to next in conditional chain
 	JUMP,					// JUMP (offset)					// jumps to end of conditional chain

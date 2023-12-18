@@ -182,7 +182,17 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			break;
 
 		case BytecodeType::STORE:
-			scope.vars[*(++it)] = pop(s);
+			if (s.empty())
+			{
+				intpr::Value val;
+				val.as.d = 0;
+				val.
+			}
+			else
+			{
+				scope.vars[*(++it)] = pop(s);
+			}
+
 			break;
 
 		case BytecodeType::LOAD_ELEM: {
