@@ -183,17 +183,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 
 		case BytecodeType::STORE: {
 			auto id = pop(s);
-
-			if (s.empty())
-			{
-				intpr::Value val;
-				val.as.d = 0;
-			}
-			else
-			{
-
-				scope.vars[id.as.i] = pop(s);
-			}
+			scope.vars[id.as.i] = pop(s);
 
 			break;
 		}
@@ -213,7 +203,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 
 		case BytecodeType::ALLOCATE_STR: push_str(s); break;
 		case BytecodeType::ALLOCATE_ARR: push_arr(s); break;
-		case BytecodeType::RESIZE_ARRAY: push_resize_arr(s); break;
+		case BytecodeType::ALLOCATE_ARR_AND_FILL: push_arr_and_fill(s); break;
 
 		case BytecodeType::STORE_INDEX: {
 			auto expr = pop(s);
@@ -350,27 +340,46 @@ void push_str(std::stack<intpr::Value>& s)
 void push_arr(std::stack<intpr::Value>& s)
 {
 	int size = pop(s).as.i;
-	intpr::Value* arr = new intpr::Value[size];
+	intpr::Value arr;
+	arr.as.a.size = size;
+	arr.as.a.data = new intpr::Value[size];
 
 	for (auto i = 0; i < size; ++i)
-		arr[i] = pop(s);
+		arr.as.a.data[i] = pop(s);
 
-	s.push(intpr::Array(arr, size));
+	s.push(arr);
 }
 
-void push_resize_arr(std::stack<intpr::Value>& s)
+void push_arr_and_fill(std::stack<intpr::Value>& s)
 {
-	auto new_size = pop(s).as.i;
-	auto new_arr = new intpr::Value[new_size];
+	auto sizes = pop(s).as.i;
+	intpr::Value arr;
 
-	auto old_arr = pop(s).as.a;
+	fill_arr(arr, s, sizes, 0);
+}
 
-	for (int i = 0; i < new_size; ++i)
+void fill_arr(intpr::Value& arr, std::stack<intpr::Value>& s, int size, int count)
+{
+	if (count < size)
 	{
-		if (i < old_arr.size)
-			new_arr[i] = old_arr.data[i];
-		else
-			new_arr[i] = intpr::Value();
+		auto size = pop(s).as.i;
+
+		arr.as.a.size = size;
+		arr.as.a.data = new intpr::Value[size];
+
+		for (int i = 0; i < size; ++i)
+		{
+			intpr::Value element;
+			fill_arr(element, s, size, count + 1);
+
+			arr.as.a.data[i] = element;
+		}
+	}
+	else
+	{
+		arr.as.i = 0;
+		arr.as.ui = 0;
+		arr.as.d = 0;
 	}
 }
 

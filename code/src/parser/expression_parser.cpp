@@ -116,7 +116,8 @@ expr::expr_p parse_variable_or_call(Lexer& lexer)
 	}
 	
 	// Parse array allocation.
-	if (lexer.peek().type == TokenType::OPEN_SQUARE)
+	if (lexer.peek().type == TokenType::OPEN_SQUARE &&
+		(var_name == "int" || var_name == "float"))
 	{
 		lexer.eat();
 
@@ -125,13 +126,11 @@ expr::expr_p parse_variable_or_call(Lexer& lexer)
 		{
 			sizes.push_back(parse_expr(lexer, true, TokenType::CLOSE_SQUARE));
 
-			lexer.eat();
-
 			if (lexer.eat().type != TokenType::OPEN_SQUARE)
 				break;
 		}
-
-		return std::make_shared<expr::Allocate>(lexer.loc, var_name, sizes)
+		
+		return std::make_shared<expr::Allocate>(lexer.loc, ValueType(var_name).type, sizes);
 	}
 	
 	// Parse variable.

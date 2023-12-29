@@ -76,7 +76,7 @@ std::optional<ValueType> expr::UnaryOp::type_check(
 		return std::nullopt;
 
 	if (expr_type->is_arr())
-		night::error::get().create_minor_error(
+		night::create_minor_error(
 			"expression under unary operator has type '" + night::to_str(*expr_type) +
 			"', expected primitive type", loc);
 
@@ -373,7 +373,7 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope& scope) noexcept
 		throw debug::unhandled_case((int)op_type);
 	}
 
-	night::error::get().create_minor_error("type mismatch between '" + night::to_str(*lhs_type) + "' and '" + night::to_str(*rhs_type) + "'", loc);
+	night::create_minor_error("type mismatch between '" + night::to_str(*lhs_type) + "' and '" + night::to_str(*rhs_type) + "'", loc);
 	return std::nullopt;
 }
 
@@ -627,101 +627,34 @@ void expr::Allocate::insert_node(
 
 std::optional<ValueType> expr::Allocate::type_check(ParserScope& scope) noexcept
 {
-	// Deduce the array type based on the elements. Create error if elements
-	// are different types.
-
-	std::optional<ValueType> arr_type;
-	for (auto const& elem : elements)
-	{
-		assert(elem);
-
-		auto elem_type = elem->type_check(scope);
-		if (!elem_type.has_value())
-		{
-			type_conversion.push_back(std::nullopt);
-			continue;
-		}
-
-		if (type_convert == ValueType::BOOL && elem_type == ValueType::FLOAT)
-			type_conversion.push_back(BytecodeType::F2B);
-		else if (type_convert == ValueType::FLOAT && elem_type != ValueType::FLOAT)
-			type_conversion.push_back(BytecodeType::I2F);
-		else if (type_convert != ValueType::FLOAT && elem_type == ValueType::FLOAT)
-			type_conversion.push_back(BytecodeType::F2I);
-		else
-			type_conversion.push_back(std::nullopt);
-
-		if (arr_type.has_value())
-		{
-			if (!arr_type->is_arr() && !elem_type->is_arr())
-			{
-				if (arr_type == ValueType::FLOAT || elem_type == ValueType::FLOAT)
-					arr_type = ValueType::FLOAT;
-				else if (arr_type == ValueType::INT || elem_type == ValueType::INT)
-					arr_type = ValueType::INT;
-				else if (arr_type == ValueType::CHAR || elem_type == ValueType::CHAR)
-					arr_type = ValueType::CHAR;
-				else if (arr_type == ValueType::BOOL || elem_type == ValueType::BOOL)
-					arr_type = ValueType::BOOL;
-			}
-		}
-		else
-		{
-			arr_type = elem_type;
-		}
-	}
-
-	if (arr_type.has_value())
-		++arr_type->dim;
-
-	return arr_type;
-
 	return ValueType(type, sizes.size());
 }
 
 expr::expr_p expr::Allocate::optimize(ParserScope const& scope)
 {
-	for (auto& element : elements)
-		element = element->optimize(scope);
+	for (auto& size : sizes)
+		size = size->optimize(scope);
 
-	return std::make_shared<Array>(loc, elements, is_str_, type_convert, type_conversion);
+	return std::make_shared<Allocate>(loc, type, sizes);
 }
 
 bytecodes_t expr::Allocate::generate_codes() const
 {
 	bytecodes_t codes;
 
-	// Generate codes for elements.
-
-	assert(type_conversion.size() == elements.size());
-
-	for (auto i = 0; i < elements.size(); ++i)
+	for (auto const& size : sizes)
 	{
-		auto elem_codes = elements[i]->generate_codes();
-
-		if (type_conversion[i].has_value())
-			elem_codes.push_back((bytecode_t)*type_conversion[i]);
-
-		codes.insert(std::begin(codes), std::begin(elem_codes), std::end(elem_codes));
+		auto size_codes = size->generate_codes();
+		codes.insert(std::end(codes), std::begin(size_codes), std::end(size_codes));
 	}
 
-	// Generate codes for size.
-	auto size_codes = int_to_bytecodes((bytecode_t)elements.size());
+	auto size_codes = int_to_bytecodes((bytecode_t)sizes.size());
 	codes.insert(std::end(codes), std::begin(size_codes), std::end(size_codes));
-
-	if (is_str())
-		codes.push_back((bytecode_t)BytecodeType::ALLOCATE_STR);
-	else
-		codes.push_back((bytecode_t)BytecodeType::ALLOCATE_ARR);
+	
+	codes.push_back((bytecode_t)BytecodeType::ALLOCATE_ARR_AND_FILL);
 
 	return codes;
 }
-
-bool expr::Allocate::is_str() const
-{
-	return is_str_;
-}
-
 
 expr::Numeric::Numeric(
 	Location const& _loc,

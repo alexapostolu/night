@@ -11,7 +11,7 @@ bool check_variable_defined(ParserScope& scope, std::string const& name, Locatio
 	if (!scope.get_var(name))
 	{
 		if (!undefined_variables.contains(name))
-			night::error::get().create_minor_error("variable '" + name + "' is undefined", loc);
+			night::create_minor_error("variable '" + name + "' is undefined", loc);
 
 		undefined_variables.insert(name);
 		return false;
@@ -27,7 +27,7 @@ bool check_function_defined(ParserScope const& scope, std::string const& name, L
 	if (!scope.funcs.contains(name))
 	{
 		if (!undefined_functions.contains(name))
-			night::error::get().create_minor_error("function '" + name + "' is undefined", loc);
+			night::create_minor_error("function '" + name + "' is undefined", loc);
 
 		undefined_functions.insert(name);
 		return false;

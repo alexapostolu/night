@@ -59,6 +59,7 @@ enum struct BytecodeType : bytecode_t
 	
 	ALLOCATE_STR,			// [elements: Value ...] [size: S_INT]
 	ALLOCATE_ARR,			//
+	ALLOCATE_ARR_AND_FILL,
 	FREE_STR,				// [id: S_INT]
 	FREE_ARR,				//
 

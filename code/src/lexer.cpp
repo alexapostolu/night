@@ -14,7 +14,7 @@ Lexer::Lexer(std::string const& _file_name)
 	: file(_file_name), loc({ _file_name, 1, 0 }), prev_tok(std::nullopt)
 {
 	if (!file.is_open())
-		throw NIGHT_CREATE_FATAL_LEXER("file '" + loc.file + "' could not be found/opened");
+		throw night::create_fatal_error("file '" + loc.file + "' could not be found/opened", loc);
 
 	std::getline(file, file_line);
 	eat();

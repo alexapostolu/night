@@ -37,10 +37,15 @@ void VariableInit::check(ParserScope& scope)
 
 	// Compare variable type with expression type.
 
-	if (expr && is_same_or_primitive(var_type, expr->type_check(scope)))
-		night::create_minor_error(
-			"variable '" + name + "' of type '" + night::to_str(type) +
-			"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", loc);
+	if (expr)
+	{
+		expr_type = expr->type_check(scope);
+
+		if (expr_type.has_value() && !is_same_or_primitive(var_type, expr_type))
+			night::create_minor_error(
+				"variable '" + name + "' of type '" + night::to_str(type) +
+				"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", loc);
+	}
 }
 
 bool VariableInit::optimize(ParserScope& scope)
@@ -80,8 +85,10 @@ bytecodes_t VariableInit::generate_codes() const
 	else if (var_type != ValueType::FLOAT && expr_type == ValueType::FLOAT)
 		codes.push_back((bytecode_t)BytecodeType::F2I);
 
+	auto id_codes = int_to_bytecodes(*id);
+	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
+
 	codes.push_back((bytecode_t)BytecodeType::STORE);
-	codes.push_back(*id);
 
 	return codes;
 }
@@ -191,7 +198,7 @@ void ArrayInitialization::fill_array(expr::expr_p expr, int depth) const
 		if (depth == arr_sizes_numerics.size() - 2)
 		{
 			for (int i = arr->elements.size(); i < arr_sizes_numerics[depth]; ++i)
-				arr->elements.push_back(std::make_shared<expr::Numeric>(loc, type, 0));
+				arr->elements.push_back(std::make_shared<expr::Numeric>(loc, ValueType(type).type, (int64_t)0));
 		}
 		else
 		{

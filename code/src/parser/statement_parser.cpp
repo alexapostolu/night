@@ -45,7 +45,7 @@ std::vector<stmt_p> parse_stmts(Lexer& lexer, bool requires_curly)
 			stmts.push_back(parse_stmt(lexer));
 
 			if (lexer.curr().type == TokenType::END_OF_FILE)
-				throw NIGHT_CREATE_FATAL("missing closing curly bracket");
+				throw night::create_fatal_error("missing closing curly bracket", lexer.loc);
 		}
 
 		lexer.eat();
@@ -56,7 +56,7 @@ std::vector<stmt_p> parse_stmts(Lexer& lexer, bool requires_curly)
 		return {};
 	default:
 		if (requires_curly)
-			throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected opening curly bracket");
+			throw night::create_fatal_error("found '" + lexer.curr().str + "', expected opening curly bracket", lexer.loc);
 
 		return { parse_stmt(lexer) };
 	}
@@ -73,9 +73,9 @@ stmt_p parse_stmt(Lexer& lexer)
 	case TokenType::DEF:	  return std::make_shared<Function>(parse_func(lexer));
 	case TokenType::RETURN:	  return std::make_shared<Return>(parse_return(lexer));
 
-	case TokenType::ELIF: throw NIGHT_CREATE_FATAL("elif statement must come before an if or elif statement");
-	case TokenType::ELSE: throw NIGHT_CREATE_FATAL("else statement must come before an if or elif statement");
-	default: throw NIGHT_CREATE_FATAL("unknown syntax '" + lexer.curr().str + "'");
+	case TokenType::ELIF: throw night::create_fatal_error("elif statement must come before an if or elif statement", lexer.loc);
+	case TokenType::ELSE: throw night::create_fatal_error("else statement must come before an if or elif statement", lexer.loc);
+	default: throw night::create_fatal_error("unknown syntax '" + lexer.curr().str + "'", lexer.loc);
 	}
 }
 
@@ -88,12 +88,22 @@ stmt_p parse_var(Lexer& lexer)
 	switch (lexer.peek().type)
 	{
 	case TokenType::TYPE: {
-		lexer.eat();
+		if (lexer.peek().type == TokenType::OPEN_SQUARE)
+		{
+			auto const& ast = std::make_shared<ArrayInitialization>(parse_array_init(lexer, var_name));
 
-		auto const& ast = std::make_shared<VariableInit>(parse_var_init(lexer, var_name));
+			lexer.eat();
+			return ast;
+		}
+		else
+		{
+			lexer.eat();
 
-		lexer.eat();
-		return ast;
+			auto const& ast = std::make_shared<VariableInit>(parse_var_init(lexer, var_name));
+
+			lexer.eat();
+			return ast;
+		}
 	}
 	case TokenType::ASSIGN: 
 	case TokenType::ASSIGN_OPERATOR: {
@@ -119,7 +129,7 @@ stmt_p parse_var(Lexer& lexer)
 		return ast;
 	}
 	default:
-		throw night::error::get().create_fatal_error("found '" + lexer.peek().str + "', expected type, assign, open square, or open bracket", lexer.loc);
+		throw night::create_fatal_error("found '" + lexer.peek().str + "', expected type, assign, open square, or open bracket", lexer.loc);
 	}
 }
 
@@ -145,7 +155,38 @@ VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 
 	lexer.curr_check(TokenType::SEMICOLON);
 
-	return VariableInit(lexer.loc, var_name, type_str, arr_sizes, expr);
+	return VariableInit(lexer.loc, var_name, type_str, expr);
+}
+
+ArrayInitialization parse_array_init(Lexer& lexer, std::string const& var_name)
+{
+	assert(lexer.curr().type == TokenType::TYPE);
+
+	auto type = lexer.curr().str;
+
+	lexer.eat();
+
+	// Determine the subscript expressions if any (for arrays), and construct
+	// ValueType for the variable.
+
+
+	std::vector<expr::expr_p> arr_sizes;
+	while (lexer.curr().type == TokenType::OPEN_SQUARE)
+	{
+		arr_sizes.push_back(parse_expr(lexer, false, TokenType::CLOSE_SQUARE));
+		lexer.eat();
+	}
+
+	// Determine the expression the variable is being assigned to, if any.
+
+	expr::expr_p expr(nullptr);
+
+	if (lexer.curr().type == TokenType::ASSIGN)
+		expr = parse_expr(lexer, true);
+
+	lexer.curr_check(TokenType::SEMICOLON);
+
+	return ArrayInitialization(lexer.loc, var_name, type, arr_sizes, expr);
 }
 
 VariableAssign parse_var_assign(Lexer& lexer, std::string const& var_name)
@@ -329,7 +370,7 @@ Function parse_func(Lexer& lexer)
 	auto rtn_type = lexer.eat();
 
 	if (rtn_type.type != TokenType::TYPE && rtn_type.type != TokenType::VOID)
-		throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected return type");
+		throw night::create_fatal_error("found '" + lexer.curr().str + "', expected return type", lexer.loc);
 
 	// Parse body.
 

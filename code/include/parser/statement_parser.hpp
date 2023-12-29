@@ -46,6 +46,8 @@ stmt_p parse_var(Lexer& lexer);
  */
 VariableInit parse_var_init(Lexer& lexer, std::string const& var_name);
 
+ArrayInitialization parse_array_init(Lexer& lexer, std::string const& var_name);
+
 /* It is the callers responsibility to check if lexer.curr() is their expected
  * token after this function is called.
  * Lexer:
