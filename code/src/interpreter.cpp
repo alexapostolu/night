@@ -67,7 +67,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 
 			char* result = (char*)malloc(strlen(s1) + strlen(s2) + 1);
 			if (!result)
-				throw night::error::get().create_runtime_error("could not allocate memory");
+				throw night::create_runtime_error("could not allocate memory");
 
 			strcpy(result, s2);
 			strcat(result, s1);
@@ -181,19 +181,22 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			s.emplace(scope.vars[*(++it)]);
 			break;
 
-		case BytecodeType::STORE:
+		case BytecodeType::STORE: {
+			auto id = pop(s);
+
 			if (s.empty())
 			{
 				intpr::Value val;
 				val.as.d = 0;
-				val.
 			}
 			else
 			{
-				scope.vars[*(++it)] = pop(s);
+
+				scope.vars[id.as.i] = pop(s);
 			}
 
 			break;
+		}
 
 		case BytecodeType::LOAD_ELEM: {
 			auto id = *(++it);

@@ -22,31 +22,12 @@ VariableInit::VariableInit(
 	Location const& _loc,
 	std::string const& _name,
 	std::string const& _type,
-	std::vector<expr::expr_p> const& _arr_sizes,
 	expr::expr_p const& _expr)
-	: Statement(_loc), name(_name), type(_type), arr_sizes(_arr_sizes)
-	, expr(_expr) {}
+	: Statement(_loc), name(_name), type(_type), expr(_expr) {}
 
 void VariableInit::check(ParserScope& scope)
 {
-	// Determine type of variable.
-
-	for (auto& arr_size : arr_sizes)
-	{
-		if (!arr_size)
-			continue;
-
-		// Type check
-
-		auto arr_size_type = arr_size->type_check(scope);
-
-		if (arr_size_type.has_value() && arr_size_type->is_arr())
-			night::error::get().create_minor_error(
-				"found type '" + night::to_str(*arr_size_type) + "' in array size, "
-				"expected primitive type", loc);
-	}
-
-	var_type = ValueType(type, !arr_sizes.empty());
+	var_type = ValueType(type, 0);
 	id = scope.create_variable(name, var_type, loc);
 
 	// Return if there are minor errors.
@@ -57,7 +38,7 @@ void VariableInit::check(ParserScope& scope)
 	// Compare variable type with expression type.
 
 	if (expr && is_same_or_primitive(var_type, expr->type_check(scope)))
-		night::error::get().create_minor_error(
+		night::create_minor_error(
 			"variable '" + name + "' of type '" + night::to_str(type) +
 			"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", loc);
 }
@@ -67,13 +48,10 @@ bool VariableInit::optimize(ParserScope& scope)
 	/* Process
 	 *   1. If variable is never used, return false, else,
 	 *   2. Optimize expression if it exists.
-	 * 
+	 *
 	 * Note: Array sizes have already been optimized in check(), so there is no
 	 * need to optimize them here.
 	 */
-
-	for (auto& arr_size : arr_sizes)
-		arr_size = arr_size->optimize(scope);
 
 	if (!scope.is_var_used(name))
 		return false;
@@ -91,25 +69,9 @@ bytecodes_t VariableInit::generate_codes() const
 	// Populate expression array
 
 	bytecodes_t codes;
-	
+
 	if (expr)
 		codes = expr->generate_codes();
-	
-	if (var_type.is_arr())
-	{
-		auto arr_size_1_codes = arr_sizes[0]->generate_codes();
-		codes.insert(std::end(codes), std::begin(arr_size_1_codes), std::end(arr_size_1_codes));
-
-		for (auto i = 1; i < arr_sizes.size(); ++i)
-		{
-			auto arr_size_codes = arr_sizes[i]->generate_codes();
-			codes.insert(std::end(codes), std::begin(arr_size_codes), std::end(arr_size_codes));
-
-			codes.push_back((bytecode_t)BytecodeType::MULT_I);
-		}
-
-		codes.push_back((bytecode_t)BytecodeType::RESIZE_ARRAY);
-	}
 
 	if (var_type == ValueType::BOOL && expr_type == ValueType::FLOAT)
 		codes.push_back((bytecode_t)BytecodeType::F2B);
@@ -122,6 +84,126 @@ bytecodes_t VariableInit::generate_codes() const
 	codes.push_back(*id);
 
 	return codes;
+}
+
+
+ArrayInitialization::ArrayInitialization(
+	Location const& _loc,
+	std::string const& _name,
+	std::string const& _type,
+	std::vector<expr::expr_p> const& _arr_sizes,
+	expr::expr_p const& _expr)
+	: Statement(_loc), name(_name), type(_type), arr_sizes(_arr_sizes)
+	, expr(_expr) {}
+
+void ArrayInitialization::check(ParserScope& scope)
+{
+	// Type check variable sizes.
+
+	for (auto& arr_size : arr_sizes)
+	{
+		if (!arr_size)
+			continue;
+
+		// Type check by expecting primitive types.
+
+		auto arr_size_type = arr_size->type_check(scope);
+
+		if (arr_size_type.has_value() && arr_size_type->is_arr())
+			night::create_minor_error(
+				"found type '" + night::to_str(*arr_size_type) + "' in array size, "
+				"expected primitive type", loc);
+	}
+
+	// Deduce type of variable.
+
+	var_type = ValueType(type, !arr_sizes.empty());
+	id = scope.create_variable(name, var_type, loc);
+
+	// Return if there are minor errors.
+
+	if (night::error::get().has_minor_errors())
+		return;
+
+	// Compare variable type with expression type.
+
+	if (expr && is_same_or_primitive(var_type, expr->type_check(scope)))
+		night::create_minor_error(
+			"variable '" + name + "' of type '" + night::to_str(type) +
+			"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", loc);
+}
+
+bool ArrayInitialization::optimize(ParserScope& scope)
+{
+	/* Process
+	 *   1. If variable is never used, return false, else,
+	 *   2. Optimize expression if it exists.
+	 * 
+	 * Note: Array sizes have already been optimized in check(), so there is no
+	 * need to optimize them here.
+	 */
+
+	for (auto& arr_size : arr_sizes)
+	{
+		arr_size = arr_size->optimize(scope);
+		if (auto arr_size_numeric = std::dynamic_pointer_cast<expr::Numeric>(arr_size))
+			arr_sizes_numerics.push_back(std::get<int64_t>(arr_size_numeric->val));
+	}
+
+	if (!scope.is_var_used(name))
+		return false;
+
+	if (expr)
+		expr = expr->optimize(scope);
+
+	if (is_static)
+	{
+		if (!expr)
+			expr = std::make_shared<expr::Array>(loc, std::vector<expr::expr_p>(), false);
+		
+		fill_array(expr, 0);
+	}
+
+	return true;
+}
+
+bytecodes_t ArrayInitialization::generate_codes() const
+{
+	assert(id.has_value());
+	assert(expr);
+
+	bytecodes_t codes = expr->generate_codes();
+
+	auto id_codes = int_to_bytecodes(*id);
+	id_codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
+
+	codes.push_back((bytecode_t)BytecodeType::STORE);
+
+	return codes;
+}
+
+void ArrayInitialization::fill_array(expr::expr_p expr, int depth) const
+{
+	assert(expr);
+
+	if (auto arr = std::dynamic_pointer_cast<expr::Array>(expr))
+	{
+		if (depth == arr_sizes_numerics.size() - 2)
+		{
+			for (int i = arr->elements.size(); i < arr_sizes_numerics[depth]; ++i)
+				arr->elements.push_back(std::make_shared<expr::Numeric>(loc, type, 0));
+		}
+		else
+		{
+			for (int i = arr->elements.size(); i < arr_sizes_numerics[depth]; ++i)
+				arr->elements.push_back(std::make_shared<expr::Array>(loc, std::vector<expr::expr_p>(), false));
+		}
+
+		arr->elements.resize(arr_sizes_numerics[depth]);
+
+		for (int i = 0; i < arr->elements.size(); ++i)
+			fill_array(arr->elements[i], depth + 1);
+	}
 }
 
 
@@ -140,7 +222,7 @@ void VariableAssign::check(ParserScope& scope)
 	auto var = scope.get_var(var_name);
 
 	if (!var)
-		night::error::get().create_minor_error("variable '" + var_name + "' is undefined", loc);
+		night::create_minor_error("variable '" + var_name + "' is undefined", loc);
 
 	auto expr_type = expr->type_check(scope);
 
@@ -151,7 +233,7 @@ void VariableAssign::check(ParserScope& scope)
 	id = var->id;
 
 	if (!is_same_or_primitive(var->type, *expr_type))
-		night::error::get().create_minor_error(
+		night::create_minor_error(
 			"variable '" + var_name + "' of type '" + night::to_str(var->type) +
 			"can not be assigned to type '" + night::to_str(*expr_type) + "'", loc);
 
@@ -235,7 +317,7 @@ void Conditional::check(ParserScope& scope)
 		auto cond_type = cond->type_check(scope);
 
 		if (cond_type.has_value() && cond_type->is_arr())
-			night::error::get().create_minor_error(
+			night::create_minor_error(
 				"expected type 'bool', 'char', 'int', or float."
 				"condition is type '" + night::to_str(*cond_type) + "'", loc);
 
@@ -325,7 +407,7 @@ void While::check(ParserScope& scope)
 	auto cond_type = cond_expr->type_check(scope);
 
 	if (cond_type.has_value() && cond_type->is_arr())
-		night::error::get().create_minor_error(
+		night::create_minor_error(
 			"condition is type '" + night::to_str(*cond_type) + "', "
 			"expected type 'bool', 'char', 'int', or 'float'", loc);
 
@@ -450,7 +532,7 @@ void Function::check(ParserScope& global_scope)
 		id = func_it->second.id;
 	}
 	catch (std::string const& e) {
-		night::error::get().create_minor_error(e, loc);
+		night::create_minor_error(e, loc);
 	}
 
 	for (auto& stmt : block)
@@ -493,19 +575,19 @@ void Return::check(ParserScope& scope)
 	if (expr_type.has_value())
 	{
 		if (!scope.rtn_type.has_value())
-			night::error::get().create_minor_error(
+			night::create_minor_error(
 				"found return type '" + night::to_str(*expr_type) + "', "
 				"expected void return type", loc);
 
 		if (!is_same_or_primitive(*scope.rtn_type, *expr_type))
-			night::error::get().create_minor_error(
+			night::create_minor_error(
 				"found return type '" + night::to_str(*expr_type) + "', "
 				"expected return type '" + night::to_str(*scope.rtn_type) + "'", loc);
 	}
 	else
 	{
 		if (scope.rtn_type.has_value())
-			night::error::get().create_minor_error(
+			night::create_minor_error(
 				"found void return type, expected return type '" +
 				night::to_str(*scope.rtn_type) + "'", loc);
 	}
@@ -540,7 +622,7 @@ void ArrayMethod::check(ParserScope& scope)
 	auto var = scope.get_var(var_name);
 
 	if (!var)
-		night::error::get().create_minor_error("variable '" + var_name + "' is undefined", loc);
+		night::create_minor_error("variable '" + var_name + "' is undefined", loc);
 
 	for (auto const& subscript : subscripts)
 	{
@@ -548,7 +630,7 @@ void ArrayMethod::check(ParserScope& scope)
 
 		auto subscript_type = subscript->type_check(scope);
 		if (subscript_type.has_value() && subscript_type->is_arr())
-			night::error::get().create_minor_error("subscript is type '" + night::to_str(*subscript_type) + "', expected type bool, char, or int'", loc);
+			night::create_minor_error("subscript is type '" + night::to_str(*subscript_type) + "', expected type bool, char, or int'", loc);
 	}
 
 	if (assign_expr)
@@ -705,12 +787,12 @@ std::optional<ValueType> expr::FunctionCall::type_check(ParserScope& scope) noex
 		if (s_types.length() >= 2)
 			s_types = s_types.substr(0, s_types.size() - 2);
 
-		night::error::get().create_minor_error("arguments in function call '" + name + "' are of type '" + s_types +
+		night::create_minor_error("arguments in function call '" + name + "' are of type '" + s_types +
 			"', and do not match with the parameters in its function definition", Statement::loc);
 	}
 
 	if (is_expr && !func->second.rtn_type.has_value())
-		night::error::get().create_minor_error("function '" + func->first + "' can not have a return type of void when used in an expression", Statement::loc);
+		night::create_minor_error("function '" + func->first + "' can not have a return type of void when used in an expression", Statement::loc);
 
 	id = func->second.id;
 	return func->second.rtn_type;

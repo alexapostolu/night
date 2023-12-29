@@ -25,35 +25,35 @@ std::string night::error::what() const
 	return s;
 }
 
-void night::error::create_warning(std::string const& msg, Location const& loc, std::source_location const& s_loc) noexcept
+void night::create_warning(std::string const& msg, Location const& loc, std::source_location const& s_loc) noexcept
 {
-	minor_errors.push_back(format_error_msg("warning", msg, loc, s_loc));
+	error::get().minor_errors.push_back(format_error_msg("warning", msg, loc, s_loc));
 }
 
-void night::error::create_minor_error(std::string const& msg, Location const& loc, std::source_location const& s_loc) noexcept
+void night::create_minor_error(std::string const& msg, Location const& loc, std::source_location const& s_loc) noexcept
 {
-	minor_errors.push_back(format_error_msg("minor error", msg, loc, s_loc));
+	error::get().minor_errors.push_back(format_error_msg("minor error", msg, loc, s_loc));
 }
 
-night::error const& night::error::create_fatal_error(
+night::error const& night::create_fatal_error(
 	std::string const& msg, Location const& loc,
 	std::source_location const& s_loc) noexcept
 {
-	fatal_error_msg = format_error_msg("fatal error", msg, loc, s_loc);
-	return *this;
+	error::get().fatal_error_msg = format_error_msg("fatal error", msg, loc, s_loc);
+	return error::get();
 }
 
-night::error const& night::error::create_runtime_error(
+night::error const& night::create_runtime_error(
 	std::string const& msg,
 	std::source_location const& s_loc) noexcept
 {
-	fatal_error_msg = "[ runtime error ]\n";
+	error::get().fatal_error_msg = "[ runtime error ]\n";
 
-	if (debug_flag)
-		fatal_error_msg += std::string() + s_loc.file_name() + " " + std::to_string(s_loc.line()) + '\n';
+	if (error::get().debug_flag)
+		error::get().fatal_error_msg += std::string() + s_loc.file_name() + " " + std::to_string(s_loc.line()) + '\n';
 
-	fatal_error_msg += '\n' + msg + '\n';
-	return *this;
+	error::get().fatal_error_msg += '\n' + msg + '\n';
+	return error::get();
 }
 
 bool night::error::has_minor_errors() const
@@ -61,16 +61,16 @@ bool night::error::has_minor_errors() const
 	return !minor_errors.empty();
 }
 
-std::string night::error::format_error_msg(
+std::string night::format_error_msg(
 	std::string const& type,
 	std::string const& msg,
 	Location const& loc,
-	std::source_location const& s_loc) const noexcept
+	std::source_location const& s_loc) noexcept
 {
 	std::string base = "[ " + type + " ]\n" +
 						loc.file + " (" + std::to_string(loc.line) + ":" + std::to_string(loc.col) + ")\n";
 
-	if (debug_flag)
+	if (error::get().debug_flag)
 		base += std::string() + s_loc.file_name() + " " + std::to_string(s_loc.line()) + '\n';
 
 	base += '\n' + msg + "\n\n";

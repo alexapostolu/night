@@ -224,6 +224,37 @@ public:
 };
 
 
+class Allocate : public Expression
+{
+public:
+	Allocate(
+		Location const& _loc,
+		ValueType::PrimType const _type,
+		std::vector<expr_p> const& _sizes
+	);
+
+	void insert_node(
+		expr_p node,
+		expr_p* prev = nullptr
+	) override;
+
+	std::optional<ValueType> type_check(
+		ParserScope& scope
+	) noexcept override;
+
+	[[nodiscard]]
+	expr_p optimize(
+		ParserScope const& scope
+	) override;
+
+	bytecodes_t generate_codes() const override;
+
+public:
+	ValueType::PrimType type;
+	std::vector<expr_p> sizes;
+};
+
+
 /* Note signed types are represented through a Unary Operator
  */
 class Numeric : public Expression

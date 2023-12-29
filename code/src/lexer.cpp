@@ -78,7 +78,7 @@ Token const& Lexer::expect(TokenType type, std::string const& err, std::source_l
 		eat();
 
 	if (curr().type != type)
-		throw night::error::get().create_fatal_error("found '" + curr().str + "', expected " + night::to_str(type) + " " + err, loc, s_loc);
+		throw night::create_fatal_error("found '" + curr().str + "', expected " + night::to_str(type) + " " + err, loc, s_loc);
 
 	return curr();
 }
@@ -86,7 +86,7 @@ Token const& Lexer::expect(TokenType type, std::string const& err, std::source_l
 Token const& Lexer::curr_check(TokenType type, std::source_location const& s_loc)
 {
 	if (curr().type != type)
-		throw night::error::get().create_fatal_error("found '" + night::to_str(curr_tok.type) + "', expected '" + night::to_str(type) + "'", loc, s_loc);
+		throw night::create_fatal_error("found '" + night::to_str(curr_tok.type) + "', expected '" + night::to_str(type) + "'", loc, s_loc);
 
 	return curr();
 }
@@ -152,10 +152,10 @@ Token Lexer::eat_character()
 	++loc.col;
 
 	if (loc.col == file_line.length())
-		throw night::error::get().create_fatal_error("", loc);
+		throw night::create_fatal_error("", loc);
 
 	if (file_line[loc.col] == '\'')
-		throw night::error::get().create_fatal_error("character can not not be empty", loc);
+		throw night::create_fatal_error("character can not not be empty", loc);
 
 	std::string chr;
 
@@ -169,7 +169,7 @@ Token Lexer::eat_character()
 		case 't':  chr = "\t"; break;
 		case '"':  chr = "\""; break;
 		default:
-			throw night::error::get().create_fatal_error("unknown character '\\'" + file_line[loc.col], loc);
+			throw night::create_fatal_error("unknown character '\\'" + file_line[loc.col], loc);
 		}
 	}
 	else
@@ -178,7 +178,7 @@ Token Lexer::eat_character()
 	}
 
 	if (file_line[++loc.col] != '\'')
-		throw night::error::get().create_fatal_error(std::string() + "found '" + file_line[loc.col] + "', expected closing quote at the end of character", loc);
+		throw night::create_fatal_error(std::string() + "found '" + file_line[loc.col] + "', expected closing quote at the end of character", loc);
 
 	++loc.col;
 	return { TokenType::CHAR_LIT, chr };
@@ -277,7 +277,7 @@ Token Lexer::eat_symbol()
 
 	auto symbol = symbols.find(file_line[loc.col]);
 	if (symbol == symbols.end())
-		throw NIGHT_CREATE_FATAL_LEXER("unknown symbol '" + std::string(1, file_line[loc.col]) + "'");
+		throw  night::create_fatal_error("unknown symbol '" + std::string(1, file_line[loc.col]) + "'", loc);
 
 	for (auto& [c, tok_type] : symbol->second)
 	{
@@ -294,7 +294,7 @@ Token Lexer::eat_symbol()
 		}
 	}
 
-	throw NIGHT_CREATE_FATAL_LEXER("unknown symbol '" + file_line.substr(loc.col, 2) + "'");
+	throw  night::create_fatal_error("unknown symbol '" + file_line.substr(loc.col, 2) + "'", loc);
 }
 
 bool Lexer::new_line()

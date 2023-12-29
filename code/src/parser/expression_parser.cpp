@@ -74,7 +74,7 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty, std::optional<TokenType
 		default:
 		{
 			if (err_on_empty && !head)
-				throw NIGHT_CREATE_FATAL("found '" + lexer.curr().str + "', expected expression");
+				throw night::create_fatal_error("found '" + lexer.curr().str + "', expected expression", lexer.loc);
 
 			if (end_token.has_value())
 				lexer.curr_check(*end_token);
@@ -113,6 +113,25 @@ expr::expr_p parse_variable_or_call(Lexer& lexer)
 	{
 		lexer.eat();
 		return std::make_shared<expr::FunctionCall>(parse_func_call(lexer, var_name));
+	}
+	
+	// Parse array allocation.
+	if (lexer.peek().type == TokenType::OPEN_SQUARE)
+	{
+		lexer.eat();
+
+		std::vector<expr::expr_p> sizes;
+		while (true)
+		{
+			sizes.push_back(parse_expr(lexer, true, TokenType::CLOSE_SQUARE));
+
+			lexer.eat();
+
+			if (lexer.eat().type != TokenType::OPEN_SQUARE)
+				break;
+		}
+
+		return std::make_shared<expr::Allocate>(lexer.loc, var_name, sizes)
 	}
 	
 	// Parse variable.

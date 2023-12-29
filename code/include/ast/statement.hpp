@@ -65,15 +65,11 @@ protected:
 };
 
 
-/* Variable Initialization
- * 
- * If 'arr_sizes' is empty, then the variable is not an array.
+/* Initialization of non-arrays.
  * 
  * Use Cases:
  *    my_var int;
  *    my_var int = 3;
- *    my_var int[3];
- *    my_var int[3] = [];
  */
 class VariableInit : public Statement
 {
@@ -82,8 +78,7 @@ public:
 		Location const& _loc,
 		std::string const& _name,
 		std::string const& _type,
-		std::vector<expr::expr_p> const& _arr_sizes,
-		expr::expr_p const& expr
+		expr::expr_p const& _expr
 	);
 
 	void check(ParserScope& scope) override;
@@ -96,11 +91,58 @@ public:
 private:
 	std::string type;
 	ValueType var_type;
-	std::vector<expr::expr_p> arr_sizes;
 	expr::expr_p expr;
 
 	std::optional<bytecode_t> id;
 	std::optional<ValueType> expr_type;
+};
+
+
+/* Initialization of arrays.
+ * 
+ * Use Cases:
+ *    my_var int[2][3];
+ *    my_var int[] = [ 1, 2, 3 ];
+ */
+class ArrayInitialization : public Statement
+{
+public:
+	ArrayInitialization(
+		Location const& loc,
+		std::string const& _name,
+		std::string const& _type,
+		std::vector<expr::expr_p> const& _arr_sizes,
+		expr::expr_p const& _expr
+	);
+
+	void check(ParserScope& scope) override;
+	bool optimize(ParserScope& scope) override;
+	bytecodes_t generate_codes() const override;
+
+	// Precondition:
+	//    'arr' is not null
+	//    The reason for this is if `arr` is null, then there would be no way
+	//    to modify the original array as this function does not return a value
+	void fill_array(expr::expr_p expr, int depth) const;
+
+public:
+	std::string name;
+
+private:
+	std::string type;
+	ValueType var_type;
+	std::vector<expr::expr_p> arr_sizes;
+	std::vector<int> arr_sizes_numerics;
+	expr::expr_p expr;
+
+	std::optional<bytecode_t> id;
+	std::optional<ValueType> expr_type;
+
+	// true
+	//    my_arr int[3] = [ 1, 2, 3 ];
+	// false
+	//    my_arr int[] = int[my_size];
+	bool is_static;
 };
 
 
