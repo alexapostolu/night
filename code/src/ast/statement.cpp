@@ -124,7 +124,7 @@ void ArrayInitialization::check(ParserScope& scope)
 
 	// Deduce type of variable.
 
-	var_type = ValueType(type, !arr_sizes.empty());
+	var_type = ValueType(type, arr_sizes.size());
 	id = scope.create_variable(name, var_type, loc);
 
 	// Return if there are minor errors.
@@ -134,10 +134,15 @@ void ArrayInitialization::check(ParserScope& scope)
 
 	// Compare variable type with expression type.
 
-	if (expr && is_same_or_primitive(var_type, expr->type_check(scope)))
-		night::create_minor_error(
-			"variable '" + name + "' of type '" + night::to_str(type) +
-			"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", loc);
+	if (expr)
+	{
+		expr_type = expr->type_check(scope);
+
+		if (expr_type.has_value() && !is_same_or_primitive(var_type, expr_type))
+			night::create_minor_error(
+				"variable '" + name + "' of type '" + night::to_str(type) +
+				"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", loc);
+	}
 }
 
 bool ArrayInitialization::optimize(ParserScope& scope)
@@ -154,7 +159,9 @@ bool ArrayInitialization::optimize(ParserScope& scope)
 	{
 		arr_size = arr_size->optimize(scope);
 		if (auto arr_size_numeric = std::dynamic_pointer_cast<expr::Numeric>(arr_size))
-			arr_sizes_numerics.push_back(std::get<int64_t>(arr_size_numeric->val));
+		{
+			std::visit([&](auto&& arg) { arr_sizes_numerics.push_back((int)arg); }, arr_size_numeric->val);
+		}
 	}
 
 	if (!scope.is_var_used(name))
@@ -182,7 +189,7 @@ bytecodes_t ArrayInitialization::generate_codes() const
 	bytecodes_t codes = expr->generate_codes();
 
 	auto id_codes = int_to_bytecodes(*id);
-	id_codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
+	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 
 	codes.push_back((bytecode_t)BytecodeType::STORE);
 
@@ -305,8 +312,10 @@ bytecodes_t VariableAssign::generate_codes() const
 		codes.insert(std::end(codes), std::begin(expr_codes), std::end(expr_codes));
 	}
 
+	auto id_codes = int_to_bytecodes(*id);
+	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
+
 	codes.push_back((bytecode_t)BytecodeType::STORE);
-	codes.push_back(*id);
 
 	return codes;
 }
@@ -476,16 +485,16 @@ For::For(
 
 void For::check(ParserScope& scope)
 {
-	ParserScope for_scope(scope);
+	local_scope = ParserScope(scope);
 
-	var_init.check(for_scope);
-	loop.check(for_scope);
+	var_init.check(local_scope);
+	loop.check(local_scope);
 }
 
 bool For::optimize(ParserScope& scope)
 {
-	var_init.optimize(scope);
-	loop.optimize(scope);
+	var_init.optimize(local_scope);
+	loop.optimize(local_scope);
 
 	return true;
 }

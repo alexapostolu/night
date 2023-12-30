@@ -183,11 +183,11 @@ expr::BinaryOp::BinaryOp(
 
 expr::BinaryOp::BinaryOp(
 	BinaryOp const& other)
-	: Expression(other.loc, other.precedence_), lhs(other.lhs), rhs(other.rhs)
-	, cast_lhs(other.cast_lhs), cast_rhs(other.cast_rhs), op_code(other.op_code)
-{
-
-}
+	: Expression(other.loc, other.precedence_)
+	, op_type(other.op_type)
+	, lhs(other.lhs), rhs(other.rhs)
+	, cast_lhs(other.cast_lhs), cast_rhs(other.cast_rhs)
+	, op_code(other.op_code) {}
 
 void expr::BinaryOp::insert_node(
 	expr::expr_p node,
@@ -207,6 +207,8 @@ void expr::BinaryOp::insert_node(
 	}
 	else
 	{
+		assert(prev);
+
 		node->insert_node(std::make_shared<BinaryOp>(*this));
 		*prev = node;
 	}
@@ -359,10 +361,6 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope& scope) noexcept
 			else if (rhs_type->is_arr())
 			{
 				op_code = BytecodeType::INDEX_A;
-
-				if (rhs_type->dim == 1)
-					return rhs_type->type;
-
 				return ValueType(rhs_type->type, rhs_type->dim - 1);
 			}
 		}
@@ -473,6 +471,8 @@ void expr::Variable::insert_node(
 	expr::expr_p node,
 	expr::expr_p* prev)
 {
+	assert(prev);
+
 	node->insert_node(std::make_shared<expr::Variable>(loc, name, id));
 	*prev = node;
 }
@@ -510,6 +510,8 @@ void expr::Array::insert_node(
 	expr_p node,
 	expr_p* prev)
 {
+	assert(prev);
+
 	node->insert_node(std::make_shared<expr::Array>(loc, elements, is_str_));
 	*prev = node;
 }
@@ -621,6 +623,8 @@ void expr::Allocate::insert_node(
 	expr_p node,
 	expr_p* prev)
 {
+	assert(prev);
+
 	node->insert_node(std::make_shared<expr::Allocate>(loc, type, sizes));
 	*prev = node;
 }
@@ -656,6 +660,7 @@ bytecodes_t expr::Allocate::generate_codes() const
 	return codes;
 }
 
+
 expr::Numeric::Numeric(
 	Location const& _loc,
 	ValueType::PrimType _type,
@@ -666,6 +671,8 @@ void expr::Numeric::insert_node(
 	expr_p node,
 	expr_p* prev)
 {
+	assert(prev);
+
 	node->insert_node(std::make_shared<expr::Numeric>(loc, type, val));
 	*prev = node;
 }

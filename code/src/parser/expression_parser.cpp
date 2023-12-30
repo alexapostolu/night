@@ -27,7 +27,9 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty, std::optional<TokenType
 		// The new node to be constructed.
 		expr::expr_p node;
 
-		switch (lexer.eat().type)
+		auto save_type = lexer.eat().type;
+
+		switch (lexer.curr().type)
 		{
 		case TokenType::BOOL_LIT:
 			node = std::make_shared<expr::Numeric>(lexer.loc, ValueType::BOOL, (int64_t)(lexer.curr().str == "true"));
@@ -90,7 +92,7 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty, std::optional<TokenType
 		else
 			head->insert_node(node, &head);
 
-		previous_token_type = lexer.curr().type;
+		previous_token_type = save_type;
 	}
 }
 
@@ -142,7 +144,8 @@ expr::expr_p parse_subscript_or_array(Lexer& lexer, std::optional<TokenType> pre
 {
 	// Parse subscript.
 	if (previous_token_type == TokenType::STRING_LIT ||
-		previous_token_type == TokenType::VARIABLE)
+		previous_token_type == TokenType::VARIABLE ||
+		previous_token_type == TokenType::OPEN_SQUARE)
 	{
 		auto index_expr = parse_expr(lexer, true);
 		lexer.curr_check(TokenType::CLOSE_SQUARE);

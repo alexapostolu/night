@@ -66,6 +66,7 @@ ParserVariable const* ParserScope::get_var(std::string const& name)
 
 bool ParserScope::is_var_used(std::string const& name) const
 {
+	assert(vars.contains(name));
 	return vars.at(name).times_used;
 }
 

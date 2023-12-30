@@ -88,6 +88,8 @@ stmt_p parse_var(Lexer& lexer)
 	switch (lexer.peek().type)
 	{
 	case TokenType::TYPE: {
+		lexer.eat();
+
 		if (lexer.peek().type == TokenType::OPEN_SQUARE)
 		{
 			auto const& ast = std::make_shared<ArrayInitialization>(parse_array_init(lexer, var_name));
@@ -97,8 +99,6 @@ stmt_p parse_var(Lexer& lexer)
 		}
 		else
 		{
-			lexer.eat();
-
 			auto const& ast = std::make_shared<VariableInit>(parse_var_init(lexer, var_name));
 
 			lexer.eat();
@@ -137,25 +137,18 @@ VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 {
 	assert(lexer.curr().type == TokenType::TYPE);
 
-	// Determine the subscript expressions if any (for arrays), and construct
-	// ValueType for the variable.
-
-	auto type_str = lexer.curr().str;
-
-	std::vector<expr::expr_p> arr_sizes;
-	while (lexer.eat().type == TokenType::OPEN_SQUARE)
-		arr_sizes.push_back(parse_expr(lexer, false, TokenType::CLOSE_SQUARE));
+	auto type = lexer.curr().str;
 
 	// Determine the expression the variable is being assigned to, if any.
 
 	expr::expr_p expr(nullptr);
 	
-	if (lexer.curr().type == TokenType::ASSIGN)
+	if (lexer.eat().type == TokenType::ASSIGN)
 		expr = parse_expr(lexer, true);
 
 	lexer.curr_check(TokenType::SEMICOLON);
 
-	return VariableInit(lexer.loc, var_name, type_str, expr);
+	return VariableInit(lexer.loc, var_name, type, expr);
 }
 
 ArrayInitialization parse_array_init(Lexer& lexer, std::string const& var_name)
@@ -165,10 +158,6 @@ ArrayInitialization parse_array_init(Lexer& lexer, std::string const& var_name)
 	auto type = lexer.curr().str;
 
 	lexer.eat();
-
-	// Determine the subscript expressions if any (for arrays), and construct
-	// ValueType for the variable.
-
 
 	std::vector<expr::expr_p> arr_sizes;
 	while (lexer.curr().type == TokenType::OPEN_SQUARE)

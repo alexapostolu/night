@@ -225,6 +225,8 @@ public:
 private:
 	VariableInit var_init;
 	While loop;
+
+	ParserScope local_scope;
 };
 
 
