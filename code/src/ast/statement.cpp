@@ -157,7 +157,11 @@ bool ArrayInitialization::optimize(ParserScope& scope)
 
 	for (auto& arr_size : arr_sizes)
 	{
+		if (!arr_size)
+			continue;
+
 		arr_size = arr_size->optimize(scope);
+
 		if (auto arr_size_numeric = std::dynamic_pointer_cast<expr::Numeric>(arr_size))
 		{
 			std::visit([&](auto&& arg) { arr_sizes_numerics.push_back((int)arg); }, arr_size_numeric->val);
@@ -731,8 +735,10 @@ bytecodes_t ArrayMethod::generate_codes() const
 			throw debug::unhandled_case(assign_op);
 	}
 
+	auto index_codes = int_to_bytecodes(*id);
+	codes.insert(std::end(codes), std::begin(index_codes), std::end(index_codes));
+
 	codes.push_back((bytecode_t)BytecodeType::STORE_INDEX);
-	codes.push_back(*id);
 
 	return codes;
 }

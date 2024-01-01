@@ -206,8 +206,8 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		case BytecodeType::ALLOCATE_ARR_AND_FILL: push_arr_and_fill(s); break;
 
 		case BytecodeType::STORE_INDEX: {
+			auto id = pop(s).as.i;
 			auto expr = pop(s);
-			auto id = *(++it);
 			intpr::Value* val = &scope.vars[id];
 			while (!s.empty())
 			{
@@ -352,25 +352,31 @@ void push_arr(std::stack<intpr::Value>& s)
 
 void push_arr_and_fill(std::stack<intpr::Value>& s)
 {
-	auto sizes = pop(s).as.i;
-	intpr::Value arr;
+	auto dimensions = pop(s).as.i;
+	std::vector<int> sizes;
 
+	for (int i = 0; i < dimensions; ++i)
+		sizes.push_back(pop(s).as.i);
+
+	std::reverse(std::begin(sizes), std::end(sizes));
+
+	intpr::Value arr;
 	fill_arr(arr, s, sizes, 0);
+
+	s.push(arr);
 }
 
-void fill_arr(intpr::Value& arr, std::stack<intpr::Value>& s, int size, int count)
+void fill_arr(intpr::Value& arr, std::stack<intpr::Value>& s, std::vector<int> const& dimensions, int current_dimension)
 {
-	if (count < size)
+	if (current_dimension < dimensions.size())
 	{
-		auto size = pop(s).as.i;
+		arr.as.a.size = dimensions[current_dimension];
+		arr.as.a.data = new intpr::Value[dimensions[current_dimension]];
 
-		arr.as.a.size = size;
-		arr.as.a.data = new intpr::Value[size];
-
-		for (int i = 0; i < size; ++i)
+		for (int i = 0; i < dimensions[current_dimension]; ++i)
 		{
 			intpr::Value element;
-			fill_arr(element, s, size, count + 1);
+			fill_arr(element, s, dimensions, current_dimension + 1);
 
 			arr.as.a.data[i] = element;
 		}

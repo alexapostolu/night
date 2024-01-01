@@ -128,7 +128,9 @@ expr::expr_p parse_variable_or_call(Lexer& lexer)
 		{
 			sizes.push_back(parse_expr(lexer, true, TokenType::CLOSE_SQUARE));
 
-			if (lexer.eat().type != TokenType::OPEN_SQUARE)
+			if (lexer.peek().type == TokenType::OPEN_SQUARE)
+				lexer.eat();
+			else
 				break;
 		}
 		

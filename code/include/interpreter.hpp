@@ -60,7 +60,7 @@ void push_float(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it);
 void push_str(std::stack<intpr::Value>& s);
 void push_arr(std::stack<intpr::Value>& s);
 void push_arr_and_fill(std::stack<intpr::Value>& s);
-void fill_arr(intpr::Value& arr, std::stack<intpr::Value>& s, int sizes, int count);
+void fill_arr(intpr::Value& arr, std::stack<intpr::Value>& s, std::vector<int> const& dimensions, int current_dimension);
 
 void push_subscript(std::stack<intpr::Value>& s, bool is_string);
 
