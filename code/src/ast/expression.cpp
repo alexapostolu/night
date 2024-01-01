@@ -631,6 +631,9 @@ void expr::Allocate::insert_node(
 
 std::optional<ValueType> expr::Allocate::type_check(ParserScope& scope) noexcept
 {
+	for (auto& size : sizes)
+		size->type_check(scope);
+
 	return ValueType(type, sizes.size());
 }
 

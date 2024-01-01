@@ -353,12 +353,10 @@ void push_arr(std::stack<intpr::Value>& s)
 void push_arr_and_fill(std::stack<intpr::Value>& s)
 {
 	auto dimensions = pop(s).as.i;
-	std::vector<int> sizes;
+	std::vector<int> sizes(dimensions);
 
-	for (int i = 0; i < dimensions; ++i)
-		sizes.push_back(pop(s).as.i);
-
-	std::reverse(std::begin(sizes), std::end(sizes));
+	for (int i = dimensions - 1; i >= 0; --i)
+		sizes[i] = pop(s).as.i;
 
 	intpr::Value arr;
 	fill_arr(arr, s, sizes, 0);
