@@ -158,14 +158,15 @@ bool ArrayInitialization::optimize(ParserScope& scope)
 	for (auto& arr_size : arr_sizes)
 	{
 		if (!arr_size)
+		{
+			arr_sizes_numerics.push_back(-1);
 			continue;
+		}
 
 		arr_size = arr_size->optimize(scope);
 
 		if (auto arr_size_numeric = std::dynamic_pointer_cast<expr::Numeric>(arr_size))
-		{
 			std::visit([&](auto&& arg) { arr_sizes_numerics.push_back((int)arg); }, arr_size_numeric->val);
-		}
 	}
 
 	if (!scope.is_var_used(name))
@@ -208,16 +209,21 @@ void ArrayInitialization::fill_array(expr::expr_p expr, int depth) const
 	{
 		if (depth == arr_sizes_numerics.size() - 2)
 		{
+			assert(depth < arr_sizes_numerics.size());
+
 			for (int i = arr->elements.size(); i < arr_sizes_numerics[depth]; ++i)
 				arr->elements.push_back(std::make_shared<expr::Numeric>(loc, ValueType(type).type, (int64_t)0));
 		}
-		else
+		else if (arr_sizes_numerics[depth] != -1)
 		{
+			assert(depth < arr_sizes_numerics.size());
+
 			for (int i = arr->elements.size(); i < arr_sizes_numerics[depth]; ++i)
 				arr->elements.push_back(std::make_shared<expr::Array>(loc, std::vector<expr::expr_p>(), false));
 		}
 
-		arr->elements.resize(arr_sizes_numerics[depth]);
+		if (arr_sizes_numerics[depth] != -1)
+			arr->elements.resize(arr_sizes_numerics[depth]);
 
 		for (int i = 0; i < arr->elements.size(); ++i)
 			fill_array(arr->elements[i], depth + 1);
@@ -681,9 +687,6 @@ bytecodes_t ArrayMethod::generate_codes() const
 		codes.insert(std::end(codes), std::begin(subscript_codes), std::end(subscript_codes));
 	}
 
-	auto assign_codes = assign_expr->generate_codes();
-	codes.insert(std::end(codes), std::begin(assign_codes), std::end(assign_codes));
-
 	if (assign_op != "=")
 	{
 		for (int i = subscripts.size() - 1; i >= 0; --i)
@@ -700,6 +703,9 @@ bytecodes_t ArrayMethod::generate_codes() const
 
 		codes.push_back((bytecode_t)BytecodeType::LOAD_ELEM);
 		codes.push_back(*id);
+
+		auto assign_codes = assign_expr->generate_codes();
+		codes.insert(std::end(codes), std::begin(assign_codes), std::end(assign_codes));
 
 		if (assign_op == "+=")
 		{
@@ -733,6 +739,11 @@ bytecodes_t ArrayMethod::generate_codes() const
 		}
 		else
 			throw debug::unhandled_case(assign_op);
+	}
+	else
+	{
+		auto assign_codes = assign_expr->generate_codes();
+		codes.insert(std::end(codes), std::begin(assign_codes), std::end(assign_codes));
 	}
 
 	auto index_codes = int_to_bytecodes(*id);

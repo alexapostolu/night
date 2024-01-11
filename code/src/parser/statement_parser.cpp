@@ -202,7 +202,10 @@ ArrayMethod parse_array_method(Lexer& lexer, std::string const& var_name)
 
 	// Parse operator and expression.
 
-	auto assign_operator = lexer.curr_check(TokenType::ASSIGN).str;
+	if (lexer.curr().type != TokenType::ASSIGN && lexer.curr().type != TokenType::ASSIGN_OPERATOR)
+		throw night::create_fatal_error("found '" + lexer.curr().str + "', expected assignment operator", lexer.loc);
+
+	auto assign_operator = lexer.curr().str;
 	auto assign_expr	 = parse_expr(lexer, true, TokenType::SEMICOLON);
 
 	lexer.eat();
