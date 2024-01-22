@@ -15,7 +15,20 @@ bytecodes_t code_gen(std::vector<stmt_p>& block)
 		throw night::error::get();
 
 	for (auto& ast : block)
+	{
 		ast->optimize(global_scope);
+	}
+
+	for (auto i = 0; i < block.size(); ++i)
+	{
+		bool keep = block[i]->optimize(global_scope);
+
+		if (!keep)
+		{
+			block.erase(block.begin() + i);
+			--i;
+		}
+	}
 
 	if (night::error::get().has_minor_errors())
 		throw night::error::get();

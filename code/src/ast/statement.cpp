@@ -180,7 +180,7 @@ bool ArrayInitialization::optimize(ParserScope& scope)
 		if (!expr)
 			expr = std::make_shared<expr::Array>(loc, std::vector<expr::expr_p>(), false);
 		
-		fill_array(expr, 0);
+		fill_array(var_type, expr, 0);
 	}
 
 	return true;
@@ -201,23 +201,25 @@ bytecodes_t ArrayInitialization::generate_codes() const
 	return codes;
 }
 
-void ArrayInitialization::fill_array(expr::expr_p expr, int depth) const
+void ArrayInitialization::fill_array(ValueType const& type, expr::expr_p expr, int depth) const
 {
 	assert(expr);
+	assert(0 <= depth && depth < arr_sizes_numerics.size());
 
 	if (auto arr = std::dynamic_pointer_cast<expr::Array>(expr))
 	{
-		if (depth == arr_sizes_numerics.size() - 2)
+		if (depth == arr_sizes_numerics.size() - 1)
 		{
-			assert(depth < arr_sizes_numerics.size());
-
 			for (int i = arr->elements.size(); i < arr_sizes_numerics[depth]; ++i)
+			{
 				arr->elements.push_back(std::make_shared<expr::Numeric>(loc, ValueType(type).type, (int64_t)0));
+				arr->type_conversion.push_back(std::nullopt);
+			}
+
+			return;
 		}
 		else if (arr_sizes_numerics[depth] != -1)
 		{
-			assert(depth < arr_sizes_numerics.size());
-
 			for (int i = arr->elements.size(); i < arr_sizes_numerics[depth]; ++i)
 				arr->elements.push_back(std::make_shared<expr::Array>(loc, std::vector<expr::expr_p>(), false));
 		}
@@ -226,7 +228,7 @@ void ArrayInitialization::fill_array(expr::expr_p expr, int depth) const
 			arr->elements.resize(arr_sizes_numerics[depth]);
 
 		for (int i = 0; i < arr->elements.size(); ++i)
-			fill_array(arr->elements[i], depth + 1);
+			fill_array(type, arr->elements[i], depth + 1);
 	}
 }
 

@@ -123,7 +123,8 @@ public:
 	//    'arr' is not null
 	//    The reason for this is if `arr` is null, then there would be no way
 	//    to modify the original array as this function does not return a value
-	void fill_array(expr::expr_p expr, int depth) const;
+	// 'type' is to set type_conversions for Array
+	void fill_array(ValueType const& type, expr::expr_p expr, int depth) const;
 
 public:
 	std::string name;

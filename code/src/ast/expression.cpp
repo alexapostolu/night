@@ -54,7 +54,7 @@ void expr::UnaryOp::insert_node(
 	{
 		expr = node;
 	}
-	else if (node->precedence() > precedence())
+	else if (node->precedence() < precedence())
 	{
 		expr->insert_node(node, &expr);
 	}
@@ -201,7 +201,7 @@ void expr::BinaryOp::insert_node(
 	{
 		rhs = node;
 	}
-	else if (node->precedence() > precedence())
+	else if (node->precedence() < precedence())
 	{
 		rhs->insert_node(node, &rhs);
 	}
