@@ -247,7 +247,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			case 2: std::cout << pop(s).as.i; break;
 			case 3: std::cout << pop(s).as.d; break;
 			case 4: printf("%s", pop(s).as.s); break;
-			case 5: { char* str = new char[100]; scanf("%s", str); s.emplace(str); }; break;
+			case 5: push_string_input(s); break;
 			case 6: break; // char(int); can not remove bytecode because of char(2 + 3) => 2 + 3, and now we have 2, 3, + on the stack that does nothing
 			case 7: {
 				s.emplace((int64_t)std::stoll(pop(s).as.s));
@@ -396,6 +396,16 @@ void push_subscript(std::stack<intpr::Value>& s, bool is_string)
 		s.emplace((int64_t)container.as.s[index.as.i]);
 	else
 		s.emplace(container.as.a.data[index.as.i]);
+}
+
+void push_string_input(std::stack<intpr::Value>& s)
+{
+	char* str = new char[100]; 
+
+	fgets(str, 100, stdin);
+	str[99] = '\0';
+
+	s.emplace(str);
 }
 
 intpr::Value pop(std::stack<intpr::Value>& s)

@@ -64,6 +64,8 @@ void fill_arr(intpr::Value& arr, std::stack<intpr::Value>& s, std::vector<int> c
 
 void push_subscript(std::stack<intpr::Value>& s, bool is_string);
 
+void push_string_input(std::stack<intpr::Value>& s);
+
 intpr::Value pop(std::stack<intpr::Value>& s);
 
 char* night_get_line();
