@@ -1,9 +1,9 @@
 #include "ast/expression.hpp"
 
-#include "parser_scope.hpp"
+#include "statement_scope.hpp"
 #include "scope_check.hpp"
 #include "bytecode.hpp"
-#include "value_type.hpp"
+#include "type.hpp"
 #include "error.hpp"
 #include "debug.hpp"
 
@@ -65,8 +65,8 @@ void expr::UnaryOp::insert_node(
 	}
 }
 
-std::optional<ValueType> expr::UnaryOp::type_check(
-	ParserScope& scope) noexcept
+std::optional<Type> expr::UnaryOp::type_check(
+	StatementScope& scope) noexcept
 {
 	assert(expr);
 
@@ -83,37 +83,37 @@ std::optional<ValueType> expr::UnaryOp::type_check(
 	switch (op_type)
 	{
 	case UnaryOpType::NEGATIVE:
-		switch (expr_type->type)
+		switch (expr_type->prim)
 		{
-		case ValueType::BOOL:
-		case ValueType::CHAR:
-		case ValueType::INT:
+		case Type::BOOL:
+		case Type::CHAR:
+		case Type::INT:
 			op_code = BytecodeType::NEGATIVE_I;
-			return ValueType::INT;
+			return Type::INT;
 
-		case ValueType::FLOAT:
+		case Type::FLOAT:
 			op_code = BytecodeType::NEGATIVE_F;
-			return ValueType::FLOAT;
+			return Type::FLOAT;
 		}
 		
 	case UnaryOpType::NOT:
-		switch (expr_type->type)
+		switch (expr_type->prim)
 		{
-		case ValueType::BOOL:
-		case ValueType::CHAR:
-		case ValueType::INT:
+		case Type::BOOL:
+		case Type::CHAR:
+		case Type::INT:
 			op_code = BytecodeType::NOT_I;
-			return ValueType::BOOL;
+			return Type::BOOL;
 
-		case ValueType::FLOAT:
+		case Type::FLOAT:
 			op_code = BytecodeType::NOT_F;
-			return ValueType::BOOL;
+			return Type::BOOL;
 		}
 	}
 }
 
 expr::expr_p expr::UnaryOp::optimize(
-	ParserScope const& scope)
+	StatementScope const& scope)
 {
 	assert(expr);
 
@@ -214,7 +214,7 @@ void expr::BinaryOp::insert_node(
 	}
 }
 
-std::optional<ValueType> expr::BinaryOp::type_check(ParserScope& scope) noexcept
+std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 {
 	// Operations where strings are supported are handled seperately in the
 	// switch statement.
@@ -253,7 +253,7 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope& scope) noexcept
 				break;
 
 			op_code = BytecodeType::ADD_S;
-			return ValueType(ValueType::CHAR, 1);
+			return Type(Type::CHAR, 1);
 		}
 
 		// Fall through 
@@ -264,26 +264,26 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope& scope) noexcept
 	case BinaryOpType::MOD:
 		if (!lhs_type->is_arr() && !rhs_type->is_arr())
 		{
-			if (lhs_type == ValueType::FLOAT)
+			if (lhs_type == Type::FLOAT)
 			{
-				if (rhs_type != ValueType::FLOAT)
+				if (rhs_type != Type::FLOAT)
 					cast_rhs = BytecodeType::I2F;
 
 				op_code = op_code_float;
-				return ValueType::FLOAT;
+				return Type::FLOAT;
 			}
 
-			if (rhs_type == ValueType::FLOAT)
+			if (rhs_type == Type::FLOAT)
 			{
-				if (lhs_type != ValueType::FLOAT)
+				if (lhs_type != Type::FLOAT)
 					cast_lhs = BytecodeType::I2F;
 
 				op_code = op_code_float;
-				return ValueType::FLOAT;
+				return Type::FLOAT;
 			}
 
 			op_code = op_code_int;
-			return ValueType::INT;
+			return Type::INT;
 		}
 
 		break;
@@ -298,21 +298,21 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope& scope) noexcept
 		{
 			assert(op_code_str.has_value());
 			op_code = *op_code_str;
-			return ValueType::BOOL;
+			return Type::BOOL;
 		}
 
 		if (!lhs_type->is_arr() && !rhs_type->is_arr())
 		{
-			if (lhs_type == ValueType::FLOAT)
+			if (lhs_type == Type::FLOAT)
 			{
-				if (rhs_type != ValueType::FLOAT)
+				if (rhs_type != Type::FLOAT)
 					cast_rhs = BytecodeType::I2F;
 
 				op_code = op_code_float;
 			}
-			else if (rhs_type == ValueType::FLOAT)
+			else if (rhs_type == Type::FLOAT)
 			{
-				if (lhs_type != ValueType::FLOAT)
+				if (lhs_type != Type::FLOAT)
 					cast_lhs = BytecodeType::I2F;
 
 				op_code = op_code_float;
@@ -322,7 +322,7 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope& scope) noexcept
 				op_code = op_code_int;
 			}
 
-			return ValueType::BOOL;
+			return Type::BOOL;
 		}
 
 		break;
@@ -331,37 +331,37 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope& scope) noexcept
 	case BinaryOpType::OR:
 		if (!lhs_type->is_arr() && !rhs_type->is_arr())
 		{
-			if (lhs_type == ValueType::FLOAT)
+			if (lhs_type == Type::FLOAT)
 			{
-				if (rhs_type != ValueType::FLOAT)
+				if (rhs_type != Type::FLOAT)
 					cast_rhs = BytecodeType::I2F;
 			}
-			else if (rhs_type != ValueType::FLOAT)
+			else if (rhs_type != Type::FLOAT)
 			{
-				if (lhs_type != ValueType::FLOAT)
+				if (lhs_type != Type::FLOAT)
 					cast_lhs = BytecodeType::I2F;
 			}
 
 			op_code = op_type == BinaryOpType::AND
 						? BytecodeType::AND
 						: BytecodeType::OR;
-			return ValueType::BOOL;
+			return Type::BOOL;
 		}
 
 		break;
 
 	case BinaryOpType::SUBSCRIPT:
-		if (lhs_type == ValueType::INT)
+		if (lhs_type == Type::INT)
 		{
 			if (rhs_type->is_str())
 			{
 				op_code = BytecodeType::INDEX_S;
-				return ValueType::CHAR;
+				return Type::CHAR;
 			}
 			else if (rhs_type->is_arr())
 			{
 				op_code = BytecodeType::INDEX_A;
-				return ValueType(rhs_type->type, rhs_type->dim - 1);
+				return Type(rhs_type->prim, rhs_type->dim - 1);
 			}
 		}
 
@@ -375,7 +375,7 @@ std::optional<ValueType> expr::BinaryOp::type_check(ParserScope& scope) noexcept
 	return std::nullopt;
 }
 
-expr::expr_p expr::BinaryOp::optimize(ParserScope const& scope)
+expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
 {
 	assert(lhs && rhs);
 
@@ -407,12 +407,12 @@ expr::expr_p expr::BinaryOp::optimize(ParserScope const& scope)
 	auto op = [&loc = this->loc, &lhs_lit, &rhs_lit](bool is_bool, auto eval) -> std::shared_ptr<Numeric> {
 		if (std::holds_alternative<double>(lhs_lit->val) || std::holds_alternative<double>(rhs_lit->val))
 			return std::make_shared<Numeric>(
-				loc, is_bool ? ValueType::BOOL : ValueType::FLOAT,
+				loc, is_bool ? Type::BOOL : Type::FLOAT,
 				eval(std::visit([](auto&& arg) { return (double)arg; }, lhs_lit->val), std::visit([](auto&& arg) { return (double)arg; }, rhs_lit->val))
 			);
 	
 		return std::make_shared<Numeric>(
-			loc, is_bool ? ValueType::BOOL : ValueType::INT,
+			loc, is_bool ? Type::BOOL : Type::INT,
 			eval(std::visit([](auto&& arg) { return (int64_t)arg; }, lhs_lit->val), std::visit([](auto&& arg) { return (int64_t)arg; }, rhs_lit->val))
 		);
 	};
@@ -477,7 +477,7 @@ void expr::Variable::insert_node(
 	*prev = node;
 }
 
-std::optional<ValueType> expr::Variable::type_check(ParserScope& scope) noexcept
+std::optional<Type> expr::Variable::type_check(StatementScope& scope) noexcept
 {
 	if (!check_variable_defined(scope, name, loc))
 		return std::nullopt;
@@ -486,7 +486,7 @@ std::optional<ValueType> expr::Variable::type_check(ParserScope& scope) noexcept
 	return scope.get_var(name)->type;
 }
 
-expr::expr_p expr::Variable::optimize(ParserScope const& scope)
+expr::expr_p expr::Variable::optimize(StatementScope const& scope)
 {
 	return std::make_shared<Variable>(loc, name, id);
 }
@@ -502,7 +502,7 @@ expr::Array::Array(
 	Location const& _loc,
 	std::vector<expr_p> const& _elements,
 	bool _is_str_,
-	std::optional<ValueType> const& _type_convert,
+	std::optional<Type> const& _type_convert,
 	std::vector<std::optional<BytecodeType>> const& _type_conversion)
 	: Expression(_loc, Expression::single_precedence), elements(_elements), is_str_(_is_str_), type_convert(_type_convert), type_conversion(_type_conversion) {}
 
@@ -516,12 +516,12 @@ void expr::Array::insert_node(
 	*prev = node;
 }
 
-std::optional<ValueType> expr::Array::type_check(ParserScope& scope) noexcept
+std::optional<Type> expr::Array::type_check(StatementScope& scope) noexcept
 {
 	// Deduce the array type based on the elements. Create error if elements
 	// are different types.
 
-	std::optional<ValueType> arr_type;
+	std::optional<Type> arr_type;
 	for (auto const& elem : elements)
 	{
 		assert(elem);
@@ -533,11 +533,11 @@ std::optional<ValueType> expr::Array::type_check(ParserScope& scope) noexcept
 			continue;
 		}
 
-		if (type_convert == ValueType::BOOL && elem_type == ValueType::FLOAT)
+		if (type_convert == Type::BOOL && elem_type == Type::FLOAT)
 			type_conversion.push_back(BytecodeType::F2B);
-		else if (type_convert == ValueType::FLOAT && elem_type != ValueType::FLOAT)
+		else if (type_convert == Type::FLOAT && elem_type != Type::FLOAT)
 			type_conversion.push_back(BytecodeType::I2F);
-		else if (type_convert != ValueType::FLOAT && elem_type == ValueType::FLOAT)
+		else if (type_convert != Type::FLOAT && elem_type == Type::FLOAT)
 			type_conversion.push_back(BytecodeType::F2I);
 		else
 			type_conversion.push_back(std::nullopt);
@@ -546,14 +546,14 @@ std::optional<ValueType> expr::Array::type_check(ParserScope& scope) noexcept
 		{
 			if (!arr_type->is_arr() && !elem_type->is_arr())
 			{
-				if (arr_type == ValueType::FLOAT || elem_type == ValueType::FLOAT)
-					arr_type = ValueType::FLOAT;
-				else if (arr_type == ValueType::INT || elem_type == ValueType::INT)
-					arr_type = ValueType::INT;
-				else if (arr_type == ValueType::CHAR || elem_type == ValueType::CHAR)
-					arr_type = ValueType::CHAR;
-				else if (arr_type == ValueType::BOOL || elem_type == ValueType::BOOL)
-					arr_type = ValueType::BOOL;
+				if (arr_type == Type::FLOAT || elem_type == Type::FLOAT)
+					arr_type = Type::FLOAT;
+				else if (arr_type == Type::INT || elem_type == Type::INT)
+					arr_type = Type::INT;
+				else if (arr_type == Type::CHAR || elem_type == Type::CHAR)
+					arr_type = Type::CHAR;
+				else if (arr_type == Type::BOOL || elem_type == Type::BOOL)
+					arr_type = Type::BOOL;
 			}
 		}
 		else
@@ -568,7 +568,7 @@ std::optional<ValueType> expr::Array::type_check(ParserScope& scope) noexcept
 	return arr_type;
 }
 
-expr::expr_p expr::Array::optimize(ParserScope const& scope)
+expr::expr_p expr::Array::optimize(StatementScope const& scope)
 {
 	for (auto& element : elements)
 		element = element->optimize(scope);
@@ -614,7 +614,7 @@ bool expr::Array::is_str() const
 
 expr::Allocate::Allocate(
 	Location const& _loc,
-	ValueType::PrimType const _type,
+	Type::Primitive const _type,
 	std::vector<expr_p> const& _sizes)
 	: Expression(_loc, Expression::single_precedence)
 	, type(_type), sizes(_sizes) {}
@@ -629,15 +629,15 @@ void expr::Allocate::insert_node(
 	*prev = node;
 }
 
-std::optional<ValueType> expr::Allocate::type_check(ParserScope& scope) noexcept
+std::optional<Type> expr::Allocate::type_check(StatementScope& scope) noexcept
 {
 	for (auto& size : sizes)
 		size->type_check(scope);
 
-	return ValueType(type, sizes.size());
+	return Type(type, sizes.size());
 }
 
-expr::expr_p expr::Allocate::optimize(ParserScope const& scope)
+expr::expr_p expr::Allocate::optimize(StatementScope const& scope)
 {
 	for (auto& size : sizes)
 		size = size->optimize(scope);
@@ -666,7 +666,7 @@ bytecodes_t expr::Allocate::generate_codes() const
 
 expr::Numeric::Numeric(
 	Location const& _loc,
-	ValueType::PrimType _type,
+	Type::Primitive _type,
 	std::variant<int64_t, uint64_t, double> const& _val)
 	: Expression(_loc, Expression::single_precedence), type(_type), val(_val) {}
 
@@ -680,12 +680,12 @@ void expr::Numeric::insert_node(
 	*prev = node;
 }
 
-std::optional<ValueType> expr::Numeric::type_check(ParserScope& scope) noexcept
+std::optional<Type> expr::Numeric::type_check(StatementScope& scope) noexcept
 {
 	return type;
 }
 
-expr::expr_p expr::Numeric::optimize(ParserScope const& scope)
+expr::expr_p expr::Numeric::optimize(StatementScope const& scope)
 {
 	return std::make_shared<Numeric>(loc, type, val);
 }

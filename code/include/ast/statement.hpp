@@ -1,9 +1,9 @@
 #pragma once
 
-#include "parser_scope.hpp"
+#include "statement_scope.hpp"
 #include "expression.hpp"
 #include "bytecode.hpp"
-#include "value_type.hpp"
+#include "type.hpp"
 #include "error.hpp"
 
 #include <vector>
@@ -47,7 +47,7 @@ public:
 	 * This method also initializes certain std::optional member variables,
 	 * such as variable id for the VariableInit statement.
 	 */
-	virtual void check(ParserScope& global_scope) = 0;
+	virtual void check(StatementScope& global_scope) = 0;
 	
 	/* Return true to keep the statement. Return false to delete the statement.
 	 * A statement should be deleted if it's redundant, for example unused
@@ -56,7 +56,7 @@ public:
 	 *   if (!stmt->optimize(global_scope))
 	 *      remove stmt;
 	 */
-	virtual bool optimize(ParserScope& global_scope) = 0;
+	virtual bool optimize(StatementScope& global_scope) = 0;
 	
 	virtual bytecodes_t generate_codes() const = 0;
 
@@ -81,8 +81,8 @@ public:
 		expr::expr_p const& _expr
 	);
 
-	void check(ParserScope& scope) override;
-	bool optimize(ParserScope& scope) override;
+	void check(StatementScope& scope) override;
+	bool optimize(StatementScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 public:
@@ -90,11 +90,11 @@ public:
 
 private:
 	std::string type;
-	ValueType var_type;
+	Type var_type;
 	expr::expr_p expr;
 
 	std::optional<bytecode_t> id;
-	std::optional<ValueType> expr_type;
+	std::optional<Type> expr_type;
 };
 
 
@@ -115,8 +115,8 @@ public:
 		expr::expr_p const& _expr
 	);
 
-	void check(ParserScope& scope) override;
-	bool optimize(ParserScope& scope) override;
+	void check(StatementScope& scope) override;
+	bool optimize(StatementScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 	// Precondition:
@@ -124,20 +124,20 @@ public:
 	//    The reason for this is if `arr` is null, then there would be no way
 	//    to modify the original array as this function does not return a value
 	// 'type' is to set type_conversions for Array
-	void fill_array(ValueType const& type, expr::expr_p expr, int depth) const;
+	void fill_array(Type const& type, expr::expr_p expr, int depth) const;
 
 public:
 	std::string name;
 
 private:
 	std::string type;
-	ValueType var_type;
+	Type var_type;
 	std::vector<expr::expr_p> arr_sizes;
 	std::vector<int> arr_sizes_numerics;
 	expr::expr_p expr;
 
 	std::optional<bytecode_t> id;
-	std::optional<ValueType> expr_type;
+	std::optional<Type> expr_type;
 
 	// true
 	//    my_arr int[3] = [ 1, 2, 3 ];
@@ -157,8 +157,8 @@ public:
 		expr::expr_p const& _expr
 	);
 
-	void check(ParserScope& scope) override;
-	bool optimize(ParserScope& scope) override;
+	void check(StatementScope& scope) override;
+	bool optimize(StatementScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
@@ -166,7 +166,7 @@ private:
 	std::string assign_op;
 	expr::expr_p expr;
 
-	std::optional<ValueType> assign_type;
+	std::optional<Type> assign_type;
 	std::optional<bytecode_t> id;
 };
 
@@ -179,11 +179,13 @@ public:
 		conditional_container const& _conditionals
 	);
 
-	void check(ParserScope& scope) override;
-	bool optimize(ParserScope& scope) override;
+	void check(StatementScope& scope) override;
+	bool optimize(StatementScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
+	// If a conditional epxression is nullptr, then it represents and else
+	// statement and should be treated the same as a true if statement.
 	conditional_container conditionals;
 };
 
@@ -197,8 +199,8 @@ public:
 		std::vector<stmt_p> const& _block
 	);
 
-	void check(ParserScope& scope) override;
-	bool optimize(ParserScope& scope) override;
+	void check(StatementScope& scope) override;
+	bool optimize(StatementScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
@@ -219,15 +221,15 @@ public:
 		std::vector<stmt_p> const& _block
 	);
 
-	void check(ParserScope& scope) override;
-	bool optimize(ParserScope& scope) override;
+	void check(StatementScope& scope) override;
+	bool optimize(StatementScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
 	VariableInit var_init;
 	While loop;
 
-	ParserScope local_scope;
+	StatementScope local_scope;
 };
 
 
@@ -242,15 +244,15 @@ public:
 		std::vector<stmt_p> const& _block
 	);
 
-	void check(ParserScope& scope) override;
-	bool optimize(ParserScope& scope) override;
+	void check(StatementScope& scope) override;
+	bool optimize(StatementScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
 	std::string name;
 	std::vector<std::string> param_names;
-	std::vector<ValueType> param_types;
-	std::optional<ValueType> rtn_type;
+	std::vector<Type> param_types;
+	std::optional<Type> rtn_type;
 	std::vector<stmt_p> block;
 
 	bytecode_t id;
@@ -266,8 +268,8 @@ public:
 		expr::expr_p const& _expr
 	);
 
-	void check(ParserScope& scope) override;
-	bool optimize(ParserScope& scope) override;
+	void check(StatementScope& scope) override;
+	bool optimize(StatementScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
@@ -286,8 +288,8 @@ public:
 		expr::expr_p const& _assign_expr
 	);
 
-	void check(ParserScope& scope) override;
-	bool optimize(ParserScope& scope) override;
+	void check(StatementScope& scope) override;
+	bool optimize(StatementScope& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
@@ -297,7 +299,7 @@ private:
 	expr::expr_p assign_expr;
 
 	std::optional<bytecode_t> id;
-	std::optional<ValueType> assign_type;
+	std::optional<Type> assign_type;
 };
 
 
@@ -317,11 +319,11 @@ public:
 		expr_p node,
 		expr_p* prev = nullptr);
 
-	void check(ParserScope& scope) override;
-	std::optional<ValueType> type_check(ParserScope& scope) noexcept override;
-	bool optimize(ParserScope& scope) override;
+	void check(StatementScope& scope) override;
+	std::optional<Type> type_check(StatementScope& scope) noexcept override;
+	bool optimize(StatementScope& scope) override;
 	[[nodiscard]]
-	expr_p optimize(ParserScope const& scope) override;
+	expr_p optimize(StatementScope const& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:

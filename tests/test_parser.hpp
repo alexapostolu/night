@@ -22,7 +22,7 @@ struct Test
 	static void expect(BytecodeType type, int val = -1);
 
 private:
-	static ParserScope scope;
+	static StatementScope scope;
 	static Lexer lexer;
 
 	static int i;

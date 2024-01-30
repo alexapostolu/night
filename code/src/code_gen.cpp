@@ -5,7 +5,7 @@
 
 bytecodes_t code_gen(std::vector<stmt_p>& block)
 {
-	ParserScope global_scope;
+	StatementScope global_scope;
 	bytecodes_t codes;
 
 	for (auto& ast : block)

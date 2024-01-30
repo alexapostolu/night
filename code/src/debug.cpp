@@ -1,5 +1,5 @@
 #include "debug.hpp"
-#include "parser_scope.hpp"
+#include "statement_scope.hpp"
 #include "bytecode.hpp"
 
 #include <iostream>

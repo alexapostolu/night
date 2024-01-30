@@ -4,9 +4,7 @@
 #include "ast/statement.hpp"
 #include "ast/expression.hpp"
 #include "parser/expression_parser.hpp"
-#include "value_type.hpp"
 #include "error.hpp"
-#include "debug.hpp"
 
 #include <vector>
 #include <tuple>
@@ -246,9 +244,8 @@ Conditional parse_if(Lexer& lexer)
 	conditional_container conditionals;
 
 	do {
-		// Default for else statements.
-		expr::expr_p cond_expr =
-			std::make_shared<expr::Numeric>(lexer.loc, ValueType::BOOL, 1);
+		// Default to else statement.
+		expr::expr_p cond_expr(nullptr);
 
 		// Parse condition.
 		if (lexer.curr().type != TokenType::ELSE)

@@ -83,10 +83,14 @@ Token const& Lexer::expect(TokenType type, std::string const& err, std::source_l
 	return curr();
 }
 
-Token const& Lexer::curr_check(TokenType type, std::source_location const& s_loc)
+Token const& Lexer::curr_check(TokenType type, std::string const& err_msg, std::source_location const& s_loc)
 {
 	if (curr().type != type)
-		throw night::create_fatal_error("found '" + night::to_str(curr_tok.type) + "', expected '" + night::to_str(type) + "'", loc, s_loc);
+		throw night::create_fatal_error(
+			err_msg.empty()
+				? "found '" + night::to_str(curr_tok.type) + "', expected '" + night::to_str(type) + "'"
+				: err_msg,
+			loc, s_loc);
 
 	return curr();
 }
@@ -246,22 +250,22 @@ Token Lexer::eat_number()
 Token Lexer::eat_symbol()
 {
 	static std::unordered_map<char, std::vector<std::pair<char, TokenType> > > const symbols{
-		{ '+', { { '=', TokenType::ASSIGN_OPERATOR }, { '\0', TokenType::BINARY_OP } } },
-		{ '-', { { '=', TokenType::ASSIGN_OPERATOR }, { '\0', TokenType::BINARY_OP } } },
-		{ '*', { { '=', TokenType::ASSIGN_OPERATOR }, { '\0', TokenType::BINARY_OP } } },
-		{ '/', { { '=', TokenType::ASSIGN_OPERATOR }, { '\0', TokenType::BINARY_OP } } },
-		{ '%', { { '=', TokenType::ASSIGN_OPERATOR }, { '\0', TokenType::BINARY_OP } } },
+		{ '+', { { '=', TokenType::ASSIGN_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
+		{ '-', { { '=', TokenType::ASSIGN_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
+		{ '*', { { '=', TokenType::ASSIGN_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
+		{ '/', { { '=', TokenType::ASSIGN_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
+		{ '%', { { '=', TokenType::ASSIGN_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
 
-		{ '>', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::BINARY_OP } } },
-		{ '<', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::BINARY_OP } } },
+		{ '>', { { '=', TokenType::BINARY_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
+		{ '<', { { '=', TokenType::BINARY_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
 
-		{ '|', { { '|', TokenType::BINARY_OP } } },
-		{ '&', { { '&', TokenType::BINARY_OP } } },
-		{ '!', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::UNARY_OP } } },
+		{ '|', { { '|', TokenType::BINARY_OPERATOR } } },
+		{ '&', { { '&', TokenType::BINARY_OPERATOR } } },
+		{ '!', { { '=', TokenType::BINARY_OPERATOR }, { '\0', TokenType::UNARY_OPERATOR } } },
 
-		{ '.', { { '.', TokenType::BINARY_OP }, { '\0', TokenType::BINARY_OP } } },
+		{ '.', { { '.', TokenType::BINARY_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
 
-		{ '=', { { '=', TokenType::BINARY_OP }, { '\0', TokenType::ASSIGN } } },
+		{ '=', { { '=', TokenType::BINARY_OPERATOR }, { '\0', TokenType::ASSIGN } } },
 
 		{ '(', { { '\0', TokenType::OPEN_BRACKET } } },
 		{ ')', { { '\0', TokenType::CLOSE_BRACKET } } },

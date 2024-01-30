@@ -4,12 +4,6 @@
 
 enum class TokenType
 {
-	UNARY_OP,
-	BINARY_OP,
-
-	ASSIGN,
-	ASSIGN_OPERATOR,
-
 	OPEN_BRACKET,
 	CLOSE_BRACKET,
 	OPEN_SQUARE,
@@ -19,6 +13,12 @@ enum class TokenType
 	COLON,
 	SEMICOLON,
 	COMMA,
+
+	UNARY_OPERATOR,
+	BINARY_OPERATOR,
+
+	ASSIGN,			 // =
+	ASSIGN_OPERATOR, // +=, -=, *=, /=, %=
 
 	BOOL_LIT,
 	CHAR_LIT,

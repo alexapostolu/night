@@ -32,20 +32,20 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty, std::optional<TokenType
 		switch (lexer.curr().type)
 		{
 		case TokenType::BOOL_LIT:
-			node = std::make_shared<expr::Numeric>(lexer.loc, ValueType::BOOL, (int64_t)(lexer.curr().str == "true"));
+			node = std::make_shared<expr::Numeric>(lexer.loc, Type::BOOL, (int64_t)(lexer.curr().str == "true"));
 			break;
 
 		case TokenType::CHAR_LIT:
 			assert(lexer.curr().str.length() == 1);
-			node = std::make_shared<expr::Numeric>(lexer.loc, ValueType::CHAR, (int64_t)lexer.curr().str[0]);
+			node = std::make_shared<expr::Numeric>(lexer.loc, Type::CHAR, (int64_t)lexer.curr().str[0]);
 			break;
 
 		case TokenType::INT_LIT:
-			node = std::make_shared<expr::Numeric>(lexer.loc, ValueType::INT, std::stoull(lexer.curr().str));
+			node = std::make_shared<expr::Numeric>(lexer.loc, Type::INT, std::stoull(lexer.curr().str));
 			break;
 
 		case TokenType::FLOAT_LIT:
-			node = std::make_shared<expr::Numeric>(lexer.loc, ValueType::FLOAT, std::stod(lexer.curr().str));
+			node = std::make_shared<expr::Numeric>(lexer.loc, Type::FLOAT, std::stod(lexer.curr().str));
 			break;
 
 		case TokenType::STRING_LIT:
@@ -61,11 +61,11 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty, std::optional<TokenType
 			node = parse_subscript_or_array(lexer, previous_token_type);
 			break;
 
-		case TokenType::UNARY_OP:
+		case TokenType::UNARY_OPERATOR:
 			node = std::make_shared<expr::UnaryOp>(lexer.loc, lexer.curr().str);
 			break;
 
-		case TokenType::BINARY_OP:
+		case TokenType::BINARY_OPERATOR:
 			node = parse_subtract_or_negative(lexer, previous_token_type);
 			break;
 
@@ -101,7 +101,7 @@ expr::expr_p parse_string(Lexer& lexer)
 	std::vector<expr::expr_p> str;
 
 	for (char c : lexer.curr().str)
-		str.push_back(std::make_shared<expr::Numeric>(lexer.loc, ValueType::CHAR, (int64_t)c));
+		str.push_back(std::make_shared<expr::Numeric>(lexer.loc, Type::CHAR, (int64_t)c));
 
 	return std::make_shared<expr::Array>(lexer.loc, str, true);
 }
@@ -134,7 +134,7 @@ expr::expr_p parse_variable_or_call(Lexer& lexer)
 				break;
 		}
 		
-		return std::make_shared<expr::Allocate>(lexer.loc, ValueType(var_name).type, sizes);
+		return std::make_shared<expr::Allocate>(lexer.loc, Type(var_name).prim, sizes);
 	}
 	
 	// Parse variable.
@@ -186,8 +186,8 @@ expr::expr_p parse_subtract_or_negative(Lexer& lexer, std::optional<TokenType> p
 {
 	if (lexer.curr().str == "-" &&
 		(!previous_token_type.has_value() ||
-			previous_token_type == TokenType::UNARY_OP ||
-			previous_token_type == TokenType::BINARY_OP))
+			previous_token_type == TokenType::UNARY_OPERATOR ||
+			previous_token_type == TokenType::BINARY_OPERATOR))
 		return std::make_shared<expr::UnaryOp>(lexer.loc, lexer.curr().str);
 
 	return std::make_shared<expr::BinaryOp>(lexer.loc, lexer.curr().str);

@@ -7,8 +7,6 @@ std::string night::to_str(TokenType type)
 {
 	switch (type)
 	{
-	case TokenType::UNARY_OP: return "unary operator";
-	case TokenType::BINARY_OP: return "binary operator";
 	case TokenType::ASSIGN: return "assignment";
 	case TokenType::ASSIGN_OPERATOR: return "assignment operator";
 	case TokenType::OPEN_BRACKET: return "open bracket";
@@ -20,6 +18,8 @@ std::string night::to_str(TokenType type)
 	case TokenType::COLON: return "colon";
 	case TokenType::SEMICOLON: return "semicolon";
 	case TokenType::COMMA: return "comma";
+	case TokenType::UNARY_OPERATOR: return "unary operator";
+	case TokenType::BINARY_OPERATOR: return "binary operator";
 	case TokenType::BOOL_LIT: return "boolean";
 	case TokenType::CHAR_LIT: return "character";
 	case TokenType::INT_LIT: return "integer";

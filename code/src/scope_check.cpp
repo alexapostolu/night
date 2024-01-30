@@ -1,10 +1,10 @@
 #include "scope_check.hpp"
-#include "parser_scope.hpp"
+#include "statement_scope.hpp"
 
 #include <unordered_set>
 #include <string>
 
-bool check_variable_defined(ParserScope& scope, std::string const& name, Location const& loc)
+bool check_variable_defined(StatementScope& scope, std::string const& name, Location const& loc)
 {
 	static std::unordered_set<std::string> undefined_variables;
 
@@ -20,7 +20,7 @@ bool check_variable_defined(ParserScope& scope, std::string const& name, Locatio
 	return true;
 }
 
-bool check_function_defined(ParserScope const& scope, std::string const& name, Location const& loc)
+bool check_function_defined(StatementScope const& scope, std::string const& name, Location const& loc)
 {
 	static std::unordered_set<std::string> undefined_functions;
 

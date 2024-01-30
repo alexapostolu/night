@@ -6,7 +6,7 @@
 
 #include <iostream>
 
-ParserScope Test::scope;
+StatementScope Test::scope;
 Lexer Test::lexer;
 
 int Test::i = 0;

@@ -2,9 +2,9 @@
 
 #include "bytecode.hpp"
 #include "interpreter_scope.hpp"
-#include "parser_scope.hpp"
+#include "statement_scope.hpp"
 #include "scope_check.hpp"
-#include "value_type.hpp"
+#include "type.hpp"
 #include "error.hpp"
 #include "debug.hpp"
 
@@ -25,9 +25,9 @@ VariableInit::VariableInit(
 	expr::expr_p const& _expr)
 	: Statement(_loc), name(_name), type(_type), expr(_expr) {}
 
-void VariableInit::check(ParserScope& scope)
+void VariableInit::check(StatementScope& scope)
 {
-	var_type = ValueType(type, 0);
+	var_type = Type(type, 0);
 	id = scope.create_variable(name, var_type, loc);
 
 	// Return if there are minor errors.
@@ -48,7 +48,7 @@ void VariableInit::check(ParserScope& scope)
 	}
 }
 
-bool VariableInit::optimize(ParserScope& scope)
+bool VariableInit::optimize(StatementScope& scope)
 {
 	/* Process
 	 *   1. If variable is never used, return false, else,
@@ -58,11 +58,11 @@ bool VariableInit::optimize(ParserScope& scope)
 	 * need to optimize them here.
 	 */
 
-	if (!scope.is_var_used(name))
-		return false;
-
 	if (expr)
 		expr = expr->optimize(scope);
+	
+	if ((!expr || std::dynamic_pointer_cast<expr::Numeric>(expr)) && !scope.is_var_used(name))
+		return false;
 
 	return true;
 }
@@ -78,11 +78,11 @@ bytecodes_t VariableInit::generate_codes() const
 	if (expr)
 		codes = expr->generate_codes();
 
-	if (var_type == ValueType::BOOL && expr_type == ValueType::FLOAT)
+	if (var_type == Type::BOOL && expr_type == Type::FLOAT)
 		codes.push_back((bytecode_t)BytecodeType::F2B);
-	else if (var_type == ValueType::FLOAT && expr_type != ValueType::FLOAT)
+	else if (var_type == Type::FLOAT && expr_type != Type::FLOAT)
 		codes.push_back((bytecode_t)BytecodeType::I2F);
-	else if (var_type != ValueType::FLOAT && expr_type == ValueType::FLOAT)
+	else if (var_type != Type::FLOAT && expr_type == Type::FLOAT)
 		codes.push_back((bytecode_t)BytecodeType::F2I);
 
 	auto id_codes = int_to_bytecodes(*id);
@@ -103,7 +103,7 @@ ArrayInitialization::ArrayInitialization(
 	: Statement(_loc), name(_name), type(_type), arr_sizes(_arr_sizes)
 	, expr(_expr) {}
 
-void ArrayInitialization::check(ParserScope& scope)
+void ArrayInitialization::check(StatementScope& scope)
 {
 	// Type check variable sizes.
 
@@ -124,7 +124,7 @@ void ArrayInitialization::check(ParserScope& scope)
 
 	// Deduce type of variable.
 
-	var_type = ValueType(type, arr_sizes.size());
+	var_type = Type(type, arr_sizes.size());
 	id = scope.create_variable(name, var_type, loc);
 
 	// Return if there are minor errors.
@@ -145,7 +145,7 @@ void ArrayInitialization::check(ParserScope& scope)
 	}
 }
 
-bool ArrayInitialization::optimize(ParserScope& scope)
+bool ArrayInitialization::optimize(StatementScope& scope)
 {
 	/* Process
 	 *   1. If variable is never used, return false, else,
@@ -169,11 +169,11 @@ bool ArrayInitialization::optimize(ParserScope& scope)
 			std::visit([&](auto&& arg) { arr_sizes_numerics.push_back((int)arg); }, arr_size_numeric->val);
 	}
 
-	if (!scope.is_var_used(name))
-		return false;
-
 	if (expr)
 		expr = expr->optimize(scope);
+
+	if ((!expr || std::dynamic_pointer_cast<expr::Numeric>(expr)) && !scope.is_var_used(name))
+		return false;
 
 	if (is_static)
 	{
@@ -201,7 +201,7 @@ bytecodes_t ArrayInitialization::generate_codes() const
 	return codes;
 }
 
-void ArrayInitialization::fill_array(ValueType const& type, expr::expr_p expr, int depth) const
+void ArrayInitialization::fill_array(Type const& type, expr::expr_p expr, int depth) const
 {
 	assert(expr);
 	assert(0 <= depth && depth < arr_sizes_numerics.size());
@@ -212,7 +212,7 @@ void ArrayInitialization::fill_array(ValueType const& type, expr::expr_p expr, i
 		{
 			for (int i = arr->elements.size(); i < arr_sizes_numerics[depth]; ++i)
 			{
-				arr->elements.push_back(std::make_shared<expr::Numeric>(loc, ValueType(type).type, (int64_t)0));
+				arr->elements.push_back(std::make_shared<expr::Numeric>(loc, Type(type).prim, (int64_t)0));
 				arr->type_conversion.push_back(std::nullopt);
 			}
 
@@ -241,7 +241,7 @@ VariableAssign::VariableAssign(
 	: Statement(_loc), var_name(_var_name), assign_op(_assign_op), expr(_expr)
 	, assign_type(std::nullopt), id(std::nullopt) {}
 
-void VariableAssign::check(ParserScope& scope)
+void VariableAssign::check(StatementScope& scope)
 {
 	assert(expr);
 
@@ -267,7 +267,7 @@ void VariableAssign::check(ParserScope& scope)
 
 }
 
-bool VariableAssign::optimize(ParserScope& scope)
+bool VariableAssign::optimize(StatementScope& scope)
 {
 	expr = expr->optimize(scope);
 	return true;
@@ -287,30 +287,30 @@ bytecodes_t VariableAssign::generate_codes() const
 
 		if (assign_op == "+=")
 		{
-			if (is_same(*assign_type, ValueType(ValueType::CHAR, true)))
+			if (is_same(*assign_type, Type(Type::CHAR, true)))
 				codes.push_back((bytecode_t)BytecodeType::ADD_S);
-			else if (assign_type == ValueType::FLOAT)
+			else if (assign_type == Type::FLOAT)
 				codes.push_back((bytecode_t)BytecodeType::ADD_F);
 			else
 				codes.push_back((bytecode_t)BytecodeType::ADD_I);
 		}
 		else if (assign_op == "-=")
 		{
-			if (assign_type == ValueType::FLOAT)
+			if (assign_type == Type::FLOAT)
 				codes.push_back((bytecode_t)BytecodeType::SUB_F);
 			else
 				codes.push_back((bytecode_t)BytecodeType::SUB_I);
 		}
 		else if (assign_op == "*=")
 		{
-			if (assign_type == ValueType::FLOAT)
+			if (assign_type == Type::FLOAT)
 				codes.push_back((bytecode_t)BytecodeType::MULT_F);
 			else
 				codes.push_back((bytecode_t)BytecodeType::MULT_I);
 		}
 		else if (assign_op == "/=")
 		{
-			if (assign_type == ValueType::FLOAT)
+			if (assign_type == Type::FLOAT)
 				codes.push_back((bytecode_t)BytecodeType::DIV_F);
 			else
 				codes.push_back((bytecode_t)BytecodeType::DIV_I);
@@ -338,24 +338,27 @@ Conditional::Conditional(
 	conditional_container const& _conditionals)
 	: Statement(_loc), conditionals(_conditionals) {}
 
-void Conditional::check(ParserScope& scope)
+void Conditional::check(StatementScope& scope)
 {
 	for (auto const& [cond, block] : conditionals)
 	{
-		auto cond_type = cond->type_check(scope);
+		if (cond)
+		{
+			auto cond_type = cond->type_check(scope);
 
-		if (cond_type.has_value() && cond_type->is_arr())
-			night::create_minor_error(
-				"expected type 'bool', 'char', 'int', or float."
-				"condition is type '" + night::to_str(*cond_type) + "'", loc);
+			if (cond_type.has_value() && cond_type->is_arr())
+				night::create_minor_error(
+					"expected type 'bool', 'char', 'int', or float."
+					"condition is type '" + night::to_str(*cond_type) + "'", loc);
+		}
 
-		ParserScope conditional_scope(scope);
+		StatementScope conditional_scope(scope);
 		for (auto& stmt : block)
 			stmt->check(conditional_scope);
 	}
 }
 
-bool Conditional::optimize(ParserScope& scope)
+bool Conditional::optimize(StatementScope& scope)
 {
 	std::vector<int> remove_stmts_index;
 
@@ -363,20 +366,20 @@ bool Conditional::optimize(ParserScope& scope)
 	{
 		auto& [condition, body] = conditionals[i];
 
-		condition = condition->optimize(scope);
-
-		auto condition_lit = std::dynamic_pointer_cast<expr::Numeric>(condition);
-
-		if (condition_lit && !condition_lit->is_true())
+		if (condition)
 		{
-			remove_stmts_index.push_back(i);
-			ParserScope::inside_false_conditional = true;
+			condition = condition->optimize(scope);
+
+			auto condition_lit = std::dynamic_pointer_cast<expr::Numeric>(condition);
+
+			if (condition_lit && !condition_lit->is_true())
+			{
+				remove_stmts_index.push_back(i);
+			}
 		}
 
 		for (auto& stmt : body)
 			stmt->optimize(scope);
-
-		ParserScope::inside_false_conditional = false;
 	}
 
 	for (int i : remove_stmts_index)
@@ -393,8 +396,17 @@ bytecodes_t Conditional::generate_codes() const
 	for (auto const& [cond_expr, stmts] : conditionals)
 	{
 		// condition
-		auto cond_codes = cond_expr->generate_codes();
-		codes.insert(std::end(codes), std::begin(cond_codes), std::end(cond_codes));
+		if (cond_expr)
+		{
+			auto cond_codes = cond_expr->generate_codes();
+			codes.insert(std::end(codes), std::begin(cond_codes), std::end(cond_codes));
+		}
+		else
+		{
+			auto numeric_true = expr::Numeric(loc, Type::BOOL, 1);
+			auto cond_codes = numeric_true.generate_codes();
+			codes.insert(std::end(codes), std::begin(cond_codes), std::end(cond_codes));
+		}
 
 		codes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE);
 		int offset_index = codes.size();
@@ -430,7 +442,7 @@ While::While(
 	std::vector<stmt_p> const& _block)
 	: Statement(_loc), cond_expr(_cond), block(_block) {}
 
-void While::check(ParserScope& scope)
+void While::check(StatementScope& scope)
 {
 	auto cond_type = cond_expr->type_check(scope);
 
@@ -439,13 +451,13 @@ void While::check(ParserScope& scope)
 			"condition is type '" + night::to_str(*cond_type) + "', "
 			"expected type 'bool', 'char', 'int', or 'float'", loc);
 
-	ParserScope while_scope(scope);
+	StatementScope while_scope(scope);
 
 	for (auto& stmt : block)
 		stmt->check(while_scope);
 }
 
-bool While::optimize(ParserScope& scope)
+bool While::optimize(StatementScope& scope)
 {
 	cond_expr = cond_expr->optimize(scope);
 
@@ -495,15 +507,15 @@ For::For(
 	std::vector<stmt_p> const& _block)
 	: Statement(_loc), var_init(_var_init), loop(_loc, _cond_expr, _block) {}
 
-void For::check(ParserScope& scope)
+void For::check(StatementScope& scope)
 {
-	local_scope = ParserScope(scope);
+	local_scope = StatementScope(scope);
 
 	var_init.check(local_scope);
 	loop.check(local_scope);
 }
 
-bool For::optimize(ParserScope& scope)
+bool For::optimize(StatementScope& scope)
 {
 	var_init.optimize(local_scope);
 	loop.optimize(local_scope);
@@ -539,12 +551,12 @@ Function::Function(
 	if (_rtn_type == "void")
 		rtn_type = std::nullopt;
 	else
-		rtn_type = ValueType(_rtn_type);
+		rtn_type = Type(_rtn_type);
 }
 
-void Function::check(ParserScope& global_scope)
+void Function::check(StatementScope& global_scope)
 {
-	ParserScope func_scope(global_scope, rtn_type);
+	StatementScope func_scope(global_scope, rtn_type);
 
 	for (std::size_t i = 0; i < param_names.size(); ++i)
 	{
@@ -556,7 +568,7 @@ void Function::check(ParserScope& global_scope)
 
 	try {
 		// define the function now in ParserScope so it will be defined in recursive calls
-		auto func_it = ParserScope::create_function(name, param_names, param_types, rtn_type);
+		auto func_it = StatementScope::create_function(name, param_names, param_types, rtn_type);
 		id = func_it->second.id;
 	}
 	catch (std::string const& e) {
@@ -567,7 +579,7 @@ void Function::check(ParserScope& global_scope)
 		stmt->check(func_scope);
 }
 
-bool Function::optimize(ParserScope& scope)
+bool Function::optimize(StatementScope& scope)
 {
 	return true;
 }
@@ -596,7 +608,7 @@ Return::Return(
 	expr::expr_p const& _expr)
 	: Statement(_loc), expr(_expr) {}
 
-void Return::check(ParserScope& scope)
+void Return::check(StatementScope& scope)
 {
 	auto expr_type = expr->type_check(scope);
 
@@ -621,7 +633,7 @@ void Return::check(ParserScope& scope)
 	}
 }
 
-bool Return::optimize(ParserScope& scope)
+bool Return::optimize(StatementScope& scope)
 {
 	expr = expr->optimize(scope);
 	return true;
@@ -645,7 +657,7 @@ ArrayMethod::ArrayMethod(
 	expr::expr_p const& _assign_expr)
 	: Statement(_loc), var_name(_var_name), assign_op(_assign_op), subscripts(_subscripts), assign_expr(_assign_expr), id(std::nullopt) {}
 
-void ArrayMethod::check(ParserScope& scope)
+void ArrayMethod::check(StatementScope& scope)
 {
 	auto var = scope.get_var(var_name);
 
@@ -669,7 +681,7 @@ void ArrayMethod::check(ParserScope& scope)
 	id = var->id;
 }
 
-bool ArrayMethod::optimize(ParserScope& scope)
+bool ArrayMethod::optimize(StatementScope& scope)
 {
 	return true;
 }
@@ -711,30 +723,30 @@ bytecodes_t ArrayMethod::generate_codes() const
 
 		if (assign_op == "+=")
 		{
-			if (assign_type == ValueType::FLOAT)
+			if (assign_type == Type::FLOAT)
 				codes.push_back((bytecode_t)BytecodeType::ADD_F);
-			else if (is_same(*assign_type, ValueType(ValueType::CHAR, 1)))
+			else if (is_same(*assign_type, Type(Type::CHAR, 1)))
 				codes.push_back((bytecode_t)BytecodeType::ADD_S);
 			else
 				codes.push_back((bytecode_t)BytecodeType::ADD_I);
 		}
 		else if (assign_op == "-=")
 		{
-			if (assign_type == ValueType::FLOAT)
+			if (assign_type == Type::FLOAT)
 				codes.push_back((bytecode_t)BytecodeType::SUB_F);
 			else
 				codes.push_back((bytecode_t)BytecodeType::SUB_I);
 		}
 		else if (assign_op == "*=")
 		{
-			if (assign_type == ValueType::FLOAT)
+			if (assign_type == Type::FLOAT)
 				codes.push_back((bytecode_t)BytecodeType::MULT_F);
 			else
 				codes.push_back((bytecode_t)BytecodeType::MULT_I);
 		}
 		else if (assign_op == "/=")
 		{
-			if (assign_type == ValueType::FLOAT)
+			if (assign_type == Type::FLOAT)
 				codes.push_back((bytecode_t)BytecodeType::DIV_F);
 			else
 				codes.push_back((bytecode_t)BytecodeType::DIV_I);
@@ -772,21 +784,21 @@ void expr::FunctionCall::insert_node(
 	*prev = node;
 }
 
-void expr::FunctionCall::check(ParserScope& scope)
+void expr::FunctionCall::check(StatementScope& scope)
 {
 	is_expr = false;
 	this->type_check(scope);
 }
 
-std::optional<ValueType> expr::FunctionCall::type_check(ParserScope& scope) noexcept
+std::optional<Type> expr::FunctionCall::type_check(StatementScope& scope) noexcept
 {
-	auto [func, range_end] = ParserScope::funcs.equal_range(name);
+	auto [func, range_end] = StatementScope::funcs.equal_range(name);
 
 	check_function_defined(scope, name, Statement::loc);
 
 	// check argument types
 
-	std::vector<ValueType> arg_types;
+	std::vector<Type> arg_types;
 	for (auto& arg_expr : arg_exprs)
 	{
 		assert(arg_expr);
@@ -833,7 +845,7 @@ std::optional<ValueType> expr::FunctionCall::type_check(ParserScope& scope) noex
 	return func->second.rtn_type;
 }
 
-bool expr::FunctionCall::optimize(ParserScope& scope)
+bool expr::FunctionCall::optimize(StatementScope& scope)
 {
 	for (auto& arg : arg_exprs)
 		arg = arg->optimize(scope);
@@ -841,7 +853,7 @@ bool expr::FunctionCall::optimize(ParserScope& scope)
 	return true;
 }
 
-expr::expr_p expr::FunctionCall::optimize(ParserScope const& scope)
+expr::expr_p expr::FunctionCall::optimize(StatementScope const& scope)
 {
 	for (auto& arg : arg_exprs)
 		arg = arg->optimize(scope);

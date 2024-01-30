@@ -1,8 +1,8 @@
 #pragma once
 
-#include "parser_scope.hpp"
+#include "statement_scope.hpp"
 #include "bytecode.hpp"
-#include "value_type.hpp"
+#include "type.hpp"
 #include "error.hpp"
 
 #include <memory>
@@ -63,8 +63,8 @@ public:
 	 * type_check() has failed and at least one minor error has been created.
 	 * No fatal errors should be thrown here.
 	 */
-	virtual std::optional<ValueType> type_check(
-		ParserScope& scope
+	virtual std::optional<Type> type_check(
+		StatementScope& scope
 	) noexcept = 0;
 
 	/* Evaluates constant expressions and returns the new expression. Leaves
@@ -74,7 +74,7 @@ public:
 	 */
 	[[nodiscard]]
 	virtual expr_p optimize(
-		ParserScope const& scope
+		StatementScope const& scope
 	) = 0;
 	
 	virtual bytecodes_t generate_codes() const = 0;
@@ -108,10 +108,10 @@ public:
 		expr_p node,
 		expr_p* prev = nullptr) override;
 
-	std::optional<ValueType> type_check(ParserScope& scope) noexcept override;
+	std::optional<Type> type_check(StatementScope& scope) noexcept override;
 
 	[[nodiscard]]
-	expr_p optimize(ParserScope const& scope) override;
+	expr_p optimize(StatementScope const& scope) override;
 	
 	bytecodes_t generate_codes() const;
 
@@ -149,8 +149,8 @@ public:
 		expr_p node,
 		expr_p* prev = nullptr) override;
 
-	std::optional<ValueType> type_check(ParserScope& scope) noexcept override;
-	expr_p optimize(ParserScope const& scope) override;
+	std::optional<Type> type_check(StatementScope& scope) noexcept override;
+	expr_p optimize(StatementScope const& scope) override;
 	bytecodes_t generate_codes() const override;
 
 private:
@@ -174,10 +174,10 @@ public:
 		expr_p node,
 		expr_p* prev = nullptr) override;
 
-	std::optional<ValueType> type_check(ParserScope& scope) noexcept override;
+	std::optional<Type> type_check(StatementScope& scope) noexcept override;
 
 	[[nodiscard]]
-	expr_p optimize(ParserScope const& scope) override;
+	expr_p optimize(StatementScope const& scope) override;
 	
 	bytecodes_t generate_codes() const override;
 
@@ -195,17 +195,17 @@ public:
 		Location const& _loc,
 		std::vector<expr_p> const& _elements,
 		bool _is_str_,
-		std::optional<ValueType> const& _type_convert = std::nullopt,
+		std::optional<Type> const& _type_convert = std::nullopt,
 		std::vector<std::optional<BytecodeType>> const& _type_conversion = {});
 
 	void insert_node(
 		expr_p node,
 		expr_p* prev = nullptr) override;
 
-	std::optional<ValueType> type_check(ParserScope& scope) noexcept override;
+	std::optional<Type> type_check(StatementScope& scope) noexcept override;
 
 	[[nodiscard]]
-	expr_p optimize(ParserScope const& scope) override;
+	expr_p optimize(StatementScope const& scope) override;
 
 	bytecodes_t generate_codes() const override;
 
@@ -219,7 +219,7 @@ public:
 	// a flag for it.
 	bool is_str_;
 
-	std::optional<ValueType> type_convert;
+	std::optional<Type> type_convert;
 	std::vector<std::optional<BytecodeType>> type_conversion;
 };
 
@@ -229,7 +229,7 @@ class Allocate : public Expression
 public:
 	Allocate(
 		Location const& _loc,
-		ValueType::PrimType const _type,
+		Type::Primitive const _type,
 		std::vector<expr_p> const& _sizes
 	);
 
@@ -238,19 +238,19 @@ public:
 		expr_p* prev = nullptr
 	) override;
 
-	std::optional<ValueType> type_check(
-		ParserScope& scope
+	std::optional<Type> type_check(
+		StatementScope& scope
 	) noexcept override;
 
 	[[nodiscard]]
 	expr_p optimize(
-		ParserScope const& scope
+		StatementScope const& scope
 	) override;
 
 	bytecodes_t generate_codes() const override;
 
 public:
-	ValueType::PrimType type;
+	Type::Primitive type;
 	std::vector<expr_p> sizes;
 };
 
@@ -262,18 +262,18 @@ class Numeric : public Expression
 public:
 	Numeric(
 		Location const& _loc,
-		ValueType::PrimType _type,
+		Type::Primitive _type,
 		std::variant<int64_t, uint64_t, double> const& _val);
 
 	void insert_node(
 		expr_p node,
 		expr_p* prev = nullptr) override;
 
-	std::optional<ValueType> type_check(ParserScope& scope) noexcept override;
+	std::optional<Type> type_check(StatementScope& scope) noexcept override;
 
 	[[nodiscard]]
 	expr_p optimize(
-		ParserScope const& scope) override;
+		StatementScope const& scope) override;
 	
 	bytecodes_t generate_codes() const override;
 
@@ -283,7 +283,7 @@ public:
 	std::variant<int64_t, uint64_t, double> val;
 
 private:
-	ValueType::PrimType type;
+	Type::Primitive type;
 };
 
 }

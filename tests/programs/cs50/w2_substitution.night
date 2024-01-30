@@ -1,10 +1,10 @@
 def to_lower(c char) char { if (c >= 'A' && c <= 'Z') return char(c + 32); else return c; }
 
 print("Key: ");
-key str = input();
+key char[] = input();
 
 print("Word: ");
-word str = input();
+word char[] = input();
 
 for (i int = 0; i < len(word); i += 1)
 	print(key[to_lower(word[i]) - 'a']);
