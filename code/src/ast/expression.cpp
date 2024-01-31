@@ -201,7 +201,7 @@ void expr::BinaryOp::insert_node(
 	{
 		rhs = node;
 	}
-	else if (node->precedence() < precedence())
+	else if (node->precedence() > precedence())
 	{
 		rhs->insert_node(node, &rhs);
 	}

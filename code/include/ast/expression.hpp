@@ -80,9 +80,9 @@ public:
 	virtual bytecodes_t generate_codes() const = 0;
 
 protected:
-	constexpr static int single_precedence = 10;
+	constexpr static int single_precedence = 1000;
 	constexpr static int unary_precedence = 100;
-	constexpr static int binary_precedence = 1000;
+	constexpr static int binary_precedence = 10;
 
 	Location loc;
 	int precedence_;
