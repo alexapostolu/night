@@ -37,21 +37,25 @@ Try it out now with this simple Night code!
 
 > source.night
 ```py
+# recursive fib function
 def fib(n int) int
 {
-	if (n <= 1)
+	if (n == 0 || n == 1)
 		return n;
 
 	return fib(n - 1) + fib(n - 2);
 }
 
-for (i int = 0; i < 15; i += 1)
+print("Enter a number: ");
+n int = int(input());
+
+for (i int = 0; i < n; i += 1)
 	print(str(fib(i)) + " ");
 ```
 
 Binary files can be found under releases, or compiled manually as shown in the [Build](#build) section.
 
-`tests/programs` contain simple example programs written in Night to solve various online computer science problem sets, including [`cs50`](https://cs50.harvard.edu/college/2023/spring/). These programs are also used for functional testing.
+`tests/programs/` contain simple example programs written in Night to solve various online computer science problem sets, including [`cs50`](https://cs50.harvard.edu/college/2023/spring/). These programs are also used for functional testing.
 
 ---
 

@@ -117,7 +117,7 @@ Token Lexer::eat_string()
 			break;
 
 		bool match = false;
-		char ch;
+		char chr;
 
 		if (loc.col < file_line.length() - 1 && file_line[loc.col] == '\\')
 		{
@@ -125,10 +125,11 @@ Token Lexer::eat_string()
 
 			switch (file_line[loc.col + 1])
 			{
-			case '\\': ch = '\\'; break;
-			case '"':  ch = '\"'; break;
-			case 'n':  ch = '\n'; break;
-			case 't':  ch = '\t'; break;
+			case '\\': chr = '\\'; break;
+			case 'n':  chr = '\n'; break;
+			case 't':  chr = '\t'; break;
+			case '"':  chr = '\"'; break;
+			case '0':  chr = '\0'; break;
 			default:
 				match = false;
 			}
@@ -142,7 +143,7 @@ Token Lexer::eat_string()
 		}
 		else
 		{
-			str += ch;
+			str += chr;
 			loc.col += 2;
 		}
 	}
@@ -161,17 +162,18 @@ Token Lexer::eat_character()
 	if (file_line[loc.col] == '\'')
 		throw night::create_fatal_error("character can not not be empty", loc);
 
-	std::string chr;
+	char chr;
 
 	if (file_line[loc.col] == '\\')
 	{
 		++loc.col;
 		switch (file_line[loc.col])
 		{
-		case '\\': chr = "\\"; break;
-		case 'n':  chr = "\n"; break;
-		case 't':  chr = "\t"; break;
-		case '"':  chr = "\""; break;
+		case '\\': chr = '\\'; break;
+		case 'n':  chr = '\n'; break;
+		case 't':  chr = '\t'; break;
+		case '"':  chr = '\"'; break;
+		case '0':  chr = '\0'; break;
 		default:
 			throw night::create_fatal_error("unknown character '\\'" + file_line[loc.col], loc);
 		}
@@ -185,7 +187,7 @@ Token Lexer::eat_character()
 		throw night::create_fatal_error(std::string() + "found '" + file_line[loc.col] + "', expected closing quote at the end of character", loc);
 
 	++loc.col;
-	return { TokenType::CHAR_LIT, chr };
+	return { TokenType::CHAR_LIT, std::string(1, chr) };
 }
 
 Token Lexer::eat_keyword()

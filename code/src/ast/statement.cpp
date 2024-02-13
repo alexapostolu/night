@@ -60,9 +60,6 @@ bool VariableInit::optimize(StatementScope& scope)
 
 	if (expr)
 		expr = expr->optimize(scope);
-	
-	if ((!expr || std::dynamic_pointer_cast<expr::Numeric>(expr)) && !scope.is_var_used(name))
-		return false;
 
 	return true;
 }
@@ -140,7 +137,7 @@ void ArrayInitialization::check(StatementScope& scope)
 
 		if (expr_type.has_value() && !is_same_or_primitive(var_type, expr_type))
 			night::create_minor_error(
-				"variable '" + name + "' of type '" + night::to_str(type) +
+				"variable '" + name + "' of type '" + night::to_str(var_type) +
 				"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", loc);
 	}
 }
@@ -171,9 +168,6 @@ bool ArrayInitialization::optimize(StatementScope& scope)
 
 	if (expr)
 		expr = expr->optimize(scope);
-
-	if ((!expr || std::dynamic_pointer_cast<expr::Numeric>(expr)) && !scope.is_var_used(name))
-		return false;
 
 	if (is_static)
 	{
@@ -391,7 +385,7 @@ bool Conditional::optimize(StatementScope& scope)
 bytecodes_t Conditional::generate_codes() const
 {
 	bytecodes_t codes;
-	std::vector<int> jumps;
+	std::vector<int> jump_offsets;
 
 	for (auto const& [cond_expr, stmts] : conditionals)
 	{
@@ -409,7 +403,7 @@ bytecodes_t Conditional::generate_codes() const
 		}
 
 		codes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE);
-		int offset_index = codes.size();
+		int offset_index = codes.size() - 1;
 
 		// statements
 		for (auto const& stmt : stmts)
@@ -420,17 +414,18 @@ bytecodes_t Conditional::generate_codes() const
 
 		// insert offset before JUMP_IF_FALSE
 		auto jif_codes = int_to_bytecodes(codes.size() - offset_index + 2);
-		codes.insert(std::begin(codes) + offset_index - 1, std::begin(jif_codes), std::end(jif_codes));
-
+		codes.insert(std::begin(codes) + offset_index, std::begin(jif_codes), std::end(jif_codes));
 
 		codes.push_back((bytecode_t)BytecodeType::JUMP);
-		jumps.push_back(codes.size() + jumps.size());
+		jump_offsets.push_back(codes.size() - 1);
 	}
 
-	// insert offsets after JUMP
-	int final_size = codes.size() + jumps.size();
-	for (int i = 0; i < jumps.size(); ++i)
-		codes.insert(std::begin(codes) + jumps[i], final_size - jumps[i] - 1);
+	for (int i = jump_offsets.size() - 1; i >= 0; --i)
+	{
+		auto offset_codes = int_to_bytecodes(codes.size() - jump_offsets[i] - 1);
+		codes.insert(std::begin(codes) + jump_offsets[i], std::begin(offset_codes), std::end(offset_codes));
+	}
+
 
 	return codes;
 }
@@ -470,16 +465,25 @@ bool While::optimize(StatementScope& scope)
 
 bytecodes_t While::generate_codes() const
 {
+	/*
+	
+	0
+	true
+	0
+	3
+	JIF
+	0
+	8
+	JMP
+	
+	*/
 
-// beq t0 t1 end
-// loop: addi t0 t0 1
-// bne t0 t1 loop
-// end
+
 
 	auto codes = cond_expr->generate_codes();
 
 	codes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE);
-	auto offset_index = codes.size();
+	auto offset_index = codes.size() - 1;
 
 	for (auto const& stmt : block)
 	{
@@ -487,14 +491,15 @@ bytecodes_t While::generate_codes() const
 		codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
 	}
 
-	auto jif_codes = int_to_bytecodes(codes.size() - offset_index + 2);
-
-	codes.push_back((bytecode_t)BytecodeType::NJUMP);
-	codes.push_back(codes.size() + jif_codes.size() + 1);
-
 	// insert offset before JUMP_IF_FALSE
-	codes.insert(std::begin(codes) + offset_index - 1, std::begin(jif_codes), std::end(jif_codes));
+	auto jif_codes = int_to_bytecodes(codes.size() - offset_index + 2);
+	codes.insert(std::begin(codes) + offset_index, std::begin(jif_codes), std::end(jif_codes));
 
+	// we are assuming codes.size() is a 8 bit number
+	// we are also assuming JUMP_N is a 8 bit number;
+	auto jump_codes = int_to_bytecodes(codes.size() + 2);
+	codes.insert(std::end(codes), std::begin(jump_codes), std::end(jump_codes));
+	codes.push_back((bytecode_t)BytecodeType::JUMP_N);
 
 	return codes;
 }

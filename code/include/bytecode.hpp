@@ -65,7 +65,7 @@ enum struct BytecodeType : bytecode_t
 
 	JUMP_IF_FALSE,			// [cond] JUMP_IF_FALSE (offset)	// jumps to next in conditional chain
 	JUMP,					// JUMP (offset)					// jumps to end of conditional chain
-	NJUMP,
+	JUMP_N,
 
 	RETURN,					// [val] RETURN
 	CALL					// [parameters as expressions] FUNC_CALL

@@ -126,8 +126,9 @@ stmt_p parse_var(Lexer& lexer)
 		lexer.eat();
 		return ast;
 	}
-	default:
+	default: {
 		throw night::create_fatal_error("found '" + lexer.peek().str + "', expected type, assign, open square, or open bracket", lexer.loc);
+	}
 	}
 }
 

@@ -365,7 +365,9 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 			}
 		}
 
-		break;
+		// Special error case for subscript.
+		night::create_minor_error("subscript operator used on type '" + night::to_str(*rhs_type) + "', it can only be used on arrays", loc);
+		return std::nullopt;
 
 	default:
 		throw debug::unhandled_case((int)op_type);

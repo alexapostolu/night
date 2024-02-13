@@ -17,9 +17,16 @@
 std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes)
 {
 	std::stack<intpr::Value> s;
+	bool freeze = false;
 
 	for (auto it = std::begin(codes); it != std::end(codes); ++it)
 	{
+		if (freeze)
+		{
+			freeze = false;
+			--it;
+		}
+
 		switch ((BytecodeType)*it)
 		{
 		case BytecodeType::S_INT1:
@@ -226,10 +233,11 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		}
 
 		case BytecodeType::JUMP:
-			std::advance(it, *(++it));
+			std::advance(it, pop(s).as.i);
 			break;
-		case BytecodeType::NJUMP:
-			std::advance(it, -(*(++it)));
+		case BytecodeType::JUMP_N:
+			std::advance(it, -pop(s).as.i);
+			freeze = true;
 			break;
 
 		case BytecodeType::RETURN:
