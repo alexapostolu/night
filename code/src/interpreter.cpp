@@ -17,6 +17,12 @@
 std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes)
 {
 	std::stack<intpr::Value> s;
+
+	// This freeze is for while loop bytecode.
+	// The last JUMP in While loop bytecode jumps to before the start of the vector.
+	// But you can not have an iterator point to before the start of a vector. So
+	// the iterator will jump to the first element, and stay there (instead of the for loop
+	// incrementing it).
 	bool freeze = false;
 
 	for (auto it = std::begin(codes); it != std::end(codes); ++it)

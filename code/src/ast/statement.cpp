@@ -496,7 +496,7 @@ bytecodes_t While::generate_codes() const
 	codes.insert(std::begin(codes) + offset_index, std::begin(jif_codes), std::end(jif_codes));
 
 	// we are assuming codes.size() is a 8 bit number
-	// we are also assuming JUMP_N is a 8 bit number;
+	// we are also assuming JUMP_N is a 8 bit number
 	auto jump_codes = int_to_bytecodes(codes.size() + 2);
 	codes.insert(std::end(codes), std::begin(jump_codes), std::end(jump_codes));
 	codes.push_back((bytecode_t)BytecodeType::JUMP_N);

@@ -22,10 +22,19 @@ public:
 	Token const& peek();
 	Token const& curr() const;
 
-	Token const& expect(TokenType type, std::string const& err = "\n", std::source_location const& s_loc = std::source_location::current());
-	Token const& curr_check(TokenType type, std::string const& err_msg = "", std::source_location const& s_loc = std::source_location::current());
+	// Eats token, and checks the type of new current token. Returns current if
+	// successful.
+	Token const& expect(
+		TokenType type,
+		std::string const& err = "\n",
+		std::source_location const& s_loc = std::source_location::current());
 
-	// used for testing
+	Token const& curr_is(
+		TokenType type,
+		std::string const& err_msg = "",
+		std::source_location const& s_loc = std::source_location::current());
+
+	// Used for testing.
 	void scan_code(std::string const& code);
 
 private:

@@ -79,7 +79,7 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty, std::optional<TokenType
 				throw night::create_fatal_error("found '" + lexer.curr().str + "', expected expression", lexer.loc);
 
 			if (end_token.has_value())
-				lexer.curr_check(*end_token);
+				lexer.curr_is(*end_token);
 
 			return head;
 		}
@@ -150,7 +150,7 @@ expr::expr_p parse_subscript_or_array(Lexer& lexer, std::optional<TokenType> pre
 		previous_token_type == TokenType::OPEN_SQUARE)
 	{
 		auto index_expr = parse_expr(lexer, true);
-		lexer.curr_check(TokenType::CLOSE_SQUARE);
+		lexer.curr_is(TokenType::CLOSE_SQUARE);
 
 		auto node = std::make_shared<expr::BinaryOp>(lexer.loc, "[");
 		node->insert_node(index_expr);
@@ -167,7 +167,7 @@ expr::expr_p parse_subscript_or_array(Lexer& lexer, std::optional<TokenType> pre
 
 		if (!elem)
 		{
-			lexer.curr_check(TokenType::CLOSE_SQUARE);
+			lexer.curr_is(TokenType::CLOSE_SQUARE);
 			break;
 		}
 
@@ -176,7 +176,7 @@ expr::expr_p parse_subscript_or_array(Lexer& lexer, std::optional<TokenType> pre
 		if (lexer.curr().type == TokenType::CLOSE_SQUARE)
 			break;
 
-		lexer.curr_check(TokenType::COMMA);
+		lexer.curr_is(TokenType::COMMA);
 	}
 
 	return std::make_shared<expr::Array>(lexer.loc, arr, false);
@@ -198,7 +198,7 @@ expr::expr_p parse_bracket(Lexer& lexer, bool err_on_empty)
 	auto node = parse_expr(lexer, err_on_empty);
 	node->set_guard();
 
-	lexer.curr_check(TokenType::CLOSE_BRACKET);
+	lexer.curr_is(TokenType::CLOSE_BRACKET);
 	
 	return node;
 }

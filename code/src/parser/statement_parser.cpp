@@ -108,7 +108,7 @@ stmt_p parse_var(Lexer& lexer)
 		lexer.eat();
 
 		auto const& ast = std::make_shared<VariableAssign>(parse_var_assign(lexer, var_name));
-		lexer.curr_check(TokenType::SEMICOLON);
+		lexer.curr_is(TokenType::SEMICOLON);
 
 		lexer.eat();
 		return ast;
@@ -145,7 +145,7 @@ VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 	if (lexer.eat().type == TokenType::ASSIGN)
 		expr = parse_expr(lexer, true);
 
-	lexer.curr_check(TokenType::SEMICOLON);
+	lexer.curr_is(TokenType::SEMICOLON);
 
 	return VariableInit(lexer.loc, var_name, type, expr);
 }
@@ -172,7 +172,7 @@ ArrayInitialization parse_array_init(Lexer& lexer, std::string const& var_name)
 	if (lexer.curr().type == TokenType::ASSIGN)
 		expr = parse_expr(lexer, true);
 
-	lexer.curr_check(TokenType::SEMICOLON);
+	lexer.curr_is(TokenType::SEMICOLON);
 
 	return ArrayInitialization(lexer.loc, var_name, type, arr_sizes, expr);
 }
@@ -223,7 +223,7 @@ expr::FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name)
 
 		if (!expr)
 		{
-			lexer.curr_check(TokenType::CLOSE_BRACKET);
+			lexer.curr_is(TokenType::CLOSE_BRACKET);
 			break;
 		}
 
@@ -232,7 +232,7 @@ expr::FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name)
 		if (lexer.curr().type == TokenType::CLOSE_BRACKET)
 			break;
 
-		lexer.curr_check(TokenType::COMMA);
+		lexer.curr_is(TokenType::COMMA);
 	}
 
 	return expr::FunctionCall(lexer.loc, func_name, arg_exprs);
@@ -304,7 +304,7 @@ For parse_for(Lexer& lexer)
 	lexer.eat();
 
 	auto var_assign = parse_var_assign(lexer, var_assign_name);
-	lexer.curr_check(TokenType::CLOSE_BRACKET);
+	lexer.curr_is(TokenType::CLOSE_BRACKET);
 
 	// Parse body, and include the increment statement in the body.
 
@@ -334,7 +334,7 @@ Function parse_func(Lexer& lexer)
 		if (lexer.eat().type == TokenType::CLOSE_BRACKET)
 			break;
 
-		auto name = lexer.curr_check(TokenType::VARIABLE).str;
+		auto name = lexer.curr_is(TokenType::VARIABLE).str;
 		auto type = lexer.expect(TokenType::TYPE).str;
 		auto is_arr = false;
 
@@ -350,7 +350,7 @@ Function parse_func(Lexer& lexer)
 			is_arr = true;
 		}
 		
-		lexer.curr_check(TokenType::COMMA);
+		lexer.curr_is(TokenType::COMMA);
 
 		parameters.push_back(std::make_tuple(name, type, is_arr));
 	}

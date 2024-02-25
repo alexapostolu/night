@@ -83,7 +83,7 @@ Token const& Lexer::expect(TokenType type, std::string const& err, std::source_l
 	return curr();
 }
 
-Token const& Lexer::curr_check(TokenType type, std::string const& err_msg, std::source_location const& s_loc)
+Token const& Lexer::curr_is(TokenType type, std::string const& err_msg, std::source_location const& s_loc)
 {
 	if (curr().type != type)
 		throw night::create_fatal_error(
