@@ -413,8 +413,11 @@ bytecodes_t Conditional::generate_codes() const
 		}
 
 		// insert offset before JUMP_IF_FALSE
+		//auto jif_codes = int_to_bytecodes(codes.size() - offset_index + 2);
+		//codes.insert(std::begin(codes) + offset_index, std::begin(jif_codes), std::end(jif_codes));
 		auto jif_codes = int_to_bytecodes(codes.size() - offset_index + 2);
-		codes.insert(std::begin(codes) + offset_index, std::begin(jif_codes), std::end(jif_codes));
+		auto it = std::next(std::begin(codes), offset_index);
+		codes.insert(it, jif_codes.begin(), jif_codes.end());
 
 		codes.push_back((bytecode_t)BytecodeType::JUMP);
 		jump_offsets.push_back(codes.size() - 1);
@@ -422,8 +425,10 @@ bytecodes_t Conditional::generate_codes() const
 
 	for (int i = jump_offsets.size() - 1; i >= 0; --i)
 	{
+		//codes.insert(std::begin(codes) + jump_offsets[i], std::begin(offset_codes), std::end(offset_codes));
 		auto offset_codes = int_to_bytecodes(codes.size() - jump_offsets[i] - 1);
-		codes.insert(std::begin(codes) + jump_offsets[i], std::begin(offset_codes), std::end(offset_codes));
+		auto it = std::next(std::begin(codes), jump_offsets[i]);
+		codes.insert(it, std::begin(offset_codes), std::end(offset_codes));
 	}
 
 
