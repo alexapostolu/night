@@ -25,7 +25,7 @@ std::vector<stmt_p> parse_file(std::string const& main_file)
 	return stmts;
 }
 
-std::vector<stmt_p> parse_stmts(Lexer& lexer, bool requires_curly)
+std::vector<stmt_p> parse_stmts(Lexer& lexer, bool requires_curly, bool* contains_return_stmt)
 {
 	// two cases:
 	//   { stmt1; stmt2; ... }
@@ -40,7 +40,7 @@ std::vector<stmt_p> parse_stmts(Lexer& lexer, bool requires_curly)
 
 		while (lexer.curr().type != TokenType::CLOSE_CURLY)
 		{
-			stmts.push_back(parse_stmt(lexer));
+			stmts.push_back(parse_stmt(lexer, contains_return_stmt));
 
 			if (lexer.curr().type == TokenType::END_OF_FILE)
 				throw night::create_fatal_error("missing closing curly bracket", lexer.loc);
@@ -56,11 +56,11 @@ std::vector<stmt_p> parse_stmts(Lexer& lexer, bool requires_curly)
 		if (requires_curly)
 			throw night::create_fatal_error("found '" + lexer.curr().str + "', expected opening curly bracket", lexer.loc);
 
-		return { parse_stmt(lexer) };
+		return { parse_stmt(lexer, contains_return_stmt) };
 	}
 }
 
-stmt_p parse_stmt(Lexer& lexer)
+stmt_p parse_stmt(Lexer& lexer, bool* is_return_stmt)
 {
 	switch (lexer.curr().type)
 	{
@@ -69,7 +69,11 @@ stmt_p parse_stmt(Lexer& lexer)
 	case TokenType::FOR:	  return std::make_shared<For>(parse_for(lexer));
 	case TokenType::WHILE:	  return std::make_shared<While>(parse_while(lexer));
 	case TokenType::DEF:	  return std::make_shared<Function>(parse_func(lexer));
-	case TokenType::RETURN:	  return std::make_shared<Return>(parse_return(lexer));
+	case TokenType::RETURN: {
+		if (is_return_stmt)
+			*is_return_stmt = true;
+		return std::make_shared<Return>(parse_return(lexer));
+	}
 
 	case TokenType::ELIF: throw night::create_fatal_error("elif statement must come before an if or elif statement", lexer.loc);
 	case TokenType::ELSE: throw night::create_fatal_error("else statement must come before an if or elif statement", lexer.loc);
@@ -358,16 +362,32 @@ Function parse_func(Lexer& lexer)
 	// Parse return type.
 
 	auto rtn_type = lexer.eat();
+	int rtn_type_dim = 0;
+
+	while (lexer.eat().type == TokenType::OPEN_SQUARE)
+	{
+		lexer.expect(TokenType::CLOSE_SQUARE);
+		++rtn_type_dim;
+	}
 
 	if (rtn_type.type != TokenType::TYPE && rtn_type.type != TokenType::VOID)
 		throw night::create_fatal_error("found '" + lexer.curr().str + "', expected return type", lexer.loc);
 
 	// Parse body.
 
-	lexer.eat();
-	auto body = parse_stmts(lexer, true);
+	bool contains_return_stmt = false;
+	auto body = parse_stmts(lexer, true, &contains_return_stmt);
+	
+	if (rtn_type.type == TokenType::VOID && contains_return_stmt) {
+		throw night::create_fatal_error(
+			"found return statement, expected no return statement in void function", lexer.loc);
+	}
+	if (rtn_type.type == TokenType::TYPE && !contains_return_stmt) {
+		throw night::create_fatal_error(
+			"found no return statement, expected return statement in function", lexer.loc);
+	}
 
-	return Function(lexer.loc, func_name, parameters, rtn_type.str, body);
+	return Function(lexer.loc, func_name, parameters, rtn_type.str, rtn_type_dim, body);
 }
 
 Return parse_return(Lexer& lexer)

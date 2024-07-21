@@ -15,8 +15,12 @@ std::vector<stmt_p> parse_file(std::string const& main_file);
  * Lexer
  *   start: first token of statements
  *   end: first token of next statement
+ * 
+ * @param contains_return_stmt will be set to true if the statement block
+ *   contains a return statement. This is for non-void functions to check if
+ *   their body contains a returns statement.
  */
-std::vector<stmt_p> parse_stmts(Lexer& lexer, bool requires_curly);
+std::vector<stmt_p> parse_stmts(Lexer& lexer, bool requires_curly, bool* contains_return_stmt = nullptr);
 
 /* Parses a singular statement. Note that a singular statement could also be
  * the only statement in a scope.
@@ -24,7 +28,7 @@ std::vector<stmt_p> parse_stmts(Lexer& lexer, bool requires_curly);
  *   start: first token of statement
  *   end: first token of next statement
  */
-stmt_p parse_stmt(Lexer& lexer);
+stmt_p parse_stmt(Lexer& lexer, bool* is_return_stmt = nullptr);
 
 /* This function handles three cases:
  *   variable initialization

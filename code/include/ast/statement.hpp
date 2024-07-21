@@ -241,6 +241,7 @@ public:
 		std::string const& _name,
 		std::vector<std::tuple<std::string, std::string, bool>> const& _parameters,
 		std::string const& _rtn_type,
+		int rtn_type_dim,
 		std::vector<stmt_p> const& _block
 	);
 

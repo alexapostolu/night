@@ -549,6 +549,7 @@ Function::Function(
 	std::string const& _name,
 	std::vector<std::tuple<std::string, std::string, bool>> const& _parameters,
 	std::string const& _rtn_type,
+	int rtn_type_dim,
 	std::vector<stmt_p> const& _block)
 	: Statement(_loc), name(_name), block(_block)
 {
@@ -561,7 +562,7 @@ Function::Function(
 	if (_rtn_type == "void")
 		rtn_type = std::nullopt;
 	else
-		rtn_type = Type(_rtn_type);
+		rtn_type = Type(_rtn_type, rtn_type_dim);
 }
 
 void Function::check(StatementScope& global_scope)
