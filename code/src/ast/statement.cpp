@@ -556,7 +556,7 @@ Function::Function(
 	for (const auto& param : _parameters)
 	{
 		param_names.push_back(std::get<0>(param));
-		param_types.emplace_back(std::get<1>(param));
+		param_types.emplace_back(std::get<1>(param), (int)std::get<2>(param));
 	}
 
 	if (_rtn_type == "void")
@@ -774,7 +774,10 @@ bytecodes_t ArrayMethod::generate_codes() const
 	auto index_codes = int_to_bytecodes(*id);
 	codes.insert(std::end(codes), std::begin(index_codes), std::end(index_codes));
 
-	codes.push_back((bytecode_t)BytecodeType::STORE_INDEX);
+	if (assign_type.has_value() && assign_type->prim == Type::Primitive::CHAR && assign_type->dim == 0)
+		codes.push_back((bytecode_t)BytecodeType::STORE_INDEX_S);
+	else
+		codes.push_back((bytecode_t)BytecodeType::STORE_INDEX_A);
 
 	return codes;
 }
@@ -851,6 +854,9 @@ std::optional<Type> expr::FunctionCall::type_check(StatementScope& scope) noexce
 
 	if (is_expr && !func->second.rtn_type.has_value())
 		night::create_minor_error("function '" + func->first + "' can not have a return type of void when used in an expression", Statement::loc);
+
+	if (night::error::get().has_minor_errors())
+		return std::nullopt;
 
 	id = func->second.id;
 	return func->second.rtn_type;

@@ -21,16 +21,16 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 	// This freeze is for while loop bytecode.
 	// The last JUMP in While loop bytecode jumps to before the start of the vector.
 	// But you can not have an iterator point to before the start of a vector. So
-	// the iterator will jump to the first element, and stay there (instead of the for loop
-	// incrementing it).
+	// the iterator will jump to the first element, and stay there instead of being
+	// incremented by the for loop.
 	bool freeze = false;
 
 	for (auto it = std::begin(codes); it != std::end(codes); ++it)
 	{
 		if (freeze)
 		{
-			freeze = false;
 			--it;
+			freeze = false;
 		}
 
 		switch ((BytecodeType)*it)
@@ -218,7 +218,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		case BytecodeType::ALLOCATE_ARR: push_arr(s); break;
 		case BytecodeType::ALLOCATE_ARR_AND_FILL: push_arr_and_fill(s); break;
 
-		case BytecodeType::STORE_INDEX: {
+		case BytecodeType::STORE_INDEX_A: {
 			auto id = pop(s).as.i;
 			auto expr = pop(s);
 			intpr::Value* val = &scope.vars[id];
@@ -228,6 +228,13 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 				val = &val->as.a.data[i];
 			}
 			*val = expr;
+			break;
+		}
+
+		case BytecodeType::STORE_INDEX_S: {
+			auto id = pop(s).as.i;
+			auto expr = pop(s);
+			scope.vars[id].as.s[pop(s).as.i] = expr.as.i;
 			break;
 		}
 

@@ -352,6 +352,12 @@ Function parse_func(Lexer& lexer)
 		{
 			lexer.expect(TokenType::CLOSE_SQUARE);
 			is_arr = true;
+
+			if (lexer.eat().type == TokenType::CLOSE_BRACKET)
+			{
+				parameters.push_back(std::make_tuple(name, type, is_arr));
+				break;
+			}
 		}
 		
 		lexer.curr_is(TokenType::COMMA);

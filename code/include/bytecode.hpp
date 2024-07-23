@@ -55,7 +55,8 @@ enum struct BytecodeType : bytecode_t
 	LOAD_ELEM,				// [id: S_INT] [size: S_INT] [indices: S_INT ...]
 	
 	STORE,					// STORE (id)
-	STORE_INDEX,			// [indicies, id]
+	STORE_INDEX_A,			// [indicies, id]
+	STORE_INDEX_S,			// [indicies, id]
 	
 	ALLOCATE_STR,			// [elements: Value ...] [size: S_INT]
 	ALLOCATE_ARR,			//
