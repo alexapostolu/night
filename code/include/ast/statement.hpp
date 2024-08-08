@@ -181,6 +181,15 @@ public:
 
 	void check(StatementScope& scope) override;
 	bool optimize(StatementScope& scope) override;
+
+	/**
+	 * CONDITION		boolean expression for conditional
+	 * INT8				8 bit integer value for JUMP_IF_FALSE
+	 * JUMP_IF_FALSE	jumps to first line after JUMP
+	 *   ...			conditional code
+	 *   INT8			8 bit integer value for JUMP
+	 *   JUMP			jumps to first line after conditional chain
+	 */
 	bytecodes_t generate_codes() const override;
 
 private:
@@ -201,6 +210,15 @@ public:
 
 	void check(StatementScope& scope) override;
 	bool optimize(StatementScope& scope) override;
+
+	/** 
+	 * CONDITION		boolean expression for while loop condition
+	 * INT8				8 bit integer value for JUMP_IF_FALSE
+	 * JUMP_IF_FALSE	jumps to first line after JUMP_N
+	 *   ...			while loop code
+	 *   INT8			8 bit integer value for JUMP_N
+	 *   JUMP_N			jumps to first line of CONDITION
+	 */
 	bytecodes_t generate_codes() const override;
 
 private:

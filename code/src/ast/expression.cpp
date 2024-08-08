@@ -216,7 +216,7 @@ void expr::BinaryOp::insert_node(
 
 std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 {
-	// Operations where strings are supported are handled seperately in the
+	// Operations where strings are supported are handled separately in the
 	// switch statement.
 	std::unordered_map<BinaryOpType, std::tuple<BytecodeType, BytecodeType, std::optional<BytecodeType>>> m{
 		{ BinaryOpType::ADD,			std::make_tuple(BytecodeType::ADD_I,			BytecodeType::ADD_F,			BytecodeType::ADD_S) },
@@ -261,7 +261,6 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 	case BinaryOpType::SUB:
 	case BinaryOpType::MULT:
 	case BinaryOpType::DIV:
-	case BinaryOpType::MOD:
 		if (!lhs_type->is_arr() && !rhs_type->is_arr())
 		{
 			if (lhs_type == Type::FLOAT)
@@ -286,6 +285,14 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 			return Type::INT;
 		}
 
+		break;
+
+	case BinaryOpType::MOD:
+		if (lhs_type == Type::INT && rhs_type == Type::INT)
+		{
+			op_code = BytecodeType::MOD_I;
+			return Type::INT;
+		}
 		break;
 
 	case BinaryOpType::LESSER:
@@ -427,6 +434,12 @@ expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
 	case BinaryOpType::MULT: return op(false, [](auto p1, auto p2) { return p1 * p2; });
 	case BinaryOpType::DIV:  return op(false, [](auto p1, auto p2) { return p1 / p2; });
 	case BinaryOpType::SUB:  return op(false, [](auto p1, auto p2) { return p1 - p2; });
+	case BinaryOpType::MOD: {
+		return std::make_shared<Numeric>(
+			loc, Type::INT,
+			std::visit([](auto&& arg) { return (int64_t)arg; }, lhs_lit->val) % std::visit([](auto&& arg) { return (int64_t)arg; }, rhs_lit->val)
+		);
+	}
 
 	case BinaryOpType::LESSER:		   return op(true, [](auto p1, auto p2) { return (int64_t)(p1 < p2); });
 	case BinaryOpType::GREATER:		   return op(true, [](auto p1, auto p2) { return (int64_t)(p1 < p2); });
@@ -436,6 +449,8 @@ expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
 	case BinaryOpType::NOT_EQUALS:	   return op(true, [](auto p1, auto p2) { return (int64_t)(p1 != p2); });
 	case BinaryOpType::AND:			   return op(true, [](auto p1, auto p2) { return (int64_t)(p1 && p2); });
 	case BinaryOpType::OR:			   return op(true, [](auto p1, auto p2) { return (int64_t)(p1 || p2); });
+
+	default: debug::unhandled_case((int)op_type);
 	}
 
 	return std::make_shared<BinaryOp>(*this);

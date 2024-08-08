@@ -11,6 +11,8 @@
 #include <string>
 #include <assert.h>
 
+static bool does_function_contain_return_stmt = false;
+
 std::vector<stmt_p> parse_file(std::string const& main_file)
 {
 	Lexer lexer(main_file);
@@ -367,33 +369,26 @@ Function parse_func(Lexer& lexer)
 
 	// Parse return type.
 
-	auto rtn_type = lexer.eat();
-	int rtn_type_dim = 0;
-
-	while (lexer.eat().type == TokenType::OPEN_SQUARE)
-	{
-		lexer.expect(TokenType::CLOSE_SQUARE);
-		++rtn_type_dim;
-	}
-
-	if (rtn_type.type != TokenType::TYPE && rtn_type.type != TokenType::VOID)
-		throw night::create_fatal_error("found '" + lexer.curr().str + "', expected return type", lexer.loc);
+	lexer.eat();
+	auto rtn_type = parse_type(lexer);
 
 	// Parse body.
 
-	bool contains_return_stmt = false;
-	auto body = parse_stmts(lexer, true, &contains_return_stmt);
-	
-	if (rtn_type.type == TokenType::VOID && contains_return_stmt) {
+	does_function_contain_return_stmt = false;
+	auto body = parse_stmts(lexer, true);
+
+	if (std::get<0>(rtn_type) == "void" && does_function_contain_return_stmt) {
 		throw night::create_fatal_error(
 			"found return statement, expected no return statement in void function", lexer.loc);
 	}
-	if (rtn_type.type == TokenType::TYPE && !contains_return_stmt) {
+	if (std::get<0>(rtn_type) != "void" && !does_function_contain_return_stmt) {
 		throw night::create_fatal_error(
 			"found no return statement, expected return statement in function", lexer.loc);
 	}
 
-	return Function(lexer.loc, func_name, parameters, rtn_type.str, rtn_type_dim, body);
+	does_function_contain_return_stmt = false;
+
+	return Function(lexer.loc, func_name, parameters, std::get<0>(rtn_type), std::get<1>(rtn_type), body);
 }
 
 Return parse_return(Lexer& lexer)
@@ -402,6 +397,25 @@ Return parse_return(Lexer& lexer)
 
 	auto const& expr = parse_expr(lexer, false, TokenType::SEMICOLON);
 
+	does_function_contain_return_stmt = true;
+
 	lexer.eat();
 	return Return(lexer.loc, expr);
+}
+
+std::tuple<std::string, int> parse_type(Lexer& lexer)
+{
+	if (lexer.curr().type != TokenType::TYPE && lexer.curr().type != TokenType::VOID)
+		throw night::create_fatal_error("found '" + lexer.curr().str + "', expected return type", lexer.loc);
+
+	auto type = lexer.curr().str;
+	int dim = 0;
+
+	while (lexer.eat().type == TokenType::OPEN_SQUARE)
+	{
+		lexer.expect(TokenType::CLOSE_SQUARE);
+		++dim;
+	}
+
+	return std::make_tuple(type, dim);
 }

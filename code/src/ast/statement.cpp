@@ -389,7 +389,8 @@ bytecodes_t Conditional::generate_codes() const
 
 	for (auto const& [cond_expr, stmts] : conditionals)
 	{
-		// condition
+		// If condition exists add its codes, otherwise treat it as an else statement
+		// and add a true constant
 		if (cond_expr)
 		{
 			auto cond_codes = cond_expr->generate_codes();
@@ -402,33 +403,38 @@ bytecodes_t Conditional::generate_codes() const
 			codes.insert(std::end(codes), std::begin(cond_codes), std::end(cond_codes));
 		}
 
+		// The value for JUMP_IF_FALSE is added after we determine the number of codes
+		// to jump over
 		codes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE);
-		int offset_index = codes.size() - 1;
+		int jump_if_false_index = codes.size() - 1;
 
-		// statements
+		// Used to determine number of codes to jump over for JUMP_IF_FALSE
+		std::size_t stmts_codes_size = 0;
+
 		for (auto const& stmt : stmts)
 		{
 			auto stmt_codes = stmt->generate_codes();
 			codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
+
+			stmts_codes_size += stmt_codes.size();
 		}
 
-		// insert offset before JUMP_IF_FALSE
-		//auto jif_codes = int_to_bytecodes(codes.size() - offset_index + 2);
-		//codes.insert(std::begin(codes) + offset_index, std::begin(jif_codes), std::end(jif_codes));
-		auto jif_codes = int_to_bytecodes(codes.size() - offset_index + 2);
-		auto it = std::next(std::begin(codes), offset_index);
-		codes.insert(it, jif_codes.begin(), jif_codes.end());
+		// Insert jump if false value before JUMP_IF_FALSE, adding on 10 space for the
+		// 10 codes to represent JUMP (1) and its value (9)
+		auto jump_if_false_codes = int_to_bytecodes(stmts_codes_size + 10);
+		codes.insert(std::begin(codes) + jump_if_false_index,
+					 std::begin(jump_if_false_codes), std::end(jump_if_false_codes));
 
+		// The value for JUMP is added last after the number of codes to jump back is
+		// determined
 		codes.push_back((bytecode_t)BytecodeType::JUMP);
 		jump_offsets.push_back(codes.size() - 1);
 	}
 
 	for (int i = jump_offsets.size() - 1; i >= 0; --i)
 	{
-		//codes.insert(std::begin(codes) + jump_offsets[i], std::begin(offset_codes), std::end(offset_codes));
-		auto offset_codes = int_to_bytecodes(codes.size() - jump_offsets[i] - 1);
-		auto it = std::next(std::begin(codes), jump_offsets[i]);
-		codes.insert(it, std::begin(offset_codes), std::end(offset_codes));
+		auto offset_codes = int_to_bytecodes(codes.size() - jump_offsets[i] - 1, 8);
+		codes.insert(std::begin(codes) + jump_offsets[i], std::begin(offset_codes), std::end(offset_codes));
 	}
 
 
@@ -470,40 +476,34 @@ bool While::optimize(StatementScope& scope)
 
 bytecodes_t While::generate_codes() const
 {
-	/*
-	
-	0
-	true
-	0
-	3
-	JIF
-	0
-	8
-	JMP
-	
-	*/
-
-
-
 	auto codes = cond_expr->generate_codes();
 
+	// The value for JUMP_IF_FALSE is added after we determine the number of codes
+	// to jump over
 	codes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE);
-	auto offset_index = codes.size() - 1;
+	auto jump_if_false_index = codes.size() - 1;
+
+	// Used to determine number of codes to jump over for JUMP_IF_FALSE
+	int stmt_codes_size = 0;
 
 	for (auto const& stmt : block)
 	{
 		auto stmt_codes = stmt->generate_codes();
 		codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
+
+		stmt_codes_size += stmt_codes.size();
 	}
 
-	// insert offset before JUMP_IF_FALSE
-	auto jif_codes = int_to_bytecodes(codes.size() - offset_index + 2);
-	codes.insert(std::begin(codes) + offset_index, std::begin(jif_codes), std::end(jif_codes));
+	// Insert jump if false value before JUMP_IF_FALSE, adding on 10 space for the
+	// 10 codes to represent JUMP_N (1) and its value (9)
+	auto jump_if_false_codes = int_to_bytecodes(stmt_codes_size + 10, 8);
+	codes.insert(std::begin(codes) + jump_if_false_index,
+				 std::begin(jump_if_false_codes), std::end(jump_if_false_codes));
 
-	// we are assuming codes.size() is a 8 bit number
-	// we are also assuming JUMP_N is a 8 bit number
-	auto jump_codes = int_to_bytecodes(codes.size() + 2);
-	codes.insert(std::end(codes), std::begin(jump_codes), std::end(jump_codes));
+	// Insert jump negative value and JUMP_N
+	// Set jump negative value to be 8 bit
+	auto jump_n_codes = int_to_bytecodes(codes.size() + 9, 8);
+	codes.insert(std::end(codes), std::begin(jump_n_codes), std::end(jump_n_codes));
 	codes.push_back((bytecode_t)BytecodeType::JUMP_N);
 
 	return codes;
@@ -806,11 +806,7 @@ void expr::FunctionCall::check(StatementScope& scope)
 
 std::optional<Type> expr::FunctionCall::type_check(StatementScope& scope) noexcept
 {
-	auto [func, range_end] = StatementScope::funcs.equal_range(name);
-
-	check_function_defined(scope, name, Statement::loc);
-
-	// check argument types
+	// Check argument types
 
 	std::vector<Type> arg_types;
 	for (auto& arg_expr : arg_exprs)
@@ -828,17 +824,27 @@ std::optional<Type> expr::FunctionCall::type_check(StatementScope& scope) noexce
 
 	assert(arg_types.size() == arg_exprs.size());
 
+	// Get all functions with the same name as the function call
+
+	auto [funcs_with_same_name, funcs_with_same_name_end] = StatementScope::funcs.equal_range(name);
+
+	if (funcs_with_same_name == funcs_with_same_name_end)
+	{
+		night::create_minor_error("function call '" + name + "' is undefined", Statement::loc);
+		return std::nullopt;
+	}
+
 	// match function with ParserScope function based on name and argument types
 
-	for (; func != range_end; ++func)
+	for (; funcs_with_same_name != funcs_with_same_name_end; ++funcs_with_same_name)
 	{
 		if (std::equal(std::begin(arg_types), std::end(arg_types),
-					   std::begin(func->second.param_types), std::end(func->second.param_types),
+					   std::begin(funcs_with_same_name->second.param_types), std::end(funcs_with_same_name->second.param_types),
 					   is_same))
 			break;
 	}
 
-	if (func == range_end)
+	if (funcs_with_same_name == funcs_with_same_name_end)
 	{
 		std::string s_types;
 		for (auto const& type : arg_types)
@@ -848,18 +854,26 @@ std::optional<Type> expr::FunctionCall::type_check(StatementScope& scope) noexce
 		if (s_types.length() >= 2)
 			s_types = s_types.substr(0, s_types.size() - 2);
 
-		night::create_minor_error("arguments in function call '" + name + "' are of type '" + s_types +
-			"', and do not match with the parameters in its function definition", Statement::loc);
+		if (arg_types.empty())
+		{
+			night::create_minor_error("function call '" + name + "' has no arguments, "
+				"and do not match with the parameters in its function definition", Statement::loc);
+		}
+		else
+		{
+			night::create_minor_error("arguments in function call '" + name + "' are of type '" + s_types +
+				"', and do not match with the parameters in its function definition", Statement::loc);
+		}
 	}
 
-	if (is_expr && !func->second.rtn_type.has_value())
-		night::create_minor_error("function '" + func->first + "' can not have a return type of void when used in an expression", Statement::loc);
+	if (is_expr && !funcs_with_same_name->second.rtn_type.has_value())
+		night::create_minor_error("function '" + funcs_with_same_name->first + "' can not have a return type of void when used in an expression", Statement::loc);
 
 	if (night::error::get().has_minor_errors())
 		return std::nullopt;
 
-	id = func->second.id;
-	return func->second.rtn_type;
+	id = funcs_with_same_name->second.id;
+	return funcs_with_same_name->second.rtn_type;
 }
 
 bool expr::FunctionCall::optimize(StatementScope& scope)

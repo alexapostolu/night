@@ -18,6 +18,9 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 {
 	std::stack<intpr::Value> s;
 
+	//for (auto const& c : codes)
+	//	std::cout << night::to_str(c) << '\n';
+
 	// This freeze is for while loop bytecode.
 	// The last JUMP in While loop bytecode jumps to before the start of the vector.
 	// But you can not have an iterator point to before the start of a vector. So
@@ -168,6 +171,10 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			break;
 		case BytecodeType::EQUALS_S:
 			s.emplace(int64_t(!strcmp(pop(s).as.s, pop(s).as.s)));
+			break;
+
+		case BytecodeType::NOT_EQUALS_I:
+			s.emplace(int64_t(pop(s).as.i != pop(s).as.i));
 			break;
 
 		case BytecodeType::AND:

@@ -26,8 +26,8 @@ enum struct BytecodeType : bytecode_t
 	FLOAT4,					//
 	FLOAT8,					//
 
-	NEGATIVE_I, NEGATIVE_F,				// [val] NEGATIVE 
-	NOT_I, NOT_F,					//
+	NEGATIVE_I, NEGATIVE_F,	// [val] NEGATIVE 
+	NOT_I, NOT_F,			//
 
 	ADD_I, ADD_F, ADD_S,
 	SUB_I, SUB_F,
@@ -80,4 +80,4 @@ std::string to_str(bytecode_t type);
 
 }
 
-bytecodes_t int_to_bytecodes(uint64_t uint64);
+bytecodes_t int_to_bytecodes(uint64_t uint64, int size = -1);

@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <string>
+#include <tuple>
 
 /* The starting function for parsing a file.
  */
@@ -110,3 +111,13 @@ Function parse_func(Lexer& lexer);
  *   end: first token of next statement
  */
 Return parse_return(Lexer& lexer);
+
+/* Useful for function parameter types and return values as those can include
+ * subscripts
+ * Lexer:
+ *   start: name of parameter
+ *   end: first token after type
+ * @returns tuple of parameter type and dimension
+ * @returns empty tuple if lexing error
+ */
+std::tuple<std::string, int> parse_type(Lexer& lexer);

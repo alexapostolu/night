@@ -20,7 +20,7 @@ bool check_variable_defined(StatementScope& scope, std::string const& name, Loca
 	return true;
 }
 
-bool check_function_defined(StatementScope const& scope, std::string const& name, Location const& loc)
+bool is_function_defined(StatementScope const& scope, std::string const& name, Location const& loc)
 {
 	static std::unordered_set<std::string> undefined_functions;
 

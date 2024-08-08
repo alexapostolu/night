@@ -82,27 +82,27 @@ std::string night::to_str(bytecode_t val)
 	}
 }
 
-bytecodes_t int_to_bytecodes(uint64_t uint64)
+bytecodes_t int_to_bytecodes(uint64_t uint64, int size)
 {
 	bytecodes_t codes;
 	int count;
 
-	if (uint64 <= std::numeric_limits<uint8_t>::max())
+	if ((size == -1 || size == 1) && uint64 <= std::numeric_limits<uint8_t>::max())
 	{
 		codes.push_back((bytecode_t)BytecodeType::S_INT1);
 		count = 1;
 	}
-	else if (uint64 <= std::numeric_limits<uint16_t>::max())
+	else if ((size == -1 || size == 2) && uint64 <= std::numeric_limits<uint16_t>::max())
 	{
 		codes.push_back((bytecode_t)BytecodeType::S_INT2);
 		count = 2;
 	}
-	else if (uint64 <= std::numeric_limits<uint32_t>::max())
+	else if ((size == -1 || size == 4) && uint64 <= std::numeric_limits<uint32_t>::max())
 	{
 		codes.push_back((bytecode_t)BytecodeType::S_INT4);
 		count = 4;
 	}
-	else if (uint64 <= std::numeric_limits<uint64_t>::max())
+	else if ((size == -1 || size == 8) && uint64 <= std::numeric_limits<uint64_t>::max())
 	{
 		codes.push_back((bytecode_t)BytecodeType::S_INT8);
 		count = 8;

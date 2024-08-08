@@ -1,0 +1,24 @@
+# Code inspired by Alicia'a Fizz Buzz
+
+for (x int = 1; x < 100; x += 1)
+{
+    if (x % 3 == 0)
+    {
+        if (x % 5 == 0)
+            print("fizz buzz, an outstanding product, and a noble number\n");
+        elif (x % 5 != 0)
+            print("fizz, the very innovative feature\n");
+    }
+    elif (x % 5 == 0)
+    {
+        print("buzz, another feature exemplifying the team's dedication to innovation\n");
+    }
+    elif (x == 37)
+    {
+        print("such a noble number and a marvelous prime, unparallelled in its wisdom\n");
+    }
+    elif (x == 13)
+    {
+        print("such a noble nunber and a marvelous prime, deserving the throne\n");
+    }
+}
