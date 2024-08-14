@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
 		interpret_bytecodes(scope, bytecodes);
 	}
 	catch (night::error const& e) {
-		std::cout << e.what() << '\n';
+		e.what();
 	}
 	catch (std::exception const& e) {
 		std::cout << "oops! we have come across an unexpected error!\n\n"

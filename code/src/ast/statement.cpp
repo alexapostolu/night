@@ -42,7 +42,7 @@ void VariableInit::check(StatementScope& scope)
 		expr_type = expr->type_check(scope);
 
 		if (expr_type.has_value() && !is_same_or_primitive(var_type, expr_type))
-			night::create_minor_error(
+			night::error::get().create_minor_error(
 				"variable '" + name + "' of type '" + night::to_str(type) +
 				"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", loc);
 	}
@@ -114,7 +114,7 @@ void ArrayInitialization::check(StatementScope& scope)
 		auto arr_size_type = arr_size->type_check(scope);
 
 		if (arr_size_type.has_value() && arr_size_type->is_arr())
-			night::create_minor_error(
+			night::error::get().create_minor_error(
 				"found type '" + night::to_str(*arr_size_type) + "' in array size, "
 				"expected primitive type", loc);
 	}
@@ -136,7 +136,7 @@ void ArrayInitialization::check(StatementScope& scope)
 		expr_type = expr->type_check(scope);
 
 		if (expr_type.has_value() && !is_same_or_primitive(var_type, expr_type))
-			night::create_minor_error(
+			night::error::get().create_minor_error(
 				"variable '" + name + "' of type '" + night::to_str(var_type) +
 				"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", loc);
 	}
@@ -242,7 +242,7 @@ void VariableAssign::check(StatementScope& scope)
 	auto var = scope.get_var(var_name);
 
 	if (!var)
-		night::create_minor_error("variable '" + var_name + "' is undefined", loc);
+		night::error::get().create_minor_error("variable '" + var_name + "' is undefined", loc);
 
 	auto expr_type = expr->type_check(scope);
 
@@ -253,7 +253,7 @@ void VariableAssign::check(StatementScope& scope)
 	id = var->id;
 
 	if (!is_same_or_primitive(var->type, *expr_type))
-		night::create_minor_error(
+		night::error::get().create_minor_error(
 			"variable '" + var_name + "' of type '" + night::to_str(var->type) +
 			"can not be assigned to type '" + night::to_str(*expr_type) + "'", loc);
 
@@ -341,7 +341,7 @@ void Conditional::check(StatementScope& scope)
 			auto cond_type = cond->type_check(scope);
 
 			if (cond_type.has_value() && cond_type->is_arr())
-				night::create_minor_error(
+				night::error::get().create_minor_error(
 					"expected type 'bool', 'char', 'int', or float."
 					"condition is type '" + night::to_str(*cond_type) + "'", loc);
 		}
@@ -453,7 +453,7 @@ void While::check(StatementScope& scope)
 	auto cond_type = cond_expr->type_check(scope);
 
 	if (cond_type.has_value() && cond_type->is_arr())
-		night::create_minor_error(
+		night::error::get().create_minor_error(
 			"condition is type '" + night::to_str(*cond_type) + "', "
 			"expected type 'bool', 'char', 'int', or 'float'", loc);
 
@@ -583,7 +583,7 @@ void Function::check(StatementScope& global_scope)
 		id = func_it->second.id;
 	}
 	catch (std::string const& e) {
-		night::create_minor_error(e, loc);
+		night::error::get().create_minor_error(e, loc);
 	}
 
 	for (auto& stmt : block)
@@ -626,19 +626,19 @@ void Return::check(StatementScope& scope)
 	if (expr_type.has_value())
 	{
 		if (!scope.rtn_type.has_value())
-			night::create_minor_error(
+			night::error::get().create_minor_error(
 				"found return type '" + night::to_str(*expr_type) + "', "
 				"expected void return type", loc);
 
 		if (!is_same_or_primitive(*scope.rtn_type, *expr_type))
-			night::create_minor_error(
+			night::error::get().create_minor_error(
 				"found return type '" + night::to_str(*expr_type) + "', "
 				"expected return type '" + night::to_str(*scope.rtn_type) + "'", loc);
 	}
 	else
 	{
 		if (scope.rtn_type.has_value())
-			night::create_minor_error(
+			night::error::get().create_minor_error(
 				"found void return type, expected return type '" +
 				night::to_str(*scope.rtn_type) + "'", loc);
 	}
@@ -673,7 +673,7 @@ void ArrayMethod::check(StatementScope& scope)
 	auto var = scope.get_var(var_name);
 
 	if (!var)
-		night::create_minor_error("variable '" + var_name + "' is undefined", loc);
+		night::error::get().create_minor_error("variable '" + var_name + "' is undefined", loc);
 
 	for (auto const& subscript : subscripts)
 	{
@@ -681,7 +681,7 @@ void ArrayMethod::check(StatementScope& scope)
 
 		auto subscript_type = subscript->type_check(scope);
 		if (subscript_type.has_value() && subscript_type->is_arr())
-			night::create_minor_error("subscript is type '" + night::to_str(*subscript_type) + "', expected type bool, char, or int'", loc);
+			night::error::get().create_minor_error("subscript is type '" + night::to_str(*subscript_type) + "', expected type bool, char, or int'", loc);
 	}
 
 	if (assign_expr)
@@ -830,7 +830,7 @@ std::optional<Type> expr::FunctionCall::type_check(StatementScope& scope) noexce
 
 	if (funcs_with_same_name == funcs_with_same_name_end)
 	{
-		night::create_minor_error("function call '" + name + "' is undefined", Statement::loc);
+		night::error::get().create_minor_error("function call '" + name + "' is undefined", Statement::loc);
 		return std::nullopt;
 	}
 
@@ -856,18 +856,18 @@ std::optional<Type> expr::FunctionCall::type_check(StatementScope& scope) noexce
 
 		if (arg_types.empty())
 		{
-			night::create_minor_error("function call '" + name + "' has no arguments, "
+			night::error::get().create_minor_error("function call '" + name + "' has no arguments, "
 				"and do not match with the parameters in its function definition", Statement::loc);
 		}
 		else
 		{
-			night::create_minor_error("arguments in function call '" + name + "' are of type '" + s_types +
+			night::error::get().create_minor_error("arguments in function call '" + name + "' are of type '" + s_types +
 				"', and do not match with the parameters in its function definition", Statement::loc);
 		}
 	}
 
 	if (is_expr && !funcs_with_same_name->second.rtn_type.has_value())
-		night::create_minor_error("function '" + funcs_with_same_name->first + "' can not have a return type of void when used in an expression", Statement::loc);
+		night::error::get().create_minor_error("function '" + funcs_with_same_name->first + "' can not have a return type of void when used in an expression", Statement::loc);
 
 	if (night::error::get().has_minor_errors())
 		return std::nullopt;

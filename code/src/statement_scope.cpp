@@ -39,10 +39,10 @@ std::optional<bytecode_t> StatementScope::create_variable(
 	static bytecode_t var_id = 0;
 
 	if (vars.contains(name))
-		night::create_minor_error("variable '" + name + "' is already defined", loc);
+		night::error::get().create_minor_error("variable '" + name + "' is already defined", loc);
 
 	if (var_id == bytecode_t_lim)
-		night::create_minor_error("only " + std::to_string(bytecode_t_lim) + " variables allowed per scope", loc);
+		night::error::get().create_minor_error("only " + std::to_string(bytecode_t_lim) + " variables allowed per scope", loc);
 
 	if (night::error::get().has_minor_errors())
 		return std::nullopt;

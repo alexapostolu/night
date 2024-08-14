@@ -83,7 +83,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 
 			char* result = (char*)malloc(strlen(s1) + strlen(s2) + 1);
 			if (!result)
-				throw night::create_runtime_error("could not allocate memory");
+				throw night::error::get().create_runtime_error("could not allocate memory");
 
 			strcpy(result, s2);
 			strcat(result, s1);

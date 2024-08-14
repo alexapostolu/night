@@ -14,7 +14,7 @@ Lexer::Lexer(std::string const& _file_name)
 	: file(_file_name), loc({ _file_name, 1, 0 }), prev_tok(std::nullopt)
 {
 	if (!file.is_open())
-		throw night::create_fatal_error("file '" + loc.file + "' could not be found/opened", loc);
+		throw night::error::get().create_fatal_error("file '" + loc.file + "' could not be found/opened", loc);
 
 	std::getline(file, file_line);
 	eat();
@@ -78,7 +78,7 @@ Token const& Lexer::expect(TokenType type, std::string const& err, std::source_l
 		eat();
 
 	if (curr().type != type)
-		throw night::create_fatal_error("found '" + curr().str + "', expected " + night::to_str(type) + " " + err, loc, s_loc);
+		throw night::error::get().create_fatal_error("found '" + curr().str + "', expected " + night::to_str(type) + " " + err, loc, s_loc);
 
 	return curr();
 }
@@ -86,7 +86,7 @@ Token const& Lexer::expect(TokenType type, std::string const& err, std::source_l
 Token const& Lexer::curr_is(TokenType type, std::string const& err_msg, std::source_location const& s_loc)
 {
 	if (curr().type != type)
-		throw night::create_fatal_error(
+		throw night::error::get().create_fatal_error(
 			err_msg.empty()
 				? "found '" + night::to_str(curr_tok.type) + "', expected '" + night::to_str(type) + "'"
 				: err_msg,
@@ -157,10 +157,10 @@ Token Lexer::eat_character()
 	++loc.col;
 
 	if (loc.col == file_line.length())
-		throw night::create_fatal_error("", loc);
+		throw night::error::get().create_fatal_error("", loc);
 
 	if (file_line[loc.col] == '\'')
-		throw night::create_fatal_error("character can not not be empty", loc);
+		throw night::error::get().create_fatal_error("character can not not be empty", loc);
 
 	char chr;
 
@@ -175,7 +175,7 @@ Token Lexer::eat_character()
 		case '"':  chr = '\"'; break;
 		case '0':  chr = '\0'; break;
 		default:
-			throw night::create_fatal_error("unknown character '\\'" + file_line[loc.col], loc);
+			throw night::error::get().create_fatal_error("unknown character '\\'" + file_line[loc.col], loc);
 		}
 	}
 	else
@@ -184,7 +184,7 @@ Token Lexer::eat_character()
 	}
 
 	if (file_line[++loc.col] != '\'')
-		throw night::create_fatal_error(std::string() + "found '" + file_line[loc.col] + "', expected closing quote at the end of character", loc);
+		throw night::error::get().create_fatal_error(std::string() + "found '" + file_line[loc.col] + "', expected closing quote at the end of character", loc);
 
 	++loc.col;
 	return { TokenType::CHAR_LIT, std::string(1, chr) };
@@ -283,7 +283,7 @@ Token Lexer::eat_symbol()
 
 	auto symbol = symbols.find(file_line[loc.col]);
 	if (symbol == symbols.end())
-		throw  night::create_fatal_error("unknown symbol '" + std::string(1, file_line[loc.col]) + "'", loc);
+		throw  night::error::get().create_fatal_error("unknown symbol '" + std::string(1, file_line[loc.col]) + "'", loc);
 
 	for (auto& [c, tok_type] : symbol->second)
 	{
@@ -300,7 +300,7 @@ Token Lexer::eat_symbol()
 		}
 	}
 
-	throw  night::create_fatal_error("unknown symbol '" + file_line.substr(loc.col, 2) + "'", loc);
+	throw  night::error::get().create_fatal_error("unknown symbol '" + file_line.substr(loc.col, 2) + "'", loc);
 }
 
 bool Lexer::new_line()

@@ -76,7 +76,7 @@ std::optional<Type> expr::UnaryOp::type_check(
 		return std::nullopt;
 
 	if (expr_type->is_arr())
-		night::create_minor_error(
+		night::error::get().create_minor_error(
 			"expression under unary operator has type '" + night::to_str(*expr_type) +
 			"', expected primitive type", loc);
 
@@ -373,14 +373,14 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 		}
 
 		// Special error case for subscript.
-		night::create_minor_error("subscript operator used on type '" + night::to_str(*rhs_type) + "', it can only be used on arrays", loc);
+		night::error::get().create_minor_error("subscript operator used on type '" + night::to_str(*rhs_type) + "', it can only be used on arrays", loc);
 		return std::nullopt;
 
 	default:
 		throw debug::unhandled_case((int)op_type);
 	}
 
-	night::create_minor_error("type mismatch between '" + night::to_str(*lhs_type) + "' and '" + night::to_str(*rhs_type) + "'", loc);
+	night::error::get().create_minor_error("type mismatch between '" + night::to_str(*lhs_type) + "' and '" + night::to_str(*rhs_type) + "'", loc);
 	return std::nullopt;
 }
 

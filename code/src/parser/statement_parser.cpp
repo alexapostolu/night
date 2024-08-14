@@ -45,7 +45,7 @@ std::vector<stmt_p> parse_stmts(Lexer& lexer, bool requires_curly, bool* contain
 			stmts.push_back(parse_stmt(lexer, contains_return_stmt));
 
 			if (lexer.curr().type == TokenType::END_OF_FILE)
-				throw night::create_fatal_error("missing closing curly bracket", lexer.loc);
+				throw night::error::get().create_fatal_error("missing closing curly bracket", lexer.loc);
 		}
 
 		lexer.eat();
@@ -56,7 +56,7 @@ std::vector<stmt_p> parse_stmts(Lexer& lexer, bool requires_curly, bool* contain
 		return {};
 	default:
 		if (requires_curly)
-			throw night::create_fatal_error("found '" + lexer.curr().str + "', expected opening curly bracket", lexer.loc);
+			throw night::error::get().create_fatal_error("found '" + lexer.curr().str + "', expected opening curly bracket", lexer.loc);
 
 		return { parse_stmt(lexer, contains_return_stmt) };
 	}
@@ -77,9 +77,9 @@ stmt_p parse_stmt(Lexer& lexer, bool* is_return_stmt)
 		return std::make_shared<Return>(parse_return(lexer));
 	}
 
-	case TokenType::ELIF: throw night::create_fatal_error("elif statement must come before an if or elif statement", lexer.loc);
-	case TokenType::ELSE: throw night::create_fatal_error("else statement must come before an if or elif statement", lexer.loc);
-	default: throw night::create_fatal_error("unknown syntax '" + lexer.curr().str + "'", lexer.loc);
+	case TokenType::ELIF: throw night::error::get().create_fatal_error("elif statement must come before an if or elif statement", lexer.loc);
+	case TokenType::ELSE: throw night::error::get().create_fatal_error("else statement must come before an if or elif statement", lexer.loc);
+	default: throw night::error::get().create_fatal_error("unknown syntax '" + lexer.curr().str + "'", lexer.loc);
 	}
 }
 
@@ -133,7 +133,7 @@ stmt_p parse_var(Lexer& lexer)
 		return ast;
 	}
 	default: {
-		throw night::create_fatal_error("found '" + lexer.peek().str + "', expected type, assign, open square, or open bracket", lexer.loc);
+		throw night::error::get().create_fatal_error("found '" + lexer.peek().str + "', expected type, assign, open square, or open bracket", lexer.loc);
 	}
 	}
 }
@@ -208,7 +208,7 @@ ArrayMethod parse_array_method(Lexer& lexer, std::string const& var_name)
 	// Parse operator and expression.
 
 	if (lexer.curr().type != TokenType::ASSIGN && lexer.curr().type != TokenType::ASSIGN_OPERATOR)
-		throw night::create_fatal_error("found '" + lexer.curr().str + "', expected assignment operator", lexer.loc);
+		throw night::error::get().create_fatal_error("found '" + lexer.curr().str + "', expected assignment operator", lexer.loc);
 
 	auto assign_operator = lexer.curr().str;
 	auto assign_expr	 = parse_expr(lexer, true, TokenType::SEMICOLON);
@@ -378,11 +378,11 @@ Function parse_func(Lexer& lexer)
 	auto body = parse_stmts(lexer, true);
 
 	if (std::get<0>(rtn_type) == "void" && does_function_contain_return_stmt) {
-		throw night::create_fatal_error(
+		throw night::error::get().create_fatal_error(
 			"found return statement, expected no return statement in void function", lexer.loc);
 	}
 	if (std::get<0>(rtn_type) != "void" && !does_function_contain_return_stmt) {
-		throw night::create_fatal_error(
+		throw night::error::get().create_fatal_error(
 			"found no return statement, expected return statement in function", lexer.loc);
 	}
 
@@ -406,7 +406,7 @@ Return parse_return(Lexer& lexer)
 std::tuple<std::string, int> parse_type(Lexer& lexer)
 {
 	if (lexer.curr().type != TokenType::TYPE && lexer.curr().type != TokenType::VOID)
-		throw night::create_fatal_error("found '" + lexer.curr().str + "', expected return type", lexer.loc);
+		throw night::error::get().create_fatal_error("found '" + lexer.curr().str + "', expected return type", lexer.loc);
 
 	auto type = lexer.curr().str;
 	int dim = 0;

@@ -76,7 +76,7 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty, std::optional<TokenType
 		default:
 		{
 			if (err_on_empty && !head)
-				throw night::create_fatal_error("found '" + lexer.curr().str + "', expected expression", lexer.loc);
+				throw night::error::get().create_fatal_error("found '" + lexer.curr().str + "', expected expression", lexer.loc);
 
 			if (end_token.has_value())
 				lexer.curr_is(*end_token);
