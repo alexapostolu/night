@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: cimg/base:stable
+      - image: cimg/gcc:latest # Use the latest GCC image
     steps:
       - checkout
       # Install CMake
