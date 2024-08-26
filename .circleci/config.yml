@@ -36,9 +36,10 @@ jobs:
             cmake --build . --config Release
             ls
             ls ..
+            pwd
       # Persist the build artifacts to the workspace
       - persist_to_workspace:
-          root: ${pwd}
+          root: ..
           paths:
             - night
 
