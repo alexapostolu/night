@@ -2,6 +2,7 @@ version: 2.1
 
 jobs:
   build:
+    working_directory: /tmp
     docker:
       - image: cimg/base:stable
     steps:
@@ -38,11 +39,12 @@ jobs:
             ls ..
       # Persist the build artifacts to the workspace
       - persist_to_workspace:
-          root: .
+          root: ${pwd}
           paths:
             - night
 
   test:
+    working_directory: /tmp
     docker:
       - image: cimg/base:stable
     steps:
@@ -55,7 +57,7 @@ jobs:
           name: Run tests
           command: |
             cd tests
-            bash test_night.sh /workspace/night
+            bash test_night.sh /tmp//workspace/night
 
 workflows:
   version: 2
