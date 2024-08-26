@@ -55,9 +55,9 @@ jobs:
       - run:
           name: Run tests
           command: |
+            cd tests
             pwd
             ls
-            cd tests
             bash test_night.sh night
 
 workflows:
