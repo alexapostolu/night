@@ -38,7 +38,7 @@ jobs:
       - persist_to_workspace:
           root: build
           paths:
-            - Release
+            - night
 
   test:
     docker:
@@ -53,7 +53,7 @@ jobs:
           name: Run tests
           command: |
             cd tests
-            bash test_night.sh /workspace/Release/night
+            bash test_night.sh /workspace/night
 
 workflows:
   version: 2
