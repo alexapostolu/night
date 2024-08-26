@@ -377,7 +377,8 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 		return std::nullopt;
 
 	default:
-		throw debug::unhandled_case((int)op_type);
+		return std::nullopt;
+		//throw debug::unhandled_case((int)op_type);
 	}
 
 	night::error::get().create_minor_error("type mismatch between '" + night::to_str(*lhs_type) + "' and '" + night::to_str(*rhs_type) + "'", loc);
