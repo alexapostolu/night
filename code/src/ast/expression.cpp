@@ -109,6 +109,8 @@ std::optional<Type> expr::UnaryOp::type_check(
 			op_code = BytecodeType::NOT_F;
 			return Type::BOOL;
 		}
+	default:
+		return std::nullopt;
 	}
 }
 
@@ -377,7 +379,8 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 		return std::nullopt;
 
 	default:
-		throw debug::unhandled_case((int)op_type);
+		return std::nullopt;
+		//throw debug::unhandled_case((int)op_type);
 	}
 
 	night::error::get().create_minor_error("type mismatch between '" + night::to_str(*lhs_type) + "' and '" + night::to_str(*rhs_type) + "'", loc);
@@ -431,9 +434,9 @@ expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
 	switch (op_type)
 	{
 	case BinaryOpType::ADD:  return op(false, [](auto p1, auto p2) { return p1 + p2; });
+	case BinaryOpType::SUB:  return op(false, [](auto p1, auto p2) { return p1 - p2; });
 	case BinaryOpType::MULT: return op(false, [](auto p1, auto p2) { return p1 * p2; });
 	case BinaryOpType::DIV:  return op(false, [](auto p1, auto p2) { return p1 / p2; });
-	case BinaryOpType::SUB:  return op(false, [](auto p1, auto p2) { return p1 - p2; });
 	case BinaryOpType::MOD: {
 		return std::make_shared<Numeric>(
 			loc, Type::INT,
@@ -450,7 +453,7 @@ expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
 	case BinaryOpType::AND:			   return op(true, [](auto p1, auto p2) { return (int64_t)(p1 && p2); });
 	case BinaryOpType::OR:			   return op(true, [](auto p1, auto p2) { return (int64_t)(p1 || p2); });
 
-	default: debug::unhandled_case((int)op_type);
+	default: break;//debug::unhandled_case((int)op_type);
 	}
 
 	return std::make_shared<BinaryOp>(*this);

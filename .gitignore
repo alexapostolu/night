@@ -6,6 +6,7 @@ source.night
 
 # cmake
 /out
+/build
 
 # vscode
 /.vscode

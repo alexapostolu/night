@@ -1,0 +1,65 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      # Install CMake
+      - run:
+          name: Install CMake
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y cmake
+      # Install MinGW using Chocolatey
+      - run:
+          name: Install GCC and G++
+          command: |
+            sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+            sudo apt-get update
+            
+            version=$(apt-cache pkgnames | sed -nr 's/^gcc-(([0-9]+\.?)+)$/\1/p' \
+                                         | sort -n | tail -n1)
+            echo "The latest available GCC version: $version"
+            
+            sudo apt-get install gcc-$version g++-$version
+            sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-$version 60 \
+                                     --slave   /usr/bin/g++ g++ /usr/bin/g++-$version
+      # Create build directory and build the project
+      - run:
+          name: Build the project
+          command: |
+            mkdir -p build
+            cd build
+            cmake ..
+            cmake --build . --config Release
+      # Persist the build artifacts to the workspace
+      - persist_to_workspace:
+          root: /home/circleci/project/build
+          paths:
+            - night
+
+  test:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      # Attach the workspace to access the built executable
+      - attach_workspace:
+          at: /home/circleci/project/build
+      # Run the test script with the `night` executable as an argument
+      - run:
+          name: Run tests
+          command: |
+            cd tests
+            bash test_night.sh /home/circleci/project/build/night
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build
+      - test:
+          requires:
+            - build

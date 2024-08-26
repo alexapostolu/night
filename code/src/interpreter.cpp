@@ -92,12 +92,18 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			break;
 		}
 
-		case BytecodeType::SUB_I:
-			s.emplace(-pop(s).as.i + pop(s).as.i);
+		case BytecodeType::SUB_I: {
+			auto f1 = pop(s).as.i;
+			auto f2 = pop(s).as.i;
+			s.emplace(-f1 + f2);
 			break;
-		case BytecodeType::SUB_F:
-			s.emplace(-pop(s).as.d + pop(s).as.d);
+		}
+		case BytecodeType::SUB_F: {
+			auto f1 = pop(s).as.d;
+			auto f2 = pop(s).as.d;
+			s.emplace(-f1 + f2);
 			break;
+		}
 
 		case BytecodeType::MULT_I:
 			s.emplace(pop(s).as.i * pop(s).as.i);
@@ -287,9 +293,9 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			}
 			case 9: {
 				auto x = pop(s).as.i;
-				int length = snprintf(NULL, 0, "%lld", x);
+				int length = snprintf(NULL, 0, "%ld", x);
 				char* str = (char*)malloc(length + 1);
-				snprintf(str, length + 1, "%lld", x);
+				snprintf(str, length + 1, "%ld", x);
 
 				s.emplace(str);
 				break;

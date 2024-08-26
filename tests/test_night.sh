@@ -1,28 +1,36 @@
 #!/bin/bash
 
-# Night executables
-night="..\out\build\x64-Debug\night.exe"
+if [ "$#" -lt 1 ]; then
+  echo "Usage: $0 <input_file>"
+  exit 1
+fi
+
+# Night executable
+night="$1"
+
 # Night source code files for testing
 night_files=(
-	"Programs\cs50\w1_credit.night"
-	"Programs\cs50\w1_mario.night"
-	"Programs\cs50\w2_readability.night"
-	"Programs\cs50\w2_scrabble.night"
-	"Programs\cs50\w2_substitution.night")
+	"programs/cs50/w1_credit.night"
+	"programs/cs50/w1_mario.night"
+	"programs/cs50/w2_readability.night"
+	"programs/cs50/w2_scrabble.night"
+	"programs/cs50/w2_substitution.night")
 
 # Standard input and output files corresponding to the Night source code files
 inputs=(
-	"StandardIO\w1_credit_input.txt"
-	"StandardIO\w1_mario_input.txt"
-	"StandardIO\w2_readability_input.txt"
-	"StandardIO\w2_scrabble_input.txt"
-	"StandardIO\w2_substitution_input.txt")
+	"StandardIO/w1_credit_input.txt"
+	"StandardIO/w1_mario_input.txt"
+	"StandardIO/w2_readability_input.txt"
+	"StandardIO/w2_scrabble_input.txt"
+	"StandardIO/w2_substitution_input.txt")
 expected_outputs=(
-	"StandardIO\w1_credit_expected.txt"
-	"StandardIO\w1_mario_expected.txt"
-	"StandardIO\w2_readability_expected.txt"
-	"StandardIO\w2_scrabble_expected.txt"
-	"StandardIO\w2_substitution_expected.txt")
+	"StandardIO/w1_credit_expected.txt"
+	"StandardIO/w1_mario_expected.txt"
+	"StandardIO/w2_readability_expected.txt"
+	"StandardIO/w2_scrabble_expected.txt"
+	"StandardIO/w2_substitution_expected.txt")
+
+all_tests_passed=0
 
 for i in "${!night_files[@]}"; do
     # Night code
@@ -36,7 +44,7 @@ for i in "${!night_files[@]}"; do
     actual_output="actual_output.txt"
 
     # Run the program and capture the output
-    $night $night_file < "$input" > "$actual_output"
+    "$night" "$night_file" < "$input" > "$actual_output"
 
 	# Check return value for sanity check
     status=$?
@@ -50,9 +58,10 @@ for i in "${!night_files[@]}"; do
     if diff "$actual_output" "$expected_output" > /dev/null; then
         echo "Output matches the expected output."
     else
-        echo "Output for does not match the expected output."
+        echo "Output does not match the expected output."
         echo "Differences:"
         diff "$actual_output" "$expected_output"
+		all_tests_passed=1
     fi
 
     echo
@@ -60,3 +69,5 @@ done
 
 # Clean up temporary output file
 rm "actual_output.txt"
+
+exit $all_tests_passed

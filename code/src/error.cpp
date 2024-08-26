@@ -28,7 +28,7 @@ int const GREEN = 32;
 int const BLUE = 34;
 void set_text_colour(int colour)
 {
-	std::cout << "\033[" << color << "m";
+	std::cout << "\033[" << colour << "m";
 }
 #endif
 
