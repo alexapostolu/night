@@ -39,7 +39,7 @@ jobs:
             pwd
       # Persist the build artifacts to the workspace
       - persist_to_workspace:
-          root: ..
+          root: /home/circleci/project/build
           paths:
             - night
 
