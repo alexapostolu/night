@@ -1,7 +1,5 @@
 #!/bin/bash
 
-ls
-
 if [ "$#" -lt 1 ]; then
   echo "Usage: $0 <input_file>"
   exit 1
@@ -32,6 +30,8 @@ expected_outputs=(
 	"StandardIO/w2_scrabble_expected.txt"
 	"StandardIO/w2_substitution_expected.txt")
 
+all_tests_passed=true
+
 for i in "${!night_files[@]}"; do
     # Night code
 	night_file="${night_files[$i]}"
@@ -61,10 +61,16 @@ for i in "${!night_files[@]}"; do
         echo "Output for does not match the expected output."
         echo "Differences:"
         diff "$actual_output" "$expected_output"
+		all_tests_passed=false
     fi
 
     echo
 done
 
+if $all_tests_passed -eq false; then
+	exit 1
+fi
+
 # Clean up temporary output file
 rm "actual_output.txt"
+exit 0

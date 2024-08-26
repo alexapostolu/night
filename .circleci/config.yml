@@ -58,7 +58,7 @@ jobs:
             cd tests
             pwd
             ls
-            bash test_night.sh night
+            bash test_night.sh /home/circleci/project/build/night
 
 workflows:
   version: 2
