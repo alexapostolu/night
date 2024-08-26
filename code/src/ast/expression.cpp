@@ -434,9 +434,9 @@ expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
 	switch (op_type)
 	{
 	case BinaryOpType::ADD:  return op(false, [](auto p1, auto p2) { return p1 + p2; });
+	case BinaryOpType::SUB:  return op(false, [](auto p1, auto p2) { return p1 - p2; });
 	case BinaryOpType::MULT: return op(false, [](auto p1, auto p2) { return p1 * p2; });
 	case BinaryOpType::DIV:  return op(false, [](auto p1, auto p2) { return p1 / p2; });
-	case BinaryOpType::SUB:  return op(false, [](auto p1, auto p2) { return p1 - p2; });
 	case BinaryOpType::MOD: {
 		return std::make_shared<Numeric>(
 			loc, Type::INT,

@@ -30,7 +30,7 @@ expected_outputs=(
 	"StandardIO/w2_scrabble_expected.txt"
 	"StandardIO/w2_substitution_expected.txt")
 
-all_tests_passed=1
+all_tests_passed=0
 
 for i in "${!night_files[@]}"; do
     # Night code
@@ -58,10 +58,10 @@ for i in "${!night_files[@]}"; do
     if diff "$actual_output" "$expected_output" > /dev/null; then
         echo "Output matches the expected output."
     else
-        echo "Output for does not match the expected output."
+        echo "Output does not match the expected output."
         echo "Differences:"
         diff "$actual_output" "$expected_output"
-		all_tests_passed=0
+		all_tests_passed=1
     fi
 
     echo
