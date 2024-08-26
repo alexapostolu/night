@@ -33,8 +33,6 @@ expected_outputs=(
 all_tests_passed=1
 
 for i in "${!night_files[@]}"; do
-	echo "Starting command"
-
     # Night code
 	night_file="${night_files[$i]}"
 
@@ -45,13 +43,8 @@ for i in "${!night_files[@]}"; do
 	expected_output="${expected_outputs[$i]}"
     actual_output="actual_output.txt"
 
-	echo $night
-	$night
-
     # Run the program and capture the output
     "$night" "$night_file" < "$input" > "$actual_output"
-
-	echo "Done running command"
 
 	# Check return value for sanity check
     status=$?
