@@ -35,7 +35,6 @@ jobs:
             cmake ..
             cmake --build . --config Release
             ls
-            ls Release
             ls ..
       # Persist the build artifacts to the workspace
       - persist_to_workspace:
