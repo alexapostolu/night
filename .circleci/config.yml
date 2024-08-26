@@ -2,7 +2,6 @@ version: 2.1
 
 jobs:
   build:
-    working_directory: /tmp
     docker:
       - image: cimg/base:stable
     steps:
@@ -44,7 +43,6 @@ jobs:
             - night
 
   test:
-    working_directory: /tmp
     docker:
       - image: cimg/base:stable
     steps:
@@ -57,7 +55,7 @@ jobs:
           name: Run tests
           command: |
             cd tests
-            bash test_night.sh /tmp//workspace/night
+            bash test_night.sh /workspace/night
 
 workflows:
   version: 2
