@@ -429,9 +429,13 @@ void push_subscript(std::stack<intpr::Value>& s, bool is_string)
 void push_string_input(std::stack<intpr::Value>& s)
 {
 	char* str = new char[100]; 
-
 	fgets(str, 100, stdin);
-	str[99] = '\0';
+
+	char* newline = strchr(str, '\n');
+	if (newline)
+		*newline = '\0';
+	else
+		str[99] = '\0';
 
 	s.emplace(str);
 }

@@ -10,7 +10,6 @@
 int main(int argc, char* argv[])
 {
 	auto main_file = parse_args(argc, argv);
-
 	if (main_file.empty())
 		return 0;
 
@@ -28,6 +27,6 @@ int main(int argc, char* argv[])
 	catch (std::exception const& e) {
 		std::cout << "oops! we have come across an unexpected error!\n\n"
 				  << e.what() << "\n\n"
-				  << "please submit an issue on github: https://github.com/alexapostolu/night\n";
+				  << "please submit an issue on github, https://github.com/alexapostolu/night\n";
 	}
 }

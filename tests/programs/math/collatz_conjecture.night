@@ -1,0 +1,17 @@
+def collatz(x int) int
+{
+	if (x % 2 == 0)
+		return x/2;
+	elif (x % 2 == 1)
+		return 3*x + 1;
+}
+
+y int = collatz(int(input()));
+
+print(str(y) + "\n");
+
+while (y != 1)
+{
+	y = collatz(y);
+	print(str(y) + "\n");
+}
