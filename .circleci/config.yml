@@ -16,9 +16,9 @@ jobs:
       - run:
           name: Install GCC and G++ 13
           command: |
-          sudo apt update
-          sudo apt upgrade
-          sudo apt install gcc
+            sudo apt update
+            sudo apt upgrade
+            sudo apt install gcc
       # Create build directory and build the project
       - run:
           name: Build the project
