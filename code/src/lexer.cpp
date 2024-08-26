@@ -52,15 +52,15 @@ Token const& Lexer::eat()
 	return curr_tok = eat_symbol();
 }
 
-Token const& Lexer::peek()
+Token Lexer::peek()
 {
 	if (prev_tok.has_value())
 		return curr_tok;
 
 	auto tmp_tok = curr_tok;
 	auto eat_tok = eat();
-
 	prev_tok = tmp_tok;
+
 	return eat_tok;
 }
 

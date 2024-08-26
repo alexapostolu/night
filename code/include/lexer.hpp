@@ -19,7 +19,7 @@ public:
 
 public:
 	Token const& eat();
-	Token const& peek();
+	Token peek();
 	Token const& curr() const;
 
 	// Eats token, and checks the type of new current token. Returns current if

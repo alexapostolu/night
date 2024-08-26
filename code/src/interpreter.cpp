@@ -287,9 +287,9 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			}
 			case 9: {
 				auto x = pop(s).as.i;
-				int length = snprintf(NULL, 0, "%lld", x);
+				int length = snprintf(NULL, 0, "%ld", x);
 				char* str = (char*)malloc(length + 1);
-				snprintf(str, length + 1, "%lld", x);
+				snprintf(str, length + 1, "%ld", x);
 
 				s.emplace(str);
 				break;

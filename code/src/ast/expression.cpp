@@ -109,6 +109,8 @@ std::optional<Type> expr::UnaryOp::type_check(
 			op_code = BytecodeType::NOT_F;
 			return Type::BOOL;
 		}
+	default:
+		return std::nullopt;
 	}
 }
 
@@ -451,7 +453,7 @@ expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
 	case BinaryOpType::AND:			   return op(true, [](auto p1, auto p2) { return (int64_t)(p1 && p2); });
 	case BinaryOpType::OR:			   return op(true, [](auto p1, auto p2) { return (int64_t)(p1 || p2); });
 
-	default: debug::unhandled_case((int)op_type);
+	default: break;//debug::unhandled_case((int)op_type);
 	}
 
 	return std::make_shared<BinaryOp>(*this);
