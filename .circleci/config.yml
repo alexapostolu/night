@@ -14,11 +14,12 @@ jobs:
             sudo apt-get install -y cmake
       # Install MinGW using Chocolatey
       - run:
-          name: Install GCC and G++ 13
+          name: Install GCC and G++
           command: |
             sudo apt update
             sudo apt upgrade
-            sudo apt install gcc
+            sudo apt install -y gcc-13
+            gcc --version
       # Create build directory and build the project
       - run:
           name: Build the project
