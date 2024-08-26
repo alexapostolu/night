@@ -1,7 +1,13 @@
 #!/bin/bash
 
-# Night executables
-night="..\out\build\x64-Debug\night.exe"
+if [ "$#" -lt 1 ]; then
+  echo "Usage: $0 <input_file>"
+  exit 1
+fi
+
+# Night executable
+night="$1"
+
 # Night source code files for testing
 night_files=(
 	"Programs\cs50\w1_credit.night"
