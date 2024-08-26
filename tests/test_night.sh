@@ -30,9 +30,11 @@ expected_outputs=(
 	"StandardIO/w2_scrabble_expected.txt"
 	"StandardIO/w2_substitution_expected.txt")
 
-all_tests_passed=true
+all_tests_passed=1
 
 for i in "${!night_files[@]}"; do
+	echo "Starting command"
+
     # Night code
 	night_file="${night_files[$i]}"
 
@@ -43,8 +45,15 @@ for i in "${!night_files[@]}"; do
 	expected_output="${expected_outputs[$i]}"
     actual_output="actual_output.txt"
 
+	echo $night_file
+	echo $input
+	echo $expected_output
+	echo $actual_output
+
     # Run the program and capture the output
-    $night $night_file < "$input" > "$actual_output"
+    "$night" "$night_file" < "$input" > "$actual_output"
+
+	echo "Done running command"
 
 	# Check return value for sanity check
     status=$?
@@ -61,16 +70,13 @@ for i in "${!night_files[@]}"; do
         echo "Output for does not match the expected output."
         echo "Differences:"
         diff "$actual_output" "$expected_output"
-		all_tests_passed=false
+		all_tests_passed=0
     fi
 
     echo
 done
 
-if $all_tests_passed -eq false; then
-	exit 1
-fi
-
 # Clean up temporary output file
 rm "actual_output.txt"
-exit 0
+
+exit $all_tests_passed
