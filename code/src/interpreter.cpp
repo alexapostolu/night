@@ -18,9 +18,6 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 {
 	std::stack<intpr::Value> s;
 
-	//for (auto const& c : codes)
-	//	std::cout << night::to_str(c) << '\n';
-
 	// This freeze is for while loop bytecode.
 	// The last JUMP in While loop bytecode jumps to before the start of the vector.
 	// But you can not have an iterator point to before the start of a vector. So
@@ -93,24 +90,30 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		}
 
 		case BytecodeType::SUB_I: {
-			auto f1 = pop(s).as.i;
-			auto f2 = pop(s).as.i;
-			s.emplace(-f1 + f2);
+			auto s1 = pop(s).as.i;
+			auto s2 = pop(s).as.i;
+			s.emplace(-s1 + s2);
 			break;
 		}
 		case BytecodeType::SUB_F: {
-			auto f1 = pop(s).as.d;
-			auto f2 = pop(s).as.d;
-			s.emplace(-f1 + f2);
+			auto s1 = pop(s).as.d;
+			auto s2 = pop(s).as.d;
+			s.emplace(-s1 + s2);
 			break;
 		}
 
-		case BytecodeType::MULT_I:
-			s.emplace(pop(s).as.i * pop(s).as.i);
+		case BytecodeType::MULT_I: {
+			auto s1 = pop(s).as.i;
+			auto s2 = pop(s).as.i;
+			s.emplace(s1 * s2);
 			break;
-		case BytecodeType::MULT_F:
-			s.emplace(pop(s).as.d * pop(s).as.d);
+		}
+		case BytecodeType::MULT_F: {
+			auto s1 = pop(s).as.d;
+			auto s2 = pop(s).as.d;
+			s.emplace(s1 * s2);
 			break;
+		}
 
 		case BytecodeType::DIV_I: {
 			auto s2 = pop(s);
@@ -129,66 +132,120 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		}
 
 		// stack values are in opposite order, so we switch signs to account for that
-		case BytecodeType::LESSER_I:
-			s.emplace(int64_t(pop(s).as.i > pop(s).as.i));
+		case BytecodeType::LESSER_I: {
+			auto s1 = pop(s).as.i;
+			auto s2 = pop(s).as.i;
+			s.emplace(int64_t(s1 > s2));
 			break;
-		case BytecodeType::LESSER_F:
-			s.emplace(int64_t(pop(s).as.d > pop(s).as.d));
+		}
+		case BytecodeType::LESSER_F: {
+			auto s1 = pop(s).as.d;
+			auto s2 = pop(s).as.d;
+			s.emplace(int64_t(s1 > s2));
 			break;
-		case BytecodeType::LESSER_S:
-			s.emplace(int64_t(strcmp(pop(s).as.s, pop(s).as.s) > 0));
+		}
+		case BytecodeType::LESSER_S: {
+			auto s1 = pop(s).as.s;
+			auto s2 = pop(s).as.s;
+			s.emplace(int64_t(strcmp(s1, s2) > 0));
 			break;
+		}
 
-		case BytecodeType::GREATER_I:
-			s.emplace(int64_t(pop(s).as.i < pop(s).as.i));
+		case BytecodeType::GREATER_I: {
+			auto s1 = pop(s).as.i;
+			auto s2 = pop(s).as.i;
+			s.emplace(int64_t(s1 < s2));
 			break;
-		case BytecodeType::GREATER_F:
-			s.emplace(int64_t(pop(s).as.d < pop(s).as.d));
+		}
+		case BytecodeType::GREATER_F: {
+			auto s1 = pop(s).as.d;
+			auto s2 = pop(s).as.d;
+			s.emplace(int64_t(s1 < s2));
 			break;
-		case BytecodeType::GREATER_S:
-			s.emplace(int64_t(strcmp(pop(s).as.s, pop(s).as.s) < 0));
+		}
+		case BytecodeType::GREATER_S: {
+			auto s1 = pop(s).as.s;
+			auto s2 = pop(s).as.s;
+			s.emplace(int64_t(strcmp(s1, s2) < 0));
 			break;
+		}
 
-		case BytecodeType::LESSER_EQUALS_I:
-			s.emplace((int64_t)(pop(s).as.i >= pop(s).as.i));
+		case BytecodeType::LESSER_EQUALS_I: {
+			auto s1 = pop(s).as.i;
+			auto s2 = pop(s).as.i;
+			s.emplace((int64_t)(s1 >= s2));
 			break;
-		case BytecodeType::LESSER_EQUALS_F:
-			s.emplace((int64_t)(pop(s).as.d >= pop(s).as.d));
+		}
+		case BytecodeType::LESSER_EQUALS_F: {
+			auto s1 = pop(s).as.d;
+			auto s2 = pop(s).as.d;
+			s.emplace((int64_t)(s1 >= s2));
 			break;
-		case BytecodeType::LESSER_EQUALS_S:
-			s.emplace((int64_t)(strcmp(pop(s).as.s, pop(s).as.s) >= 0));
+		}
+		case BytecodeType::LESSER_EQUALS_S: {
+			auto s1 = pop(s).as.s;
+			auto s2 = pop(s).as.s;
+			s.emplace((int64_t)(strcmp(s1, s2) >= 0));
 			break;
+		}
 
-		case BytecodeType::GREATER_EQUALS_I:
-			s.emplace((int64_t)(pop(s).as.i <= pop(s).as.i));
+		case BytecodeType::GREATER_EQUALS_I: {
+			auto s1 = pop(s).as.i;
+			auto s2 = pop(s).as.i;
+			s.emplace((int64_t)(s1 <= s2));
 			break;
-		case BytecodeType::GREATER_EQUALS_F:
-			s.emplace((int64_t)(pop(s).as.d <= pop(s).as.d));
+		}
+		case BytecodeType::GREATER_EQUALS_F: {
+			auto s1 = pop(s).as.d;
+			auto s2 = pop(s).as.d;
+			s.emplace((int64_t)(s1 <= s2));
 			break;
-		case BytecodeType::GREATER_EQUALS_S:
-			s.emplace((int64_t)(strcmp(pop(s).as.s, pop(s).as.s) <= 0));
+		}
+		case BytecodeType::GREATER_EQUALS_S: {
+			auto s1 = pop(s).as.s;
+			auto s2 = pop(s).as.s;
+			s.emplace((int64_t)(strcmp(s1, s2) <= 0));
 			break;
+		}
 
-		case BytecodeType::EQUALS_I:
-			s.emplace(int64_t(pop(s).as.i == pop(s).as.i));
+		case BytecodeType::EQUALS_I: {
+			auto s1 = pop(s).as.i;
+			auto s2 = pop(s).as.i;
+			s.emplace(int64_t(s1 == s2));
 			break;
-		case BytecodeType::EQUALS_F:
-			s.emplace(int64_t(pop(s).as.d == pop(s).as.d));
+		}
+		case BytecodeType::EQUALS_F: {
+			auto s1 = pop(s).as.d;
+			auto s2 = pop(s).as.d;
+			s.emplace(int64_t(s1 == s2));
 			break;
-		case BytecodeType::EQUALS_S:
-			s.emplace(int64_t(!strcmp(pop(s).as.s, pop(s).as.s)));
+		}
+		case BytecodeType::EQUALS_S: {
+			auto s1 = pop(s).as.s;
+			auto s2 = pop(s).as.s;
+			s.emplace(int64_t(!strcmp(s1, s2)));
 			break;
+		}
 
-		case BytecodeType::NOT_EQUALS_I:
-			s.emplace(int64_t(pop(s).as.i != pop(s).as.i));
+		case BytecodeType::NOT_EQUALS_I: {
+			auto s1 = pop(s).as.i;
+			auto s2 = pop(s).as.i;
+			s.emplace(int64_t(s1 != s2));
 			break;
+		}
 
-		case BytecodeType::AND:
-			s.emplace(int64_t(pop(s).as.i && pop(s).as.i));
+		case BytecodeType::AND: {
+			auto s1 = pop(s).as.i;
+			auto s2 = pop(s).as.i;
+			s.emplace(int64_t(s1 && s2));
 			break;
-		case BytecodeType::OR:
-			s.emplace(int64_t(pop(s).as.i || pop(s).as.i));
+		}
+		case BytecodeType::OR: {
+			auto s1 = pop(s).as.i;
+			auto s2 = pop(s).as.i;
+			s.emplace(int64_t(s1 || s2));
 			break;
+		}
 
 		case BytecodeType::INDEX_S: push_subscript(s, true); break;
 		case BytecodeType::INDEX_A: push_subscript(s, false); break;
