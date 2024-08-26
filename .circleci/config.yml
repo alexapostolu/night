@@ -55,6 +55,8 @@ jobs:
       - run:
           name: Run tests
           command: |
+            pwd
+            ls
             cd tests
             bash test_night.sh night
 
