@@ -45,10 +45,8 @@ for i in "${!night_files[@]}"; do
 	expected_output="${expected_outputs[$i]}"
     actual_output="actual_output.txt"
 
-	echo $night_file
-	echo $input
-	echo $expected_output
-	echo $actual_output
+	echo $night
+	$night
 
     # Run the program and capture the output
     "$night" "$night_file" < "$input" > "$actual_output"
