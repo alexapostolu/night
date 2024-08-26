@@ -38,9 +38,9 @@ jobs:
             ls ..
       # Persist the build artifacts to the workspace
       - persist_to_workspace:
-          root: ..\build
+          root: .
           paths:
-            - Release
+            - night
 
   test:
     docker:
@@ -55,7 +55,7 @@ jobs:
           name: Run tests
           command: |
             cd tests
-            bash test_night.sh /workspace/Release/night
+            bash test_night.sh /workspace/night
 
 workflows:
   version: 2
