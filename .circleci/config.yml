@@ -34,9 +34,6 @@ jobs:
             cd build
             cmake ..
             cmake --build . --config Release
-            ls
-            ls ..
-            pwd
       # Persist the build artifacts to the workspace
       - persist_to_workspace:
           root: /home/circleci/project/build
@@ -56,8 +53,6 @@ jobs:
           name: Run tests
           command: |
             cd tests
-            pwd
-            ls
             bash test_night.sh /home/circleci/project/build/night
 
 workflows:
