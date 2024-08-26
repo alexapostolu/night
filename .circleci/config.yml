@@ -50,13 +50,13 @@ jobs:
       - checkout
       # Attach the workspace to access the built executable
       - attach_workspace:
-          at: /workspace
+          at: /home/circleci/project/build
       # Run the test script with the `night` executable as an argument
       - run:
           name: Run tests
           command: |
             cd tests
-            bash test_night.sh /workspace/night
+            bash test_night.sh night
 
 workflows:
   version: 2
