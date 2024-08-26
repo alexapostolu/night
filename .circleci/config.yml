@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: cimg/gcc:latest # Use the latest GCC image
+      - image: cimg/base:stable
     steps:
       - checkout
       # Install CMake
@@ -12,6 +12,10 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt-get install -y cmake
+      # Install MinGW using Chocolatey
+      - run:
+          name: Install MinGW
+          command: choco install mingw --version 13.2.0
       # Create build directory and build the project
       - run:
           name: Build the project
