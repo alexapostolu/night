@@ -55,7 +55,7 @@ using bytecodes_t = std::vector<bytecode_t>;
  * 
  * #1 is irrelevant because BytecodeType is supposed to be implicitly
  * converted to bytecode_t by design. #2 is solved because BytecodeType
- * prefixes all types with BytecodeType_. And #2 is solved because
+ * prefixes all types with BytecodeType_. And #3 is solved because
  * BytecodeType specifies the underlying type as bytecode_t (C++11 feature).
  * 
  * Now, not only does BytecodeType render the benefits of enum classes
@@ -138,7 +138,7 @@ bytecodes_t int_to_bytecodes(uint64_t uint64, int size = -1);
 namespace night {
 
 /**
- * @brief Bytecode type to string.
+ * @brief Bytecode type to string. Used in error messages and debugging.
  */
 std::string to_str(bytecode_t type);
 

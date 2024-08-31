@@ -1,5 +1,6 @@
 #include "bytecode.hpp"
 
+#include <limits>
 #include <string>
 
 bytecodes_t int_to_bytecodes(uint64_t uint64, int size)
