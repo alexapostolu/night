@@ -25,16 +25,16 @@ T get_int(bytecodes_t::const_iterator& it)
 {
 	int count;
 
-	switch ((BytecodeType)(*it))
+	switch (*it)
 	{
-	case BytecodeType::S_INT1:
-	case BytecodeType::U_INT1: count = 1; break;
-	case BytecodeType::S_INT2:
-	case BytecodeType::U_INT2: count = 2; break;
-	case BytecodeType::S_INT4:
-	case BytecodeType::U_INT4: count = 4; break;
-	case BytecodeType::S_INT8:
-	case BytecodeType::U_INT8: count = 8; break;
+	case BytecodeType_S_INT1:
+	case BytecodeType_U_INT1: count = 1; break;
+	case BytecodeType_S_INT2:
+	case BytecodeType_U_INT2: count = 2; break;
+	case BytecodeType_S_INT4:
+	case BytecodeType_U_INT4: count = 4; break;
+	case BytecodeType_S_INT8:
+	case BytecodeType_U_INT8: count = 8; break;
 	default: throw debug::unhandled_case(*it);
 	}
 

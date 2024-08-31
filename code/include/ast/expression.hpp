@@ -119,7 +119,7 @@ private:
 	UnaryOpType op_type;
 	expr::expr_p expr;
 
-	std::optional<BytecodeType> op_code;
+	std::optional<bytecode_t> op_code;
 };
 
 
@@ -157,8 +157,8 @@ private:
 	BinaryOpType op_type;
 	expr::expr_p lhs, rhs;
 
-	std::optional<BytecodeType> cast_lhs, cast_rhs;
-	BytecodeType op_code;
+	std::optional<bytecode_t> cast_lhs, cast_rhs;
+	bytecode_t op_code;
 };
 
 
@@ -196,7 +196,7 @@ public:
 		std::vector<expr_p> const& _elements,
 		bool _is_str_,
 		std::optional<Type> const& _type_convert = std::nullopt,
-		std::vector<std::optional<BytecodeType>> const& _type_conversion = {});
+		std::vector<std::optional<bytecode_t>> const& _type_conversion = {});
 
 	void insert_node(
 		expr_p node,
@@ -220,7 +220,7 @@ public:
 	bool is_str_;
 
 	std::optional<Type> type_convert;
-	std::vector<std::optional<BytecodeType>> type_conversion;
+	std::vector<std::optional<bytecode_t>> type_conversion;
 };
 
 

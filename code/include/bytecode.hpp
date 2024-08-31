@@ -1,83 +1,145 @@
 #pragma once
 
-#include <limits>
 #include <stdint.h>
 #include <vector>
 #include <string>
 
+/**
+ * @brief Data structures representing bytecodes and how they are stored.
+ * 
+ * Bytecode type refers to an action bytecode, while bytecode value refers to the
+ * value(s) the action is being performed on. For example, "ADD" is a bytecode
+ * type and "2" and "3" are bytecode values. Both are represented as 8 bit values
+ * and are stored in the same data structure. The only way to differentiate
+ * between the two when interpreting is solely through the language design.
+ * 
+ * **Design Decision #1**
+ * bytecode_t is 8 bits.
+ * 
+ * My bytecode only has 63 possible values right now, and even if I did expand
+ * it, I would have to expand it by over twice to reach the limit of 8 bits. So
+ * 8 bits is plenty enough for Night.
+ * 
+ * **Design Decision #2**
+ * bytecodes_t is a vector and not a forward list.
+ * 
+ * idk why.
+ */
 using bytecode_t = uint8_t;
-constexpr bytecode_t bytecode_t_lim = std::numeric_limits<bytecode_t>::max();;
-
 using bytecodes_t = std::vector<bytecode_t>;
 
-// comments indicate how the bytecode should be used
-// [] indicate a value popped off the stack
-// () indicate the next bytecode value
-enum struct BytecodeType : bytecode_t
-{
-	S_INT1,					// S_INT1 (val)
-	S_INT2,					// S_INT2 (val) (val)
-	S_INT4,					//
-	S_INT8,					//
-	U_INT1,					//
-	U_INT2,					//
-	U_INT4,					//
-	U_INT8,					//
-	FLOAT4,					//
-	FLOAT8,					//
+/**
+ * @brief Enumeration of all bytecode types in Night
+ * 
+ * The comments on some bytecode types represent how it is meant to be used, or
+ * in other words, how it should appear on the Interpreter's stack. The comments
+ * represent a stack growing from left to right.
+ * 
+ * In the comments, the term "numeric" represents an expansion of an integer,
+ * float or a numeric expression. For example "numeric" could represent
+ * "S_INT2 uint8 uint8" or "S_INT1 uint8 S_INT1 uint8 ADD".
+ * 
+ * **Design Decision #1**
+ * BytecodeType is simply an "enum" and not an "enum class".
+ * 
+ * Stroustrup did state three problems with enums,
+ *   https://www.stroustrup.com/C++11FAQ.html#enum
+ *   1. Conventional enums implicitly convert to int, causing errors when
+ *         someone does not want an enumeration to act as an integer.
+ *   2. Conventional enums export their enumerators to the surrounding scope,
+ *        causing name clashes.
+ *   3. The underlying type of an enum cannot be specified, causing confusion,
+ *        compatibility problems, and makes forward declaration impossible.
+ * 
+ * But these problems are irrelevant to "enum class BytecodeType",
+ * 
+ * #1 is irrelevant because BytecodeType is supposed to be implicitly
+ * converted to bytecode_t by design. #2 is solved because BytecodeType
+ * prefixes all types with BytecodeType_. And #2 is solved because
+ * BytecodeType specifies the underlying type as bytecode_t (C++11 feature).
+ * 
+ * Now, not only does BytecodeType render the benefits of enum classes
+ * unnecessary, but surpasses them by being shorter and looking oh so much nicer,
+ * @code
+ *   codes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE); // "enum class", wtf is this
+ *   codes.push_back(BytecodeType_JUMP_IF_FALSE);              // "enum", much cleaner
+ * @endcode
+ */
+enum : bytecode_t {
+	BytecodeType_S_INT1,	// S_INT1, uint8
+	BytecodeType_S_INT2,	// S_INT2, uint8, uint8
+	BytecodeType_S_INT4,	// S_INT4, uint8, uint8, uint8
+	BytecodeType_S_INT8,	// S_INT8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8
+	BytecodeType_U_INT1,	// U_INT1, uint8
+	BytecodeType_U_INT2,	// U_INT2, uint8, uint8
+	BytecodeType_U_INT4,	// U_INT4, uint8, uint8, uint8
+	BytecodeType_U_INT8,	// U_INT8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8
+	BytecodeType_FLOAT4,	// FLOAT4, uint8, uint8, uint8, uint8
+	BytecodeType_FLOAT8,	// FLOAT8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8
 
-	NEGATIVE_I, NEGATIVE_F,	// [val] NEGATIVE 
-	NOT_I, NOT_F,			//
+	BytecodeType_NEGATIVE_I, BytecodeType_NEGATIVE_F,	// numeric, NEGATIVE 
+	BytecodeType_NOT_I, BytecodeType_NOT_F,				// numeric, NOT
 
-	ADD_I, ADD_F, ADD_S,
-	SUB_I, SUB_F,
-	MULT_I, MULT_F,
-	DIV_I, DIV_F,
-	MOD_I,
+	BytecodeType_ADD_I, BytecodeType_ADD_F, BytecodeType_ADD_S,	// numeric, numeric, ADD
+	BytecodeType_SUB_I, BytecodeType_SUB_F,						// numeric, numeric, SUB
+	BytecodeType_MULT_I, BytecodeType_MULT_F,					// numeric, numeric, MULT
+	BytecodeType_DIV_I, BytecodeType_DIV_F,						// numeric(non-zero), numeric, DIV
+	BytecodeType_MOD_I,											// numeric(int), numeric(int), MOD
 
-	LESSER_I, LESSER_F, LESSER_S,
-	GREATER_I, GREATER_F, GREATER_S,
-	LESSER_EQUALS_I, LESSER_EQUALS_F, LESSER_EQUALS_S,
-	GREATER_EQUALS_I, GREATER_EQUALS_F, GREATER_EQUALS_S,
-	EQUALS_I, EQUALS_F, EQUALS_S,
-	NOT_EQUALS_I, NOT_EQUALS_F, NOT_EQUALS_S,
-	AND,
-	OR,
-
-	INDEX_S,
-	INDEX_A,
-
-	// Primitive to float/int type conversions
-	I2F, F2I,
-	F2B,
-
-	LOAD,					// LOAD  (var_id)
-	LOAD_ELEM,				// [id: S_INT] [size: S_INT] [indices: S_INT ...]
+	BytecodeType_LESSER_I, BytecodeType_LESSER_F, BytecodeType_LESSER_S,							// numeric(left), numeric(right), LESSER
+	BytecodeType_GREATER_I, BytecodeType_GREATER_F, BytecodeType_GREATER_S,							// numeric(left), numeric(right), GREATER
+	BytecodeType_LESSER_EQUALS_I, BytecodeType_LESSER_EQUALS_F, BytecodeType_LESSER_EQUALS_S,		// numeric(left), numeric(right), LESSER_EQUALS
+	BytecodeType_GREATER_EQUALS_I, BytecodeType_GREATER_EQUALS_F, BytecodeType_GREATER_EQUALS_S,	// numeric(left), numeric(right), GREATER_EQUALS
 	
-	STORE,					// STORE (id)
-	STORE_INDEX_A,			// [indicies, id]
-	STORE_INDEX_S,			// [indicies, id]
+	BytecodeType_EQUALS_I, BytecodeType_EQUALS_F, BytecodeType_EQUALS_S,				// numeric(left), numeric(right), EQUALS
+	BytecodeType_NOT_EQUALS_I, BytecodeType_NOT_EQUALS_F, BytecodeType_NOT_EQUALS_S,	// numeric(left), numeric(right), NOT_EQUALS
 	
-	ALLOCATE_STR,			// [elements: Value ...] [size: S_INT]
-	ALLOCATE_ARR,			//
-	ALLOCATE_ARR_AND_FILL,
-	FREE_STR,				// [id: S_INT]
-	FREE_ARR,				//
+	BytecodeType_AND,	// numeric, numeric, AND
+	BytecodeType_OR,	// numeric, numeric, OR
 
-	JUMP_IF_FALSE,			// [cond] JUMP_IF_FALSE (offset)	// jumps to next in conditional chain
-	JUMP,					// JUMP (offset)					// jumps to end of conditional chain
-	JUMP_N,
+	BytecodeType_INDEX_S,	// numeric(string), INDEX_S
+	BytecodeType_INDEX_A,	// numeric(array), INDEX_A
 
-	RETURN,					// [val] RETURN
-	CALL					// [parameters as expressions] FUNC_CALL
+	BytecodeType_I2F, BytecodeType_F2I,
+	BytecodeType_F2B,
+
+	BytecodeType_LOAD,
+	BytecodeType_LOAD_ELEM,
+	
+	BytecodeType_STORE,
+	BytecodeType_STORE_INDEX_A,
+	BytecodeType_STORE_INDEX_S,
+	
+	BytecodeType_ALLOCATE_STR,
+	BytecodeType_ALLOCATE_ARR,
+	BytecodeType_ALLOCATE_ARR_AND_FILL,
+	BytecodeType_FREE_STR,
+	BytecodeType_FREE_ARR,
+
+	BytecodeType_JUMP,
+	BytecodeType_JUMP_N,
+	BytecodeType_JUMP_IF_FALSE,
+
+	BytecodeType_RETURN,
+	BytecodeType_CALL
 };
 
-namespace night
-{
+/**
+ * @brief Helper function to convert an integer into bytecodes_t.
+ * 
+ * @param uint64 The integer to convert
+ * @param size Used by conditionals and loops to cast a small int into a
+ *   specified larger size for their jump bytecodes.
+ * 
+ * @return The bytecodes representing the integer.
+ */
+bytecodes_t int_to_bytecodes(uint64_t uint64, int size = -1);
 
-std::string to_str(BytecodeType type);
+namespace night {
+
+/**
+ * @brief Bytecode type to string.
+ */
 std::string to_str(bytecode_t type);
 
 }
-
-bytecodes_t int_to_bytecodes(uint64_t uint64, int size = -1);

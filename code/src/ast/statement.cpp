@@ -76,16 +76,16 @@ bytecodes_t VariableInit::generate_codes() const
 		codes = expr->generate_codes();
 
 	if (var_type == Type::BOOL && expr_type == Type::FLOAT)
-		codes.push_back((bytecode_t)BytecodeType::F2B);
+		codes.push_back(BytecodeType_F2B);
 	else if (var_type == Type::FLOAT && expr_type != Type::FLOAT)
-		codes.push_back((bytecode_t)BytecodeType::I2F);
+		codes.push_back(BytecodeType_I2F);
 	else if (var_type != Type::FLOAT && expr_type == Type::FLOAT)
-		codes.push_back((bytecode_t)BytecodeType::F2I);
+		codes.push_back(BytecodeType_F2I);
 
 	auto id_codes = int_to_bytecodes(*id);
 	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 
-	codes.push_back((bytecode_t)BytecodeType::STORE);
+	codes.push_back(BytecodeType_STORE);
 
 	return codes;
 }
@@ -121,7 +121,7 @@ void ArrayInitialization::check(StatementScope& scope)
 
 	// Deduce type of variable.
 
-	var_type = Type(type, arr_sizes.size());
+	var_type = Type(type, (int)arr_sizes.size());
 	id = scope.create_variable(name, var_type, loc);
 
 	// Return if there are minor errors.
@@ -190,7 +190,7 @@ bytecodes_t ArrayInitialization::generate_codes() const
 	auto id_codes = int_to_bytecodes(*id);
 	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 
-	codes.push_back((bytecode_t)BytecodeType::STORE);
+	codes.push_back(BytecodeType_STORE);
 
 	return codes;
 }
@@ -204,7 +204,7 @@ void ArrayInitialization::fill_array(Type const& type, expr::expr_p expr, int de
 	{
 		if (depth == arr_sizes_numerics.size() - 1)
 		{
-			for (int i = arr->elements.size(); i < arr_sizes_numerics[depth]; ++i)
+			for (int i = (int)arr->elements.size(); i < arr_sizes_numerics[depth]; ++i)
 			{
 				arr->elements.push_back(std::make_shared<expr::Numeric>(loc, Type(type).prim, (int64_t)0));
 				arr->type_conversion.push_back(std::nullopt);
@@ -214,7 +214,7 @@ void ArrayInitialization::fill_array(Type const& type, expr::expr_p expr, int de
 		}
 		else if (arr_sizes_numerics[depth] != -1)
 		{
-			for (int i = arr->elements.size(); i < arr_sizes_numerics[depth]; ++i)
+			for (int i = (int)arr->elements.size(); i < arr_sizes_numerics[depth]; ++i)
 				arr->elements.push_back(std::make_shared<expr::Array>(loc, std::vector<expr::expr_p>(), false));
 		}
 
@@ -273,8 +273,9 @@ bytecodes_t VariableAssign::generate_codes() const
 
 	if (assign_op != "=")
 	{
-		codes.push_back((bytecode_t)BytecodeType::LOAD);
-		codes.push_back(*id);
+		auto id_codes = int_to_bytecodes(*id);
+		codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
+		codes.push_back(BytecodeType_LOAD);
 
 		auto expr_codes = expr->generate_codes();
 		codes.insert(std::end(codes), std::begin(expr_codes), std::end(expr_codes));
@@ -282,32 +283,32 @@ bytecodes_t VariableAssign::generate_codes() const
 		if (assign_op == "+=")
 		{
 			if (is_same(*assign_type, Type(Type::CHAR, true)))
-				codes.push_back((bytecode_t)BytecodeType::ADD_S);
+				codes.push_back(BytecodeType_ADD_S);
 			else if (assign_type == Type::FLOAT)
-				codes.push_back((bytecode_t)BytecodeType::ADD_F);
+				codes.push_back(BytecodeType_ADD_F);
 			else
-				codes.push_back((bytecode_t)BytecodeType::ADD_I);
+				codes.push_back(BytecodeType_ADD_I);
 		}
 		else if (assign_op == "-=")
 		{
 			if (assign_type == Type::FLOAT)
-				codes.push_back((bytecode_t)BytecodeType::SUB_F);
+				codes.push_back(BytecodeType_SUB_F);
 			else
-				codes.push_back((bytecode_t)BytecodeType::SUB_I);
+				codes.push_back(BytecodeType_SUB_I);
 		}
 		else if (assign_op == "*=")
 		{
 			if (assign_type == Type::FLOAT)
-				codes.push_back((bytecode_t)BytecodeType::MULT_F);
+				codes.push_back(BytecodeType_MULT_F);
 			else
-				codes.push_back((bytecode_t)BytecodeType::MULT_I);
+				codes.push_back(BytecodeType_MULT_I);
 		}
 		else if (assign_op == "/=")
 		{
 			if (assign_type == Type::FLOAT)
-				codes.push_back((bytecode_t)BytecodeType::DIV_F);
+				codes.push_back(BytecodeType_DIV_F);
 			else
-				codes.push_back((bytecode_t)BytecodeType::DIV_I);
+				codes.push_back(BytecodeType_DIV_I);
 		}
 		else
 			throw debug::unhandled_case(assign_op);
@@ -321,7 +322,7 @@ bytecodes_t VariableAssign::generate_codes() const
 	auto id_codes = int_to_bytecodes(*id);
 	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 
-	codes.push_back((bytecode_t)BytecodeType::STORE);
+	codes.push_back(BytecodeType_STORE);
 
 	return codes;
 }
@@ -405,8 +406,9 @@ bytecodes_t Conditional::generate_codes() const
 
 		// The value for JUMP_IF_FALSE is added after we determine the number of codes
 		// to jump over
-		codes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE);
-		int jump_if_false_index = codes.size() - 1;
+		codes.push_back(BytecodeType_JUMP_IF_FALSE);
+
+		int jump_if_false_index = (int)codes.size() - 1;
 
 		// Used to determine number of codes to jump over for JUMP_IF_FALSE
 		std::size_t stmts_codes_size = 0;
@@ -427,11 +429,11 @@ bytecodes_t Conditional::generate_codes() const
 
 		// The value for JUMP is added last after the number of codes to jump back is
 		// determined
-		codes.push_back((bytecode_t)BytecodeType::JUMP);
-		jump_offsets.push_back(codes.size() - 1);
+		codes.push_back(BytecodeType_JUMP);
+		jump_offsets.push_back((int)codes.size() - 1);
 	}
 
-	for (int i = jump_offsets.size() - 1; i >= 0; --i)
+	for (int i = (int)jump_offsets.size() - 1; i >= 0; --i)
 	{
 		auto offset_codes = int_to_bytecodes(codes.size() - jump_offsets[i] - 1, 8);
 		codes.insert(std::begin(codes) + jump_offsets[i], std::begin(offset_codes), std::end(offset_codes));
@@ -480,7 +482,7 @@ bytecodes_t While::generate_codes() const
 
 	// The value for JUMP_IF_FALSE is added after we determine the number of codes
 	// to jump over
-	codes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE);
+	codes.push_back(BytecodeType_JUMP_IF_FALSE);
 	auto jump_if_false_index = codes.size() - 1;
 
 	// Used to determine number of codes to jump over for JUMP_IF_FALSE
@@ -491,7 +493,7 @@ bytecodes_t While::generate_codes() const
 		auto stmt_codes = stmt->generate_codes();
 		codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
 
-		stmt_codes_size += stmt_codes.size();
+		stmt_codes_size += (int)stmt_codes.size();
 	}
 
 	// Insert jump if false value before JUMP_IF_FALSE, adding on 10 space for the
@@ -504,7 +506,7 @@ bytecodes_t While::generate_codes() const
 	// Set jump negative value to be 8 bit
 	auto jump_n_codes = int_to_bytecodes(codes.size() + 9, 8);
 	codes.insert(std::end(codes), std::begin(jump_n_codes), std::end(jump_n_codes));
-	codes.push_back((bytecode_t)BytecodeType::JUMP_N);
+	codes.push_back(BytecodeType_JUMP_N);
 
 	return codes;
 }
@@ -654,7 +656,7 @@ bytecodes_t Return::generate_codes() const
 {
 	auto codes = expr->generate_codes();
 
-	codes.push_back((bytecode_t)BytecodeType::RETURN);
+	codes.push_back(BytecodeType_RETURN);
 
 	return codes;
 }
@@ -704,7 +706,7 @@ bytecodes_t ArrayMethod::generate_codes() const
 
 	bytecodes_t codes;
 
-	for (int i = subscripts.size() - 1; i >= 0; --i)
+	for (int i = (int)subscripts.size() - 1; i >= 0; --i)
 	{
 		assert(subscripts[i]);
 
@@ -714,7 +716,7 @@ bytecodes_t ArrayMethod::generate_codes() const
 
 	if (assign_op != "=")
 	{
-		for (int i = subscripts.size() - 1; i >= 0; --i)
+		for (int i = (int)subscripts.size() - 1; i >= 0; --i)
 		{
 			assert(subscripts[i]);
 
@@ -726,8 +728,9 @@ bytecodes_t ArrayMethod::generate_codes() const
 		auto num = int_to_bytecodes(subscripts.size());
 		codes.insert(std::end(codes), std::begin(num), std::end(num));
 
-		codes.push_back((bytecode_t)BytecodeType::LOAD_ELEM);
-		codes.push_back(*id);
+		auto id_codes = int_to_bytecodes(*id);
+		codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
+		codes.push_back(BytecodeType_LOAD_ELEM);
 
 		auto assign_codes = assign_expr->generate_codes();
 		codes.insert(std::end(codes), std::begin(assign_codes), std::end(assign_codes));
@@ -735,32 +738,32 @@ bytecodes_t ArrayMethod::generate_codes() const
 		if (assign_op == "+=")
 		{
 			if (assign_type == Type::FLOAT)
-				codes.push_back((bytecode_t)BytecodeType::ADD_F);
+				codes.push_back(BytecodeType_ADD_F);
 			else if (is_same(*assign_type, Type(Type::CHAR, 1)))
-				codes.push_back((bytecode_t)BytecodeType::ADD_S);
+				codes.push_back(BytecodeType_ADD_S);
 			else
-				codes.push_back((bytecode_t)BytecodeType::ADD_I);
+				codes.push_back(BytecodeType_ADD_I);
 		}
 		else if (assign_op == "-=")
 		{
 			if (assign_type == Type::FLOAT)
-				codes.push_back((bytecode_t)BytecodeType::SUB_F);
+				codes.push_back(BytecodeType_SUB_F);
 			else
-				codes.push_back((bytecode_t)BytecodeType::SUB_I);
+				codes.push_back(BytecodeType_SUB_I);
 		}
 		else if (assign_op == "*=")
 		{
 			if (assign_type == Type::FLOAT)
-				codes.push_back((bytecode_t)BytecodeType::MULT_F);
+				codes.push_back(BytecodeType_MULT_F);
 			else
-				codes.push_back((bytecode_t)BytecodeType::MULT_I);
+				codes.push_back(BytecodeType_MULT_I);
 		}
 		else if (assign_op == "/=")
 		{
 			if (assign_type == Type::FLOAT)
-				codes.push_back((bytecode_t)BytecodeType::DIV_F);
+				codes.push_back(BytecodeType_DIV_F);
 			else
-				codes.push_back((bytecode_t)BytecodeType::DIV_I);
+				codes.push_back(BytecodeType_DIV_I);
 		}
 		else
 			throw debug::unhandled_case(assign_op);
@@ -775,9 +778,9 @@ bytecodes_t ArrayMethod::generate_codes() const
 	codes.insert(std::end(codes), std::begin(index_codes), std::end(index_codes));
 
 	if (assign_type.has_value() && assign_type->prim == Type::Primitive::CHAR && assign_type->dim == 0)
-		codes.push_back((bytecode_t)BytecodeType::STORE_INDEX_S);
+		codes.push_back(BytecodeType_STORE_INDEX_S);
 	else
-		codes.push_back((bytecode_t)BytecodeType::STORE_INDEX_A);
+		codes.push_back(BytecodeType_STORE_INDEX_A);
 
 	return codes;
 }
@@ -906,8 +909,9 @@ bytecodes_t expr::FunctionCall::generate_codes() const
 		codes.insert(std::end(codes), std::begin(param_codes), std::end(param_codes));
 	}
 
-	codes.push_back((bytecode_t)BytecodeType::CALL);
-	codes.push_back(*id);
+	auto id_codes = int_to_bytecodes(*id);
+	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
+	codes.push_back(BytecodeType_CALL);
 
 	return codes;
 }

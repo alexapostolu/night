@@ -3,6 +3,7 @@
 #include "type.hpp"
 #include "error.hpp"
 
+#include <limits>
 #include <optional>
 #include <string>
 #include <assert.h>
@@ -41,8 +42,8 @@ std::optional<bytecode_t> StatementScope::create_variable(
 	if (vars.contains(name))
 		night::error::get().create_minor_error("variable '" + name + "' is already defined", loc);
 
-	if (var_id == bytecode_t_lim)
-		night::error::get().create_minor_error("only " + std::to_string(bytecode_t_lim) + " variables allowed per scope", loc);
+	if (var_id == std::numeric_limits<bytecode_t>::max())
+		night::error::get().create_minor_error("only " + std::to_string(std::numeric_limits<bytecode_t>::max()) + " variables allowed per scope", loc);
 
 	if (night::error::get().has_minor_errors())
 		return std::nullopt;

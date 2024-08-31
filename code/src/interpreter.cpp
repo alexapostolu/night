@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h> // PRId64
 
 std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes)
 {
@@ -33,246 +34,250 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			freeze = false;
 		}
 
-		switch ((BytecodeType)*it)
+		switch (*it)
 		{
-		case BytecodeType::S_INT1:
-		case BytecodeType::S_INT2:
-		case BytecodeType::S_INT4:
-		case BytecodeType::S_INT8:
+		case BytecodeType_S_INT1:
+		case BytecodeType_S_INT2:
+		case BytecodeType_S_INT4:
+		case BytecodeType_S_INT8:
 			s.emplace(get_int<int64_t>(it));
 			break;
 
-		case BytecodeType::U_INT1:
-		case BytecodeType::U_INT2:
-		case BytecodeType::U_INT4:
-		case BytecodeType::U_INT8:
+		case BytecodeType_U_INT1:
+		case BytecodeType_U_INT2:
+		case BytecodeType_U_INT4:
+		case BytecodeType_U_INT8:
 			s.emplace(get_int<uint64_t>(it));
 			break;
 
-		case BytecodeType::FLOAT4:
-		case BytecodeType::FLOAT8:
+		case BytecodeType_FLOAT4:
+		case BytecodeType_FLOAT8:
 			push_float(s, it);
 			break;
 
-		case BytecodeType::NEGATIVE_I:
+		case BytecodeType_NEGATIVE_I:
 			s.emplace(-pop(s).as.i);
 			break;
-		case BytecodeType::NEGATIVE_F:
+		case BytecodeType_NEGATIVE_F:
 			s.emplace(-pop(s).as.d);
 			break;
 
-		case BytecodeType::NOT_I:
+		case BytecodeType_NOT_I:
 			s.emplace((int64_t)!pop(s).as.i);
 			break;
-		case BytecodeType::NOT_F:
+		case BytecodeType_NOT_F:
 			s.emplace((int64_t)!pop(s).as.d);
 			break;
 
-		case BytecodeType::ADD_I:
+		case BytecodeType_ADD_I:
 			s.emplace(pop(s).as.i + pop(s).as.i);
 			break;
-		case BytecodeType::ADD_F:
+		case BytecodeType_ADD_F:
 			s.emplace(pop(s).as.d + pop(s).as.d);
 			break;
-		case BytecodeType::ADD_S: {
+		case BytecodeType_ADD_S: {
 			auto s1 = pop(s).as.s;
 			auto s2 = pop(s).as.s;
 
-			char* result = (char*)malloc(strlen(s1) + strlen(s2) + 1);
+			int s1_len = strlen(s1);
+			int s2_len = strlen(s2);
+			int len = s1_len + s2_len + 1;
+			char* result = (char*)malloc(sizeof(char) * len);
 			if (!result)
 				throw night::error::get().create_runtime_error("could not allocate memory");
 
-			strcpy(result, s2);
-			strcat(result, s1);
+			strncpy(result, s2, len);
+			result[len - 1] = '\0';
+			strncat(result, s1, len - s2_len - 1);
 
 			s.emplace(result);
 			break;
 		}
 
-		case BytecodeType::SUB_I: {
+		case BytecodeType_SUB_I: {
 			auto s1 = pop(s).as.i;
 			auto s2 = pop(s).as.i;
 			s.emplace(-s1 + s2);
 			break;
 		}
-		case BytecodeType::SUB_F: {
+		case BytecodeType_SUB_F: {
 			auto s1 = pop(s).as.d;
 			auto s2 = pop(s).as.d;
 			s.emplace(-s1 + s2);
 			break;
 		}
 
-		case BytecodeType::MULT_I: {
+		case BytecodeType_MULT_I: {
 			auto s1 = pop(s).as.i;
 			auto s2 = pop(s).as.i;
 			s.emplace(s1 * s2);
 			break;
 		}
-		case BytecodeType::MULT_F: {
+		case BytecodeType_MULT_F: {
 			auto s1 = pop(s).as.d;
 			auto s2 = pop(s).as.d;
 			s.emplace(s1 * s2);
 			break;
 		}
 
-		case BytecodeType::DIV_I: {
+		case BytecodeType_DIV_I: {
 			auto s2 = pop(s);
 			s.emplace(pop(s).as.i / s2.as.i);
 			break;
 		}
-		case BytecodeType::DIV_F: {
+		case BytecodeType_DIV_F: {
 			auto s2 = pop(s);
 			s.emplace(pop(s).as.d / s2.as.d);
 			break;
 		}
-		case BytecodeType::MOD_I: {
+		case BytecodeType_MOD_I: {
 			auto s2 = pop(s);
 			s.emplace(pop(s).as.i % s2.as.i);
 			break;
 		}
 
 		// stack values are in opposite order, so we switch signs to account for that
-		case BytecodeType::LESSER_I: {
+		case BytecodeType_LESSER_I: {
 			auto s1 = pop(s).as.i;
 			auto s2 = pop(s).as.i;
 			s.emplace(int64_t(s1 > s2));
 			break;
 		}
-		case BytecodeType::LESSER_F: {
+		case BytecodeType_LESSER_F: {
 			auto s1 = pop(s).as.d;
 			auto s2 = pop(s).as.d;
 			s.emplace(int64_t(s1 > s2));
 			break;
 		}
-		case BytecodeType::LESSER_S: {
+		case BytecodeType_LESSER_S: {
 			auto s1 = pop(s).as.s;
 			auto s2 = pop(s).as.s;
 			s.emplace(int64_t(strcmp(s1, s2) > 0));
 			break;
 		}
 
-		case BytecodeType::GREATER_I: {
+		case BytecodeType_GREATER_I: {
 			auto s1 = pop(s).as.i;
 			auto s2 = pop(s).as.i;
 			s.emplace(int64_t(s1 < s2));
 			break;
 		}
-		case BytecodeType::GREATER_F: {
+		case BytecodeType_GREATER_F: {
 			auto s1 = pop(s).as.d;
 			auto s2 = pop(s).as.d;
 			s.emplace(int64_t(s1 < s2));
 			break;
 		}
-		case BytecodeType::GREATER_S: {
+		case BytecodeType_GREATER_S: {
 			auto s1 = pop(s).as.s;
 			auto s2 = pop(s).as.s;
 			s.emplace(int64_t(strcmp(s1, s2) < 0));
 			break;
 		}
 
-		case BytecodeType::LESSER_EQUALS_I: {
+		case BytecodeType_LESSER_EQUALS_I: {
 			auto s1 = pop(s).as.i;
 			auto s2 = pop(s).as.i;
 			s.emplace((int64_t)(s1 >= s2));
 			break;
 		}
-		case BytecodeType::LESSER_EQUALS_F: {
+		case BytecodeType_LESSER_EQUALS_F: {
 			auto s1 = pop(s).as.d;
 			auto s2 = pop(s).as.d;
 			s.emplace((int64_t)(s1 >= s2));
 			break;
 		}
-		case BytecodeType::LESSER_EQUALS_S: {
+		case BytecodeType_LESSER_EQUALS_S: {
 			auto s1 = pop(s).as.s;
 			auto s2 = pop(s).as.s;
 			s.emplace((int64_t)(strcmp(s1, s2) >= 0));
 			break;
 		}
 
-		case BytecodeType::GREATER_EQUALS_I: {
+		case BytecodeType_GREATER_EQUALS_I: {
 			auto s1 = pop(s).as.i;
 			auto s2 = pop(s).as.i;
 			s.emplace((int64_t)(s1 <= s2));
 			break;
 		}
-		case BytecodeType::GREATER_EQUALS_F: {
+		case BytecodeType_GREATER_EQUALS_F: {
 			auto s1 = pop(s).as.d;
 			auto s2 = pop(s).as.d;
 			s.emplace((int64_t)(s1 <= s2));
 			break;
 		}
-		case BytecodeType::GREATER_EQUALS_S: {
+		case BytecodeType_GREATER_EQUALS_S: {
 			auto s1 = pop(s).as.s;
 			auto s2 = pop(s).as.s;
 			s.emplace((int64_t)(strcmp(s1, s2) <= 0));
 			break;
 		}
 
-		case BytecodeType::EQUALS_I: {
+		case BytecodeType_EQUALS_I: {
 			auto s1 = pop(s).as.i;
 			auto s2 = pop(s).as.i;
 			s.emplace(int64_t(s1 == s2));
 			break;
 		}
-		case BytecodeType::EQUALS_F: {
+		case BytecodeType_EQUALS_F: {
 			auto s1 = pop(s).as.d;
 			auto s2 = pop(s).as.d;
 			s.emplace(int64_t(s1 == s2));
 			break;
 		}
-		case BytecodeType::EQUALS_S: {
+		case BytecodeType_EQUALS_S: {
 			auto s1 = pop(s).as.s;
 			auto s2 = pop(s).as.s;
 			s.emplace(int64_t(!strcmp(s1, s2)));
 			break;
 		}
 
-		case BytecodeType::NOT_EQUALS_I: {
+		case BytecodeType_NOT_EQUALS_I: {
 			auto s1 = pop(s).as.i;
 			auto s2 = pop(s).as.i;
 			s.emplace(int64_t(s1 != s2));
 			break;
 		}
 
-		case BytecodeType::AND: {
+		case BytecodeType_AND: {
 			auto s1 = pop(s).as.i;
 			auto s2 = pop(s).as.i;
 			s.emplace(int64_t(s1 && s2));
 			break;
 		}
-		case BytecodeType::OR: {
+		case BytecodeType_OR: {
 			auto s1 = pop(s).as.i;
 			auto s2 = pop(s).as.i;
 			s.emplace(int64_t(s1 || s2));
 			break;
 		}
 
-		case BytecodeType::INDEX_S: push_subscript(s, true); break;
-		case BytecodeType::INDEX_A: push_subscript(s, false); break;
+		case BytecodeType_INDEX_S: push_subscript(s, true); break;
+		case BytecodeType_INDEX_A: push_subscript(s, false); break;
 
-		case BytecodeType::I2F:
+		case BytecodeType_I2F:
 			s.emplace(float(pop(s).as.i));
 			break;
-		case BytecodeType::F2I:
+		case BytecodeType_F2I:
 			s.emplace(int64_t(pop(s).as.d));
 			break;
-		case BytecodeType::F2B:
+		case BytecodeType_F2B:
 			s.emplace((int64_t)(pop(s).as.d != 0));
 			break;
 
-		case BytecodeType::LOAD:
-			s.emplace(scope.vars[*(++it)]);
+		case BytecodeType_LOAD:
+			s.emplace(scope.vars[pop(s).as.i]);
 			break;
 
-		case BytecodeType::STORE: {
+		case BytecodeType_STORE: {
 			auto id = pop(s);
 			scope.vars[id.as.i] = pop(s);
 
 			break;
 		}
 
-		case BytecodeType::LOAD_ELEM: {
-			auto id = *(++it);
+		case BytecodeType_LOAD_ELEM: {
+			auto id = pop(s).as.i;
 			auto num = pop(s).as.i;
 			intpr::Value* val = &scope.vars[id];
 			while (num--)
@@ -284,11 +289,11 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			break;
 		}
 
-		case BytecodeType::ALLOCATE_STR: push_str(s); break;
-		case BytecodeType::ALLOCATE_ARR: push_arr(s); break;
-		case BytecodeType::ALLOCATE_ARR_AND_FILL: push_arr_and_fill(s); break;
+		case BytecodeType_ALLOCATE_STR: push_str(s); break;
+		case BytecodeType_ALLOCATE_ARR: push_arr(s); break;
+		case BytecodeType_ALLOCATE_ARR_AND_FILL: push_arr_and_fill(s); break;
 
-		case BytecodeType::STORE_INDEX_A: {
+		case BytecodeType_STORE_INDEX_A: {
 			auto id = pop(s).as.i;
 			auto expr = pop(s);
 			intpr::Value* val = &scope.vars[id];
@@ -301,35 +306,35 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			break;
 		}
 
-		case BytecodeType::STORE_INDEX_S: {
+		case BytecodeType_STORE_INDEX_S: {
 			auto id = pop(s).as.i;
 			auto expr = pop(s);
-			scope.vars[id].as.s[pop(s).as.i] = expr.as.i;
+			scope.vars[id].as.s[pop(s).as.i] = (char)expr.as.i;
 			break;
 		}
 
-		case BytecodeType::JUMP_IF_FALSE: {
+		case BytecodeType_JUMP_IF_FALSE: {
 			auto offset = pop(s).as.i;
 			if (!pop(s).as.i)
 				std::advance(it, offset);
 			break;
 		}
 
-		case BytecodeType::JUMP:
+		case BytecodeType_JUMP:
 			std::advance(it, pop(s).as.i);
 			break;
-		case BytecodeType::JUMP_N:
+		case BytecodeType_JUMP_N:
 			std::advance(it, -pop(s).as.i);
 			freeze = true;
 			break;
 
-		case BytecodeType::RETURN:
+		case BytecodeType_RETURN:
 			if (s.empty())
 				return std::optional<intpr::Value>(std::nullopt);
 			return pop(s);
 
-		case BytecodeType::CALL: {
-			auto id = *(++it);
+		case BytecodeType_CALL: {
+			auto id = pop(s).as.i;
 
 			switch (id)
 			{
@@ -350,9 +355,9 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			}
 			case 9: {
 				auto x = pop(s).as.i;
-				int length = snprintf(NULL, 0, "%ld", x);
+				int length = snprintf(NULL, 0, "%" PRId64, x);
 				char* str = (char*)malloc(length + 1);
-				snprintf(str, length + 1, "%ld", x);
+				snprintf(str, length + 1, "%" PRId64, x);
 
 				s.emplace(str);
 				break;
@@ -398,10 +403,10 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 void push_float(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it)
 {
 	int count;
-	switch ((BytecodeType)(*it))
+	switch (*it)
 	{
-	case BytecodeType::FLOAT4: count = 4; break;
-	case BytecodeType::FLOAT8: count = 8; break;
+	case BytecodeType_FLOAT4: count = 4; break;
+	case BytecodeType_FLOAT8: count = 8; break;
 	default: throw debug::unhandled_case(*it);
 	}
 
@@ -417,11 +422,11 @@ void push_float(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it)
 
 void push_str(std::stack<intpr::Value>& s)
 {
-	int size = pop(s).as.i;
+	auto size = pop(s).as.i;
 	char* arr = new char[size + 1];
 
 	for (auto i = 0; i < size; ++i)
-		arr[i] = pop(s).as.i;
+		arr[i] = (char)pop(s).as.i;
 
 	arr[size] = '\0';
 
@@ -430,7 +435,7 @@ void push_str(std::stack<intpr::Value>& s)
 
 void push_arr(std::stack<intpr::Value>& s)
 {
-	int size = pop(s).as.i;
+	int size = (int)pop(s).as.i;
 	intpr::Value arr;
 	arr.as.a.size = size;
 	arr.as.a.data = new intpr::Value[size];
@@ -443,11 +448,11 @@ void push_arr(std::stack<intpr::Value>& s)
 
 void push_arr_and_fill(std::stack<intpr::Value>& s)
 {
-	auto dimensions = pop(s).as.i;
+	int dimensions = (int)pop(s).as.i;
 	std::vector<int> sizes(dimensions);
 
 	for (int i = dimensions - 1; i >= 0; --i)
-		sizes[i] = pop(s).as.i;
+		sizes[i] = (int)pop(s).as.i;
 
 	intpr::Value arr;
 	fill_arr(arr, s, sizes, 0);
@@ -491,16 +496,36 @@ void push_subscript(std::stack<intpr::Value>& s, bool is_string)
 
 void push_string_input(std::stack<intpr::Value>& s)
 {
-	char* str = new char[100]; 
-	fgets(str, 100, stdin);
+	int size = 32;
+	char* buf = (char*)malloc(sizeof(char) * size);
 
-	char* newline = strchr(str, '\n');
-	if (newline)
-		*newline = '\0';
-	else
-		str[99] = '\0';
+	if (!buf)
+		exit(1);
 
-	s.emplace(str);
+	int c;
+	int len = 0;
+	while ((c = getchar()) != '\n')
+	{
+		if (len == size - 1)
+		{
+			size *= 1.5;
+			char* new_buf = (char*)realloc(buf, sizeof(char) * size);
+
+			if (!new_buf)
+			{
+				free(buf);
+				exit(1);
+			}
+
+			buf = new_buf;
+		}
+
+		buf[len] = c;
+		++len;
+	}
+
+	buf[len] = '\0';
+	s.emplace(buf);
 }
 
 intpr::Value pop(std::stack<intpr::Value>& s)

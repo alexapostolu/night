@@ -1,16 +1,18 @@
+# visual studio
+CMakeSettings.json
+/.vs
+/out
+
+# vscode
+/.vscode
+
 # code
 source.night
+tests/actual_output.txt
 
 # git
 /.git
 
 # cmake
-/out
 /build
-
-# vscode
-/.vscode
-
-# visual studio
-CMakeSettings.json
-/.vs
+/winbuild

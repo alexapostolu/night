@@ -88,11 +88,11 @@ std::optional<Type> expr::UnaryOp::type_check(
 		case Type::BOOL:
 		case Type::CHAR:
 		case Type::INT:
-			op_code = BytecodeType::NEGATIVE_I;
+			op_code = BytecodeType_NEGATIVE_I;
 			return Type::INT;
 
 		case Type::FLOAT:
-			op_code = BytecodeType::NEGATIVE_F;
+			op_code = BytecodeType_NEGATIVE_F;
 			return Type::FLOAT;
 		}
 		
@@ -102,11 +102,11 @@ std::optional<Type> expr::UnaryOp::type_check(
 		case Type::BOOL:
 		case Type::CHAR:
 		case Type::INT:
-			op_code = BytecodeType::NOT_I;
+			op_code = BytecodeType_NOT_I;
 			return Type::BOOL;
 
 		case Type::FLOAT:
-			op_code = BytecodeType::NOT_F;
+			op_code = BytecodeType_NOT_F;
 			return Type::BOOL;
 		}
 	default:
@@ -220,17 +220,17 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 {
 	// Operations where strings are supported are handled separately in the
 	// switch statement.
-	std::unordered_map<BinaryOpType, std::tuple<BytecodeType, BytecodeType, std::optional<BytecodeType>>> m{
-		{ BinaryOpType::ADD,			std::make_tuple(BytecodeType::ADD_I,			BytecodeType::ADD_F,			BytecodeType::ADD_S) },
-		{ BinaryOpType::SUB,			std::make_tuple(BytecodeType::SUB_I,			BytecodeType::SUB_F,			std::nullopt) },
-		{ BinaryOpType::MULT,			std::make_tuple(BytecodeType::MULT_I,			BytecodeType::MULT_F,			std::nullopt) },
-		{ BinaryOpType::DIV,			std::make_tuple(BytecodeType::DIV_I,			BytecodeType::DIV_F,			std::nullopt) },
-		{ BinaryOpType::LESSER,			std::make_tuple(BytecodeType::LESSER_I,			BytecodeType::LESSER_F,			BytecodeType::LESSER_S) },
-		{ BinaryOpType::GREATER,		std::make_tuple(BytecodeType::GREATER_I,		BytecodeType::GREATER_F,		BytecodeType::GREATER_S) },
-		{ BinaryOpType::LESSER_EQUALS,	std::make_tuple(BytecodeType::LESSER_EQUALS_I,	BytecodeType::LESSER_EQUALS_F,	BytecodeType::LESSER_EQUALS_S) },
-		{ BinaryOpType::GREATER_EQUALS,	std::make_tuple(BytecodeType::GREATER_EQUALS_I, BytecodeType::GREATER_EQUALS_F,	BytecodeType::GREATER_EQUALS_S) },
-		{ BinaryOpType::EQUALS,			std::make_tuple(BytecodeType::EQUALS_I,			BytecodeType::EQUALS_F,			BytecodeType::EQUALS_S) },
-		{ BinaryOpType::NOT_EQUALS,		std::make_tuple(BytecodeType::NOT_EQUALS_I,		BytecodeType::NOT_EQUALS_F,		BytecodeType::NOT_EQUALS_S) }
+	std::unordered_map<BinaryOpType, std::tuple<bytecode_t, bytecode_t, std::optional<bytecode_t>>> m{
+		{ BinaryOpType::ADD,			std::make_tuple(BytecodeType_ADD_I,			BytecodeType_ADD_F,			BytecodeType_ADD_S) },
+		{ BinaryOpType::SUB,			std::make_tuple(BytecodeType_SUB_I,			BytecodeType_SUB_F,			std::nullopt) },
+		{ BinaryOpType::MULT,			std::make_tuple(BytecodeType_MULT_I,			BytecodeType_MULT_F,			std::nullopt) },
+		{ BinaryOpType::DIV,			std::make_tuple(BytecodeType_DIV_I,			BytecodeType_DIV_F,			std::nullopt) },
+		{ BinaryOpType::LESSER,			std::make_tuple(BytecodeType_LESSER_I,			BytecodeType_LESSER_F,			BytecodeType_LESSER_S) },
+		{ BinaryOpType::GREATER,		std::make_tuple(BytecodeType_GREATER_I,		BytecodeType_GREATER_F,		BytecodeType_GREATER_S) },
+		{ BinaryOpType::LESSER_EQUALS,	std::make_tuple(BytecodeType_LESSER_EQUALS_I,	BytecodeType_LESSER_EQUALS_F,	BytecodeType_LESSER_EQUALS_S) },
+		{ BinaryOpType::GREATER_EQUALS,	std::make_tuple(BytecodeType_GREATER_EQUALS_I, BytecodeType_GREATER_EQUALS_F,	BytecodeType_GREATER_EQUALS_S) },
+		{ BinaryOpType::EQUALS,			std::make_tuple(BytecodeType_EQUALS_I,			BytecodeType_EQUALS_F,			BytecodeType_EQUALS_S) },
+		{ BinaryOpType::NOT_EQUALS,		std::make_tuple(BytecodeType_NOT_EQUALS_I,		BytecodeType_NOT_EQUALS_F,		BytecodeType_NOT_EQUALS_S) }
 	};
 
 	auto op_code_int = std::get<0>(m[op_type]);
@@ -254,7 +254,7 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 			if (!rhs_type->is_str())
 				break;
 
-			op_code = BytecodeType::ADD_S;
+			op_code = BytecodeType_ADD_S;
 			return Type(Type::CHAR, 1);
 		}
 
@@ -268,7 +268,7 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 			if (lhs_type == Type::FLOAT)
 			{
 				if (rhs_type != Type::FLOAT)
-					cast_rhs = BytecodeType::I2F;
+					cast_rhs = BytecodeType_I2F;
 
 				op_code = op_code_float;
 				return Type::FLOAT;
@@ -277,7 +277,7 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 			if (rhs_type == Type::FLOAT)
 			{
 				if (lhs_type != Type::FLOAT)
-					cast_lhs = BytecodeType::I2F;
+					cast_lhs = BytecodeType_I2F;
 
 				op_code = op_code_float;
 				return Type::FLOAT;
@@ -292,7 +292,7 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 	case BinaryOpType::MOD:
 		if (lhs_type == Type::INT && rhs_type == Type::INT)
 		{
-			op_code = BytecodeType::MOD_I;
+			op_code = BytecodeType_MOD_I;
 			return Type::INT;
 		}
 		break;
@@ -315,14 +315,14 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 			if (lhs_type == Type::FLOAT)
 			{
 				if (rhs_type != Type::FLOAT)
-					cast_rhs = BytecodeType::I2F;
+					cast_rhs = BytecodeType_I2F;
 
 				op_code = op_code_float;
 			}
 			else if (rhs_type == Type::FLOAT)
 			{
 				if (lhs_type != Type::FLOAT)
-					cast_lhs = BytecodeType::I2F;
+					cast_lhs = BytecodeType_I2F;
 
 				op_code = op_code_float;
 			}
@@ -343,17 +343,17 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 			if (lhs_type == Type::FLOAT)
 			{
 				if (rhs_type != Type::FLOAT)
-					cast_rhs = BytecodeType::I2F;
+					cast_rhs = BytecodeType_I2F;
 			}
 			else if (rhs_type != Type::FLOAT)
 			{
 				if (lhs_type != Type::FLOAT)
-					cast_lhs = BytecodeType::I2F;
+					cast_lhs = BytecodeType_I2F;
 			}
 
 			op_code = op_type == BinaryOpType::AND
-						? BytecodeType::AND
-						: BytecodeType::OR;
+						? BytecodeType_AND
+						: BytecodeType_OR;
 			return Type::BOOL;
 		}
 
@@ -364,12 +364,12 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 		{
 			if (rhs_type->is_str())
 			{
-				op_code = BytecodeType::INDEX_S;
+				op_code = BytecodeType_INDEX_S;
 				return Type::CHAR;
 			}
 			else if (rhs_type->is_arr())
 			{
-				op_code = BytecodeType::INDEX_A;
+				op_code = BytecodeType_INDEX_A;
 				return Type(rhs_type->prim, rhs_type->dim - 1);
 			}
 		}
@@ -514,7 +514,11 @@ expr::expr_p expr::Variable::optimize(StatementScope const& scope)
 bytecodes_t expr::Variable::generate_codes() const
 {
 	assert(id.has_value());
-	return { (bytecode_t)BytecodeType::LOAD, *id };
+
+	auto codes = int_to_bytecodes(*id);
+	codes.push_back((bytecode_t)BytecodeType_LOAD);
+
+	return codes;
 }
 
 
@@ -523,7 +527,7 @@ expr::Array::Array(
 	std::vector<expr_p> const& _elements,
 	bool _is_str_,
 	std::optional<Type> const& _type_convert,
-	std::vector<std::optional<BytecodeType>> const& _type_conversion)
+	std::vector<std::optional<bytecode_t>> const& _type_conversion)
 	: Expression(_loc, Expression::single_precedence), elements(_elements), is_str_(_is_str_), type_convert(_type_convert), type_conversion(_type_conversion) {}
 
 void expr::Array::insert_node(
@@ -554,11 +558,11 @@ std::optional<Type> expr::Array::type_check(StatementScope& scope) noexcept
 		}
 
 		if (type_convert == Type::BOOL && elem_type == Type::FLOAT)
-			type_conversion.push_back(BytecodeType::F2B);
+			type_conversion.push_back(BytecodeType_F2B);
 		else if (type_convert == Type::FLOAT && elem_type != Type::FLOAT)
-			type_conversion.push_back(BytecodeType::I2F);
+			type_conversion.push_back(BytecodeType_I2F);
 		else if (type_convert != Type::FLOAT && elem_type == Type::FLOAT)
-			type_conversion.push_back(BytecodeType::F2I);
+			type_conversion.push_back(BytecodeType_F2I);
 		else
 			type_conversion.push_back(std::nullopt);
 
@@ -619,9 +623,9 @@ bytecodes_t expr::Array::generate_codes() const
 	codes.insert(std::end(codes), std::begin(size_codes), std::end(size_codes));
 
 	if (is_str())
-		codes.push_back((bytecode_t)BytecodeType::ALLOCATE_STR);
+		codes.push_back((bytecode_t)BytecodeType_ALLOCATE_STR);
 	else
-		codes.push_back((bytecode_t)BytecodeType::ALLOCATE_ARR);
+		codes.push_back((bytecode_t)BytecodeType_ALLOCATE_ARR);
 
 	return codes;
 }
@@ -654,7 +658,7 @@ std::optional<Type> expr::Allocate::type_check(StatementScope& scope) noexcept
 	for (auto& size : sizes)
 		size->type_check(scope);
 
-	return Type(type, sizes.size());
+	return Type(type, (int)sizes.size());
 }
 
 expr::expr_p expr::Allocate::optimize(StatementScope const& scope)
@@ -678,7 +682,7 @@ bytecodes_t expr::Allocate::generate_codes() const
 	auto size_codes = int_to_bytecodes((bytecode_t)sizes.size());
 	codes.insert(std::end(codes), std::begin(size_codes), std::end(size_codes));
 	
-	codes.push_back((bytecode_t)BytecodeType::ALLOCATE_ARR_AND_FILL);
+	codes.push_back((bytecode_t)BytecodeType_ALLOCATE_ARR_AND_FILL);
 
 	return codes;
 }
@@ -714,7 +718,7 @@ bytecodes_t expr::Numeric::generate_codes() const
 {
 	if (double const* dbl = std::get_if<double>(&val))
 	{
-		bytecodes_t codes{ (bytecode_t)BytecodeType::FLOAT4 };
+		bytecodes_t codes{ (bytecode_t)BytecodeType_FLOAT4 };
 
 		uint8_t arr[sizeof(float)];
 		float f = (float)*dbl;
