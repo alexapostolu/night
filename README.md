@@ -1,6 +1,6 @@
 # Night
 
-Night is a static, bytecode interpreted language with strong management on types and memory.
+Night is a bytecode interpreted language. 
 
 ## Table of contents 
 
@@ -40,17 +40,17 @@ Try it out now with this simple Night code!
 # recursive fib function
 def fib(n int) int
 {
-	if (n == 0 || n == 1)
-		return n;
+    if (n == 0 || n == 1)
+        return n;
 
-	return fib(n - 1) + fib(n - 2);
+    return fib(n - 1) + fib(n - 2);
 }
 
 print("Enter a number: ");
 n int = int(input());
 
 for (i int = 0; i < n; i += 1)
-	print(str(fib(i)) + " ");
+    print(str(fib(i)) + " ");
 ```
 
 Binary files can be found under releases, or compiled manually as shown in the [Build](#build) section.
