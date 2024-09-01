@@ -504,7 +504,7 @@ void push_string_input(std::stack<intpr::Value>& s)
 
 	int c;
 	int len = 0;
-	while ((c = getchar()) != '\n')
+	while ((c = getchar()) != '\n' && c != EOF)
 	{
 		if (len == size - 1)
 		{
