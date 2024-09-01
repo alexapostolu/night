@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include <vector>
+#include <list>
 #include <string>
 
 /**
@@ -21,12 +21,15 @@
  * 8 bits is plenty enough for Night.
  * 
  * **Design Decision #2**
- * bytecodes_t is a vector and not a forward list.
+ * bytecodes_t is a forward list and not a vector.
  * 
- * idk why.
+ * The main operations are appending/inserting other bytecode containers, and
+ * list has a better time complexity for that operation than vector. (I'm actually
+ * not sure I think it's implementation specific, but from what I learned in my
+ * data structures coding class is that list is better for these operations)
  */
 using bytecode_t = uint8_t;
-using bytecodes_t = std::vector<bytecode_t>;
+using bytecodes_t = std::list<bytecode_t>;
 
 /**
  * @brief Enumeration of all bytecode types in Night

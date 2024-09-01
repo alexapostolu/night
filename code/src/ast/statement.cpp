@@ -5,10 +5,12 @@
 #include "statement_scope.hpp"
 #include "scope_check.hpp"
 #include "type.hpp"
+#include "util.hpp"
 #include "error.hpp"
 #include "debug.hpp"
 
 #include <limits>
+#include <iterator>
 #include <vector>
 #include <memory>
 #include <assert.h>
@@ -424,8 +426,7 @@ bytecodes_t Conditional::generate_codes() const
 		// Insert jump if false value before JUMP_IF_FALSE, adding on 10 space for the
 		// 10 codes to represent JUMP (1) and its value (9)
 		auto jump_if_false_codes = int_to_bytecodes(stmts_codes_size + 10);
-		codes.insert(std::begin(codes) + jump_if_false_index,
-					 std::begin(jump_if_false_codes), std::end(jump_if_false_codes));
+		night::container_insert(codes, jump_if_false_codes, jump_if_false_index);
 
 		// The value for JUMP is added last after the number of codes to jump back is
 		// determined
@@ -436,7 +437,7 @@ bytecodes_t Conditional::generate_codes() const
 	for (int i = (int)jump_offsets.size() - 1; i >= 0; --i)
 	{
 		auto offset_codes = int_to_bytecodes(codes.size() - jump_offsets[i] - 1, 8);
-		codes.insert(std::begin(codes) + jump_offsets[i], std::begin(offset_codes), std::end(offset_codes));
+		night::container_insert(codes, offset_codes, jump_offsets[i]);
 	}
 
 
@@ -499,8 +500,7 @@ bytecodes_t While::generate_codes() const
 	// Insert jump if false value before JUMP_IF_FALSE, adding on 10 space for the
 	// 10 codes to represent JUMP_N (1) and its value (9)
 	auto jump_if_false_codes = int_to_bytecodes(stmt_codes_size + 10, 8);
-	codes.insert(std::begin(codes) + jump_if_false_index,
-				 std::begin(jump_if_false_codes), std::end(jump_if_false_codes));
+	night::container_insert(codes, jump_if_false_codes, jump_if_false_index);
 
 	// Insert jump negative value and JUMP_N
 	// Set jump negative value to be 8 bit
