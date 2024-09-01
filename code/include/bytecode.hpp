@@ -67,6 +67,13 @@ using bytecodes_t = std::list<bytecode_t>;
  *   codes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE); // "enum class", wtf is this
  *   codes.push_back(BytecodeType_JUMP_IF_FALSE);              // "enum", much cleaner
  * @endcode
+ * 
+ * **Design Decision #2**
+ * There exists multiple integer sizes, not just INT8 and UINT8.
+ * 
+ * In the interpreter, all ints are either stores as an 8 bit signed or unsigned
+ * int, however, we still differentiate them here in bytecode to reduce the total
+ * number of bytecodes present.
  */
 enum : bytecode_t {
 	BytecodeType_S_INT1,	// S_INT1, uint8

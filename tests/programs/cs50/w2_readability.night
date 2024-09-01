@@ -1,7 +1,3 @@
-# This program doesn't actually work. Some of the grades it outputs are slightly
-# higher than expected. I think this is a floating point issue.
-
-
 def is_alpha(c char) bool { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
 
 print("Text: ");

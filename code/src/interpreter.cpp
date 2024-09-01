@@ -52,7 +52,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 
 		case BytecodeType_FLOAT4:
 		case BytecodeType_FLOAT8:
-			push_float(s, it);
+			s.emplace(get_float(it));
 			break;
 
 		case BytecodeType_NEGATIVE_I:
@@ -84,7 +84,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			int len = s1_len + s2_len + 1;
 			char* result = (char*)malloc(sizeof(char) * len);
 			if (!result)
-				throw night::error::get().create_runtime_error("could not allocate memory");
+				exit(1);
 
 			strncpy(result, s2, len);
 			result[len - 1] = '\0';
@@ -400,24 +400,36 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 	return std::nullopt;
 }
 
-void push_float(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it)
+double get_float(bytecodes_t::const_iterator& it)
 {
-	int count;
-	switch (*it)
+	assert(*it == BytecodeType_FLOAT4 || *it == BytecodeType_FLOAT8);
+
+	if (*it == BytecodeType_FLOAT4)
 	{
-	case BytecodeType_FLOAT4: count = 4; break;
-	case BytecodeType_FLOAT8: count = 8; break;
-	default: throw debug::unhandled_case(*it);
+		bytecode_t float_codes[4];
+		for (int i = 0; i < sizeof(float_codes) / sizeof(float_codes[0]); ++i)
+			float_codes[i] = *(++it);
+
+		float f;
+		std::memcpy(&f, float_codes, sizeof(float));
+
+		return (double)f;
 	}
+	else if (*it == BytecodeType_FLOAT8)
+	{
+		bytecode_t double_codes[8];
+		for (int i = 0; i < sizeof(double_codes) / sizeof(double_codes[0]); ++i)
+			double_codes[i] = *(++it);
 
-	float f;
-	++it;
-	std::memcpy(&f, &(*it), sizeof(float));
+		double d;
+		std::memcpy(&d, double_codes, sizeof(float));
 
-	s.emplace((double)f);
-
-	// -1 to account for the advancement in the main for loop
-	std::advance(it, count - 1);
+		return d;
+	}
+	else
+	{
+		exit(1);
+	}
 }
 
 void push_str(std::stack<intpr::Value>& s)
