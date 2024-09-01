@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ "$#" -lt 1 ]; then
-  echo "Usage: $0 <input_file>"
+  echo "Usage: $0 <night executable>"
   exit 1
 fi
 
@@ -9,26 +9,11 @@ fi
 night="$1"
 
 # Night source code files for testing
-night_files=(
-	"programs/cs50/w1_credit.night"
-	"programs/cs50/w1_mario.night"
-	"programs/cs50/w2_readability.night"
-	"programs/cs50/w2_scrabble.night"
-	"programs/cs50/w2_substitution.night")
+night_files=($(find programs/cs50 programs/math -type f -name "*.night"))
 
 # Standard input and output files corresponding to the Night source code files
-inputs=(
-	"StandardIO/w1_credit_input.txt"
-	"StandardIO/w1_mario_input.txt"
-	"StandardIO/w2_readability_input.txt"
-	"StandardIO/w2_scrabble_input.txt"
-	"StandardIO/w2_substitution_input.txt")
-expected_outputs=(
-	"StandardIO/w1_credit_expected.txt"
-	"StandardIO/w1_mario_expected.txt"
-	"StandardIO/w2_readability_expected.txt"
-	"StandardIO/w2_scrabble_expected.txt"
-	"StandardIO/w2_substitution_expected.txt")
+inputs=($(find stdio/cs50 stdio/math -type f -name "*_input.txt"))
+expected_outputs=($(find stdio/cs50 stdio/math -type f -name "*_expected.txt"))
 
 all_tests_passed=0
 
