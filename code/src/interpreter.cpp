@@ -334,14 +334,14 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			return pop(s);
 
 		case BytecodeType_CALL: {
-			auto id = pop(s).as.i;
+			int64_t id = pop(s).as.i;
 
 			switch (id)
 			{
-			case 0: std::cout << (pop(s).as.i ? "true" : "false"); break;
-			case 1: std::cout << (char)pop(s).as.i; break;
-			case 2: std::cout << pop(s).as.i; break;
-			case 3: std::cout << pop(s).as.d; break;
+			case 0: printf(pop(s).as.i ? "true" : "false"); break;
+			case 1: printf("%c", (char)pop(s).as.i); break;
+			case 2: printf("%lld", pop(s).as.i); break;
+			case 3: printf("%f", pop(s).as.d); break;
 			case 4: printf("%s", pop(s).as.s); break;
 			case 5: push_string_input(s); break;
 			case 6: break; // char(int); can not remove bytecode because of char(2 + 3) => 2 + 3, and now we have 2, 3, + on the stack that does nothing
@@ -354,7 +354,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 				break;
 			}
 			case 9: {
-				auto x = pop(s).as.i;
+				int64_t x = pop(s).as.i;
 				int length = snprintf(NULL, 0, "%" PRId64, x);
 				char* str = (char*)malloc(length + 1);
 				snprintf(str, length + 1, "%" PRId64, x);
