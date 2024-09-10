@@ -159,7 +159,7 @@ bytecodes_t expr::UnaryOp::generate_codes() const
 expr::BinaryOp::BinaryOp(
 	Location const& _loc,
 	std::string const& _operator)
-	: Expression(loc)
+	: Expression(Location{"", 0, 0})
 {
 	static std::unordered_map<std::string, std::tuple<int, BinaryOpType>> binary_operator_map{
 		{ "&&", std::make_tuple(1, BinaryOpType::AND) },
