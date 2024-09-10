@@ -17,6 +17,9 @@
 
 std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes)
 {
+	// Disable stdout buffering
+	setbuf(stdout, NULL);
+
 	std::stack<intpr::Value> s;
 
 	// This freeze is for while loop bytecode.
@@ -340,7 +343,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			{
 			case 0: printf(pop(s).as.i ? "true" : "false"); break;
 			case 1: printf("%c", (char)pop(s).as.i); break;
-			case 2: printf("%lld", pop(s).as.i); break;
+			case 2: printf("%lld", (long long int)pop(s).as.i); break;
 			case 3: printf("%f", pop(s).as.d); break;
 			case 4: printf("%s", pop(s).as.s); break;
 			case 5: push_string_input(s); break;
