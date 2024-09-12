@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  win: circleci/windows@4.1.1
+
 jobs:
   build:
     docker:
@@ -34,6 +37,39 @@ jobs:
           command: |
             cd tests
             bash test_night.sh /home/circleci/project/build/night
+
+  win_build:
+    executor:
+      name: win/default
+    steps:
+      - checkout
+      # Create build directory and build the project
+      - run:
+          name: Build the project
+          shell: cmd
+          command: |
+            mkdir build
+            cd build
+            cmake -G "Visual Studio 16 2019" ..
+            cmake --build . --config Release
+      - persist_to_workspace:
+          root: /home/circleci/project/build/Release
+          paths:
+            - night
+  win_test:
+    executor:
+      name: win/default
+    steps:
+      - checkout
+      # Attach the workspace to access the built executable
+      - attach_workspace:
+          at: /home/circleci/project/build/Release
+      # Run the test script with the `night` executable as an argument
+      - run:
+          name: Run tests
+          command: |
+            cd tests
+            sh test_night.sh /home/circleci/project/build/Releasenight
 
 workflows:
   version: 2
