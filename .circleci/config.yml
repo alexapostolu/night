@@ -6,26 +6,6 @@ jobs:
       - image: cimg/base:edge-22.04
     steps:
       - checkout
-      # Install CMake
-      - run:
-          name: Install CMake
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y cmake
-      # Install MinGW using Chocolatey
-      #- run:
-      #    name: Install GCC and G++
-      #    command: |
-      #      sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-      #      sudo apt-get update
-      #      
-      #      version=$(apt-cache pkgnames | sed -nr 's/^gcc-(([0-9]+\.?)+)$/\1/p' \
-      #                                   | sort -n | tail -n1)
-      #      echo "The latest available GCC version: $version"
-      #      
-      #      sudo apt-get install gcc-$version g++-$version
-      #      sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-$version 60 \
-      #                               --slave   /usr/bin/g++ g++ /usr/bin/g++-$version
       # Create build directory and build the project
       - run:
           name: Build the project
