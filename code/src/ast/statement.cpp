@@ -115,10 +115,11 @@ void ArrayInitialization::check(StatementScope& scope)
 
 		auto arr_size_type = arr_size->type_check(scope);
 
-		if (arr_size_type.has_value() && arr_size_type->is_arr())
+		if (arr_size_type.has_value() && !arr_size_type->is_prim()) {
 			night::error::get().create_minor_error(
 				"found type '" + night::to_str(*arr_size_type) + "' in array size, "
 				"expected primitive type", loc);
+		}
 	}
 
 	// Deduce type of variable.

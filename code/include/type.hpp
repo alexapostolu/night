@@ -28,6 +28,7 @@ struct Type
 
 	int dim;
 
+	bool is_prim() const;
 	bool is_str() const;
 	bool is_arr() const;
 
