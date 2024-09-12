@@ -56,7 +56,7 @@ jobs:
             echo cd
       - persist_to_workspace:
           command: echo cd
-          root: C:\Users\circleci\project\build\Release
+          root: Release
           paths:
             - night
   win_test:
@@ -66,13 +66,13 @@ jobs:
       - checkout
       # Attach the workspace to access the built executable
       - attach_workspace:
-          at: /home/circleci/project/build/Release
+          at: Release
       # Run the test script with the `night` executable as an argument
       - run:
           name: Run tests
           command: |
             cd tests
-            sh test_night.sh /home/circleci/project/build/Release/night
+            sh test_night.sh Release/night
 
 workflows:
   version: 2
