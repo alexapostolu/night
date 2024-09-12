@@ -55,7 +55,13 @@ T get_int(bytecodes_t::const_iterator& it)
 // iterator
 //   start: bytecode type
 //   end:   last code of float
-void push_float(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it);
+void push_float(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it, int count);
+
+/**
+ * Iterator starts at bytecode type (either FLOAT4 or FLOAT8) and ends at last
+ * code of the float.
+ */
+double get_float(bytecodes_t::const_iterator& it);
 
 void push_str(std::stack<intpr::Value>& s);
 void push_arr(std::stack<intpr::Value>& s);

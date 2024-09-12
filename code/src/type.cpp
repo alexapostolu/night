@@ -21,6 +21,8 @@ bool Type::operator==(Primitive _prim) const
 	return prim == _prim && !is_arr();
 }
 
+bool Type::is_prim() const { return !is_arr(); }
+
 bool Type::is_arr() const { return dim; }
 
 bool Type::is_str() const { return prim == Primitive::CHAR && dim == 1; }

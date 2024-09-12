@@ -10,6 +10,7 @@
 #include <optional>
 #include <memory>
 #include <vector>
+#include <limits>
 #include <tuple>
 #include <variant>
 #include <cstring>
@@ -158,7 +159,7 @@ bytecodes_t expr::UnaryOp::generate_codes() const
 expr::BinaryOp::BinaryOp(
 	Location const& _loc,
 	std::string const& _operator)
-	: Expression(loc)
+	: Expression(Location{"", 0, 0})
 {
 	static std::unordered_map<std::string, std::tuple<int, BinaryOpType>> binary_operator_map{
 		{ "&&", std::make_tuple(1, BinaryOpType::AND) },
@@ -718,16 +719,32 @@ bytecodes_t expr::Numeric::generate_codes() const
 {
 	if (double const* dbl = std::get_if<double>(&val))
 	{
-		bytecodes_t codes{ (bytecode_t)BytecodeType_FLOAT4 };
+		// Check if the value is within the range of a float
+		if (*dbl >= -std::numeric_limits<float>::max() && *dbl <= std::numeric_limits<float>::max())
+		{
+			bytecodes_t codes = { BytecodeType_FLOAT4 };
 
-		uint8_t arr[sizeof(float)];
-		float f = (float)*dbl;
-		std::memcpy(arr, &f, sizeof(float));
+			uint8_t arr[sizeof(float)];
+			float f = (float)*dbl;
+			std::memcpy(arr, &f, sizeof(float));
 
-		for (int i = 0; i < sizeof(float); ++i)
-			codes.push_back(arr[i]);
+			for (int i = 0; i < sizeof(float); ++i)
+				codes.push_back(arr[i]);
 
-		return codes;
+			return codes;
+		}
+		else
+		{
+			bytecodes_t codes = { BytecodeType_FLOAT8 };
+
+			uint8_t arr[sizeof(double)];
+			std::memcpy(arr, dbl, sizeof(double));
+
+			for (int i = 0; i < sizeof(double); ++i)
+				codes.push_back(arr[i]);
+
+			return codes;
+		}
 	}
 	else
 	{

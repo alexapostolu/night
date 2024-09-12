@@ -17,6 +17,9 @@
 
 std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes)
 {
+	// Disable stdout buffering
+	setbuf(stdout, NULL);
+
 	std::stack<intpr::Value> s;
 
 	// This freeze is for while loop bytecode.
@@ -52,7 +55,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 
 		case BytecodeType_FLOAT4:
 		case BytecodeType_FLOAT8:
-			push_float(s, it);
+			s.emplace(get_float(it));
 			break;
 
 		case BytecodeType_NEGATIVE_I:
@@ -84,7 +87,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			int len = s1_len + s2_len + 1;
 			char* result = (char*)malloc(sizeof(char) * len);
 			if (!result)
-				throw night::error::get().create_runtime_error("could not allocate memory");
+				exit(1);
 
 			strncpy(result, s2, len);
 			result[len - 1] = '\0';
@@ -334,14 +337,14 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			return pop(s);
 
 		case BytecodeType_CALL: {
-			auto id = pop(s).as.i;
+			int64_t id = pop(s).as.i;
 
 			switch (id)
 			{
-			case 0: std::cout << (pop(s).as.i ? "true" : "false"); break;
-			case 1: std::cout << (char)pop(s).as.i; break;
-			case 2: std::cout << pop(s).as.i; break;
-			case 3: std::cout << pop(s).as.d; break;
+			case 0: printf(pop(s).as.i ? "true" : "false"); break;
+			case 1: printf("%c", (char)pop(s).as.i); break;
+			case 2: printf("%lld", (long long int)pop(s).as.i); break;
+			case 3: printf("%f", pop(s).as.d); break;
 			case 4: printf("%s", pop(s).as.s); break;
 			case 5: push_string_input(s); break;
 			case 6: break; // char(int); can not remove bytecode because of char(2 + 3) => 2 + 3, and now we have 2, 3, + on the stack that does nothing
@@ -354,7 +357,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 				break;
 			}
 			case 9: {
-				auto x = pop(s).as.i;
+				int64_t x = pop(s).as.i;
 				int length = snprintf(NULL, 0, "%" PRId64, x);
 				char* str = (char*)malloc(length + 1);
 				snprintf(str, length + 1, "%" PRId64, x);
@@ -400,24 +403,36 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 	return std::nullopt;
 }
 
-void push_float(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it)
+double get_float(bytecodes_t::const_iterator& it)
 {
-	int count;
-	switch (*it)
+	assert(*it == BytecodeType_FLOAT4 || *it == BytecodeType_FLOAT8);
+
+	if (*it == BytecodeType_FLOAT4)
 	{
-	case BytecodeType_FLOAT4: count = 4; break;
-	case BytecodeType_FLOAT8: count = 8; break;
-	default: throw debug::unhandled_case(*it);
+		bytecode_t float_codes[4];
+		for (int i = 0; i < sizeof(float_codes) / sizeof(float_codes[0]); ++i)
+			float_codes[i] = *(++it);
+
+		float f;
+		std::memcpy(&f, float_codes, sizeof(float));
+
+		return (double)f;
 	}
+	else if (*it == BytecodeType_FLOAT8)
+	{
+		bytecode_t double_codes[8];
+		for (int i = 0; i < sizeof(double_codes) / sizeof(double_codes[0]); ++i)
+			double_codes[i] = *(++it);
 
-	float f;
-	++it;
-	std::memcpy(&f, &(*it), sizeof(float));
+		double d;
+		std::memcpy(&d, double_codes, sizeof(float));
 
-	s.emplace((double)f);
-
-	// -1 to account for the advancement in the main for loop
-	std::advance(it, count - 1);
+		return d;
+	}
+	else
+	{
+		exit(1);
+	}
 }
 
 void push_str(std::stack<intpr::Value>& s)
@@ -504,7 +519,7 @@ void push_string_input(std::stack<intpr::Value>& s)
 
 	int c;
 	int len = 0;
-	while ((c = getchar()) != '\n')
+	while ((c = getchar()) != '\n' && c != EOF)
 	{
 		if (len == size - 1)
 		{

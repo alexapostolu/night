@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include <vector>
+#include <list>
 #include <string>
 
 /**
@@ -21,12 +21,15 @@
  * 8 bits is plenty enough for Night.
  * 
  * **Design Decision #2**
- * bytecodes_t is a vector and not a forward list.
+ * bytecodes_t is a forward list and not a vector.
  * 
- * idk why.
+ * The main operations are appending/inserting other bytecode containers, and
+ * list has a better time complexity for that operation than vector. (I'm actually
+ * not sure I think it's implementation specific, but from what I learned in my
+ * data structures coding class is that list is better for these operations)
  */
 using bytecode_t = uint8_t;
-using bytecodes_t = std::vector<bytecode_t>;
+using bytecodes_t = std::list<bytecode_t>;
 
 /**
  * @brief Enumeration of all bytecode types in Night
@@ -64,6 +67,13 @@ using bytecodes_t = std::vector<bytecode_t>;
  *   codes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE); // "enum class", wtf is this
  *   codes.push_back(BytecodeType_JUMP_IF_FALSE);              // "enum", much cleaner
  * @endcode
+ * 
+ * **Design Decision #2**
+ * There exists multiple integer sizes, not just INT8 and UINT8.
+ * 
+ * In the interpreter, all ints are either stores as an 8 bit signed or unsigned
+ * int, however, we still differentiate them here in bytecode to reduce the total
+ * number of bytecodes present.
  */
 enum : bytecode_t {
 	BytecodeType_S_INT1,	// S_INT1, uint8
