@@ -52,6 +52,7 @@ jobs:
             cd build
             cmake -G "Visual Studio 16 2019" ..
             cmake --build . --config Release
+            echo cd
       - persist_to_workspace:
           root: build/Release
           paths:
