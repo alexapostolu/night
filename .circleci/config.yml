@@ -52,11 +52,8 @@ jobs:
             cd build
             cmake -G "Visual Studio 16 2019" ..
             cmake --build . --config Release
-            echo dir
-            echo cd
       - persist_to_workspace:
-          command: echo cd
-          root: Release
+          root: build/Release
           paths:
             - night
   win_test:
@@ -66,13 +63,13 @@ jobs:
       - checkout
       # Attach the workspace to access the built executable
       - attach_workspace:
-          at: Release
+          at: build/Release
       # Run the test script with the `night` executable as an argument
       - run:
           name: Run tests
           command: |
             cd tests
-            sh test_night.sh Release/night
+            sh test_night.sh build/Release/night
 
 workflows:
   version: 2
