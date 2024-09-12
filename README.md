@@ -13,6 +13,8 @@ Night is a bytecode interpreted language.
 
 ## Project Status
 
+[![CircleCI](https://dl.circleci.com/status-badge/img/circleci/VCGYTtvjF2kiyR4os3gSWT/Sgbw3tiQ97Fp9LR39NF1mf/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/circleci/VCGYTtvjF2kiyR4os3gSWT/Sgbw3tiQ97Fp9LR39NF1mf/tree/main)
+
 `v0.0.0` is released!
 
 **v0.0.0**
