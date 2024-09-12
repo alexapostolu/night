@@ -53,6 +53,8 @@ jobs:
             cmake -G "Visual Studio 16 2019" ..
             cmake --build . --config Release
       - persist_to_workspace:
+          shell: powershell.exe
+          command: cd
           root: C:\Users\circleci\project\build\Release
           paths:
             - night
