@@ -17,5 +17,3 @@ tests/actual_output.txt
 /build
 /winbuild
 
-# custom scripts
-test.sh
