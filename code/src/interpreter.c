@@ -1,26 +1,21 @@
 #include "interpreter.hpp"
-#include "interpreter_scope.hpp"
+#include "value.h"
 #include "error.hpp"
 #include "debug.hpp"
 
-#include <iostream>
-#include <cmath>
-#include <stack>
-#include <optional>
-#include <cstring>
+#include <string.h>
 #include <assert.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h> // PRId64
 
-std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes)
+Value interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes)
 {
 	// Disable stdout buffering
 	setbuf(stdout, NULL);
 
-	std::stack<intpr::Value> s;
+	std::stack<Value> s;
 
 	// This freeze is for while loop bytecode.
 	// The last JUMP in While loop bytecode jumps to before the start of the vector.
@@ -282,7 +277,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		case BytecodeType_LOAD_ELEM: {
 			auto id = pop(s).as.i;
 			auto num = pop(s).as.i;
-			intpr::Value* val = &scope.vars[id];
+			Value* val = &scope.vars[id];
 			while (num--)
 			{
 				auto i = pop(s).as.i;
@@ -448,10 +443,10 @@ void push_str(std::stack<intpr::Value>& s)
 	s.emplace(str, size);
 }
 
-void push_arr(std::stack<intpr::Value>& s)
+void push_arr(std::stack<Value>& s)
 {
 	int size = (int)pop(s).as.i;
-	intpr::Value arr;
+	Value arr;
 	arr.as.a.size = size;
 	arr.as.a.data = new intpr::Value[size];
 
@@ -461,7 +456,7 @@ void push_arr(std::stack<intpr::Value>& s)
 	s.push(arr);
 }
 
-void push_arr_and_fill(std::stack<intpr::Value>& s)
+void push_arr_and_fill(std::stack<Value>& s)
 {
 	int dimensions = (int)pop(s).as.i;
 	std::vector<int> sizes(dimensions);
@@ -469,7 +464,7 @@ void push_arr_and_fill(std::stack<intpr::Value>& s)
 	for (int i = dimensions - 1; i >= 0; --i)
 		sizes[i] = (int)pop(s).as.i;
 
-	intpr::Value arr;
+	Value arr;
 	fill_arr(arr, s, sizes, 0);
 
 	s.push(arr);
