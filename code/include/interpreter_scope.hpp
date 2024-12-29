@@ -30,7 +30,7 @@ struct Value
 	Value(int64_t _i);
 	Value(uint64_t _ui);
 	Value(double _d);
-	Value(char* _s);
+	Value(char* _s, unsigned int length);
 	Value(Array _a);
 	Value(Value const& _v);
 	~Value();

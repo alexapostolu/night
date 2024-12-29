@@ -93,7 +93,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			result[len - 1] = '\0';
 			strncat(result, s1, len - s2_len - 1);
 
-			s.emplace(result);
+			s.emplace(result, len);
 			break;
 		}
 
@@ -362,7 +362,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 				char* str = (char*)malloc(length + 1);
 				snprintf(str, length + 1, "%" PRId64, x);
 
-				s.emplace(str);
+				s.emplace(str, length);
 				break;
 			}
 			case 10: {
@@ -371,7 +371,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 				char* str = (char*)malloc(length + 1);
 				snprintf(str, length + 1, "%f", x);
 
-				s.emplace(str);
+				s.emplace(str, length);
 				break;
 			}
 			case 11: {
@@ -438,14 +438,14 @@ double get_float(bytecodes_t::const_iterator& it)
 void push_str(std::stack<intpr::Value>& s)
 {
 	auto size = pop(s).as.i;
-	char* arr = new char[size + 1];
+	char* str = new char[size + 1];
 
 	for (auto i = 0; i < size; ++i)
-		arr[i] = (char)pop(s).as.i;
+		str[i] = (char)pop(s).as.i;
 
-	arr[size] = '\0';
+	str[size] = '\0';
 
-	s.push(arr);
+	s.emplace(str, size);
 }
 
 void push_arr(std::stack<intpr::Value>& s)
@@ -540,7 +540,7 @@ void push_string_input(std::stack<intpr::Value>& s)
 	}
 
 	buf[len] = '\0';
-	s.emplace(buf);
+	s.emplace(buf, len);
 }
 
 intpr::Value pop(std::stack<intpr::Value>& s)

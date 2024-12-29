@@ -8,10 +8,24 @@ func_container InterpreterScope::funcs = {};
 intpr::Value::Value(int64_t _i) { as.i = _i; }
 intpr::Value::Value(uint64_t _ui) { as.ui = _ui; }
 intpr::Value::Value(double _d) { as.d = _d; }
-intpr::Value::Value(char* _s)
+intpr::Value::Value(char* _s, unsigned int length)
 {
-	as.s = _s;
-	is_str_alloc = 1;
+	if (_s)
+	{
+		as.s = (char*)malloc((length + 1) * sizeof(char));
+		if (!as.s)
+			throw std::bad_alloc();
+
+		strncpy(as.s, _s, length);
+		as.s[length] = '\0';
+
+		is_str_alloc = 1;
+	}
+	else
+	{
+		as.s = nullptr;
+		is_str_alloc = 0;
+	}
 }
 
 intpr::Value::Value(Array _a)
