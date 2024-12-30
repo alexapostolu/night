@@ -1,7 +1,9 @@
-#include "interpreter.hpp"
+#include "interpreter.h"
 #include "value.h"
+#include "bytecode.hpp"
 #include "error.hpp"
 #include "debug.hpp"
+#include "stack.h"
 
 #include <string.h>
 #include <assert.h>
@@ -10,26 +12,24 @@
 #include <string.h>
 #include <inttypes.h> // PRId64
 
-Value interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes)
+Value interpret_bytecodes(bytecodes_t const& codes, Value* variables)
 {
-	// Disable stdout buffering
-	setbuf(stdout, NULL);
-
-	std::stack<Value> s;
+	stack s;
+	stack_create(&s);
 
 	// This freeze is for while loop bytecode.
 	// The last JUMP in While loop bytecode jumps to before the start of the vector.
 	// But you can not have an iterator point to before the start of a vector. So
 	// the iterator will jump to the first element, and stay there instead of being
 	// incremented by the for loop.
-	bool freeze = false;
+	int freeze = 0;
 
 	for (auto it = std::begin(codes); it != std::end(codes); ++it)
 	{
 		if (freeze)
 		{
 			--it;
-			freeze = false;
+			freeze = 0;
 		}
 
 		switch (*it)
@@ -50,35 +50,72 @@ Value interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes)
 
 		case BytecodeType_FLOAT4:
 		case BytecodeType_FLOAT8:
-			s.emplace(get_float(it));
+			double f = get_float(codes, i);
+
+			Value* val;
+			value_create_d(&val, f);
+			
+			stack_push(&s, val);
+
 			break;
 
 		case BytecodeType_NEGATIVE_I:
-			s.emplace(-pop(s).as.i);
+			Value* val = stack_top(&s);
+			assert(val->is == Value::Int);
+
+			val->as.i *= -1;
+
 			break;
 		case BytecodeType_NEGATIVE_F:
-			s.emplace(-pop(s).as.d);
+			Value* val = stack_top(&s);
+			assert(val->is == Value::Dbl);
+
+			val->as.d *= -1;
+
 			break;
 
 		case BytecodeType_NOT_I:
-			s.emplace((int64_t)!pop(s).as.i);
+			Value* val = stack_top(&s);
+			assert(val->is == Value::Int);
+
+			val->as.i = val->as.i ? 0 : 1;
 			break;
+
 		case BytecodeType_NOT_F:
-			s.emplace((int64_t)!pop(s).as.d);
+			Value* val = stack_top(&s);
+			assert(val->is == Value::Dbl);
+
+			val->as.d = val->as.d ? 0 : 1;
 			break;
 
 		case BytecodeType_ADD_I:
-			s.emplace(pop(s).as.i + pop(s).as.i);
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Int);
+
+			Value* val2 = stack_top(&s);
+			assert(val1->is == Value::Int);
+
+			val2->as.i += val1->as.i;
+			value_destroy(val1);
+
 			break;
 		case BytecodeType_ADD_F:
-			s.emplace(pop(s).as.d + pop(s).as.d);
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Dbl);
+
+			Value* val2 = stack_top(&s);
+			assert(val2->is == Value::Dbl);
+
+			val2->as.d += val1->as.d;
+			value_destroy(val1);
+
 			break;
 		case BytecodeType_ADD_S: {
-			auto s1 = pop(s).as.s;
-			auto s2 = pop(s).as.s;
+			Value* s1 = stack_pop(&s);
+			Value* s2 = stack_pop(&s);
 
-			int s1_len = strlen(s1);
-			int s2_len = strlen(s2);
+			int s1_len = strlen(s1->as.s);
+			int s2_len = strlen(s2->as.s);
 			int len = s1_len + s2_len + 1;
 			char* result = (char*)malloc(sizeof(char) * len);
 			if (!result)
@@ -88,165 +125,339 @@ Value interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes)
 			result[len - 1] = '\0';
 			strncat(result, s1, len - s2_len - 1);
 
-			s.emplace(result, len);
+			value_destroy(s1);
+			value_destroy(s2);
+			
+			Value* new_s;
+			value_create_s(&new_s, result, len);
+
+			stack_push(&s, new_s);
 			break;
 		}
 
 		case BytecodeType_SUB_I: {
-			auto s1 = pop(s).as.i;
-			auto s2 = pop(s).as.i;
-			s.emplace(-s1 + s2);
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Int);
+
+			Value* val2 = stack_top(&s);
+			assert(val1->is == Value::Int);
+
+			val2->as.i -= val1->as.i;
+			value_destroy(val1);
+
 			break;
 		}
 		case BytecodeType_SUB_F: {
-			auto s1 = pop(s).as.d;
-			auto s2 = pop(s).as.d;
-			s.emplace(-s1 + s2);
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Dbl);
+
+			Value* val2 = stack_top(&s);
+			assert(val1->is == Value::Dbl);
+
+			val2->as.d -= val1->as.d;
+			value_destroy(val1);
+
 			break;
 		}
 
 		case BytecodeType_MULT_I: {
-			auto s1 = pop(s).as.i;
-			auto s2 = pop(s).as.i;
-			s.emplace(s1 * s2);
-			break;
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Int);
+
+			Value* val2 = stack_top(&s);
+			assert(val2->is == Value::Int);
+
+			val2->as.i *= val1->as.i;
+			value_destroy(val1);
 		}
 		case BytecodeType_MULT_F: {
-			auto s1 = pop(s).as.d;
-			auto s2 = pop(s).as.d;
-			s.emplace(s1 * s2);
-			break;
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Dbl);
+
+			Value* val2 = stack_top(&s);
+			assert(val2->is == Value::Dbl);
+
+			val2->as.d *= val1->as.d;
+			value_destroy(val1);
 		}
 
 		case BytecodeType_DIV_I: {
-			auto s2 = pop(s);
-			s.emplace(pop(s).as.i / s2.as.i);
-			break;
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Int);
+
+			Value* val2 = stack_top(&s);
+			assert(val2->is == Value::Int);
+
+			val2->as.i /= val1->as.i;
+			value_destroy(val1);
 		}
 		case BytecodeType_DIV_F: {
-			auto s2 = pop(s);
-			s.emplace(pop(s).as.d / s2.as.d);
-			break;
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Dbl);
+
+			Value* val2 = stack_top(&s);
+			assert(val1->is == Value::Dbl);
+
+			val2->as.d /= val1->as.d;
+			value_destroy(val1);
 		}
 		case BytecodeType_MOD_I: {
-			auto s2 = pop(s);
-			s.emplace(pop(s).as.i % s2.as.i);
-			break;
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Int);
+
+			Value* val2 = stack_top(&s);
+			assert(val1->is == Value::Int);
+
+			val2->as.i %= val1->as.i;
+			value_destroy(val1);
 		}
 
 		// stack values are in opposite order, so we switch signs to account for that
 		case BytecodeType_LESSER_I: {
-			auto s1 = pop(s).as.i;
-			auto s2 = pop(s).as.i;
-			s.emplace(int64_t(s1 > s2));
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Int);
+
+			Value* val2 = stack_top(&s);
+			assert(val1->is == Value::Int);
+
+			val2->as.i = val1->as.i > val1->as.i;
+			value_destroy(val1);
+
 			break;
 		}
 		case BytecodeType_LESSER_F: {
-			auto s1 = pop(s).as.d;
-			auto s2 = pop(s).as.d;
-			s.emplace(int64_t(s1 > s2));
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Dbl);
+
+			Value* val2 = stack_top(&s);
+			assert(val1->is == Value::Dbl);
+
+			val2->as.f = val1->as.f > val1->as.f;
+			value_destroy(val1);
+
 			break;
 		}
 		case BytecodeType_LESSER_S: {
-			auto s1 = pop(s).as.s;
-			auto s2 = pop(s).as.s;
-			s.emplace(int64_t(strcmp(s1, s2) > 0));
+			Value* s1 = stack_pop(&s);
+			assert(s1->is == Value::Str);
+
+			Value* s2 = stack_top(&s);
+			assert(s2->is == Value::Str);
+
+			Value* new_val;
+			value_create_i(&val, strcmp(s1->as.s, s2->as.s) > 0);
+
+			value_destroy(s1);
+			value_destroy(s2);
+
+			stack_push(&s, new_val);
+
 			break;
 		}
 
 		case BytecodeType_GREATER_I: {
-			auto s1 = pop(s).as.i;
-			auto s2 = pop(s).as.i;
-			s.emplace(int64_t(s1 < s2));
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Int);
+
+			Value* val2 = stack_top(&s);
+			assert(val1->is == Value::Int);
+
+			val2->as.i = val1->as.i < val1->as.i;
+			value_destroy(val1);
+
 			break;
 		}
 		case BytecodeType_GREATER_F: {
-			auto s1 = pop(s).as.d;
-			auto s2 = pop(s).as.d;
-			s.emplace(int64_t(s1 < s2));
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Dbl);
+
+			Value* val2 = stack_top(&s);
+			assert(val1->is == Value::Dbl);
+
+			val2->as.d = val1->as.d < val1->as.d;
+			value_destroy(val1);
+
 			break;
 		}
 		case BytecodeType_GREATER_S: {
-			auto s1 = pop(s).as.s;
-			auto s2 = pop(s).as.s;
-			s.emplace(int64_t(strcmp(s1, s2) < 0));
+			Value* s1 = stack_pop(&s);
+			assert(s1->is == Value::Str);
+
+			Value* s2 = stack_top(&s);
+			assert(s2->is == Value::Str);
+
+			Value* new_val;
+			value_create_i(&val, strcmp(s2->as.s, s1->as.s) > 0);
+
+			value_destroy(s1);
+			value_destroy(s2);
+
+			stack_push(&s, new_val);
+
 			break;
 		}
 
 		case BytecodeType_LESSER_EQUALS_I: {
-			auto s1 = pop(s).as.i;
-			auto s2 = pop(s).as.i;
-			s.emplace((int64_t)(s1 >= s2));
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Int);
+
+			Value* val2 = stack_top(&s);
+			assert(val1->is == Value::Int);
+
+			val2->as.i = val1->as.i >= val1->as.i;
+			value_destroy(val1);
+
 			break;
 		}
 		case BytecodeType_LESSER_EQUALS_F: {
-			auto s1 = pop(s).as.d;
-			auto s2 = pop(s).as.d;
-			s.emplace((int64_t)(s1 >= s2));
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Dbl);
+
+			Value* val2 = stack_top(&s);
+			assert(val1->is == Value::Dbl);
+
+			val2->as.f = val1->as.f >= val1->as.f;
+			value_destroy(val1);
+
 			break;
 		}
 		case BytecodeType_LESSER_EQUALS_S: {
-			auto s1 = pop(s).as.s;
-			auto s2 = pop(s).as.s;
-			s.emplace((int64_t)(strcmp(s1, s2) >= 0));
+			Value* s1 = stack_pop(&s);
+			assert(s1->is == Value::Str);
+
+			Value* s2 = stack_top(&s);
+			assert(s2->is == Value::Str);
+
+			Value* new_val;
+			value_create_i(&val, strcmp(s1->as.s, s2->as.s) >= 0);
+
+			value_destroy(s1);
+			value_destroy(s2);
+
+			stack_push(&s, new_val);
+
 			break;
 		}
 
 		case BytecodeType_GREATER_EQUALS_I: {
-			auto s1 = pop(s).as.i;
-			auto s2 = pop(s).as.i;
-			s.emplace((int64_t)(s1 <= s2));
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Int);
+
+			Value* val2 = stack_top(&s);
+			assert(val1->is == Value::Int);
+
+			val2->as.i = val1->as.i <= val1->as.i;
+			value_destroy(val1);
+
 			break;
 		}
 		case BytecodeType_GREATER_EQUALS_F: {
-			auto s1 = pop(s).as.d;
-			auto s2 = pop(s).as.d;
-			s.emplace((int64_t)(s1 <= s2));
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Dbl);
+
+			Value* val2 = stack_top(&s);
+			assert(val1->is == Value::Dbl);
+
+			val2->as.d = val1->as.d <= val1->as.d;
+			value_destroy(val1);
+
 			break;
 		}
 		case BytecodeType_GREATER_EQUALS_S: {
-			auto s1 = pop(s).as.s;
-			auto s2 = pop(s).as.s;
-			s.emplace((int64_t)(strcmp(s1, s2) <= 0));
+			Value* s1 = stack_pop(&s);
+			assert(s1->is == Value::Str);
+
+			Value* s2 = stack_top(&s);
+			assert(s2->is == Value::Str);
+
+			Value* new_val;
+			value_create_i(&val, strcmp(s1->as.s, s2->as.s) <= 0);
+
+			value_destroy(s1);
+			value_destroy(s2);
+
+			stack_push(&s, new_val);
+
 			break;
 		}
 
 		case BytecodeType_EQUALS_I: {
-			auto s1 = pop(s).as.i;
-			auto s2 = pop(s).as.i;
-			s.emplace(int64_t(s1 == s2));
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Int);
+
+			Value* val2 = stack_top(&s);
+			assert(val1->is == Value::Int);
+
+			val2->as.i = val1->as.i == val1->as.i;
+			value_destroy(val1);
+
 			break;
 		}
 		case BytecodeType_EQUALS_F: {
-			auto s1 = pop(s).as.d;
-			auto s2 = pop(s).as.d;
-			s.emplace(int64_t(s1 == s2));
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Dbl);
+
+			Value* val2 = stack_top(&s);
+			assert(val1->is == Value::Dbl);
+
+			val2->as.d = val1->as.d == val1->as.d;
+			value_destroy(val1);
+
 			break;
 		}
 		case BytecodeType_EQUALS_S: {
-			auto s1 = pop(s).as.s;
-			auto s2 = pop(s).as.s;
-			s.emplace(int64_t(!strcmp(s1, s2)));
+			Value* s1 = stack_pop(&s);
+			assert(s1->is == Value::Str);
+
+			Value* s2 = stack_top(&s);
+			assert(s2->is == Value::Str);
+
+			Value* new_val;
+			value_create_i(&val, !strcmp(s1->as.s, s2->as.s));
+
+			value_destroy(s1);
+			value_destroy(s2);
+
+			stack_push(&s, new_val);
+
 			break;
 		}
 
 		case BytecodeType_NOT_EQUALS_I: {
-			auto s1 = pop(s).as.i;
-			auto s2 = pop(s).as.i;
-			s.emplace(int64_t(s1 != s2));
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Int);
+
+			Value* val2 = stack_top(&s);
+			assert(val1->is == Value::Int);
+
+			val2->as.i = val1->as.i != val1->as.i;
+			value_destroy(val1);
+
 			break;
 		}
 
 		case BytecodeType_AND: {
-			auto s1 = pop(s).as.i;
-			auto s2 = pop(s).as.i;
-			s.emplace(int64_t(s1 && s2));
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Int);
+
+			Value* val2 = stack_top(&s);
+			assert(val1->is == Value::Int);
+
+			val2->as.i = val1->as.i && val1->as.i;
+			value_destroy(val1);
+
 			break;
 		}
 		case BytecodeType_OR: {
-			auto s1 = pop(s).as.i;
-			auto s2 = pop(s).as.i;
-			s.emplace(int64_t(s1 || s2));
+			Value* val1 = stack_pop(&s);
+			assert(val1->is == Value::Int);
+
+			Value* val2 = stack_top(&s);
+			assert(val1->is == Value::Int);
+
+			val2->as.i = val1->as.i || val1->as.i;
+			value_destroy(val1);
+
 			break;
 		}
 
@@ -327,9 +538,10 @@ Value interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes)
 			break;
 
 		case BytecodeType_RETURN:
-			if (s.empty())
-				return std::optional<intpr::Value>(std::nullopt);
-			return pop(s);
+			if (stack_is_empty(&s))
+				return NULL;
+
+			return stack_pop(&s);
 
 		case BytecodeType_CALL: {
 			int64_t id = pop(s).as.i;
@@ -395,7 +607,7 @@ Value interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes)
 		}
 	}
 
-	return std::nullopt;
+	return NULL;
 }
 
 double get_float(bytecodes_t::const_iterator& it)

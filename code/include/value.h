@@ -30,12 +30,12 @@ typedef struct {
 	size_t len;
 } Value;
 
-void create_value(Value* val, int64_t i);
-void create_value(Value* val, uint64_t ui);
-void create_value(Value* val, double d);
-int create_value(Value* val, char* s, size_t len);
-int create_value(Value* val, Value* a, size_t len);
-int create_value(Value* val, Value* other);
+void value_create_i(Value** _val, int64_t i);
+void value_create_ui(Value** _val, uint64_t ui);
+void value_create_d(Value** _val, double d);
+int  value_create_s(Value** _val, char* s, size_t len);
+int  value_create_a(Value** _val, Value* a, size_t len);
+int  value_create_val(Value** _val, Value* other);
 
-void destroy_value(Value* val);
+void value_destroy(Value* val);
 

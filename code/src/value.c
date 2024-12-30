@@ -4,34 +4,48 @@
 #include <string.h>
 #include <assert.h>
 
-void create_value(Value* val, int64_t i)
+void value_create_i(Value** _val, int64_t i)
 {
-	assert(val);
+	assert(_val);
+
+	Value* val = (Value*)malloc(sizeof(Value));
 
 	val->is = Value::Int;
 	val->as.i = i;
+
+	*_val = val;
 }
 
-void create_value(Value* val, uint64_t ui)
+void value_create_ui(Value** _val, uint64_t ui)
 {
-	assert(val);
+	assert(_val);
+
+	Value* val = (Value*)malloc(sizeof(Value));
 
 	val->is = Value::uInt;
 	val->as.ui = ui;
+
+	*_val = val;
 }
 
-void create_value(Value* val, double d)
+void value_create_d(Value** _val, double d)
 {
-	assert(val);
+	assert(_val);
+
+	Value* val = (Value*)malloc(sizeof(Value));
 
 	val->is = Value::Dbl;
 	val->as.d = d;
+
+	*_val = val;
 }
 
-int create_value(Value* val, char* s, size_t len)
+int value_create_s(Value** _val, char* s, size_t len)
 {
-	assert(val);
+	assert(_val);
 	assert(s);
+
+	Value* val = (Value*)malloc(sizeof(Value));
 
 	val->is = Value::Str;
 
@@ -43,12 +57,16 @@ int create_value(Value* val, char* s, size_t len)
 	val->as.s[len] = '\0';
 
 	val->len = len;
+
+	*_val = val;
 }
 
-int create_value(Value* val, Value* a, size_t len)
+int value_create_a(Value** _val, Value* a, size_t len)
 {
-	assert(val);
+	assert(_val);
 	assert(a);
+
+	Value* val = (Value*)malloc(sizeof(Value));
 
 	val->is = Value::Arr;
 
@@ -57,39 +75,41 @@ int create_value(Value* val, Value* a, size_t len)
 		return -1;
 
 	memcpy(val->as.a, a, len * sizeof(Value));
+
+	*_val = val;
 }
 
-int create_value(Value* val, Value* other)
+int value_create_val(Value** _val, Value* other)
 {
-	assert(val);
+	assert(_val);
 	assert(other);
 
 	if (other->is == Value::Int)
 	{
-		create_value(val, other->as.i);
+		create_value(_val, other->as.i);
 		return 0;
 	}
 	else if (other->is == Value::uInt)
 	{
-		create_value(val, other->as.ui);
+		create_value(_val, other->as.ui);
 		return 0;
 	}
 	else if (other->is == Value::Dbl)
 	{
-		create_value(val, other->as.d);
+		create_value(_val, other->as.d);
 		return 0;
 	}
 	else if (other->is == Value::Str)
 	{
-		return create_value(val, other->as.s, other->len);
+		return create_value(_val, other->as.s, other->len);
 	}
 	else if (other->is == Value::Arr)
 	{
-		return create_value(val, other->as.a, other->len);
+		return create_value(_val, other->as.a, other->len);
 	}
 }
 
-void destroy_value(Value* val)
+void value_destroy(Value* val)
 {
 	assert(val);
 
@@ -107,4 +127,6 @@ void destroy_value(Value* val)
 		free(val->as.a);
 		val->as.a = NULL;
 	}
+
+	free(val);
 }
