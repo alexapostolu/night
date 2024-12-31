@@ -2,10 +2,11 @@
 
 #include "statement_scope.hpp"
 #include "scope_check.hpp"
-#include "bytecode.hpp"
 #include "type.hpp"
 #include "error.hpp"
 #include "debug.hpp"
+
+#include "bytecode.h"
 
 #include <optional>
 #include <memory>

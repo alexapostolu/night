@@ -24,9 +24,7 @@
  * bytecodes_t is a forward list and not a vector.
  * 
  * The main operations are appending/inserting other bytecode containers, and
- * list has a better time complexity for that operation than vector. (I'm actually
- * not sure I think it's implementation specific, but from what I learned in my
- * data structures coding class is that list is better for these operations)
+ * list has a better time complexity for that operation than vector.
  */
 using bytecode_t = uint8_t;
 using bytecodes_t = std::list<bytecode_t>;
@@ -136,20 +134,20 @@ enum : bytecode_t {
 
 /**
  * @brief Helper function to convert an integer into bytecodes_t.
- * 
+ *
  * @param uint64 The integer to convert
  * @param size Used by conditionals and loops to cast a small int into a
  *   specified larger size for their jump bytecodes.
- * 
+ *
  * @return The bytecodes representing the integer.
  */
 bytecodes_t int_to_bytecodes(uint64_t uint64, int size = -1);
 
 namespace night {
 
-/**
- * @brief Bytecode type to string. Used in error messages and debugging.
- */
-std::string to_str(bytecode_t type);
+	/**
+	 * @brief Bytecode type to string. Used in error messages and debugging.
+	 */
+	std::string to_str(bytecode_t type);
 
 }

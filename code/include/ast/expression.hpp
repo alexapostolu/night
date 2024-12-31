@@ -1,9 +1,10 @@
 #pragma once
 
 #include "statement_scope.hpp"
-#include "bytecode.hpp"
 #include "type.hpp"
 #include "error.hpp"
+
+#include "bytecode.h"
 
 #include <memory>
 #include <variant>

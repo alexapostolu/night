@@ -2,7 +2,7 @@
 
 #include "statement_scope.hpp"
 #include "expression.hpp"
-#include "bytecode.hpp"
+#include "bytecode.h"
 #include "type.hpp"
 #include "error.hpp"
 
