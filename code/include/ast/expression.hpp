@@ -2,6 +2,7 @@
 
 #include "statement_scope.hpp"
 #include "type.hpp"
+#include "util.hpp"
 #include "error.hpp"
 
 #include "bytecode.h"
@@ -78,7 +79,7 @@ public:
 		StatementScope const& scope
 	) = 0;
 	
-	virtual bytecodes_t generate_codes() const = 0;
+	virtual bytes_t generate_codes() const = 0;
 
 protected:
 	constexpr static int single_precedence = 1000;
@@ -114,13 +115,13 @@ public:
 	[[nodiscard]]
 	expr_p optimize(StatementScope const& scope) override;
 	
-	bytecodes_t generate_codes() const;
+	bytes_t generate_codes() const;
 
 private:
 	UnaryOpType op_type;
 	expr::expr_p expr;
 
-	std::optional<bytecode_t> op_code;
+	std::optional<byte_t> op_code;
 };
 
 
@@ -152,14 +153,14 @@ public:
 
 	std::optional<Type> type_check(StatementScope& scope) noexcept override;
 	expr_p optimize(StatementScope const& scope) override;
-	bytecodes_t generate_codes() const override;
+	bytes_t generate_codes() const override;
 
 private:
 	BinaryOpType op_type;
 	expr::expr_p lhs, rhs;
 
-	std::optional<bytecode_t> cast_lhs, cast_rhs;
-	bytecode_t op_code;
+	std::optional<byte_t> cast_lhs, cast_rhs;
+	byte_t op_code;
 };
 
 
@@ -169,7 +170,7 @@ public:
 	Variable(
 		Location const& _loc,
 		std::string const& _name,
-		std::optional<bytecode_t> const& _id = std::nullopt);
+		std::optional<byte_t> const& _id = std::nullopt);
 
 	void insert_node(
 		expr_p node,
@@ -180,12 +181,12 @@ public:
 	[[nodiscard]]
 	expr_p optimize(StatementScope const& scope) override;
 	
-	bytecodes_t generate_codes() const override;
+	bytes_t generate_codes() const override;
 
 private:
 	std::string name;
 
-	std::optional<bytecode_t> id;
+	std::optional<byte_t> id;
 };
 
 
@@ -197,7 +198,7 @@ public:
 		std::vector<expr_p> const& _elements,
 		bool _is_str_,
 		std::optional<Type> const& _type_convert = std::nullopt,
-		std::vector<std::optional<bytecode_t>> const& _type_conversion = {});
+		std::vector<std::optional<byte_t>> const& _type_conversion = {});
 
 	void insert_node(
 		expr_p node,
@@ -208,7 +209,7 @@ public:
 	[[nodiscard]]
 	expr_p optimize(StatementScope const& scope) override;
 
-	bytecodes_t generate_codes() const override;
+	bytes_t generate_codes() const override;
 
 	bool is_str() const;
 
@@ -221,7 +222,7 @@ public:
 	bool is_str_;
 
 	std::optional<Type> type_convert;
-	std::vector<std::optional<bytecode_t>> type_conversion;
+	std::vector<std::optional<byte_t>> type_conversion;
 };
 
 
@@ -248,7 +249,7 @@ public:
 		StatementScope const& scope
 	) override;
 
-	bytecodes_t generate_codes() const override;
+	bytes_t generate_codes() const override;
 
 public:
 	Type::Primitive type;
@@ -276,7 +277,7 @@ public:
 	expr_p optimize(
 		StatementScope const& scope) override;
 	
-	bytecodes_t generate_codes() const override;
+	bytes_t generate_codes() const override;
 
 	bool is_true() const;
 

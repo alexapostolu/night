@@ -58,7 +58,7 @@ public:
 	 */
 	virtual bool optimize(StatementScope& global_scope) = 0;
 	
-	virtual bytecodes_t generate_codes() const = 0;
+	virtual bytes_t generate_codes() const = 0;
 
 protected:
 	Location loc;
@@ -83,7 +83,7 @@ public:
 
 	void check(StatementScope& scope) override;
 	bool optimize(StatementScope& scope) override;
-	bytecodes_t generate_codes() const override;
+	bytes_t generate_codes() const override;
 
 public:
 	std::string name;
@@ -93,7 +93,7 @@ private:
 	Type var_type;
 	expr::expr_p expr;
 
-	std::optional<bytecode_t> id;
+	std::optional<byte_t> id;
 	std::optional<Type> expr_type;
 };
 
@@ -117,7 +117,7 @@ public:
 
 	void check(StatementScope& scope) override;
 	bool optimize(StatementScope& scope) override;
-	bytecodes_t generate_codes() const override;
+	bytes_t generate_codes() const override;
 
 	// Precondition:
 	//    'arr' is not null
@@ -136,7 +136,7 @@ private:
 	std::vector<int> arr_sizes_numerics;
 	expr::expr_p expr;
 
-	std::optional<bytecode_t> id;
+	std::optional<byte_t> id;
 	std::optional<Type> expr_type;
 
 	// true
@@ -159,7 +159,7 @@ public:
 
 	void check(StatementScope& scope) override;
 	bool optimize(StatementScope& scope) override;
-	bytecodes_t generate_codes() const override;
+	bytes_t generate_codes() const override;
 
 private:
 	std::string var_name;
@@ -167,7 +167,7 @@ private:
 	expr::expr_p expr;
 
 	std::optional<Type> assign_type;
-	std::optional<bytecode_t> id;
+	std::optional<byte_t> id;
 };
 
 
@@ -190,7 +190,7 @@ public:
 	 *   INT8			8 bit integer value for JUMP
 	 *   JUMP			jumps to first line after conditional chain
 	 */
-	bytecodes_t generate_codes() const override;
+	bytes_t generate_codes() const override;
 
 private:
 	// If a conditional epxression is nullptr, then it represents and else
@@ -219,7 +219,7 @@ public:
 	 *   INT8			8 bit integer value for JUMP_N
 	 *   JUMP_N			jumps to first line of CONDITION
 	 */
-	bytecodes_t generate_codes() const override;
+	bytes_t generate_codes() const override;
 
 private:
 	expr::expr_p cond_expr;
@@ -241,7 +241,7 @@ public:
 
 	void check(StatementScope& scope) override;
 	bool optimize(StatementScope& scope) override;
-	bytecodes_t generate_codes() const override;
+	bytes_t generate_codes() const override;
 
 private:
 	VariableInit var_init;
@@ -265,7 +265,7 @@ public:
 
 	void check(StatementScope& scope) override;
 	bool optimize(StatementScope& scope) override;
-	bytecodes_t generate_codes() const override;
+	bytes_t generate_codes() const override;
 
 private:
 	std::string name;
@@ -274,8 +274,8 @@ private:
 	std::optional<Type> rtn_type;
 	std::vector<stmt_p> block;
 
-	bytecode_t id;
-	std::vector<bytecode_t> param_ids;
+	byte_t id;
+	std::vector<byte_t> param_ids;
 };
 
 
@@ -289,7 +289,7 @@ public:
 
 	void check(StatementScope& scope) override;
 	bool optimize(StatementScope& scope) override;
-	bytecodes_t generate_codes() const override;
+	bytes_t generate_codes() const override;
 
 private:
 	expr::expr_p expr;
@@ -309,7 +309,7 @@ public:
 
 	void check(StatementScope& scope) override;
 	bool optimize(StatementScope& scope) override;
-	bytecodes_t generate_codes() const override;
+	bytes_t generate_codes() const override;
 
 private:
 	std::string var_name;
@@ -317,7 +317,7 @@ private:
 	std::vector<expr::expr_p> subscripts;
 	expr::expr_p assign_expr;
 
-	std::optional<bytecode_t> id;
+	std::optional<byte_t> id;
 	std::optional<Type> assign_type;
 };
 
@@ -331,7 +331,7 @@ public:
 		Location const& _loc,
 		std::string const& _name,
 		std::vector<expr::expr_p> const& _arg_exprs,
-		std::optional<bytecode_t> const& _id = std::nullopt
+		std::optional<byte_t> const& _id = std::nullopt
 	);
 
 	void insert_node(
@@ -343,13 +343,13 @@ public:
 	bool optimize(StatementScope& scope) override;
 	[[nodiscard]]
 	expr_p optimize(StatementScope const& scope) override;
-	bytecodes_t generate_codes() const override;
+	bytes_t generate_codes() const override;
 
 private:
 	std::string name;
 	std::vector<expr::expr_p> arg_exprs;
 
-	std::optional<bytecode_t> id;
+	std::optional<byte_t> id;
 
 	bool is_expr;
 };

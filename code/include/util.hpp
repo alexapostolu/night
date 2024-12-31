@@ -1,7 +1,12 @@
 #pragma once
 
-#include <cassert>
+#include "bytecode.h"
+
+#include <list>
 #include <iterator>
+#include <assert.h>
+
+using bytes_t = std::list<byte_t>;
 
 namespace night {
 
@@ -16,19 +21,26 @@ void container_insert(ContainerDest& dest, ContainerSrc src, std::size_t positio
 	dest.insert(it, std::begin(src), std::end(src));
 }
 
-}
+} // night::
 
 /*
  * Converts any integral type into a sequence of bytes (bytecodes) using little
  * endian format. The sequence of bytes starts with the type of the integer in
  * Bytecode.
+ * 
+ * For specifying a specific size for the value, which is useful in jump
+ * statements, call the function with an explicit template type,
+ * @code
+ *   int_to_bytes(10);			 // automatically choosing size of 1 byte
+ *   int_to_bytes<uint64_t>(10); // manually choosing size of 8 bytes
+ * @endcode
  */
 template <typename T>
-bytecodes_t int_to_bytes(T value)
+bytes_t int_to_bytes(T value)
 {
 	static_assert(std::is_integral<T>::value);
 
-	bytecodes_t bytes;
+	bytes_t bytes;
 
 	switch (sizeof T) {
 		case 1: bytes.push_back(BytecodeType_S_INT1); break;
@@ -38,7 +50,7 @@ bytecodes_t int_to_bytes(T value)
 		default: throw debug::unhandled_case(sizeof T);
 	}
 
-	for (size_t i = 0; i < sizeof T; ++i)
+	for (std::size_t i = 0; i < sizeof T; ++i)
 	{
 		bytes.push_back(value & 0xFF);
 		value >>= 8;

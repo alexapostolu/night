@@ -1,7 +1,5 @@
 #include "ast/statement.hpp"
 
-#include "bytecode.hpp"
-#include "interpreter_scope.hpp"
 #include "statement_scope.hpp"
 #include "scope_check.hpp"
 #include "type.hpp"
@@ -66,13 +64,13 @@ bool VariableInit::optimize(StatementScope& scope)
 	return true;
 }
 
-bytecodes_t VariableInit::generate_codes() const
+bytes_t VariableInit::generate_codes() const
 {
 	assert(id.has_value());
 
 	// Populate expression array
 
-	bytecodes_t codes;
+	bytes_t codes;
 
 	if (expr)
 		codes = expr->generate_codes();
@@ -84,7 +82,7 @@ bytecodes_t VariableInit::generate_codes() const
 	else if (var_type != Type::FLOAT && expr_type == Type::FLOAT)
 		codes.push_back(BytecodeType_F2I);
 
-	auto id_codes = int_to_bytecodes(*id);
+	auto id_codes = int_to_bytes(*id);
 	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 
 	codes.push_back(BytecodeType_STORE);
@@ -183,14 +181,14 @@ bool ArrayInitialization::optimize(StatementScope& scope)
 	return true;
 }
 
-bytecodes_t ArrayInitialization::generate_codes() const
+bytes_t ArrayInitialization::generate_codes() const
 {
 	assert(id.has_value());
 	assert(expr);
 
-	bytecodes_t codes = expr->generate_codes();
+	bytes_t codes = expr->generate_codes();
 
-	auto id_codes = int_to_bytecodes(*id);
+	auto id_codes = int_to_bytes(*id);
 	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 
 	codes.push_back(BytecodeType_STORE);
@@ -270,13 +268,13 @@ bool VariableAssign::optimize(StatementScope& scope)
 	return true;
 }
 
-bytecodes_t VariableAssign::generate_codes() const
+bytes_t VariableAssign::generate_codes() const
 {
-	bytecodes_t codes;
+	bytes_t codes;
 
 	if (assign_op != "=")
 	{
-		auto id_codes = int_to_bytecodes(*id);
+		auto id_codes = int_to_bytes(*id);
 		codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 		codes.push_back(BytecodeType_LOAD);
 
@@ -322,7 +320,7 @@ bytecodes_t VariableAssign::generate_codes() const
 		codes.insert(std::end(codes), std::begin(expr_codes), std::end(expr_codes));
 	}
 
-	auto id_codes = int_to_bytecodes(*id);
+	auto id_codes = int_to_bytes(*id);
 	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 
 	codes.push_back(BytecodeType_STORE);
@@ -386,9 +384,9 @@ bool Conditional::optimize(StatementScope& scope)
 	return conditionals.size();
 }
 
-bytecodes_t Conditional::generate_codes() const
+bytes_t Conditional::generate_codes() const
 {
-	bytecodes_t codes;
+	bytes_t codes;
 	std::vector<int> jump_offsets;
 
 	for (auto const& [cond_expr, stmts] : conditionals)
@@ -426,7 +424,7 @@ bytecodes_t Conditional::generate_codes() const
 
 		// Insert jump if false value before JUMP_IF_FALSE, adding on 10 space for the
 		// 10 codes to represent JUMP (1) and its value (9)
-		auto jump_if_false_codes = int_to_bytecodes(stmts_codes_size + 10);
+		auto jump_if_false_codes = int_to_bytes(stmts_codes_size + 10);
 		night::container_insert(codes, jump_if_false_codes, jump_if_false_index);
 
 		// The value for JUMP is added last after the number of codes to jump back is
@@ -437,7 +435,7 @@ bytecodes_t Conditional::generate_codes() const
 
 	for (int i = (int)jump_offsets.size() - 1; i >= 0; --i)
 	{
-		auto offset_codes = int_to_bytecodes(codes.size() - jump_offsets[i] - 1, 8);
+		auto offset_codes = int_to_bytes<uint64_t>(codes.size() - jump_offsets[i] - 1);
 		night::container_insert(codes, offset_codes, jump_offsets[i]);
 	}
 
@@ -478,7 +476,7 @@ bool While::optimize(StatementScope& scope)
 	return !lit || lit->is_true();
 }
 
-bytecodes_t While::generate_codes() const
+bytes_t While::generate_codes() const
 {
 	auto codes = cond_expr->generate_codes();
 
@@ -500,12 +498,12 @@ bytecodes_t While::generate_codes() const
 
 	// Insert jump if false value before JUMP_IF_FALSE, adding on 10 space for the
 	// 10 codes to represent JUMP_N (1) and its value (9)
-	auto jump_if_false_codes = int_to_bytecodes(stmt_codes_size + 10, 8);
+	auto jump_if_false_codes = int_to_bytes<uint64_t>(stmt_codes_size + 10);
 	night::container_insert(codes, jump_if_false_codes, jump_if_false_index);
 
 	// Insert jump negative value and JUMP_N
 	// Set jump negative value to be 8 bit
-	auto jump_n_codes = int_to_bytecodes(codes.size() + 9, 8);
+	auto jump_n_codes = int_to_bytes<uint64_t>(codes.size() + 9);
 	codes.insert(std::end(codes), std::begin(jump_n_codes), std::end(jump_n_codes));
 	codes.push_back(BytecodeType_JUMP_N);
 
@@ -536,7 +534,7 @@ bool For::optimize(StatementScope& scope)
 	return true;
 }
 
-bytecodes_t For::generate_codes() const
+bytes_t For::generate_codes() const
 {
 	auto codes = var_init.generate_codes();
 
@@ -598,7 +596,7 @@ bool Function::optimize(StatementScope& scope)
 	return true;
 }
 
-bytecodes_t Function::generate_codes() const
+bytes_t Function::generate_codes() const
 {
 	InterpreterScope::funcs[id] = {};
 
@@ -653,7 +651,7 @@ bool Return::optimize(StatementScope& scope)
 	return true;
 }
 
-bytecodes_t Return::generate_codes() const
+bytes_t Return::generate_codes() const
 {
 	auto codes = expr->generate_codes();
 
@@ -700,12 +698,12 @@ bool ArrayMethod::optimize(StatementScope& scope)
 	return true;
 }
 
-bytecodes_t ArrayMethod::generate_codes() const
+bytes_t ArrayMethod::generate_codes() const
 {
 	assert(id.has_value());
 	assert(assign_expr);
 
-	bytecodes_t codes;
+	bytes_t codes;
 
 	for (int i = (int)subscripts.size() - 1; i >= 0; --i)
 	{
@@ -726,10 +724,10 @@ bytecodes_t ArrayMethod::generate_codes() const
 		}
 
 
-		auto num = int_to_bytecodes(subscripts.size());
+		auto num = int_to_bytes(subscripts.size());
 		codes.insert(std::end(codes), std::begin(num), std::end(num));
 
-		auto id_codes = int_to_bytecodes(*id);
+		auto id_codes = int_to_bytes(*id);
 		codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 		codes.push_back(BytecodeType_LOAD_ELEM);
 
@@ -775,7 +773,7 @@ bytecodes_t ArrayMethod::generate_codes() const
 		codes.insert(std::end(codes), std::begin(assign_codes), std::end(assign_codes));
 	}
 
-	auto index_codes = int_to_bytecodes(*id);
+	auto index_codes = int_to_bytes(*id);
 	codes.insert(std::end(codes), std::begin(index_codes), std::end(index_codes));
 
 	if (assign_type.has_value() && assign_type->prim == Type::Primitive::CHAR && assign_type->dim == 0)
@@ -791,7 +789,7 @@ expr::FunctionCall::FunctionCall(
 	Location const& _loc,
 	std::string const& _name,
 	std::vector<expr::expr_p> const& _arg_exprs,
-	std::optional<bytecode_t> const& _id)
+	std::optional<byte_t> const& _id)
 	: Statement(_loc), Expression(_loc, Expression::single_precedence), name(_name), arg_exprs(_arg_exprs), id(_id), is_expr(true) {}
 
 void expr::FunctionCall::insert_node(
@@ -896,11 +894,11 @@ expr::expr_p expr::FunctionCall::optimize(StatementScope const& scope)
 	return std::make_shared<FunctionCall>(Expression::loc, name, arg_exprs, id);
 }
 
-bytecodes_t expr::FunctionCall::generate_codes() const
+bytes_t expr::FunctionCall::generate_codes() const
 {
 	assert(id.has_value());
 
-	bytecodes_t codes;
+	bytes_t codes;
 
 	for (auto const& param : arg_exprs)
 	{
@@ -910,7 +908,7 @@ bytecodes_t expr::FunctionCall::generate_codes() const
 		codes.insert(std::end(codes), std::begin(param_codes), std::end(param_codes));
 	}
 
-	auto id_codes = int_to_bytecodes(*id);
+	auto id_codes = int_to_bytes(*id);
 	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 	codes.push_back(BytecodeType_CALL);
 

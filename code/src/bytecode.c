@@ -1,46 +1,8 @@
 #include "bytecode.h"
 
-#include <limits>
-#include <string>
-
-bytecodes_t int_to_bytecodes(uint64_t uint64, int size)
+char const* byte_to_str(byte_t byte)
 {
-	bytecodes_t codes;
-	int count = 0;
-
-	if ((size == -1 || size == 1) && uint64 <= std::numeric_limits<uint8_t>::max())
-	{
-		codes.push_back(BytecodeType_S_INT1);
-		count = 1;
-	}
-	else if ((size == -1 || size == 2) && uint64 <= std::numeric_limits<uint16_t>::max())
-	{
-		codes.push_back(BytecodeType_S_INT2);
-		count = 2;
-	}
-	else if ((size == -1 || size == 4) && uint64 <= std::numeric_limits<uint32_t>::max())
-	{
-		codes.push_back(BytecodeType_S_INT4);
-		count = 4;
-	}
-	else if ((size == -1 || size == 8) && uint64 <= std::numeric_limits<uint64_t>::max())
-	{
-		codes.push_back(BytecodeType_S_INT8);
-		count = 8;
-	}
-
-	while (count--)
-	{
-		codes.push_back(uint64 & 0xFF);
-		uint64 >>= 8;
-	}
-
-	return codes;
-}
-
-std::string night::to_str(bytecode_t type)
-{
-	switch (type)
+	switch (byte)
 	{
 	case BytecodeType_S_INT1: return "S_INT1";
 	case BytecodeType_S_INT2: return "S_INT2";

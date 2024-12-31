@@ -1,8 +1,6 @@
 #pragma once
 
 #include <stdint.h>
-#include <list>
-#include <string>
 
 /**
  * @brief Data structures representing bytecodes and how they are stored.
@@ -26,87 +24,45 @@
  * The main operations are appending/inserting other bytecode containers, and
  * list has a better time complexity for that operation than vector.
  */
-using bytecode_t = uint8_t;
-using bytecodes_t = std::list<bytecode_t>;
+typedef uint8_t byte_t;
 
 /**
- * @brief Enumeration of all bytecode types in Night
- * 
- * The comments on some bytecode types represent how it is meant to be used, or
- * in other words, how it should appear on the Interpreter's stack. The comments
- * represent a stack growing from left to right.
- * 
- * In the comments, the term "numeric" represents an expansion of an integer,
- * float or a numeric expression. For example "numeric" could represent
- * "S_INT2 uint8 uint8" or "S_INT1 uint8 S_INT1 uint8 ADD".
- * 
- * **Design Decision #1**
- * BytecodeType is simply an "enum" and not an "enum class".
- * 
- * Stroustrup did state three problems with enums,
- *   https://www.stroustrup.com/C++11FAQ.html#enum
- *   1. Conventional enums implicitly convert to int, causing errors when
- *         someone does not want an enumeration to act as an integer.
- *   2. Conventional enums export their enumerators to the surrounding scope,
- *        causing name clashes.
- *   3. The underlying type of an enum cannot be specified, causing confusion,
- *        compatibility problems, and makes forward declaration impossible.
- * 
- * But these problems are irrelevant to "enum class BytecodeType",
- * 
- * #1 is irrelevant because BytecodeType is supposed to be implicitly
- * converted to bytecode_t by design. #2 is solved because BytecodeType
- * prefixes all types with BytecodeType_. And #3 is solved because
- * BytecodeType specifies the underlying type as bytecode_t (C++11 feature).
- * 
- * Now, not only does BytecodeType render the benefits of enum classes
- * unnecessary, but surpasses them by being shorter and looking oh so much nicer,
- * @code
- *   codes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE); // "enum class", wtf is this
- *   codes.push_back(BytecodeType_JUMP_IF_FALSE);              // "enum", much cleaner
- * @endcode
- * 
- * **Design Decision #2**
- * There exists multiple integer sizes, not just INT8 and UINT8.
- * 
- * In the interpreter, all ints are either stores as an 8 bit signed or unsigned
- * int, however, we still differentiate them here in bytecode to reduce the total
- * number of bytecodes present.
+ * @brief Enumeration of all bytecode types in Night.
  */
-enum : bytecode_t {
-	BytecodeType_S_INT1,	// S_INT1, uint8
-	BytecodeType_S_INT2,	// S_INT2, uint8, uint8
-	BytecodeType_S_INT4,	// S_INT4, uint8, uint8, uint8
-	BytecodeType_S_INT8,	// S_INT8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8
-	BytecodeType_U_INT1,	// U_INT1, uint8
-	BytecodeType_U_INT2,	// U_INT2, uint8, uint8
-	BytecodeType_U_INT4,	// U_INT4, uint8, uint8, uint8
-	BytecodeType_U_INT8,	// U_INT8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8
-	BytecodeType_FLOAT4,	// FLOAT4, uint8, uint8, uint8, uint8
-	BytecodeType_FLOAT8,	// FLOAT8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8
+enum {
+	BytecodeType_S_INT1,
+	BytecodeType_S_INT2,
+	BytecodeType_S_INT4,
+	BytecodeType_S_INT8,
+	BytecodeType_U_INT1,
+	BytecodeType_U_INT2,
+	BytecodeType_U_INT4,
+	BytecodeType_U_INT8,
+	BytecodeType_FLOAT4,
+	BytecodeType_FLOAT8,
 
-	BytecodeType_NEGATIVE_I, BytecodeType_NEGATIVE_F,	// numeric, NEGATIVE 
-	BytecodeType_NOT_I, BytecodeType_NOT_F,				// numeric, NOT
+	BytecodeType_NEGATIVE_I, BytecodeType_NEGATIVE_F,
+	BytecodeType_NOT_I, BytecodeType_NOT_F,
 
-	BytecodeType_ADD_I, BytecodeType_ADD_F, BytecodeType_ADD_S,	// numeric, numeric, ADD
-	BytecodeType_SUB_I, BytecodeType_SUB_F,						// numeric, numeric, SUB
-	BytecodeType_MULT_I, BytecodeType_MULT_F,					// numeric, numeric, MULT
-	BytecodeType_DIV_I, BytecodeType_DIV_F,						// numeric(non-zero), numeric, DIV
-	BytecodeType_MOD_I,											// numeric(int), numeric(int), MOD
+	BytecodeType_ADD_I, BytecodeType_ADD_F, BytecodeType_ADD_S,
+	BytecodeType_SUB_I, BytecodeType_SUB_F,
+	BytecodeType_MULT_I, BytecodeType_MULT_F,
+	BytecodeType_DIV_I, BytecodeType_DIV_F,
+	BytecodeType_MOD_I,
 
-	BytecodeType_LESSER_I, BytecodeType_LESSER_F, BytecodeType_LESSER_S,							// numeric(left), numeric(right), LESSER
-	BytecodeType_GREATER_I, BytecodeType_GREATER_F, BytecodeType_GREATER_S,							// numeric(left), numeric(right), GREATER
-	BytecodeType_LESSER_EQUALS_I, BytecodeType_LESSER_EQUALS_F, BytecodeType_LESSER_EQUALS_S,		// numeric(left), numeric(right), LESSER_EQUALS
-	BytecodeType_GREATER_EQUALS_I, BytecodeType_GREATER_EQUALS_F, BytecodeType_GREATER_EQUALS_S,	// numeric(left), numeric(right), GREATER_EQUALS
+	BytecodeType_LESSER_I, BytecodeType_LESSER_F, BytecodeType_LESSER_S,
+	BytecodeType_GREATER_I, BytecodeType_GREATER_F, BytecodeType_GREATER_S,
+	BytecodeType_LESSER_EQUALS_I, BytecodeType_LESSER_EQUALS_F, BytecodeType_LESSER_EQUALS_S,
+	BytecodeType_GREATER_EQUALS_I, BytecodeType_GREATER_EQUALS_F, BytecodeType_GREATER_EQUALS_S,
 	
-	BytecodeType_EQUALS_I, BytecodeType_EQUALS_F, BytecodeType_EQUALS_S,				// numeric(left), numeric(right), EQUALS
-	BytecodeType_NOT_EQUALS_I, BytecodeType_NOT_EQUALS_F, BytecodeType_NOT_EQUALS_S,	// numeric(left), numeric(right), NOT_EQUALS
+	BytecodeType_EQUALS_I, BytecodeType_EQUALS_F, BytecodeType_EQUALS_S,
+	BytecodeType_NOT_EQUALS_I, BytecodeType_NOT_EQUALS_F, BytecodeType_NOT_EQUALS_S,
 	
-	BytecodeType_AND,	// numeric, numeric, AND
-	BytecodeType_OR,	// numeric, numeric, OR
+	BytecodeType_AND,
+	BytecodeType_OR,
 
-	BytecodeType_INDEX_S,	// numeric(string), INDEX_S
-	BytecodeType_INDEX_A,	// numeric(array), INDEX_A
+	BytecodeType_INDEX_S,
+	BytecodeType_INDEX_A,
 
 	BytecodeType_I2F, BytecodeType_F2I,
 	BytecodeType_F2B,
@@ -132,22 +88,7 @@ enum : bytecode_t {
 	BytecodeType_CALL
 };
 
-/**
- * @brief Helper function to convert an integer into bytecodes_t.
- *
- * @param uint64 The integer to convert
- * @param size Used by conditionals and loops to cast a small int into a
- *   specified larger size for their jump bytecodes.
- *
- * @return The bytecodes representing the integer.
+/*
+ * Returns the corresponding bytecode as a string literal.
  */
-bytecodes_t int_to_bytecodes(uint64_t uint64, int size = -1);
-
-namespace night {
-
-	/**
-	 * @brief Bytecode type to string. Used in error messages and debugging.
-	 */
-	std::string to_str(bytecode_t type);
-
-}
+char const* byte_to_str(byte_t byte);

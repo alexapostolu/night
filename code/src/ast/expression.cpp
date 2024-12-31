@@ -5,8 +5,7 @@
 #include "type.hpp"
 #include "error.hpp"
 #include "debug.hpp"
-
-#include "bytecode.h"
+#include "util.hpp"
 
 #include <optional>
 #include <memory>
@@ -148,10 +147,10 @@ expr::expr_p expr::UnaryOp::optimize(
 	return num;
 }
 
-bytecodes_t expr::UnaryOp::generate_codes() const
+bytes_t expr::UnaryOp::generate_codes() const
 {
-	bytecodes_t codes = expr->generate_codes();
-	codes.push_back((bytecode_t)*op_code);
+	bytes_t codes = expr->generate_codes();
+	codes.push_back((byte_t)*op_code);
 
 	return codes;
 }
@@ -222,7 +221,7 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 {
 	// Operations where strings are supported are handled separately in the
 	// switch statement.
-	std::unordered_map<BinaryOpType, std::tuple<bytecode_t, bytecode_t, std::optional<bytecode_t>>> m{
+	std::unordered_map<BinaryOpType, std::tuple<byte_t, byte_t, std::optional<byte_t>>> m{
 		{ BinaryOpType::ADD,			std::make_tuple(BytecodeType_ADD_I,			BytecodeType_ADD_F,			BytecodeType_ADD_S) },
 		{ BinaryOpType::SUB,			std::make_tuple(BytecodeType_SUB_I,			BytecodeType_SUB_F,			std::nullopt) },
 		{ BinaryOpType::MULT,			std::make_tuple(BytecodeType_MULT_I,			BytecodeType_MULT_F,			std::nullopt) },
@@ -461,23 +460,23 @@ expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
 	return std::make_shared<BinaryOp>(*this);
 }
 
-bytecodes_t expr::BinaryOp::generate_codes() const
+bytes_t expr::BinaryOp::generate_codes() const
 {
-	bytecodes_t codes;
+	bytes_t codes;
 
 	auto codes_lhs = lhs->generate_codes();
 	codes.insert(std::end(codes), std::begin(codes_lhs), std::end(codes_lhs));
 
 	if (cast_lhs.has_value())
-		codes.push_back((bytecode_t)*cast_lhs);
+		codes.push_back((byte_t)*cast_lhs);
 	
 	auto codes_rhs = rhs->generate_codes();
 	codes.insert(std::end(codes), std::begin(codes_rhs), std::end(codes_rhs));
 
 	if (cast_rhs.has_value())
-		codes.push_back((bytecode_t)*cast_rhs);
+		codes.push_back((byte_t)*cast_rhs);
 
-	codes.push_back((bytecode_t)op_code);
+	codes.push_back((byte_t)op_code);
 
 	return codes;
 }
@@ -486,7 +485,7 @@ bytecodes_t expr::BinaryOp::generate_codes() const
 expr::Variable::Variable(
 	Location const& _loc,
 	std::string const& _name,
-	std::optional<bytecode_t> const& _id)
+	std::optional<byte_t> const& _id)
 	: Expression(_loc, Expression::single_precedence), name(_name), id(_id) {}
 
 void expr::Variable::insert_node(
@@ -513,12 +512,12 @@ expr::expr_p expr::Variable::optimize(StatementScope const& scope)
 	return std::make_shared<Variable>(loc, name, id);
 }
 
-bytecodes_t expr::Variable::generate_codes() const
+bytes_t expr::Variable::generate_codes() const
 {
 	assert(id.has_value());
 
-	auto codes = int_to_bytecodes(*id);
-	codes.push_back((bytecode_t)BytecodeType_LOAD);
+	auto codes = int_to_bytes(*id);
+	codes.push_back((byte_t)BytecodeType_LOAD);
 
 	return codes;
 }
@@ -529,7 +528,7 @@ expr::Array::Array(
 	std::vector<expr_p> const& _elements,
 	bool _is_str_,
 	std::optional<Type> const& _type_convert,
-	std::vector<std::optional<bytecode_t>> const& _type_conversion)
+	std::vector<std::optional<byte_t>> const& _type_conversion)
 	: Expression(_loc, Expression::single_precedence), elements(_elements), is_str_(_is_str_), type_convert(_type_convert), type_conversion(_type_conversion) {}
 
 void expr::Array::insert_node(
@@ -602,9 +601,9 @@ expr::expr_p expr::Array::optimize(StatementScope const& scope)
 	return std::make_shared<Array>(loc, elements, is_str_, type_convert, type_conversion);
 }
 
-bytecodes_t expr::Array::generate_codes() const
+bytes_t expr::Array::generate_codes() const
 {
-	bytecodes_t codes;
+	bytes_t codes;
 
 	// Generate codes for elements.
 
@@ -615,19 +614,19 @@ bytecodes_t expr::Array::generate_codes() const
 		auto elem_codes = elements[i]->generate_codes();
 
 		if (type_conversion[i].has_value())
-			elem_codes.push_back((bytecode_t)*type_conversion[i]);
+			elem_codes.push_back((byte_t)*type_conversion[i]);
 
 		codes.insert(std::begin(codes), std::begin(elem_codes), std::end(elem_codes));
 	}
 
 	// Generate codes for size.
-	auto size_codes = int_to_bytecodes((bytecode_t)elements.size());
+	auto size_codes = int_to_bytes((byte_t)elements.size());
 	codes.insert(std::end(codes), std::begin(size_codes), std::end(size_codes));
 
 	if (is_str())
-		codes.push_back((bytecode_t)BytecodeType_ALLOCATE_STR);
+		codes.push_back((byte_t)BytecodeType_ALLOCATE_STR);
 	else
-		codes.push_back((bytecode_t)BytecodeType_ALLOCATE_ARR);
+		codes.push_back((byte_t)BytecodeType_ALLOCATE_ARR);
 
 	return codes;
 }
@@ -671,9 +670,9 @@ expr::expr_p expr::Allocate::optimize(StatementScope const& scope)
 	return std::make_shared<Allocate>(loc, type, sizes);
 }
 
-bytecodes_t expr::Allocate::generate_codes() const
+bytes_t expr::Allocate::generate_codes() const
 {
-	bytecodes_t codes;
+	bytes_t codes;
 
 	for (auto const& size : sizes)
 	{
@@ -681,10 +680,10 @@ bytecodes_t expr::Allocate::generate_codes() const
 		codes.insert(std::end(codes), std::begin(size_codes), std::end(size_codes));
 	}
 
-	auto size_codes = int_to_bytecodes((bytecode_t)sizes.size());
+	auto size_codes = int_to_bytes((byte_t)sizes.size());
 	codes.insert(std::end(codes), std::begin(size_codes), std::end(size_codes));
 	
-	codes.push_back((bytecode_t)BytecodeType_ALLOCATE_ARR_AND_FILL);
+	codes.push_back((byte_t)BytecodeType_ALLOCATE_ARR_AND_FILL);
 
 	return codes;
 }
@@ -716,14 +715,14 @@ expr::expr_p expr::Numeric::optimize(StatementScope const& scope)
 	return std::make_shared<Numeric>(loc, type, val);
 }
 
-bytecodes_t expr::Numeric::generate_codes() const
+bytes_t expr::Numeric::generate_codes() const
 {
 	if (double const* dbl = std::get_if<double>(&val))
 	{
 		// Check if the value is within the range of a float
 		if (*dbl >= -std::numeric_limits<float>::max() && *dbl <= std::numeric_limits<float>::max())
 		{
-			bytecodes_t codes = { BytecodeType_FLOAT4 };
+			bytes_t codes = { BytecodeType_FLOAT4 };
 
 			uint8_t arr[sizeof(float)];
 			float f = (float)*dbl;
@@ -736,7 +735,7 @@ bytecodes_t expr::Numeric::generate_codes() const
 		}
 		else
 		{
-			bytecodes_t codes = { BytecodeType_FLOAT8 };
+			bytes_t codes = { BytecodeType_FLOAT8 };
 
 			uint8_t arr[sizeof(double)];
 			std::memcpy(arr, dbl, sizeof(double));
@@ -749,7 +748,7 @@ bytecodes_t expr::Numeric::generate_codes() const
 	}
 	else
 	{
-		return std::visit([](auto&& arg) { return int_to_bytecodes((uint64_t)arg); }, val);
+		return std::visit([](auto&& arg) { return int_to_bytes((uint64_t)arg); }, val);
 	}
 }
 
