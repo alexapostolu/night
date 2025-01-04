@@ -9,7 +9,11 @@
 
 #include <stdint.h>
 
-typedef struct {
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct Value {
 	enum {
 		Int,
 		uInt,
@@ -30,12 +34,15 @@ typedef struct {
 	size_t len;
 } Value;
 
-void value_create_i(Value** _val, int64_t i);
-void value_create_ui(Value** _val, uint64_t ui);
-void value_create_d(Value** _val, double d);
-int  value_create_s(Value** _val, char* s, size_t len);
-int  value_create_a(Value** _val, Value* a, size_t len);
-int  value_create_val(Value** _val, Value* other);
+void value_create_i(struct Value** _val, int64_t i);
+void value_create_ui(struct Value** _val, uint64_t ui);
+void value_create_d(struct Value** _val, double d);
+int  value_create_s(struct Value** _val, char* s, size_t len);
+int  value_create_a(struct Value** _val, struct Value* a, size_t len);
+int  value_create_val(struct Value** _val, struct Value* other);
 
-void value_destroy(Value* val);
+void value_destroy(struct Value* val);
 
+#ifdef __cplusplus
+}
+#endif

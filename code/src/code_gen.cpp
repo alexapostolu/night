@@ -1,12 +1,12 @@
 #include "code_gen.hpp"
-
 #include "ast/statement.hpp"
-#include "bytecode.hpp"
 
-bytecodes_t code_gen(std::vector<stmt_p>& block)
+#include "bytecode.h"
+
+bytes_t code_gen(std::vector<stmt_p>& block)
 {
 	StatementScope global_scope;
-	bytecodes_t codes;
+	bytes_t codes;
 
 	for (auto& ast : block)
 		ast->check(global_scope);

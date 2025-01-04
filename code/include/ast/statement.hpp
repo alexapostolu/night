@@ -276,6 +276,8 @@ private:
 
 	byte_t id;
 	std::vector<byte_t> param_ids;
+
+	static std::list<bytes_t> functions;
 };
 
 

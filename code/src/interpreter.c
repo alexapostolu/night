@@ -1,21 +1,24 @@
 #include "interpreter.h"
+#include "bytecode.h"
 #include "value.h"
-#include "bytecode.hpp"
-#include "error.hpp"
-#include "debug.hpp"
 #include "stack.h"
 
-#include <string.h>
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h> // PRId64
+#include <assert.h>
 
-Value interpret_bytecodes(bytecodes_t const& codes, Value* variables)
+Value interpret_bytecodes(byte_t const* codes, size_t codes_count, Value* variables)
 {
-	stack s;
-	stack_create(&s);
+	static stack s;
+	static int initialized = 0;
+
+	if (!initialized)
+	{
+		stack_create(&s);
+		initialized = 1;
+	}
 
 	// This freeze is for while loop bytecode.
 	// The last JUMP in While loop bytecode jumps to before the start of the vector.
@@ -24,7 +27,7 @@ Value interpret_bytecodes(bytecodes_t const& codes, Value* variables)
 	// incremented by the for loop.
 	int freeze = 0;
 
-	for (auto it = std::begin(codes); it != std::end(codes); ++it)
+	for (size_t i = 0; i < codes_count; ++i)
 	{
 		if (freeze)
 		{
@@ -32,20 +35,33 @@ Value interpret_bytecodes(bytecodes_t const& codes, Value* variables)
 			freeze = 0;
 		}
 
-		switch (*it)
+		byte_t const* byte = &codes[i];
+
+		switch (*byte)
 		{
 		case BytecodeType_S_INT1:
-		case BytecodeType_S_INT2:
-		case BytecodeType_S_INT4:
-		case BytecodeType_S_INT8:
-			s.emplace(get_int<int64_t>(it));
+			interpret_int(&byte, &s, 1, 0);
 			break;
-
+		case BytecodeType_S_INT2:
+			interpret_int(&byte, &s, 2, 0);
+			break;
+		case BytecodeType_S_INT4:
+			interpret_int(&byte, &s, 4, 0);
+			break;
+		case BytecodeType_S_INT8:
+			interpret_int(&byte, &s, 8, 0);
+			break;
 		case BytecodeType_U_INT1:
+			interpret_int(&byte, &s, 1, 1);
+			break;
 		case BytecodeType_U_INT2:
+			interpret_int(&byte, &s, 2, 1);
+			break;
 		case BytecodeType_U_INT4:
+			interpret_int(&byte, &s, 4, 1);
+			break;
 		case BytecodeType_U_INT8:
-			s.emplace(get_int<uint64_t>(it));
+			interpret_int(&byte, &s, 8, 1);
 			break;
 
 		case BytecodeType_FLOAT4:
@@ -479,8 +495,9 @@ Value interpret_bytecodes(bytecodes_t const& codes, Value* variables)
 			break;
 
 		case BytecodeType_STORE: {
+			auto val = pop(s);
 			auto id = pop(s);
-			scope.vars[id.as.i] = pop(s);
+			scope.vars[id.as.i] = val;
 
 			break;
 		}
@@ -586,12 +603,9 @@ Value interpret_bytecodes(bytecodes_t const& codes, Value* variables)
 				break;
 			}
 			default: {
-				InterpreterScope func_scope{ scope.vars };
+				Value* function_vars = variables;
 
-				for (int i = 0; i < scope.funcs[id].param_ids.size(); ++i)
-					func_scope.vars[InterpreterScope::funcs[id].param_ids[i]] = pop(s);
-
-				auto rtn_value = interpret_bytecodes(func_scope, InterpreterScope::funcs[id].codes);
+				auto rtn_value = interpret_bytecodes(InterpreterScope::funcs[id].codes, function_vars);
 				if (rtn_value.has_value())
 					s.push(*rtn_value);
 
@@ -608,6 +622,39 @@ Value interpret_bytecodes(bytecodes_t const& codes, Value* variables)
 	}
 
 	return NULL;
+}
+
+int interpret_int(
+	byte_t** byte,
+	stack* s,
+	byte_t size,
+	int u)
+{
+	Value* val;
+
+	if (u)
+	{
+		uint64_t i;
+		memcpy(&i, byte, size);
+
+		value_create_ui(&val, i);
+	}
+	else
+	{
+		int64_t i;
+		memcpy(&i, byte, size);
+
+		value_create_i(&val, i);
+	}
+
+	stack_push(&s, val);
+	
+	// Iterate to the last byte representing the int, and the calling function
+	// interpret_bytecodes will iterate to the next byte sequence.
+	while (size--)
+		++(*byte);
+
+	return 0;
 }
 
 double get_float(bytecodes_t::const_iterator& it)

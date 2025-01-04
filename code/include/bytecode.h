@@ -2,6 +2,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief Data structures representing bytecodes and how they are stored.
  * 
@@ -10,21 +14,16 @@
  * type and "2" and "3" are bytecode values. Both are represented as 8 bit values
  * and are stored in the same data structure. The only way to differentiate
  * between the two when interpreting is solely through the language design.
- * 
- * **Design Decision #1**
- * bytecode_t is 8 bits.
- * 
- * My bytecode only has 63 possible values right now, and even if I did expand
- * it, I would have to expand it by over twice to reach the limit of 8 bits. So
- * 8 bits is plenty enough for Night.
- * 
- * **Design Decision #2**
- * bytecodes_t is a forward list and not a vector.
- * 
- * The main operations are appending/inserting other bytecode containers, and
- * list has a better time complexity for that operation than vector.
  */
 typedef uint8_t byte_t;
+
+#ifdef __cplusplus
+#include <list>
+using bytes_t = std::list<byte_t>;
+#else
+#include "list.h"
+typedef byte_t* bytes_t;
+#endif
 
 /**
  * @brief Enumeration of all bytecode types in Night.
@@ -70,7 +69,16 @@ enum {
 	BytecodeType_LOAD,
 	BytecodeType_LOAD_ELEM,
 	
+	/*
+	 * STORE
+	 * {value}
+	 * {ID}
+	 * 
+	 * The value coming after the ID is helpful for representing a function's
+	 * bytecodes.
+	 */
 	BytecodeType_STORE,
+	
 	BytecodeType_STORE_INDEX_A,
 	BytecodeType_STORE_INDEX_S,
 	
@@ -92,3 +100,7 @@ enum {
  * Returns the corresponding bytecode as a string literal.
  */
 char const* byte_to_str(byte_t byte);
+
+#ifdef __cplusplus
+}
+#endif

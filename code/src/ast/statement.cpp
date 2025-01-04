@@ -72,6 +72,9 @@ bytes_t VariableInit::generate_codes() const
 
 	bytes_t codes;
 
+	auto id_codes = int_to_bytes(*id);
+	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
+
 	if (expr)
 		codes = expr->generate_codes();
 
@@ -81,9 +84,6 @@ bytes_t VariableInit::generate_codes() const
 		codes.push_back(BytecodeType_I2F);
 	else if (var_type != Type::FLOAT && expr_type == Type::FLOAT)
 		codes.push_back(BytecodeType_F2I);
-
-	auto id_codes = int_to_bytes(*id);
-	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 
 	codes.push_back(BytecodeType_STORE);
 
@@ -186,10 +186,13 @@ bytes_t ArrayInitialization::generate_codes() const
 	assert(id.has_value());
 	assert(expr);
 
-	bytes_t codes = expr->generate_codes();
+	bytes_t codes;
 
 	auto id_codes = int_to_bytes(*id);
 	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
+	
+	auto expr_bytes = expr->generate_codes();
+	codes.insert(std::end(codes), std::begin(expr_bytes), std::end(expr_bytes));
 
 	codes.push_back(BytecodeType_STORE);
 
@@ -272,6 +275,9 @@ bytes_t VariableAssign::generate_codes() const
 {
 	bytes_t codes;
 
+	auto id_codes = int_to_bytes(*id);
+	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
+
 	if (assign_op != "=")
 	{
 		auto id_codes = int_to_bytes(*id);
@@ -319,9 +325,6 @@ bytes_t VariableAssign::generate_codes() const
 		auto expr_codes = expr->generate_codes();
 		codes.insert(std::end(codes), std::begin(expr_codes), std::end(expr_codes));
 	}
-
-	auto id_codes = int_to_bytes(*id);
-	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 
 	codes.push_back(BytecodeType_STORE);
 
@@ -598,18 +601,22 @@ bool Function::optimize(StatementScope& scope)
 
 bytes_t Function::generate_codes() const
 {
-	InterpreterScope::funcs[id] = {};
+	bytes_t function;
 
-	for (auto const& param_id : param_ids)
-		InterpreterScope::funcs[id].param_ids.push_back(param_id);
+	for (std::size_t i = param_ids.size() - 1; i >= 0; --i) 
+	{
+		function.push_back(param_ids[i]);
+		function.push_back(BytecodeType_STORE);
+	}
 
 	for (auto const& stmt : block)
 	{
 		auto stmt_codes = stmt->generate_codes();
-		InterpreterScope::funcs[id].codes.insert(
-			std::end(InterpreterScope::funcs[id].codes),
+		function.insert(std::end(function),
 			std::begin(stmt_codes), std::end(stmt_codes));
 	}
+
+	functions.push_back(function);
 
 	return {};
 }
