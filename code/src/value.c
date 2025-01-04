@@ -61,7 +61,7 @@ int value_create_s(Value** _val, char* s, size_t len)
 	*_val = val;
 }
 
-int value_create_a(Value** _val, Value* a, size_t len)
+int value_create_a(Value** _val, Value** a, size_t len)
 {
 	assert(_val);
 	assert(a);
@@ -69,12 +69,7 @@ int value_create_a(Value** _val, Value* a, size_t len)
 	Value* val = (Value*)malloc(sizeof(Value));
 
 	val->is = Value::Arr;
-
-	val->as.a = (Value*)malloc(len * sizeof(Value));
-	if (!val->as.a)
-		return -1;
-
-	memcpy(val->as.a, a, len * sizeof(Value));
+	val->as.a = a;
 
 	*_val = val;
 }

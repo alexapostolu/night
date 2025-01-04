@@ -506,7 +506,7 @@ bytes_t While::generate_codes() const
 
 	// Insert jump negative value and JUMP_N
 	// Set jump negative value to be 8 bit
-	auto jump_n_codes = int_to_bytes<uint64_t>(codes.size() + 9);
+	auto jump_n_codes = int_to_bytes<uint64_t>(codes.size() + 10); // 9
 	codes.insert(std::end(codes), std::begin(jump_n_codes), std::end(jump_n_codes));
 	codes.push_back(BytecodeType_JUMP_N);
 

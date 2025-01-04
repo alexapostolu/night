@@ -25,4 +25,12 @@ void stack_push(stack* s, Value* val);
 
 Value* stack_pop(stack* s);
 
+int64_t stack_pop_as_i(stack* s);
+
+uint64_t stack_pop_as_ui(stack* s);
+
+double stack_pop_as_d(stack* s);
+
+char* stack_pop_as_s(stack* s);
+
 Value* stack_top(stack* s);

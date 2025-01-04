@@ -27,7 +27,7 @@ typedef struct Value {
 		uint64_t ui;
 		double d;
 		char* s;
-		Value* a;
+		Value** a;
 	} as;
 
 	// Length of the string or array.
@@ -38,7 +38,7 @@ void value_create_i(struct Value** _val, int64_t i);
 void value_create_ui(struct Value** _val, uint64_t ui);
 void value_create_d(struct Value** _val, double d);
 int  value_create_s(struct Value** _val, char* s, size_t len);
-int  value_create_a(struct Value** _val, struct Value* a, size_t len);
+int  value_create_a(struct Value** _val, struct Value** a, size_t len);
 int  value_create_val(struct Value** _val, struct Value* other);
 
 void value_destroy(struct Value* val);

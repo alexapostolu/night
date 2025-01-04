@@ -51,6 +51,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,22 +81,40 @@ int interpret_int(
 	byte_t const** byte,
 	stack* s,
 	byte_t size,
-	int u
+	bool u
+);
+
+int interpret_flt(
+	byte_t const** byte,
+	stack* s,
+	byte_t size
+);
+
+int interpret_str(
+	stack* s
+);
+
+int interpret_arr(
+	stack* s
+);
+
+int interpret_arr_fill(
+	stack* s
+);
+
+int interpret_subscript(
+	byte_t const** byte,
+	stack* s,
+	bool is_str
+);
+
+int interpret_str_input(
+	stack* s
 );
 
 
-// iterator
-//   start: bytecode type
-//   end:   last code of float
-void push_float(std::stack<Value>& s, bytecodes_t::const_iterator& it, int count);
 
-/**
- * Iterator starts at bytecode type (either FLOAT4 or FLOAT8) and ends at last
- * code of the float.
- */
-double get_float(bytecodes_t::const_iterator& it);
 
-void push_str(std::stack<Value>& s);
 void push_arr(std::stack<Value>& s);
 void push_arr_and_fill(std::stack<Value>& s);
 void fill_arr(Value& arr, std::stack<Value>& s, std::vector<int> const& dimensions, int current_dimension);
