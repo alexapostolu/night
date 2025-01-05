@@ -21,7 +21,6 @@ typedef uint8_t byte_t;
 #include <list>
 using bytes_t = std::list<byte_t>;
 #else
-#include "list.h"
 typedef byte_t* bytes_t;
 #endif
 
@@ -53,34 +52,56 @@ enum {
 	BytecodeType_GREATER_I, BytecodeType_GREATER_F, BytecodeType_GREATER_S,
 	BytecodeType_LESSER_EQUALS_I, BytecodeType_LESSER_EQUALS_F, BytecodeType_LESSER_EQUALS_S,
 	BytecodeType_GREATER_EQUALS_I, BytecodeType_GREATER_EQUALS_F, BytecodeType_GREATER_EQUALS_S,
-	
+
 	BytecodeType_EQUALS_I, BytecodeType_EQUALS_F, BytecodeType_EQUALS_S,
 	BytecodeType_NOT_EQUALS_I, BytecodeType_NOT_EQUALS_F, BytecodeType_NOT_EQUALS_S,
-	
+
 	BytecodeType_AND,
 	BytecodeType_OR,
 
-	BytecodeType_INDEX_S,
-	BytecodeType_INDEX_A,
+	/*
+	 * SUBSCRIPT_S
+	 * {str}
+	 * {index}
+	 */
+	ByteType_SUBSCRIPT_S,
+	/*
+	 * SUBSCRIPT_A
+	 * {arr}
+	 * {index}
+	 */
+	ByteType_SUBSCRIPT_A,
+
 
 	BytecodeType_I2F, BytecodeType_F2I,
 	BytecodeType_F2B,
 
 	BytecodeType_LOAD,
-	BytecodeType_LOAD_ELEM,
 	
 	/*
 	 * STORE
 	 * {value}
 	 * {ID}
 	 * 
-	 * The value coming after the ID is helpful for representing a function's
-	 * bytecodes.
+	 * The order in which value comes after ID is helpful for representing a
+	 * function's parameter bytecodes.
 	 */
 	BytecodeType_STORE,
 	
-	BytecodeType_STORE_INDEX_A,
-	BytecodeType_STORE_INDEX_S,
+	/*
+	 * STORE_SUBSCRIPT_S
+	 * {value}
+	 * {ID}
+	 * {index}
+	 */
+	ByteType_STORE_SUBSCRIPT_S,
+	/*
+	 * STORE_SUBSCRIPT_A
+	 * {value}
+	 * {ID}
+	 * {indicies}
+	 */
+	ByteType_STORE_SUBSCRIPT_A,
 	
 	BytecodeType_ALLOCATE_STR,
 	BytecodeType_ALLOCATE_ARR,

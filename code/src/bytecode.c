@@ -54,19 +54,18 @@ char const* byte_to_str(byte_t byte)
 	case BytecodeType_AND: return "AND";
 	case BytecodeType_OR: return "OR";
 
-	case BytecodeType_INDEX_S: return "INDEX_S";
-	case BytecodeType_INDEX_A: return "INDEX_A";
+	case ByteType_SUBSCRIPT_S: return "SUBSCRIPT_S";
+	case ByteType_SUBSCRIPT_A: return "SUBSCRIPT_A";
 
 	case BytecodeType_I2F: return "I2F";
 	case BytecodeType_F2I: return "F2I";
 	case BytecodeType_F2B: return "F2B";
 
 	case BytecodeType_LOAD: return "LOAD";
-	case BytecodeType_LOAD_ELEM: return "LOAD_ELEM";
 
 	case BytecodeType_STORE: return "STORE";
-	case BytecodeType_STORE_INDEX_A: return "STORE_INDEX_A";
-	case BytecodeType_STORE_INDEX_S: return "STORE_INDEX_S";
+	case ByteType_STORE_SUBSCRIPT_A: return "STORE_INDEX_A";
+	case ByteType_STORE_SUBSCRIPT_S: return "STORE_INDEX_S";
 
 	case BytecodeType_ALLOCATE_STR: return "ALLOCATE_STR";
 	case BytecodeType_ALLOCATE_ARR: return "ALLOCATE_ARR";

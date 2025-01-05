@@ -110,17 +110,14 @@ stmt_p parse_var(Lexer& lexer)
 		}
 	}
 	case TokenType::ASSIGN: 
-	case TokenType::ASSIGN_OPERATOR: {
+	case TokenType::ASSIGN_OPERATOR:
+	case TokenType::OPEN_SQUARE: {
 		lexer.eat();
 
 		auto const& ast = std::make_shared<VariableAssign>(parse_var_assign(lexer, var_name));
 		lexer.curr_is(TokenType::SEMICOLON);
 
 		lexer.eat();
-		return ast;
-	}
-	case TokenType::OPEN_SQUARE: {
-		auto const& ast = std::make_shared<ArrayMethod>(parse_array_method(lexer, var_name));
 		return ast;
 	}
 	case TokenType::OPEN_BRACKET: {
@@ -186,24 +183,18 @@ ArrayInitialization parse_array_init(Lexer& lexer, std::string const& var_name)
 VariableAssign parse_var_assign(Lexer& lexer, std::string const& var_name)
 {
 	assert(lexer.curr().type == TokenType::ASSIGN ||
-		   lexer.curr().type == TokenType::ASSIGN_OPERATOR);
-
-	auto assign_operator = lexer.curr().str;
-	auto expression		 = parse_expr(lexer, true);
-
-	return VariableAssign(lexer.loc, var_name, assign_operator, expression);
-}
-
-ArrayMethod parse_array_method(Lexer& lexer, std::string const& var_name)
-{
-	assert(lexer.curr().type == TokenType::VARIABLE);
+		   lexer.curr().type == TokenType::ASSIGN_OPERATOR ||
+		   lexer.curr().type == TokenType::OPEN_SQUARE);
 
 	// Parse subscripts.
 
 	std::vector<expr::expr_p> subscripts;
 
-	while (lexer.eat().type == TokenType::OPEN_SQUARE)
+	while (lexer.curr().type == TokenType::OPEN_SQUARE)
+	{
 		subscripts.push_back(parse_expr(lexer, true, TokenType::CLOSE_SQUARE));
+		lexer.eat();
+	}
 
 	// Parse operator and expression.
 
@@ -211,10 +202,9 @@ ArrayMethod parse_array_method(Lexer& lexer, std::string const& var_name)
 		throw night::error::get().create_fatal_error("found '" + lexer.curr().str + "', expected assignment operator", lexer.loc);
 
 	auto assign_operator = lexer.curr().str;
-	auto assign_expr	 = parse_expr(lexer, true, TokenType::SEMICOLON);
+	auto expression		 = parse_expr(lexer, true, TokenType::SEMICOLON);
 
-	lexer.eat();
-	return ArrayMethod(lexer.loc, var_name, assign_operator, subscripts, assign_expr);
+	return VariableAssign(lexer.loc, var_name, subscripts, assign_operator, expression);
 }
 
 expr::FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name)

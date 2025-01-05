@@ -44,13 +44,10 @@
 #pragma once
 
 #include "bytecode.h"
+#include "function.h"
 #include "value.h"
 #include "stack.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
 #include <stdbool.h>
 
 #ifdef __cplusplus
@@ -71,61 +68,28 @@ extern "C" {
  * 
  * @returns the return value of the bytecodes.
  */
-Value interpret_bytecodes(
-	byte_t const* codes,
-	size_t codes_count,
-	Value* variables
+Value* interpret_bytecodes(
+    byte_t const* codes,
+    int64_t codes_count,
+    Value** variables,
+    function_t* funcs
 );
 
-int interpret_int(
-	byte_t const** byte,
-	stack* s,
-	byte_t size,
-	bool u
-);
+int interpret_int(byte_t const** byte, stack* s, byte_t size, bool u);
 
-int interpret_flt(
-	byte_t const** byte,
-	stack* s,
-	byte_t size
-);
+int interpret_flt(byte_t const** byte, stack* s, byte_t size);
 
-int interpret_str(
-	stack* s
-);
+int interpret_str(stack* s);
 
-int interpret_arr(
-	stack* s
-);
+int interpret_arr(stack* s);
 
-int interpret_arr_fill(
-	stack* s
-);
+int interpret_arr_fill(stack* s);
 
-int interpret_subscript(
-	byte_t const** byte,
-	stack* s,
-	bool is_str
-);
+int interpret_subscript_s(stack* s);
 
-int interpret_str_input(
-	stack* s
-);
+int interpret_subscript_a(stack* s);
 
-
-
-
-void push_arr(std::stack<Value>& s);
-void push_arr_and_fill(std::stack<Value>& s);
-void fill_arr(Value& arr, std::stack<Value>& s, std::vector<int> const& dimensions, int current_dimension);
-
-void push_subscript(std::stack<Value>& s, bool is_string);
-
-void push_string_input(std::stack<Value>& s);
-
-Value pop(std::stack<Value>& s);
-
-char* night_get_line();
+int interpret_str_input(stack* s);
 
 #ifdef __cplusplus
 }

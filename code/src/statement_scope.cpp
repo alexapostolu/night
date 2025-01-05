@@ -23,6 +23,8 @@ scope_func_container StatementScope::funcs = {
 	{ "len",   StatementFunction{ 11, {}, { Type(Type::CHAR, 1) }, Type::INT			} }
 };
 
+unsigned int StatementScope::max_var_id;
+
 StatementScope::StatementScope()
 	: vars() {}
 
@@ -32,7 +34,7 @@ StatementScope::StatementScope(StatementScope const& upper_scope)
 StatementScope::StatementScope(StatementScope const& upper_scope, std::optional<Type> const& _rtn_type)
 	: vars(upper_scope.vars), rtn_type(_rtn_type) {}
 
-std::optional<bytecode_t> StatementScope::create_variable(
+std::optional<byte_t> StatementScope::create_variable(
 	std::string const& name,
 	Type const& type,
 	Location const& loc)
@@ -40,15 +42,20 @@ std::optional<bytecode_t> StatementScope::create_variable(
 	if (vars.contains(name))
 		night::error::get().create_minor_error("variable '" + name + "' is already defined", loc);
 
-	if (variable_id == std::numeric_limits<bytecode_t>::max())
-		night::error::get().create_minor_error("only " + std::to_string(std::numeric_limits<bytecode_t>::max()) + " variables allowed per scope", loc);
+	if (variable_id == std::numeric_limits<byte_t>::max())
+		night::error::get().create_minor_error("only " + std::to_string(std::numeric_limits<byte_t>::max()) + " variables allowed per scope", loc);
 
 	if (night::error::get().has_minor_errors())
 		return std::nullopt;
 
 	vars[name] = { variable_id, type, 0 };
 
-	return variable_id++;
+	variable_id++;
+
+	if (variable_id > max_var_id)
+		max_var_id = variable_id;
+
+	return variable_id;
 }
 
 StatementVariable const* StatementScope::get_var(std::string const& name)
@@ -68,7 +75,7 @@ scope_func_container::iterator StatementScope::create_function(
 	std::vector<Type> const& param_types,
 	std::optional<Type> const& rtn_type)
 {
-	static bytecode_t func_id = StatementScope::funcs.size();
+	static byte_t func_id = StatementScope::funcs.size();
 
 	auto [it, range_end] = StatementScope::funcs.equal_range(name);
 

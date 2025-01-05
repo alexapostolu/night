@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "bytecode.hpp"
+#include "bytecode.h"
 
 #include <iostream>
 #include <source_location>
@@ -38,6 +38,6 @@ template <Printable T>
 void logn(T out) { std::cout << out << '\n'; }
 
 // prints out all the bytecodes
-void log_codes(bytecodes_t const& codes);
+void log_codes(bytes_t const& codes);
 
 }

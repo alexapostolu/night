@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bytecode.hpp"
+#include "bytecode.h"
 #include "type.hpp"
 #include "error.hpp"
 
@@ -29,7 +29,7 @@ struct StatementVariable
 
 struct StatementFunction
 {
-	bytecode_t id;
+	byte_t id;
 
 	std::vector<std::string> param_names;
 	std::vector<Type> param_types;
@@ -45,7 +45,7 @@ public:
 
 	// returns id for new variable if successful
 	// returns nullopt if unsuccessful - redefinition or variable scope limit
-	std::optional<bytecode_t> create_variable(
+	std::optional<byte_t> create_variable(
 		std::string const& name,
 		Type const& type,
 		Location const& loc
@@ -67,6 +67,7 @@ public:
 	std::optional<Type> rtn_type;
 
 	unsigned int variable_id;
+	static unsigned int max_var_id;
 
 private:
 	scope_var_container vars;

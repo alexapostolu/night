@@ -234,9 +234,12 @@ void ArrayInitialization::fill_array(Type const& type, expr::expr_p expr, int de
 VariableAssign::VariableAssign(
 	Location const& _loc,
 	std::string const& _var_name,
+	std::vector<expr::expr_p> const& _subscripts,
 	std::string const& _assign_op,
 	expr::expr_p const& _expr)
-	: Statement(_loc), var_name(_var_name), assign_op(_assign_op), expr(_expr)
+	: Statement(_loc),
+	var_name(_var_name), subscripts(_subscripts)
+	, assign_op(_assign_op), expr(_expr)
 	, assign_type(std::nullopt), id(std::nullopt) {}
 
 void VariableAssign::check(StatementScope& scope)
@@ -247,6 +250,15 @@ void VariableAssign::check(StatementScope& scope)
 
 	if (!var)
 		night::error::get().create_minor_error("variable '" + var_name + "' is undefined", loc);
+
+	for (auto const& subscript : subscripts)
+	{
+		assert(subscript);
+
+		auto subscript_type = subscript->type_check(scope);
+		if (subscript_type.has_value() && subscript_type->is_arr())
+			night::error::get().create_minor_error("subscript is type '" + night::to_str(*subscript_type) + "', expected type bool, char, or int'", loc);
+	}
 
 	auto expr_type = expr->type_check(scope);
 
@@ -262,7 +274,6 @@ void VariableAssign::check(StatementScope& scope)
 			"can not be assigned to type '" + night::to_str(*expr_type) + "'", loc);
 
 	assign_type = *expr_type;
-
 }
 
 bool VariableAssign::optimize(StatementScope& scope)
@@ -275,14 +286,36 @@ bytes_t VariableAssign::generate_codes() const
 {
 	bytes_t codes;
 
+	// Indicies.
+
+	for (std::size_t i = subscripts.size(); i > 0; --i)
+	{
+		assert(subscripts[i - 1]);
+
+		auto subscript_codes = subscripts[i - 1]->generate_codes();
+		codes.insert(std::end(codes), std::begin(subscript_codes), std::end(subscript_codes));
+	}
+
+	// ID.
+
 	auto id_codes = int_to_bytes(*id);
 	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
+
+	// Value.
 
 	if (assign_op != "=")
 	{
 		auto id_codes = int_to_bytes(*id);
 		codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 		codes.push_back(BytecodeType_LOAD);
+
+		for (std::size_t i = subscripts.size(); i > 0; --i)
+		{
+			assert(subscripts[i - 1]);
+
+			auto subscript_codes = subscripts[i - 1]->generate_codes();
+			codes.insert(std::end(codes), std::begin(subscript_codes), std::end(subscript_codes));
+		}
 
 		auto expr_codes = expr->generate_codes();
 		codes.insert(std::end(codes), std::begin(expr_codes), std::end(expr_codes));
@@ -326,7 +359,12 @@ bytes_t VariableAssign::generate_codes() const
 		codes.insert(std::end(codes), std::begin(expr_codes), std::end(expr_codes));
 	}
 
-	codes.push_back(BytecodeType_STORE);
+	if (subscripts.empty())
+		codes.push_back(BytecodeType_STORE);
+	else if (assign_type.has_value() && *assign_type == Type::CHAR)
+		codes.push_back(ByteType_STORE_SUBSCRIPT_S);
+	else
+		codes.push_back(ByteType_STORE_SUBSCRIPT_A);
 
 	return codes;
 }
@@ -599,22 +637,27 @@ bool Function::optimize(StatementScope& scope)
 	return true;
 }
 
+std::vector<function_t> Function::functions;
+
 bytes_t Function::generate_codes() const
 {
-	bytes_t function;
+	function_t function;
 
-	for (std::size_t i = param_ids.size() - 1; i >= 0; --i) 
-	{
-		function.push_back(param_ids[i]);
-		function.push_back(BytecodeType_STORE);
-	}
+	function.param_count = param_ids.size();
+	function.param_ids = (uint64_t*)malloc(param_ids.size() * sizeof(uint64_t));
+	for (std::size_t i = param_ids.size(); i > 0; --i)
+		function.param_ids[i - 1] = param_ids[i];
+
+	bytes_t bytes;
 
 	for (auto const& stmt : block)
 	{
 		auto stmt_codes = stmt->generate_codes();
-		function.insert(std::end(function),
-			std::begin(stmt_codes), std::end(stmt_codes));
+		bytes.insert(std::end(bytes), std::begin(stmt_codes), std::end(stmt_codes));
 	}
+
+	function.bytes_count = bytes.size();
+	function.bytes = (byte_t*)malloc(bytes.size() * sizeof(byte_t));
 
 	functions.push_back(function);
 
@@ -663,130 +706,6 @@ bytes_t Return::generate_codes() const
 	auto codes = expr->generate_codes();
 
 	codes.push_back(BytecodeType_RETURN);
-
-	return codes;
-}
-
-
-ArrayMethod::ArrayMethod(
-	Location const& _loc,
-	std::string const& _var_name,
-	std::string const& _assign_op,
-	std::vector<expr::expr_p> const& _subscripts,
-	expr::expr_p const& _assign_expr)
-	: Statement(_loc), var_name(_var_name), assign_op(_assign_op), subscripts(_subscripts), assign_expr(_assign_expr), id(std::nullopt) {}
-
-void ArrayMethod::check(StatementScope& scope)
-{
-	auto var = scope.get_var(var_name);
-
-	if (!var)
-		night::error::get().create_minor_error("variable '" + var_name + "' is undefined", loc);
-
-	for (auto const& subscript : subscripts)
-	{
-		assert(subscript);
-
-		auto subscript_type = subscript->type_check(scope);
-		if (subscript_type.has_value() && subscript_type->is_arr())
-			night::error::get().create_minor_error("subscript is type '" + night::to_str(*subscript_type) + "', expected type bool, char, or int'", loc);
-	}
-
-	if (assign_expr)
-	{
-		assign_type = assign_expr->type_check(scope);
-	}
-
-	id = var->id;
-}
-
-bool ArrayMethod::optimize(StatementScope& scope)
-{
-	return true;
-}
-
-bytes_t ArrayMethod::generate_codes() const
-{
-	assert(id.has_value());
-	assert(assign_expr);
-
-	bytes_t codes;
-
-	for (int i = (int)subscripts.size() - 1; i >= 0; --i)
-	{
-		assert(subscripts[i]);
-
-		auto subscript_codes = subscripts[i]->generate_codes();
-		codes.insert(std::end(codes), std::begin(subscript_codes), std::end(subscript_codes));
-	}
-
-	if (assign_op != "=")
-	{
-		for (int i = (int)subscripts.size() - 1; i >= 0; --i)
-		{
-			assert(subscripts[i]);
-
-			auto subscript_codes = subscripts[i]->generate_codes();
-			codes.insert(std::end(codes), std::begin(subscript_codes), std::end(subscript_codes));
-		}
-
-
-		auto num = int_to_bytes(subscripts.size());
-		codes.insert(std::end(codes), std::begin(num), std::end(num));
-
-		auto id_codes = int_to_bytes(*id);
-		codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
-		codes.push_back(BytecodeType_LOAD_ELEM);
-
-		auto assign_codes = assign_expr->generate_codes();
-		codes.insert(std::end(codes), std::begin(assign_codes), std::end(assign_codes));
-
-		if (assign_op == "+=")
-		{
-			if (assign_type == Type::FLOAT)
-				codes.push_back(BytecodeType_ADD_F);
-			else if (is_same(*assign_type, Type(Type::CHAR, 1)))
-				codes.push_back(BytecodeType_ADD_S);
-			else
-				codes.push_back(BytecodeType_ADD_I);
-		}
-		else if (assign_op == "-=")
-		{
-			if (assign_type == Type::FLOAT)
-				codes.push_back(BytecodeType_SUB_F);
-			else
-				codes.push_back(BytecodeType_SUB_I);
-		}
-		else if (assign_op == "*=")
-		{
-			if (assign_type == Type::FLOAT)
-				codes.push_back(BytecodeType_MULT_F);
-			else
-				codes.push_back(BytecodeType_MULT_I);
-		}
-		else if (assign_op == "/=")
-		{
-			if (assign_type == Type::FLOAT)
-				codes.push_back(BytecodeType_DIV_F);
-			else
-				codes.push_back(BytecodeType_DIV_I);
-		}
-		else
-			throw debug::unhandled_case(assign_op);
-	}
-	else
-	{
-		auto assign_codes = assign_expr->generate_codes();
-		codes.insert(std::end(codes), std::begin(assign_codes), std::end(assign_codes));
-	}
-
-	auto index_codes = int_to_bytes(*id);
-	codes.insert(std::end(codes), std::begin(index_codes), std::end(index_codes));
-
-	if (assign_type.has_value() && assign_type->prim == Type::Primitive::CHAR && assign_type->dim == 0)
-		codes.push_back(BytecodeType_STORE_INDEX_S);
-	else
-		codes.push_back(BytecodeType_STORE_INDEX_A);
 
 	return codes;
 }

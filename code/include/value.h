@@ -15,11 +15,11 @@ extern "C" {
 
 typedef struct Value {
 	enum {
-		Int,
-		uInt,
-		Dbl,
-		Str,
-		Arr
+		Val_Int,
+		Val_uInt,
+		Val_Dbl,
+		Val_Str,
+		Val_Arr
 	} is;
 
 	union {
@@ -27,7 +27,7 @@ typedef struct Value {
 		uint64_t ui;
 		double d;
 		char* s;
-		Value** a;
+		struct Value** a;
 	} as;
 
 	// Length of the string or array.

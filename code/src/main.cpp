@@ -2,8 +2,9 @@
 #include "parser/statement_parser.hpp"
 #include "code_gen.hpp"
 #include "error.hpp"
-#include "interpreter.h"
+#include "statement_scope.hpp"
 #include "value.h" // Hanlde return Value for the program.
+#include "interpreter.h"
 
 #include <iostream>
 #include <exception>
@@ -35,13 +36,21 @@ int main(int argc, char* argv[])
 	for (auto const& byte : bytes)
 		c_bytes[i++] = byte;
 
-	Value ret = interpret_bytecodes(c_bytes, NULL);
-	delete[] c_bytes;
+	Value** variables = new Value*[StatementScope::max_var_id];
 
-	switch (ret.is) {
-	case Value::Int: return ret.as.i;
-	case Value::uInt: return ret.as.ui;
-	case Value::Dbl: return static_cast<int>(ret.as.d);
+	Value* ret = interpret_bytecodes(c_bytes, bytes.size(), variables, Function::functions.data());
+	delete[] c_bytes;
+	for (std::size_t i = 0; i < StatementScope::max_var_id; ++i)
+	{
+		if (variables[i])
+			value_destroy(variables[i]);
+	}
+	delete[] variables;
+
+	switch (ret->is) {
+	case Value::Val_Int: return static_cast<int>(ret->as.i);
+	case Value::Val_uInt: return static_cast<int>(ret->as.ui);
+	case Value::Val_Dbl: return static_cast<int>(ret->as.d);
 	default: return 0;
 	}
 }

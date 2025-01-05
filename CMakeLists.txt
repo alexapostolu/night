@@ -11,7 +11,7 @@ include_directories("${PROJECT_SOURCE_DIR}/code/version"
 					"${PROJECT_SOURCE_DIR}/code/include"
 					"${PROJECT_SOURCE_DIR}/tests")
 
-file(GLOB_RECURSE SOURCE_FILES ${CMAKE_SOURCE_DIR} "code/src/*.cpp")
-add_executable(night ${SOURCE_FILES} )
+file(GLOB_RECURSE SOURCE_FILES ${CMAKE_SOURCE_DIR} "code/src/*.cpp" "code/src/*.c")
+add_executable(night ${SOURCE_FILES})
 
 target_link_libraries(night -static) 

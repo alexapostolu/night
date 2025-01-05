@@ -5,6 +5,7 @@
 #include "type.hpp"
 #include "error.hpp"
 #include "debug.hpp"
+#include "bytecode.h"
 #include "util.hpp"
 
 #include <optional>
@@ -365,12 +366,12 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 		{
 			if (rhs_type->is_str())
 			{
-				op_code = BytecodeType_INDEX_S;
+				op_code = ByteType_SUBSCRIPT_S;
 				return Type::CHAR;
 			}
 			else if (rhs_type->is_arr())
 			{
-				op_code = BytecodeType_INDEX_A;
+				op_code = ByteType_SUBSCRIPT_A;
 				return Type(rhs_type->prim, rhs_type->dim - 1);
 			}
 		}

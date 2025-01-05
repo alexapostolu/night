@@ -5,6 +5,7 @@
 #include "bytecode.h"
 #include "type.hpp"
 #include "error.hpp"
+#include "function.h"
 
 #include <vector>
 #include <tuple>
@@ -153,6 +154,7 @@ public:
 	VariableAssign(
 		Location const& _loc,
 		std::string const& _var_name,
+		std::vector<expr::expr_p> const& _subscripts,
 		std::string const& _assign_op,
 		expr::expr_p const& _expr
 	);
@@ -163,6 +165,7 @@ public:
 
 private:
 	std::string var_name;
+	std::vector<expr::expr_p> subscripts;
 	std::string assign_op;
 	expr::expr_p expr;
 
@@ -267,6 +270,8 @@ public:
 	bool optimize(StatementScope& scope) override;
 	bytes_t generate_codes() const override;
 
+	static std::vector<function_t> functions;
+
 private:
 	std::string name;
 	std::vector<std::string> param_names;
@@ -276,8 +281,6 @@ private:
 
 	byte_t id;
 	std::vector<byte_t> param_ids;
-
-	static std::list<bytes_t> functions;
 };
 
 
@@ -295,32 +298,6 @@ public:
 
 private:
 	expr::expr_p expr;
-};
-
-
-class ArrayMethod : public Statement
-{
-public:
-	ArrayMethod(
-		Location const& _loc,
-		std::string const& _var_name,
-		std::string const& _assign_op,
-		std::vector<expr::expr_p> const& _subscripts,
-		expr::expr_p const& _assign_expr
-	);
-
-	void check(StatementScope& scope) override;
-	bool optimize(StatementScope& scope) override;
-	bytes_t generate_codes() const override;
-
-private:
-	std::string var_name;
-	std::string assign_op;
-	std::vector<expr::expr_p> subscripts;
-	expr::expr_p assign_expr;
-
-	std::optional<byte_t> id;
-	std::optional<Type> assign_type;
 };
 
 
