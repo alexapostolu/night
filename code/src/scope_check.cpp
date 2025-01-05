@@ -24,7 +24,7 @@ bool is_function_defined(StatementScope const& scope, std::string const& name, L
 {
 	static std::unordered_set<std::string> undefined_functions;
 
-	if (!scope.funcs.contains(name))
+	if (!scope.functions.contains(name))
 	{
 		if (!undefined_functions.contains(name))
 			night::error::get().create_minor_error("function '" + name + "' is undefined", loc);

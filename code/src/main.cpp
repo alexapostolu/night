@@ -32,13 +32,28 @@ int main(int argc, char* argv[])
 	}
 
 	byte_t* c_bytes = new byte_t[bytes.size()];
-	std::size_t i = 0;
-	for (auto const& byte : bytes)
-		c_bytes[i++] = byte;
+	std::copy(std::cbegin(bytes), std::cend(bytes), c_bytes);
 
 	Value** variables = new Value*[StatementScope::max_var_id];
 
-	Value* ret = interpret_bytecodes(c_bytes, bytes.size(), variables, Function::functions.data());
+	function_t* functions = new function_t[StatementScope::functions.size()];
+	for (std::size_t i = 0; i < StatementScope::functions.size(); ++i)
+	{
+		for (auto& pair : StatementScope::functions)
+		{
+			if (pair.second.id == i)
+			{
+				functions[i].param_count = pair.second.param_names.size();
+				functions[i].param_ids = pair.second.param_ids.data();
+				functions[i].bytes_count = pair.second.bytes.size();
+				functions[i].bytes = new byte_t[bytes.size()];
+				std::copy(std::cbegin(pair.second.bytes), std::cend(pair.second.bytes), functions[i].bytes);
+				break;
+			}
+		}
+	}
+
+	Value* ret = interpret_bytecodes(c_bytes, bytes.size(), variables, functions);
 	delete[] c_bytes;
 	for (std::size_t i = 0; i < StatementScope::max_var_id; ++i)
 	{

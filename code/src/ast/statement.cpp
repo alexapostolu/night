@@ -621,8 +621,8 @@ void Function::check(StatementScope& global_scope)
 
 	try {
 		// define the function now in ParserScope so it will be defined in recursive calls
-		auto func_it = StatementScope::create_function(name, param_names, param_types, rtn_type);
-		id = func_it->second.id;
+		auto func_it = StatementScope::create_function(name, param_names, param_types, rtn_type, param_ids);
+		function = &func_it->second;
 	}
 	catch (std::string const& e) {
 		night::error::get().create_minor_error(e, loc);
@@ -637,29 +637,13 @@ bool Function::optimize(StatementScope& scope)
 	return true;
 }
 
-std::vector<function_t> Function::functions;
-
 bytes_t Function::generate_codes() const
 {
-	function_t function;
-
-	function.param_count = param_ids.size();
-	function.param_ids = (uint64_t*)malloc(param_ids.size() * sizeof(uint64_t));
-	for (std::size_t i = param_ids.size(); i > 0; --i)
-		function.param_ids[i - 1] = param_ids[i];
-
-	bytes_t bytes;
-
 	for (auto const& stmt : block)
 	{
 		auto stmt_codes = stmt->generate_codes();
-		bytes.insert(std::end(bytes), std::begin(stmt_codes), std::end(stmt_codes));
+		function->bytes.insert(std::end(function->bytes), std::begin(stmt_codes), std::end(stmt_codes));
 	}
-
-	function.bytes_count = bytes.size();
-	function.bytes = (byte_t*)malloc(bytes.size() * sizeof(byte_t));
-
-	functions.push_back(function);
 
 	return {};
 }
@@ -714,9 +698,10 @@ bytes_t Return::generate_codes() const
 expr::FunctionCall::FunctionCall(
 	Location const& _loc,
 	std::string const& _name,
-	std::vector<expr::expr_p> const& _arg_exprs,
-	std::optional<byte_t> const& _id)
-	: Statement(_loc), Expression(_loc, Expression::single_precedence), name(_name), arg_exprs(_arg_exprs), id(_id), is_expr(true) {}
+	std::vector<expr::expr_p> const& _arg_exprs)
+	: Statement(_loc), Expression(_loc, Expression::single_precedence), name(_name), arg_exprs(_arg_exprs), is_expr(true)
+{
+}
 
 void expr::FunctionCall::insert_node(
 	expr::expr_p node,
@@ -754,7 +739,7 @@ std::optional<Type> expr::FunctionCall::type_check(StatementScope& scope) noexce
 
 	// Get all functions with the same name as the function call
 
-	auto [funcs_with_same_name, funcs_with_same_name_end] = StatementScope::funcs.equal_range(name);
+	auto [funcs_with_same_name, funcs_with_same_name_end] = StatementScope::functions.equal_range(name);
 
 	if (funcs_with_same_name == funcs_with_same_name_end)
 	{
@@ -817,13 +802,11 @@ expr::expr_p expr::FunctionCall::optimize(StatementScope const& scope)
 	for (auto& arg : arg_exprs)
 		arg = arg->optimize(scope);
 
-	return std::make_shared<FunctionCall>(Expression::loc, name, arg_exprs, id);
+	return std::make_shared<FunctionCall>(Expression::loc, name, arg_exprs);
 }
 
 bytes_t expr::FunctionCall::generate_codes() const
 {
-	assert(id.has_value());
-
 	bytes_t codes;
 
 	for (auto const& param : arg_exprs)
@@ -834,7 +817,7 @@ bytes_t expr::FunctionCall::generate_codes() const
 		codes.insert(std::end(codes), std::begin(param_codes), std::end(param_codes));
 	}
 
-	auto id_codes = int_to_bytes(*id);
+	auto id_codes = int_to_bytes(id);
 	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 	codes.push_back(BytecodeType_CALL);
 

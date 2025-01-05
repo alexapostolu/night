@@ -3,6 +3,7 @@
 #include "bytecode.h"
 #include "type.hpp"
 #include "error.hpp"
+#include "function.h"
 
 #include <unordered_map>
 #include <vector>
@@ -17,7 +18,7 @@ using scope_func_container = std::unordered_multimap<std::string, StatementFunct
 
 struct StatementVariable
 {
-	unsigned int id;
+	uint64_t id;
 	Type type;
 	
 	// Keep track of the number of times used so unused variables can be
@@ -29,11 +30,14 @@ struct StatementVariable
 
 struct StatementFunction
 {
-	byte_t id;
+	uint64_t id;
 
 	std::vector<std::string> param_names;
 	std::vector<Type> param_types;
 	std::optional<Type> rtn_type;
+
+	std::vector<uint64_t> param_ids;
+	bytes_t bytes;
 };
 
 struct StatementScope
@@ -45,7 +49,7 @@ public:
 
 	// returns id for new variable if successful
 	// returns nullopt if unsuccessful - redefinition or variable scope limit
-	std::optional<byte_t> create_variable(
+	std::optional<uint64_t> create_variable(
 		std::string const& name,
 		Type const& type,
 		Location const& loc
@@ -59,10 +63,11 @@ public:
 		std::string const& name,
 		std::vector<std::string> const& param_names,
 		std::vector<Type> const& param_types,
-		std::optional<Type> const& rtn_type
+		std::optional<Type> const& rtn_type,
+		std::vector<uint64_t> _param_ids
 	);
 
-	static scope_func_container funcs;
+	static scope_func_container functions;
 
 	std::optional<Type> rtn_type;
 

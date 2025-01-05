@@ -270,8 +270,6 @@ public:
 	bool optimize(StatementScope& scope) override;
 	bytes_t generate_codes() const override;
 
-	static std::vector<function_t> functions;
-
 private:
 	std::string name;
 	std::vector<std::string> param_names;
@@ -279,8 +277,9 @@ private:
 	std::optional<Type> rtn_type;
 	std::vector<stmt_p> block;
 
-	byte_t id;
-	std::vector<byte_t> param_ids;
+	std::vector<uint64_t> param_ids;
+
+	StatementFunction* function;
 };
 
 
@@ -309,8 +308,7 @@ public:
 	FunctionCall(
 		Location const& _loc,
 		std::string const& _name,
-		std::vector<expr::expr_p> const& _arg_exprs,
-		std::optional<byte_t> const& _id = std::nullopt
+		std::vector<expr::expr_p> const& _arg_exprs
 	);
 
 	void insert_node(
@@ -328,9 +326,9 @@ private:
 	std::string name;
 	std::vector<expr::expr_p> arg_exprs;
 
-	std::optional<byte_t> id;
-
 	bool is_expr;
+
+	uint64_t id;
 };
 
 }

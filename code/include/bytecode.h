@@ -82,9 +82,6 @@ enum {
 	 * STORE
 	 * {value}
 	 * {ID}
-	 * 
-	 * The order in which value comes after ID is helpful for representing a
-	 * function's parameter bytecodes.
 	 */
 	BytecodeType_STORE,
 	
