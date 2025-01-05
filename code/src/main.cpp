@@ -62,6 +62,9 @@ int main(int argc, char* argv[])
 	}
 	delete[] variables;
 
+	if (!ret)
+		return 0;
+
 	switch (ret->is) {
 	case Value::Val_Int: return static_cast<int>(ret->as.i);
 	case Value::Val_uInt: return static_cast<int>(ret->as.ui);

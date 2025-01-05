@@ -7,8 +7,6 @@
 #include <iterator>
 #include <assert.h>
 
-using bytes_t = std::list<byte_t>;
-
 namespace night {
 
 template <typename ContainerDest, typename ContainerSrc>
@@ -23,6 +21,8 @@ void container_insert(ContainerDest& dest, ContainerSrc src, std::size_t positio
 }
 
 } // night::
+
+using bytes_t = std::list<byte_t>;
 
 /*
  * Converts any integral type into a sequence of bytes (bytecodes) using little
@@ -44,11 +44,11 @@ bytes_t int_to_bytes(T value)
 	bytes_t bytes;
 
 	switch (sizeof(T)) {
-		case 1: bytes.push_back(BytecodeType_S_INT1); break;
-		case 2: bytes.push_back(BytecodeType_S_INT2); break;
-		case 4: bytes.push_back(BytecodeType_S_INT4); break;
-		case 8: bytes.push_back(BytecodeType_S_INT8); break;
-		default: throw debug::unhandled_case(sizeof(T));
+	case 1: bytes.push_back(BytecodeType_U_INT1); break;
+	case 2: bytes.push_back(BytecodeType_U_INT2); break;
+	case 4: bytes.push_back(BytecodeType_U_INT4); break;
+	case 8: bytes.push_back(BytecodeType_U_INT8); break;
+	default: throw debug::unhandled_case(sizeof(T));
 	}
 
 	for (std::size_t i = 0; i < sizeof(T); ++i)

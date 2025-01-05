@@ -21,7 +21,7 @@ void stack_push(stack* s, Value* val)
     new_node->next = s->top;
     s->top = new_node;
 
-    printf("pushed value of type {%d} onto stack\n", (int)val->is);
+    printf("pushed type {%d} onto stack\n", (int)val->is);
 }
 
 Value* stack_pop(stack* s)
@@ -48,7 +48,7 @@ int64_t stack_pop_as_i(stack* s)
     int64_t i = val->as.i;
     free(val);
 
-    printf("popped int {%lld} off stack\n", i);
+    printf("  value as int {%lld}\n", i);
 
     return i;
 }
@@ -62,7 +62,7 @@ uint64_t stack_pop_as_ui(stack* s)
     uint64_t ui = val->as.ui;
     free(val);
 
-    printf("popped uint {%llu} off stack\n", ui);
+    printf("  value as uint {%llu}\n", ui);
 
     return ui;
 }
@@ -76,7 +76,7 @@ double stack_pop_as_d(stack* s)
     double d = val->as.d;
     free(val);
 
-    printf("popped double {%f} off stack\n", d);
+    printf("  value as {%f}\n", d);
 
     return d;
 }
@@ -90,7 +90,7 @@ char* stack_pop_as_s(stack* s)
     char* str = val->as.s;
     free(val);
 
-    printf("popped string {%s} off stack\n", str);
+    printf("  value as string {%s}\n", str);
 
     return str;
 }

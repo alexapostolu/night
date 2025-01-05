@@ -23,21 +23,19 @@ Value* interpret_bytecodes(byte_t const* codes, int64_t codes_count, Value** var
 	}
 
 	for (int64_t i = 0; i < codes_count; ++i)
-	{
-		byte_t const* byte = &codes[i];
+		printf("%d\n", codes[i]);
+	printf("\n\n");
 
+	for (byte_t const* byte = &codes[0]; byte < codes + codes_count; ++byte)
+	{
 		printf("%s\n", byte_to_str(*byte));
 
 		switch (*byte)
 		{
-		case BytecodeType_S_INT1: interpret_int(&byte, &s, 1, false); break;
-		case BytecodeType_S_INT2: interpret_int(&byte, &s, 2, false); break;
-		case BytecodeType_S_INT4: interpret_int(&byte, &s, 4, false); break;
-		case BytecodeType_S_INT8: interpret_int(&byte, &s, 8, false); break;
-		case BytecodeType_U_INT1: interpret_int(&byte, &s, 1, true); break;
-		case BytecodeType_U_INT2: interpret_int(&byte, &s, 2, true); break;
-		case BytecodeType_U_INT4: interpret_int(&byte, &s, 4, true); break;
-		case BytecodeType_U_INT8: interpret_int(&byte, &s, 8, true); break;
+		case BytecodeType_U_INT1: interpret_int(&byte, &s, 1); break;
+		case BytecodeType_U_INT2: interpret_int(&byte, &s, 2); break;
+		case BytecodeType_U_INT4: interpret_int(&byte, &s, 4); break;
+		case BytecodeType_U_INT8: interpret_int(&byte, &s, 8); break;
 
 		case BytecodeType_FLOAT4: interpret_flt(&byte, &s, 4); break;
 		case BytecodeType_FLOAT8: interpret_flt(&byte, &s, 8); break;
@@ -535,19 +533,19 @@ Value* interpret_bytecodes(byte_t const* codes, int64_t codes_count, Value** var
 			int64_t cond = stack_pop_as_i(&s);
 
 			if (!cond)
-				i += offset;
+				byte += offset;
 
 			break;
 		}
 		case BytecodeType_JUMP: {
 			uint64_t offset = stack_pop_as_ui(&s);
-			i += offset;
+			byte += offset;
 
 			break;
 		}
 		case BytecodeType_JUMP_N: {
 			uint64_t offset = stack_pop_as_ui(&s);
-			i -= offset;
+			byte -= offset;
 
 			break;
 		}
@@ -564,7 +562,12 @@ Value* interpret_bytecodes(byte_t const* codes, int64_t codes_count, Value** var
 			switch (id) {
 			case 0: printf(stack_pop_as_i(&s) ? "true" : "false"); break;
 			case 1: printf("%c", (char)stack_pop_as_i(&s)); break;
-			case 2: printf("%lld", (long long int)stack_pop_as_i(&s)); break;
+			case 2:
+				if (stack_top(&s)->is == Val_Int)
+					printf("%lld", stack_pop_as_i(&s));
+				else
+					printf("%lld", stack_pop_as_ui(&s));
+				break;
 			case 3: printf("%f", stack_pop_as_d(&s)); break;
 			case 4: printf("%s", stack_pop_as_s(&s)); break;
 			case 5: interpret_str_input(&s); break;
@@ -644,34 +647,26 @@ Value* interpret_bytecodes(byte_t const* codes, int64_t codes_count, Value** var
 	return NULL;
 }
 
-int interpret_int(byte_t const** byte, stack* s, byte_t size, bool u)
+int interpret_int(byte_t const** byte, stack* s, byte_t size)
 {
 	assert(byte);
 	assert(*byte);
 	assert(s);
 
+	++(*byte);
+
 	Value* val;
 
-	if (u)
-	{
-		uint64_t i;
-		memcpy(&i, byte, size);
+	uint64_t i;
+	memcpy(&i, *byte, size);
 
-		value_create_ui(&val, i);
-	}
-	else
-	{
-		int64_t i;
-		memcpy(&i, byte, size);
-
-		value_create_i(&val, i);
-	}
+	value_create_ui(&val, i);
 
 	stack_push(s, val);
 	
 	// Iterate to the last byte representing the int, and the calling function
 	// interpret_bytecodes will iterate to the next byte sequence.
-	while (size--)
+	while (--size)
 		++(*byte);
 
 	return 0;

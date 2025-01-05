@@ -4,10 +4,6 @@ char const* byte_to_str(byte_t byte)
 {
 	switch (byte)
 	{
-	case BytecodeType_S_INT1: return "S_INT1";
-	case BytecodeType_S_INT2: return "S_INT2";
-	case BytecodeType_S_INT4: return "S_INT4";
-	case BytecodeType_S_INT8: return "S_INT8";
 	case BytecodeType_U_INT1: return "U_INT1";
 	case BytecodeType_U_INT2: return "U_INT2";
 	case BytecodeType_U_INT4: return "U_INT4";

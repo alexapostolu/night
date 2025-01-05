@@ -75,7 +75,7 @@ Value* interpret_bytecodes(
     function_t* funcs
 );
 
-int interpret_int(byte_t const** byte, stack* s, byte_t size, bool u);
+int interpret_int(byte_t const** byte, stack* s, byte_t size);
 
 int interpret_flt(byte_t const** byte, stack* s, byte_t size);
 
