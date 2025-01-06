@@ -17,6 +17,7 @@ int stack_is_empty(stack* s)
 void stack_push(stack* s, Value* val)
 {
     node* new_node = (node*)malloc(sizeof(node));
+    assert(new_node);
     new_node->val = val;
     new_node->next = s->top;
     s->top = new_node;

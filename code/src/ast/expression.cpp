@@ -517,8 +517,8 @@ bytes_t expr::Variable::generate_codes() const
 {
 	assert(id.has_value());
 
-	auto codes = int_to_bytes(*id);
-	codes.push_back((byte_t)BytecodeType_LOAD);
+	auto codes = int_to_bytes(id.value());
+	codes.push_back(BytecodeType_LOAD);
 
 	return codes;
 }
@@ -615,19 +615,19 @@ bytes_t expr::Array::generate_codes() const
 		auto elem_codes = elements[i]->generate_codes();
 
 		if (type_conversion[i].has_value())
-			elem_codes.push_back((byte_t)*type_conversion[i]);
+			elem_codes.push_back(*type_conversion[i]);
 
 		codes.insert(std::begin(codes), std::begin(elem_codes), std::end(elem_codes));
 	}
 
 	// Generate codes for size.
-	auto size_codes = int_to_bytes((byte_t)elements.size());
+	auto size_codes = int_to_bytes((uint16_t)elements.size());
 	codes.insert(std::end(codes), std::begin(size_codes), std::end(size_codes));
 
 	if (is_str())
-		codes.push_back((byte_t)BytecodeType_ALLOCATE_STR);
+		codes.push_back(BytecodeType_ALLOCATE_STR);
 	else
-		codes.push_back((byte_t)BytecodeType_ALLOCATE_ARR);
+		codes.push_back(BytecodeType_ALLOCATE_ARR);
 
 	return codes;
 }

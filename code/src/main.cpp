@@ -35,6 +35,8 @@ int main(int argc, char* argv[])
 	std::copy(std::cbegin(bytes), std::cend(bytes), c_bytes);
 
 	Value** variables = new Value*[StatementScope::max_var_id];
+	for (std::size_t i = 0; i < StatementScope::max_var_id; ++i)
+		variables[i] = nullptr;
 
 	function_t* functions = new function_t[StatementScope::functions.size()];
 	for (std::size_t i = 0; i < StatementScope::functions.size(); ++i)
@@ -43,7 +45,7 @@ int main(int argc, char* argv[])
 		{
 			if (pair.second.id == i)
 			{
-				functions[i].param_count = pair.second.param_names.size();
+				functions[i].param_count = pair.second.param_ids.size();
 				functions[i].param_ids = pair.second.param_ids.data();
 				functions[i].bytes_count = pair.second.bytes.size();
 				functions[i].bytes = new byte_t[bytes.size()];

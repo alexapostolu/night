@@ -41,10 +41,20 @@ Value* interpret_bytecodes(byte_t const* codes, int64_t codes_count, Value** var
 		case BytecodeType_FLOAT8: interpret_flt(&byte, &s, 8); break;
 
 		case BytecodeType_NEGATIVE_I: {
-			Value* val = stack_top(&s);
-			assert(val->is == Val_Int);
+			if (stack_top(&s)->is == Val_Int)
+			{
+				Value* val = stack_top(&s);
+				assert(val->is == Val_Int);
 
-			val->as.i *= -1;
+				val->as.i *= -1;
+			}
+			else
+			{
+				Value* val = stack_top(&s);
+				assert(val->is == Val_Dbl);
+
+				val->as.d *= -1;
+			}
 
 			break;
 		}
@@ -165,14 +175,12 @@ Value* interpret_bytecodes(byte_t const* codes, int64_t codes_count, Value** var
 		}
 
 		case BytecodeType_DIV_I: {
-			Value* val1 = stack_pop(&s);
-			assert(val1->is == Val_Int);
+			int64_t val1 = stack_pop_as_i(&s);
 
 			Value* val2 = stack_top(&s);
 			assert(val2->is == Val_Int);
 
-			val2->as.i /= val1->as.i;
-			value_destroy(val1);
+			val2->as.i /= val1;
 		}
 		case BytecodeType_DIV_F: {
 			Value* val1 = stack_pop(&s);
@@ -185,14 +193,28 @@ Value* interpret_bytecodes(byte_t const* codes, int64_t codes_count, Value** var
 			value_destroy(val1);
 		}
 		case BytecodeType_MOD_I: {
-			Value* val1 = stack_pop(&s);
-			assert(val1->is == Val_Int);
+			if (stack_top(&s)->is == Val_Int)
+			{
+				Value* val1 = stack_pop(&s);
+				assert(val1->is == Val_Int);
 
-			Value* val2 = stack_top(&s);
-			assert(val1->is == Val_Int);
+				Value* val2 = stack_top(&s);
+				assert(val1->is == Val_Int);
 
-			val2->as.i %= val1->as.i;
-			value_destroy(val1);
+				val2->as.i %= val1->as.i;
+				value_destroy(val1);
+			}
+			else
+			{
+				Value* val1 = stack_pop(&s);
+				assert(val1->is == Val_uInt);
+
+				Value* val2 = stack_top(&s);
+				assert(val1->is == Val_uInt);
+
+				val2->as.ui %= val1->as.ui;
+				value_destroy(val1);
+			}
 		}
 
 		case BytecodeType_LESSER_I: {
@@ -364,26 +386,36 @@ Value* interpret_bytecodes(byte_t const* codes, int64_t codes_count, Value** var
 		}
 
 		case BytecodeType_EQUALS_I: {
-			Value* val1 = stack_pop(&s);
-			assert(val1->is == Val_Int);
+			if (stack_top(&s)->is == Val_Int)
+			{
+				Value* val1 = stack_pop(&s);
+				assert(val1->is == Val_Int);
 
-			Value* val2 = stack_top(&s);
-			assert(val1->is == Val_Int);
+				Value* val2 = stack_top(&s);
+				assert(val1->is == Val_Int);
 
-			val2->as.i = val1->as.i == val1->as.i;
-			value_destroy(val1);
+				val2->as.i = val1->as.i == val2->as.i;
+				value_destroy(val1);
+			}
+			else
+			{
+				Value* val1 = stack_pop(&s);
+				assert(val1->is == Val_uInt);
 
-			break;
+				Value* val2 = stack_top(&s);
+				assert(val1->is == Val_uInt);
+
+				val2->as.ui = val1->as.ui == val2->as.ui;
+				value_destroy(val1);
+			}
 		}
 		case BytecodeType_EQUALS_F: {
-			Value* val1 = stack_pop(&s);
-			assert(val1->is == Val_Dbl);
+			double val1 = stack_pop_as_d(&s);
 
 			Value* val2 = stack_top(&s);
-			assert(val1->is == Val_Dbl);
+			assert(val2->is == Val_Dbl);
 
-			val2->as.d = val1->as.d == val1->as.d;
-			value_destroy(val1);
+			val2->as.d = val1 == val2->as.d;
 
 			break;
 		}
@@ -561,7 +593,7 @@ Value* interpret_bytecodes(byte_t const* codes, int64_t codes_count, Value** var
 
 			switch (id) {
 			case 0: printf(stack_pop_as_i(&s) ? "true" : "false"); break;
-			case 1: printf("%c", (char)stack_pop_as_i(&s)); break;
+			case 1: printf("%c", (char)stack_pop_as_ui(&s)); break;
 			case 2:
 				if (stack_top(&s)->is == Val_Int)
 					printf("%lld", stack_pop_as_i(&s));
@@ -587,10 +619,31 @@ Value* interpret_bytecodes(byte_t const* codes, int64_t codes_count, Value** var
 				// char is already stored as an int, so int(char) does nothing
 				break;
 			case 9: {
-				int64_t x = stack_pop_as_i(&s);;
-				int len = snprintf(NULL, 0, "%" PRId64, x);
-				char* str = (char*)malloc(len + 1);
-				snprintf(str, len + 1, "%" PRId64, x);
+				double d = stack_pop_as_d(&s);
+				int64_t i = (int64_t)d;
+
+				Value* val;
+				value_create_i(&val, i);
+
+				stack_push(&s, val);
+			}
+			case 10: {
+				int len;
+				char* str;
+				if (stack_top(&s)->is == Val_Int)
+				{
+					int64_t x = stack_pop_as_i(&s);;
+					len = snprintf(NULL, 0, "%" PRId64, x);
+					str = (char*)malloc(len + 1);
+					snprintf(str, len + 1, "%" PRId64, x);
+				}
+				else
+				{
+					uint64_t x = stack_pop_as_ui(&s);;
+					len = snprintf(NULL, 0, "%" PRId64, x);
+					str = (char*)malloc(len + 1);
+					snprintf(str, len + 1, "%" PRId64, x);
+				}
 
 				Value* val;
 				value_create_s(&val, str, len);
@@ -599,7 +652,7 @@ Value* interpret_bytecodes(byte_t const* codes, int64_t codes_count, Value** var
 
 				break;
 			}
-			case 10: {
+			case 11: {
 				double x = stack_pop_as_d(&s);
 				int len = snprintf(NULL, 0, "%f", x);
 				char* str = (char*)malloc(len + 1);
@@ -612,7 +665,7 @@ Value* interpret_bytecodes(byte_t const* codes, int64_t codes_count, Value** var
 
 				break;
 			}
-			case 11: {
+			case 12: {
 				char* str = stack_pop_as_s(&s);
 				int64_t i = strlen(str);
 
@@ -658,7 +711,29 @@ int interpret_int(byte_t const** byte, stack* s, byte_t size)
 	Value* val;
 
 	uint64_t i;
-	memcpy(&i, *byte, size);
+	
+	switch (size) {
+	case 1: {
+		uint8_t i8;
+		memcpy(&i8, *byte, size);
+		i = i8;
+	}
+	case 2: {
+		uint16_t i16;
+		memcpy(&i16, *byte, size);
+		i = i16;
+		break;
+	}
+	case 4: {
+		uint32_t i32;
+		memcpy(&i32, *byte, size);
+		i = i32;
+		break;
+	}
+	case 8:
+		memcpy(&i, *byte, size);
+		break;
+	}
 
 	value_create_ui(&val, i);
 
@@ -678,8 +753,20 @@ int interpret_flt(byte_t const** byte, stack* s, byte_t size)
 	assert(*byte);
 	assert(s);
 
+	++(*byte);
+
 	double d;
-	memcpy(&d, byte, size);
+
+	if (size == 8)
+	{
+		memcpy(&d, *byte, size);
+	}
+	else
+	{
+		float f;
+		memcpy(&f, *byte, size);
+		d = f;
+	}
 
 	Value* val;
 	value_create_d(&val, d);
@@ -688,7 +775,7 @@ int interpret_flt(byte_t const** byte, stack* s, byte_t size)
 
 	// Iterate to the last byte representing the int, and the calling function
 	// interpret_bytecodes will iterate to the next byte sequence.
-	while (size--)
+	while (--size)
 		++(*byte);
 
 	return 0;
@@ -703,13 +790,9 @@ int interpret_str(stack* s)
 	assert(str);
 
 	for (uint64_t i = 0; i < len; ++i)
-	{
-		Value* c = stack_pop(s);
-		assert(c->is == Val_Int);
+		str[i] = (char)stack_pop_as_ui(s);
 
-		str[i] = (char)c->as.i;
-		free(c);
-	}
+	str[len] = '\0';
 
 	Value* val;
 	value_create_s(&val, str, len);
@@ -845,6 +928,8 @@ int interpret_str_input(stack* s)
 	
 	Value* val;
 	value_create_s(&val, buf, len);
+
+	stack_push(s, val);
 
 	return 0;
 }

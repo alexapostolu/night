@@ -21,16 +21,17 @@ scope_func_container StatementScope::functions = {
 	{ "char",  StatementFunction{ 6,  {}, { Type::INT			}, Type::CHAR			} },
 	{ "int",   StatementFunction{ 7,  {}, { Type(Type::CHAR, 1) }, Type::INT			} },
 	{ "int",   StatementFunction{ 8,  {}, { Type::CHAR			}, Type::INT			} },
-	{ "str",   StatementFunction{ 9,  {}, { Type::INT			}, Type(Type::CHAR, 1)  } },
-	{ "str",   StatementFunction{ 10, {}, { Type::FLOAT			}, Type(Type::CHAR, 1)  } },
-	{ "len",   StatementFunction{ 11, {}, { Type(Type::CHAR, 1) }, Type::INT			} }
+	{ "int",   StatementFunction{ 9,  {}, { Type::FLOAT         }, Type::INT			} },
+	{ "str",   StatementFunction{ 10,  {}, { Type::INT			}, Type(Type::CHAR, 1)  } },
+	{ "str",   StatementFunction{ 11, {}, { Type::FLOAT			}, Type(Type::CHAR, 1)  } },
+	{ "len",   StatementFunction{ 12, {}, { Type(Type::CHAR, 1) }, Type::INT			} }
 };
 
 StatementScope::StatementScope()
 	: vars(), variable_id(0) {}
 
 StatementScope::StatementScope(StatementScope const& upper_scope)
-	: vars(upper_scope.vars), rtn_type(upper_scope.rtn_type), variable_id(0) {}
+	: vars(upper_scope.vars), rtn_type(upper_scope.rtn_type), variable_id(upper_scope.variable_id) {}
 
 StatementScope::StatementScope(StatementScope const& upper_scope, std::optional<Type> const& _rtn_type)
 	: vars(upper_scope.vars), rtn_type(_rtn_type), variable_id(0) {}
@@ -57,7 +58,7 @@ std::optional<uint64_t> StatementScope::create_variable(
 	if (variable_id > max_var_id)
 		max_var_id = variable_id;
 
-	return variable_id;
+	return vars[name].id;
 }
 
 StatementVariable const* StatementScope::get_var(std::string const& name)

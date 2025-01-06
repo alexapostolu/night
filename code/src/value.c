@@ -129,6 +129,4 @@ void value_destroy(Value* val)
 		free(val->as.a);
 		val->as.a = NULL;
 	}
-
-	free(val);
 }

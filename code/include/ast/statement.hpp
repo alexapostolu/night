@@ -94,7 +94,7 @@ private:
 	Type var_type;
 	expr::expr_p expr;
 
-	std::optional<byte_t> id;
+	std::optional<uint64_t> id;
 	std::optional<Type> expr_type;
 };
 
@@ -137,7 +137,7 @@ private:
 	std::vector<int> arr_sizes_numerics;
 	expr::expr_p expr;
 
-	std::optional<byte_t> id;
+	std::optional<uint64_t> id;
 	std::optional<Type> expr_type;
 
 	// true
@@ -170,7 +170,7 @@ private:
 	expr::expr_p expr;
 
 	std::optional<Type> assign_type;
-	std::optional<byte_t> id;
+	std::optional<uint64_t> id;
 };
 
 
@@ -308,7 +308,8 @@ public:
 	FunctionCall(
 		Location const& _loc,
 		std::string const& _name,
-		std::vector<expr::expr_p> const& _arg_exprs
+		std::vector<expr::expr_p> const& _arg_exprs,
+		std::optional<uint64_t> const& _id
 	);
 
 	void insert_node(
@@ -328,7 +329,7 @@ private:
 
 	bool is_expr;
 
-	uint64_t id;
+	std::optional<uint64_t> id;
 };
 
 }

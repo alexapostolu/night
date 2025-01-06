@@ -186,7 +186,7 @@ public:
 private:
 	std::string name;
 
-	std::optional<byte_t> id;
+	std::optional<uint64_t> id;
 };
 
 

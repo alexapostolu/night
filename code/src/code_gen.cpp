@@ -6,6 +6,7 @@
 bytes_t code_gen(std::vector<stmt_p>& block)
 {
 	StatementScope global_scope;
+	global_scope.variable_id = 0;
 	bytes_t codes;
 
 	for (auto& ast : block)

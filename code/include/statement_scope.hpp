@@ -69,9 +69,9 @@ public:
 
 	static scope_func_container functions;
 
-	std::optional<Type> rtn_type;
+	uint64_t variable_id;
 
-	unsigned int variable_id;
+	std::optional<Type> rtn_type;
 	static unsigned int max_var_id;
 
 private:

@@ -72,11 +72,14 @@ bytes_t VariableInit::generate_codes() const
 
 	bytes_t codes;
 
-	auto id_codes = int_to_bytes(*id);
+	auto id_codes = int_to_bytes(id.value());
 	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 
 	if (expr)
-		codes = expr->generate_codes();
+	{
+		auto expr_codes = expr->generate_codes();
+		codes.insert(std::end(codes), std::begin(expr_codes), std::end(expr_codes));
+	}
 
 	if (var_type == Type::BOOL && expr_type == Type::FLOAT)
 		codes.push_back(BytecodeType_F2B);
@@ -305,7 +308,7 @@ bytes_t VariableAssign::generate_codes() const
 
 	if (assign_op != "=")
 	{
-		auto id_codes = int_to_bytes(*id);
+		auto id_codes = int_to_bytes(id.value());
 		codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 		codes.push_back(BytecodeType_LOAD);
 
@@ -698,16 +701,20 @@ bytes_t Return::generate_codes() const
 expr::FunctionCall::FunctionCall(
 	Location const& _loc,
 	std::string const& _name,
-	std::vector<expr::expr_p> const& _arg_exprs)
-	: Statement(_loc), Expression(_loc, Expression::single_precedence), name(_name), arg_exprs(_arg_exprs), is_expr(true)
-{
-}
+	std::vector<expr::expr_p> const& _arg_exprs,
+	std::optional<uint64_t> const& _id)
+	: Statement(_loc)
+	, Expression(_loc, Expression::single_precedence)
+	, name(_name)
+	, arg_exprs(_arg_exprs), is_expr(true)
+	, id(_id)
+{}
 
 void expr::FunctionCall::insert_node(
 	expr::expr_p node,
 	expr::expr_p* prev)
 {
-	node->insert_node(std::make_shared<FunctionCall>(Statement::loc, name, arg_exprs));
+	node->insert_node(std::make_shared<FunctionCall>(Statement::loc, name, arg_exprs, std::nullopt));
 	*prev = node;
 }
 
@@ -802,11 +809,13 @@ expr::expr_p expr::FunctionCall::optimize(StatementScope const& scope)
 	for (auto& arg : arg_exprs)
 		arg = arg->optimize(scope);
 
-	return std::make_shared<FunctionCall>(Expression::loc, name, arg_exprs);
+	return std::make_shared<FunctionCall>(Expression::loc, name, arg_exprs, id);
 }
 
 bytes_t expr::FunctionCall::generate_codes() const
 {
+	assert(id.has_value());
+
 	bytes_t codes;
 
 	for (auto const& param : arg_exprs)
@@ -817,7 +826,7 @@ bytes_t expr::FunctionCall::generate_codes() const
 		codes.insert(std::end(codes), std::begin(param_codes), std::end(param_codes));
 	}
 
-	auto id_codes = int_to_bytes(id);
+	auto id_codes = int_to_bytes(id.value());
 	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 	codes.push_back(BytecodeType_CALL);
 

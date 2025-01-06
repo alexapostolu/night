@@ -231,7 +231,7 @@ expr::FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name)
 		lexer.curr_is(TokenType::COMMA);
 	}
 
-	return expr::FunctionCall(lexer.loc, func_name, arg_exprs);
+	return expr::FunctionCall(lexer.loc, func_name, arg_exprs, std::nullopt);
 }
 
 Conditional parse_if(Lexer& lexer)
