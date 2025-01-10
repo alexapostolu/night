@@ -9,7 +9,8 @@
 #include <string>
 #include <assert.h>
 
-unsigned int StatementScope::max_var_id = 0;
+//unsigned int StatementScope::max_var_id = 0;
+uint64_t StatementScope::variable_id = 0;
 
 scope_func_container StatementScope::functions = {
 	{ "print", StatementFunction{ 0,  {}, { Type::BOOL		    }, std::nullopt			} },
@@ -28,13 +29,13 @@ scope_func_container StatementScope::functions = {
 };
 
 StatementScope::StatementScope()
-	: vars(), variable_id(0) {}
+	: vars() {}//, variable_id(0) {}
 
 StatementScope::StatementScope(StatementScope const& upper_scope)
-	: vars(upper_scope.vars), rtn_type(upper_scope.rtn_type), variable_id(upper_scope.variable_id) {}
+	: vars(upper_scope.vars), rtn_type(upper_scope.rtn_type) {}//, variable_id(upper_scope.variable_id) {}
 
 StatementScope::StatementScope(StatementScope const& upper_scope, std::optional<Type> const& _rtn_type)
-	: vars(upper_scope.vars), rtn_type(_rtn_type), variable_id(0) {}
+	: vars(upper_scope.vars), rtn_type(_rtn_type) {}//, variable_id(0) {}
 
 std::optional<uint64_t> StatementScope::create_variable(
 	std::string const& name,
@@ -51,12 +52,10 @@ std::optional<uint64_t> StatementScope::create_variable(
 	if (night::error::get().has_minor_errors())
 		return std::nullopt;
 
-	vars[name] = { variable_id, type, 0 };
+	vars[name] = { variable_id++, type, 0 };
 
-	variable_id++;
-
-	if (variable_id > max_var_id)
-		max_var_id = variable_id;
+	//if (variable_id > max_var_id)
+	//	max_var_id = variable_id;
 
 	return vars[name].id;
 }

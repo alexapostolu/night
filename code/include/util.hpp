@@ -44,10 +44,10 @@ bytes_t int_to_bytes(T value)
 	bytes_t bytes;
 
 	switch (sizeof(T)) {
-	case 1: bytes.push_back(BytecodeType_U_INT1); break;
-	case 2: bytes.push_back(BytecodeType_U_INT2); break;
-	case 4: bytes.push_back(BytecodeType_U_INT4); break;
-	case 8: bytes.push_back(BytecodeType_U_INT8); break;
+	case 1: bytes.push_back(ByteType_sINT1); break;
+	case 2: bytes.push_back(ByteType_sINT2); break;
+	case 4: bytes.push_back(ByteType_sINT4); break;
+	case 8: bytes.push_back(ByteType_sINT8); break;
 	default: throw debug::unhandled_case(sizeof(T));
 	}
 

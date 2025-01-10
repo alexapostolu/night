@@ -28,17 +28,14 @@ typedef byte_t* bytes_t;
  * @brief Enumeration of all bytecode types in Night.
  */
 enum {
-	/*
-	 * Negative numbers aren't real they are a psyop created by the government.
-	 */
-	BytecodeType_U_INT1,
-	BytecodeType_U_INT2,
-	BytecodeType_U_INT4,
-	BytecodeType_U_INT8,
-	BytecodeType_FLOAT4,
-	BytecodeType_FLOAT8,
+	ByteType_sINT1,
+	ByteType_sINT2,
+	ByteType_sINT4,
+	ByteType_sINT8,
+	ByteType_FLOAT4,
+	ByteType_FLOAT8,
 
-	BytecodeType_NEGATIVE_I, BytecodeType_NEGATIVE_F,
+	ByteType_NEG_I, ByteType_NEG_F,
 	BytecodeType_NOT_I, BytecodeType_NOT_F,
 
 	BytecodeType_ADD_I, BytecodeType_ADD_F, BytecodeType_ADD_S,

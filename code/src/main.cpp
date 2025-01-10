@@ -34,9 +34,9 @@ int main(int argc, char* argv[])
 	byte_t* c_bytes = new byte_t[bytes.size()];
 	std::copy(std::cbegin(bytes), std::cend(bytes), c_bytes);
 
-	Value** variables = new Value*[StatementScope::max_var_id];
-	for (std::size_t i = 0; i < StatementScope::max_var_id; ++i)
-		variables[i] = nullptr;
+	Value** variables = (Value**)malloc(StatementScope::variable_id * sizeof(Value*));
+	for (std::size_t i = 0; i < StatementScope::variable_id; ++i)
+		variables[i] = NULL;
 
 	function_t* functions = new function_t[StatementScope::functions.size()];
 	for (std::size_t i = 0; i < StatementScope::functions.size(); ++i)
@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
 
 	Value* ret = interpret_bytecodes(c_bytes, bytes.size(), variables, functions);
 	delete[] c_bytes;
-	for (std::size_t i = 0; i < StatementScope::max_var_id; ++i)
+	for (std::size_t i = 0; i < StatementScope::variable_id; ++i)
 	{
 		if (variables[i])
 			value_destroy(variables[i]);
@@ -69,7 +69,6 @@ int main(int argc, char* argv[])
 
 	switch (ret->is) {
 	case Value::Val_Int: return static_cast<int>(ret->as.i);
-	case Value::Val_uInt: return static_cast<int>(ret->as.ui);
 	case Value::Val_Dbl: return static_cast<int>(ret->as.d);
 	default: return 0;
 	}

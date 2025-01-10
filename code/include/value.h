@@ -16,7 +16,6 @@ extern "C" {
 typedef struct Value {
 	enum {
 		Val_Int,
-		Val_uInt,
 		Val_Dbl,
 		Val_Str,
 		Val_Arr
@@ -24,7 +23,6 @@ typedef struct Value {
 
 	union {
 		int64_t i;
-		uint64_t ui;
 		double d;
 		char* s;
 		struct Value** a;
@@ -34,12 +32,11 @@ typedef struct Value {
 	size_t len;
 } Value;
 
-void value_create_i(struct Value** _val, int64_t i);
-void value_create_ui(struct Value** _val, uint64_t ui);
-void value_create_d(struct Value** _val, double d);
-int  value_create_s(struct Value** _val, char* s, size_t len);
-int  value_create_a(struct Value** _val, struct Value** a, size_t len);
-int  value_create_val(struct Value** _val, struct Value* other);
+void value_create_as_i(struct Value** _val, int64_t i);
+void value_create_as_d(struct Value** _val, double d);
+int  value_create_as_s(struct Value** _val, char* s, size_t len);
+int  value_create_as_a(struct Value** _val, struct Value** a, size_t len);
+int  value_create_from_val(struct Value** _val, struct Value* other);
 
 void value_destroy(struct Value* val);
 

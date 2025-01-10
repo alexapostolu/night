@@ -70,10 +70,7 @@ bytes_t VariableInit::generate_codes() const
 
 	// Populate expression array
 
-	bytes_t codes;
-
-	auto id_codes = int_to_bytes(id.value());
-	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
+	bytes_t codes = int_to_bytes(id.value());
 
 	if (expr)
 	{
@@ -189,10 +186,7 @@ bytes_t ArrayInitialization::generate_codes() const
 	assert(id.has_value());
 	assert(expr);
 
-	bytes_t codes;
-
-	auto id_codes = int_to_bytes(*id);
-	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
+	bytes_t codes = int_to_bytes(id.value());
 	
 	auto expr_bytes = expr->generate_codes();
 	codes.insert(std::end(codes), std::begin(expr_bytes), std::end(expr_bytes));
@@ -301,7 +295,7 @@ bytes_t VariableAssign::generate_codes() const
 
 	// ID.
 
-	auto id_codes = int_to_bytes(*id);
+	auto id_codes = int_to_bytes(id.value());
 	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 
 	// Value.
@@ -441,6 +435,8 @@ bytes_t Conditional::generate_codes() const
 		{
 			auto cond_codes = cond_expr->generate_codes();
 			codes.insert(std::end(codes), std::begin(cond_codes), std::end(cond_codes));
+
+			
 		}
 		else
 		{
@@ -482,7 +478,6 @@ bytes_t Conditional::generate_codes() const
 		auto offset_codes = int_to_bytes<uint64_t>(codes.size() - jump_offsets[i] - 1);
 		night::container_insert(codes, offset_codes, jump_offsets[i]);
 	}
-
 
 	return codes;
 }
@@ -613,13 +608,12 @@ Function::Function(
 void Function::check(StatementScope& global_scope)
 {
 	StatementScope func_scope(global_scope, rtn_type);
-
 	for (std::size_t i = 0; i < param_names.size(); ++i)
 	{
 		auto param_id = func_scope.create_variable(param_names[i], param_types[i], loc);
 
 		if (param_id.has_value())
-			param_ids.push_back(*param_id);
+			param_ids.push_back(param_id.value());
 	}
 
 	try {
@@ -668,7 +662,7 @@ void Return::check(StatementScope& scope)
 				"found return type '" + night::to_str(*expr_type) + "', "
 				"expected void return type", loc);
 
-		if (!is_same_or_primitive(*scope.rtn_type, *expr_type))
+		else if (!is_same_or_primitive(*scope.rtn_type, *expr_type))
 			night::error::get().create_minor_error(
 				"found return type '" + night::to_str(*expr_type) + "', "
 				"expected return type '" + night::to_str(*scope.rtn_type) + "'", loc);

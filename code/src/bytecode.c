@@ -4,15 +4,15 @@ char const* byte_to_str(byte_t byte)
 {
 	switch (byte)
 	{
-	case BytecodeType_U_INT1: return "U_INT1";
-	case BytecodeType_U_INT2: return "U_INT2";
-	case BytecodeType_U_INT4: return "U_INT4";
-	case BytecodeType_U_INT8: return "U_INT8";
-	case BytecodeType_FLOAT4: return "FLOAT4";
-	case BytecodeType_FLOAT8: return "FLOAT8";
+	case ByteType_sINT1: return "sINT1";
+	case ByteType_sINT2: return "sINT2";
+	case ByteType_sINT4: return "sINT4";
+	case ByteType_sINT8: return "sINT8";
+	case ByteType_FLOAT4: return "FLOAT4";
+	case ByteType_FLOAT8: return "FLOAT8";
 
-	case BytecodeType_NEGATIVE_I: return "NEGATIVE_I";
-	case BytecodeType_NEGATIVE_F: return "NEGATIVE_F";
+	case ByteType_NEG_I: return "NEG_I";
+	case ByteType_NEG_F: return "NEG_F";
 	case BytecodeType_NOT_I: return "NOT_I";
 	case BytecodeType_NOT_F: return "NOT_F";
 

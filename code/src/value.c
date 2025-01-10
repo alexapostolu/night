@@ -4,7 +4,7 @@
 #include <string.h>
 #include <assert.h>
 
-void value_create_i(Value** _val, int64_t i)
+void value_create_as_i(Value** _val, int64_t i)
 {
 	assert(_val);
 
@@ -17,20 +17,7 @@ void value_create_i(Value** _val, int64_t i)
 	*_val = val;
 }
 
-void value_create_ui(Value** _val, uint64_t ui)
-{
-	assert(_val);
-
-	Value* val = (Value*)malloc(sizeof(Value));
-	assert(val);
-
-	val->is = Val_uInt;
-	val->as.ui = ui;
-
-	*_val = val;
-}
-
-void value_create_d(Value** _val, double d)
+void value_create_as_d(Value** _val, double d)
 {
 	assert(_val);
 
@@ -43,7 +30,7 @@ void value_create_d(Value** _val, double d)
 	*_val = val;
 }
 
-int value_create_s(Value** _val, char* s, size_t len)
+int value_create_as_s(Value** _val, char* s, size_t len)
 {
 	assert(_val);
 	assert(s);
@@ -65,7 +52,7 @@ int value_create_s(Value** _val, char* s, size_t len)
 	*_val = val;
 }
 
-int value_create_a(Value** _val, Value** a, size_t len)
+int value_create_as_a(Value** _val, Value** a, size_t len)
 {
 	assert(_val);
 	assert(a);
@@ -79,33 +66,28 @@ int value_create_a(Value** _val, Value** a, size_t len)
 	*_val = val;
 }
 
-int value_create_val(Value** _val, Value* other)
+int value_create_from_val(Value** _val, Value* other)
 {
 	assert(_val);
 	assert(other);
 
 	if (other->is == Val_Int)
 	{
-		value_create_i(_val, other->as.i);
-		return 0;
-	}
-	else if (other->is == Val_uInt)
-	{
-		value_create_ui(_val, other->as.ui);
+		value_create_as_i(_val, other->as.i);
 		return 0;
 	}
 	else if (other->is == Val_Dbl)
 	{
-		value_create_d(_val, other->as.d);
+		value_create_as_d(_val, other->as.d);
 		return 0;
 	}
 	else if (other->is == Val_Str)
 	{
-		return value_create_s(_val, other->as.s, other->len);
+		return value_create_as_s(_val, other->as.s, other->len);
 	}
 	else if (other->is == Val_Arr)
 	{
-		return value_create_a(_val, other->as.a, other->len);
+		return value_create_as_a(_val, other->as.a, other->len);
 	}
 
 	return 0;

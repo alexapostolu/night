@@ -16,6 +16,7 @@ int stack_is_empty(stack* s)
 
 void stack_push(stack* s, Value* val)
 {
+    assert(val);
     node* new_node = (node*)malloc(sizeof(node));
     assert(new_node);
     new_node->val = val;
@@ -35,7 +36,7 @@ Value* stack_pop(stack* s)
     s->top = s->top->next;
 
     Value* val = top->val;
-    free(top);
+    //free(top);
 
     return val;
 }
@@ -47,25 +48,11 @@ int64_t stack_pop_as_i(stack* s)
     assert(val->is == Val_Int);
 
     int64_t i = val->as.i;
-    free(val);
+    //free(val);
 
     printf("  value as int {%lld}\n", i);
 
     return i;
-}
-
-uint64_t stack_pop_as_ui(stack* s)
-{
-    Value* val = stack_pop(s);
-    assert(val);
-    assert(val->is == Val_uInt);
-
-    uint64_t ui = val->as.ui;
-    free(val);
-
-    printf("  value as uint {%llu}\n", ui);
-
-    return ui;
 }
 
 double stack_pop_as_d(stack* s)
@@ -75,7 +62,7 @@ double stack_pop_as_d(stack* s)
     assert(val->is == Val_Dbl);
 
     double d = val->as.d;
-    free(val);
+    //free(val);
 
     printf("  value as {%f}\n", d);
 
@@ -89,7 +76,7 @@ char* stack_pop_as_s(stack* s)
     assert(val->is == Val_Str);
 
     char* str = val->as.s;
-    free(val);
+    //free(val);
 
     printf("  value as string {%s}\n", str);
 

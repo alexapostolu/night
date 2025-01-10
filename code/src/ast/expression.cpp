@@ -90,11 +90,11 @@ std::optional<Type> expr::UnaryOp::type_check(
 		case Type::BOOL:
 		case Type::CHAR:
 		case Type::INT:
-			op_code = BytecodeType_NEGATIVE_I;
+			op_code = ByteType_NEG_I;
 			return Type::INT;
 
 		case Type::FLOAT:
-			op_code = BytecodeType_NEGATIVE_F;
+			op_code = ByteType_NEG_F;
 			return Type::FLOAT;
 		}
 		
@@ -308,7 +308,7 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 		if (lhs_type->is_str() && rhs_type->is_str())
 		{
 			assert(op_code_str.has_value());
-			op_code = *op_code_str;
+			op_code = op_code_str.value();
 			return Type::BOOL;
 		}
 
@@ -469,15 +469,15 @@ bytes_t expr::BinaryOp::generate_codes() const
 	codes.insert(std::end(codes), std::begin(codes_lhs), std::end(codes_lhs));
 
 	if (cast_lhs.has_value())
-		codes.push_back((byte_t)*cast_lhs);
+		codes.push_back(cast_lhs.value());
 	
 	auto codes_rhs = rhs->generate_codes();
 	codes.insert(std::end(codes), std::begin(codes_rhs), std::end(codes_rhs));
 
 	if (cast_rhs.has_value())
-		codes.push_back((byte_t)*cast_rhs);
+		codes.push_back(cast_rhs.value());
 
-	codes.push_back((byte_t)op_code);
+	codes.push_back(op_code);
 
 	return codes;
 }
@@ -723,7 +723,7 @@ bytes_t expr::Numeric::generate_codes() const
 		// Check if the value is within the range of a float
 		if (*dbl >= -std::numeric_limits<float>::max() && *dbl <= std::numeric_limits<float>::max())
 		{
-			bytes_t codes = { BytecodeType_FLOAT4 };
+			bytes_t codes = { ByteType_FLOAT4 };
 
 			uint8_t arr[sizeof(float)];
 			float f = (float)*dbl;
@@ -736,7 +736,7 @@ bytes_t expr::Numeric::generate_codes() const
 		}
 		else
 		{
-			bytes_t codes = { BytecodeType_FLOAT8 };
+			bytes_t codes = { ByteType_FLOAT8 };
 
 			uint8_t arr[sizeof(double)];
 			std::memcpy(arr, dbl, sizeof(double));
