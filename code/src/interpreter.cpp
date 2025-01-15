@@ -39,24 +39,18 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 
 		switch (*it)
 		{
-		case BytecodeType_S_INT1:
-		case BytecodeType_S_INT2:
-		case BytecodeType_S_INT4:
-		case BytecodeType_S_INT8:
-			s.emplace(get_int<int64_t>(it));
-			break;
+		case ByteType_sInt1: s.emplace(interpret_int<int64_t>(it, 1)); break;
+		case ByteType_sInt2: s.emplace(interpret_int<int64_t>(it, 2)); break;
+		case ByteType_sInt4: s.emplace(interpret_int<int64_t>(it, 4)); break;
+		case ByteType_sInt8: s.emplace(interpret_int<int64_t>(it, 8)); break;
 
-		case BytecodeType_U_INT1:
-		case BytecodeType_U_INT2:
-		case BytecodeType_U_INT4:
-		case BytecodeType_U_INT8:
-			s.emplace(get_int<uint64_t>(it));
-			break;
+		case ByteType_uInt1: s.emplace(interpret_int<uint64_t>(it, 1)); break;
+		case ByteType_uInt2: s.emplace(interpret_int<uint64_t>(it, 2)); break;
+		case ByteType_uInt4: s.emplace(interpret_int<uint64_t>(it, 4)); break;
+		case ByteType_uInt8: s.emplace(interpret_int<uint64_t>(it, 8)); break;
 
-		case BytecodeType_FLOAT4:
-		case BytecodeType_FLOAT8:
-			s.emplace(get_float(it));
-			break;
+		case ByteType_Flt4: s.emplace(interpret_flt(it, 4)); break;
+		case ByteType_Flt8: s.emplace(interpret_flt(it, 8)); break;
 
 		case BytecodeType_NEGATIVE_I:
 			s.emplace(-pop(s).as.i);
@@ -344,7 +338,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			case 0: printf(pop(s).as.i ? "true" : "false"); break;
 			case 1: printf("%c", (char)pop(s).as.i); break;
 			case 2: printf("%lld", (long long int)pop(s).as.i); break;
-			case 3: printf("%f", pop(s).as.d); break;
+			case 3: printf("%.17gf", pop(s).as.d); break;
 			case 4: printf("%s", pop(s).as.s); break;
 			case 5: push_string_input(s); break;
 			case 6: break; // char(int); can not remove bytecode because of char(2 + 3) => 2 + 3, and now we have 2, 3, + on the stack that does nothing
@@ -403,36 +397,20 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 	return std::nullopt;
 }
 
-double get_float(bytecodes_t::const_iterator& it)
+double interpret_flt(bytecodes_t::const_iterator& it, unsigned short size)
 {
-	assert(*it == BytecodeType_FLOAT4 || *it == BytecodeType_FLOAT8);
+	assert(size == 4 || size == 8);
 
-	if (*it == BytecodeType_FLOAT4)
-	{
-		bytecode_t float_codes[4];
-		for (int i = 0; i < sizeof(float_codes) / sizeof(float_codes[0]); ++i)
-			float_codes[i] = *(++it);
-
-		float f;
-		std::memcpy(&f, float_codes, sizeof(float));
-
-		return (double)f;
-	}
-	else if (*it == BytecodeType_FLOAT8)
-	{
-		bytecode_t double_codes[8];
-		for (int i = 0; i < sizeof(double_codes) / sizeof(double_codes[0]); ++i)
-			double_codes[i] = *(++it);
-
+	union {
+		uint8_t bytes[sizeof(double)];
 		double d;
-		std::memcpy(&d, double_codes, sizeof(float));
+		float f;
+	};
 
-		return d;
-	}
-	else
-	{
-		exit(1);
-	}
+	for (unsigned short i = 0; i < size; ++i)
+		bytes[i] = *(++it);
+
+	return size == 4 ? f : d;
 }
 
 void push_str(std::stack<intpr::Value>& s)

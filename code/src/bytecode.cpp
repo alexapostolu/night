@@ -10,22 +10,22 @@ bytecodes_t int_to_bytecodes(uint64_t uint64, int size)
 
 	if ((size == -1 || size == 1) && uint64 <= std::numeric_limits<uint8_t>::max())
 	{
-		codes.push_back(BytecodeType_S_INT1);
+		codes.push_back(ByteType_sInt1);
 		count = 1;
 	}
 	else if ((size == -1 || size == 2) && uint64 <= std::numeric_limits<uint16_t>::max())
 	{
-		codes.push_back(BytecodeType_S_INT2);
+		codes.push_back(ByteType_sInt2);
 		count = 2;
 	}
 	else if ((size == -1 || size == 4) && uint64 <= std::numeric_limits<uint32_t>::max())
 	{
-		codes.push_back(BytecodeType_S_INT4);
+		codes.push_back(ByteType_sInt4);
 		count = 4;
 	}
 	else if ((size == -1 || size == 8) && uint64 <= std::numeric_limits<uint64_t>::max())
 	{
-		codes.push_back(BytecodeType_S_INT8);
+		codes.push_back(ByteType_sInt8);
 		count = 8;
 	}
 
@@ -42,16 +42,16 @@ std::string night::to_str(bytecode_t type)
 {
 	switch (type)
 	{
-	case BytecodeType_S_INT1: return "S_INT1";
-	case BytecodeType_S_INT2: return "S_INT2";
-	case BytecodeType_S_INT4: return "S_INT4";
-	case BytecodeType_S_INT8: return "S_INT8";
-	case BytecodeType_U_INT1: return "U_INT1";
-	case BytecodeType_U_INT2: return "U_INT2";
-	case BytecodeType_U_INT4: return "U_INT4";
-	case BytecodeType_U_INT8: return "U_INT8";
-	case BytecodeType_FLOAT4: return "FLOAT4";
-	case BytecodeType_FLOAT8: return "FLOAT8";
+	case ByteType_sInt1: return "sInt1";
+	case ByteType_sInt2: return "sInt2";
+	case ByteType_sInt4: return "sInt4";
+	case ByteType_sInt8: return "sInt8";
+	case ByteType_uInt1: return "uInt1";
+	case ByteType_uInt2: return "uInt2";
+	case ByteType_uInt4: return "uInt4";
+	case ByteType_uInt8: return "uInt8";
+	case ByteType_Flt4: return "Flt4";
+	case ByteType_Flt8: return "Flt8";
 
 	case BytecodeType_NEGATIVE_I: return "NEGATIVE_I";
 	case BytecodeType_NEGATIVE_F: return "NEGATIVE_F";

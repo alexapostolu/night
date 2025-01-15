@@ -76,16 +76,17 @@ using bytecodes_t = std::list<bytecode_t>;
  * number of bytecodes present.
  */
 enum : bytecode_t {
-	BytecodeType_S_INT1,	// S_INT1, uint8
-	BytecodeType_S_INT2,	// S_INT2, uint8, uint8
-	BytecodeType_S_INT4,	// S_INT4, uint8, uint8, uint8
-	BytecodeType_S_INT8,	// S_INT8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8
-	BytecodeType_U_INT1,	// U_INT1, uint8
-	BytecodeType_U_INT2,	// U_INT2, uint8, uint8
-	BytecodeType_U_INT4,	// U_INT4, uint8, uint8, uint8
-	BytecodeType_U_INT8,	// U_INT8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8
-	BytecodeType_FLOAT4,	// FLOAT4, uint8, uint8, uint8, uint8
-	BytecodeType_FLOAT8,	// FLOAT8, uint8, uint8, uint8, uint8, uint8, uint8, uint8, uint8
+	ByteType_sInt1,
+	ByteType_sInt2,
+	ByteType_sInt4,
+	ByteType_sInt8,
+	ByteType_uInt1,
+	ByteType_uInt2,
+	ByteType_uInt4,
+	ByteType_uInt8,
+
+	ByteType_Flt4,
+	ByteType_Flt8,
 
 	BytecodeType_NEGATIVE_I, BytecodeType_NEGATIVE_F,	// numeric, NEGATIVE 
 	BytecodeType_NOT_I, BytecodeType_NOT_F,				// numeric, NOT

@@ -14,54 +14,38 @@
 #include <stdlib.h>
 #include <string.h>
 
-std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes);
+std::optional<intpr::Value> interpret_bytecodes(
+	InterpreterScope& scope,
+	bytecodes_t const& codes
+);
 
 // template can either be int64_t or uint64_t
 // iterator
 //   start: int code type
 //   end: last code of int
 template <typename T>
-T get_int(bytecodes_t::const_iterator& it)
+T interpret_int(bytecodes_t::const_iterator& it, unsigned short size)
 {
-	int count;
-
-	switch (*it)
-	{
-	case BytecodeType_S_INT1:
-	case BytecodeType_U_INT1: count = 1; break;
-	case BytecodeType_S_INT2:
-	case BytecodeType_U_INT2: count = 2; break;
-	case BytecodeType_S_INT4:
-	case BytecodeType_U_INT4: count = 4; break;
-	case BytecodeType_S_INT8:
-	case BytecodeType_U_INT8: count = 8; break;
-	default: throw debug::unhandled_case(*it);
-	}
-
 	T num = 0;
-	for (int i = 0; i < count; ++i)
+	for (unsigned short i = 0; i < size; ++i)
 	{
-		T it_n = *(++it);
-		for (int j = 0; j < i; ++j)
-			it_n <<= 8;
+		T byte = *(++it);
+		for (unsigned short j = 0; j < i; ++j)
+			byte <<= 8;
 
-		num |= it_n;
+		num |= byte;
 	}
 
 	return num;
 }
+
+double interpret_flt(bytecodes_t::const_iterator& it, unsigned short size);
 
 
 // iterator
 //   start: bytecode type
 //   end:   last code of float
 void push_float(std::stack<intpr::Value>& s, bytecodes_t::const_iterator& it, int count);
-
-/**
- * Iterator starts at bytecode type (either FLOAT4 or FLOAT8) and ends at last
- * code of the float.
- */
-double get_float(bytecodes_t::const_iterator& it);
 
 void push_str(std::stack<intpr::Value>& s);
 void push_arr(std::stack<intpr::Value>& s);

@@ -719,32 +719,32 @@ bytecodes_t expr::Numeric::generate_codes() const
 {
 	if (double const* dbl = std::get_if<double>(&val))
 	{
-		// Check if the value is within the range of a float
-		if (*dbl >= -std::numeric_limits<float>::max() && *dbl <= std::numeric_limits<float>::max())
-		{
-			bytecodes_t codes = { BytecodeType_FLOAT4 };
+		bytecodes_t bytes;
 
-			uint8_t arr[sizeof(float)];
+		// Check if the value is within the range of a float
+		if (*dbl >= std::numeric_limits<float>::min() && *dbl <= std::numeric_limits<float>::max())
+		{
+			bytes.push_back(ByteType_Flt4);
+
 			float f = (float)*dbl;
+			uint8_t arr[sizeof(float)];
 			std::memcpy(arr, &f, sizeof(float));
 
 			for (int i = 0; i < sizeof(float); ++i)
-				codes.push_back(arr[i]);
-
-			return codes;
+				bytes.push_back(arr[i]);
 		}
 		else
 		{
-			bytecodes_t codes = { BytecodeType_FLOAT8 };
+			bytes.push_back(ByteType_Flt8);
 
 			uint8_t arr[sizeof(double)];
 			std::memcpy(arr, dbl, sizeof(double));
 
 			for (int i = 0; i < sizeof(double); ++i)
-				codes.push_back(arr[i]);
-
-			return codes;
+				bytes.push_back(arr[i]);
 		}
+
+		return bytes;
 	}
 	else
 	{
