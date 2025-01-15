@@ -51,14 +51,14 @@ Value* interpret_bytecodes(byte_t const* codes, int64_t codes_count, Value** var
 		init = 1;
 	}
 
-	printf("\n\nInterpreting\n\n");
+	//(void)freopen("/dev/null", "w", stderr);
 	//for (int64_t i = 0; i < codes_count; ++i)
 	//	printf("%d\n", codes[i]);
 	//printf("\n\n");
 
 	for (byte_t const* byte = &codes[0]; byte < codes + codes_count; ++byte)
 	{
-		printf("\n%s\n", byte_to_str(*byte));
+		fprintf(stderr, "\n%s\n", byte_to_str(*byte));
 
 		switch (*byte)
 		{
@@ -199,9 +199,6 @@ Value* interpret_bytecodes(byte_t const* codes, int64_t codes_count, Value** var
 			Value* val = stack_pop(&s);
 			uint64_t id = stack_pop_as_i(&s);
 
-			//if (variables[id])
-			//	value_destroy(variables[id]);
-
 			variables[id] = val;
 
 			break;
@@ -234,7 +231,6 @@ Value* interpret_bytecodes(byte_t const* codes, int64_t codes_count, Value** var
 				*val = (*val)->as.a[idx];
 			}
 
-			free(*val);
 			*val = expr;
 
 			break;
@@ -358,10 +354,7 @@ Value* interpret_bytecodes(byte_t const* codes, int64_t codes_count, Value** var
 			}
 			default: {
 				for (size_t i = 0; i < funcs[id].param_count; ++i)
-				{
-					printf("Func Param {%llu}\n", funcs[id].param_ids[i]);
 					variables[funcs[id].param_ids[i]] = stack_pop(&s);
-				}
 
 				Value* ret = interpret_bytecodes(funcs[id].bytes, funcs[id].bytes_count, variables, funcs);
 				if (ret)

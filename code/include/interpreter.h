@@ -43,6 +43,10 @@
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "bytecode.h"
 #include "function.h"
 #include "value.h"
@@ -50,9 +54,6 @@
 
 #include <stdbool.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*
  * @brief Interprets a sequence of bytecodes while maintaining an array of

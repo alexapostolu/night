@@ -101,14 +101,14 @@ void value_destroy(Value* val)
 	{
 		assert(val->as.s);
 
-		free(val->as.s);
+		//free(val->as.s);
 		val->as.s = NULL;
 	}
 	else if (val->is == Val_Arr)
 	{
 		assert(val->as.a);
 
-		free(val->as.a);
+		//free(val->as.a);
 		val->as.a = NULL;
 	}
 }

@@ -8,6 +8,10 @@
 
 #include "value.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct node {
     Value* val;
     struct node* next;
@@ -32,3 +36,7 @@ double stack_pop_as_d(stack* s);
 char* stack_pop_as_s(stack* s);
 
 Value* stack_top(stack* s);
+
+#ifdef __cplusplus
+}
+#endif
