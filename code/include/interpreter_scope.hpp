@@ -34,10 +34,6 @@ struct Value
 	Value(Array _a);
 	Value(Value const& _v);
 	~Value();
-
-private:
-	int is_str_alloc;
-	int is_arr_alloc;
 };
 
 }

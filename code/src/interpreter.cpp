@@ -328,10 +328,12 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			freeze = true;
 			break;
 
-		case BytecodeType_RETURN:
+		case BytecodeType_RETURN: {
 			if (s.empty())
-				return std::optional<intpr::Value>(std::nullopt);
+				return std::nullopt;
+
 			return pop(s);
+		}
 
 		case BytecodeType_CALL: {
 			int64_t id = pop(s).as.i;
