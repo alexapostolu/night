@@ -10,22 +10,22 @@ bytecodes_t int_to_bytecodes(uint64_t uint64, int size)
 
 	if ((size == -1 || size == 1) && uint64 <= std::numeric_limits<uint8_t>::max())
 	{
-		codes.push_back(ByteType_sInt1);
+		codes.push_back(ByteType_sINT1);
 		count = 1;
 	}
 	else if ((size == -1 || size == 2) && uint64 <= std::numeric_limits<uint16_t>::max())
 	{
-		codes.push_back(ByteType_sInt2);
+		codes.push_back(ByteType_sINT2);
 		count = 2;
 	}
 	else if ((size == -1 || size == 4) && uint64 <= std::numeric_limits<uint32_t>::max())
 	{
-		codes.push_back(ByteType_sInt4);
+		codes.push_back(ByteType_sINT4);
 		count = 4;
 	}
 	else if ((size == -1 || size == 8) && uint64 <= std::numeric_limits<uint64_t>::max())
 	{
-		codes.push_back(ByteType_sInt8);
+		codes.push_back(ByteType_sINT8);
 		count = 8;
 	}
 
@@ -38,20 +38,34 @@ bytecodes_t int_to_bytecodes(uint64_t uint64, int size)
 	return codes;
 }
 
+bytecodes_t uint_to_bytes(uint64_t ui)
+{
+	int count = 0;
+	bytecodes_t bytes = { ByteType_sINT8 };
+
+	for (int i = 0; i < 8; ++i)
+	{
+		bytes.push_back(ui & 0xFF);
+		ui >>= 8;
+	}
+
+	return bytes;
+}
+
 std::string night::to_str(bytecode_t type)
 {
 	switch (type)
 	{
-	case ByteType_sInt1: return "sInt1";
-	case ByteType_sInt2: return "sInt2";
-	case ByteType_sInt4: return "sInt4";
-	case ByteType_sInt8: return "sInt8";
-	case ByteType_uInt1: return "uInt1";
-	case ByteType_uInt2: return "uInt2";
-	case ByteType_uInt4: return "uInt4";
-	case ByteType_uInt8: return "uInt8";
-	case ByteType_Flt4: return "Flt4";
-	case ByteType_Flt8: return "Flt8";
+	case ByteType_sINT1: return "sINT1";
+	case ByteType_sINT2: return "sINT2";
+	case ByteType_sINT4: return "sINT4";
+	case ByteType_sINT8: return "sINT8";
+	case ByteType_uINT1: return "uINT1";
+	case ByteType_uINT2: return "uINT2";
+	case ByteType_uINT4: return "uINT4";
+	case ByteType_uINT8: return "uINT8";
+	case ByteType_FLT4: return "FLT4";
+	case ByteType_FLT8: return "FLT8";
 
 	case BytecodeType_NEGATIVE_I: return "NEGATIVE_I";
 	case BytecodeType_NEGATIVE_F: return "NEGATIVE_F";
@@ -99,10 +113,10 @@ std::string night::to_str(bytecode_t type)
 	case BytecodeType_F2I: return "F2I";
 	case BytecodeType_F2B: return "F2B";
 
-	case BytecodeType_LOAD: return "LOAD";
+	case ByteType_LOAD: return "LOAD";
 	case BytecodeType_LOAD_ELEM: return "LOAD_ELEM";
 
-	case BytecodeType_STORE: return "STORE";
+	case ByteType_STORE: return "STORE";
 	case BytecodeType_STORE_INDEX_A: return "STORE_INDEX_A";
 	case BytecodeType_STORE_INDEX_S: return "STORE_INDEX_S";
 

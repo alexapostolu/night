@@ -516,8 +516,8 @@ bytecodes_t expr::Variable::generate_codes() const
 {
 	assert(id.has_value());
 
-	auto codes = int_to_bytecodes(*id);
-	codes.push_back((bytecode_t)BytecodeType_LOAD);
+	auto codes = uint_to_bytes(*id);
+	codes.push_back((bytecode_t)ByteType_LOAD);
 
 	return codes;
 }
@@ -724,7 +724,7 @@ bytecodes_t expr::Numeric::generate_codes() const
 		// Check if the value is within the range of a float
 		if (*dbl >= std::numeric_limits<float>::min() && *dbl <= std::numeric_limits<float>::max())
 		{
-			bytes.push_back(ByteType_Flt4);
+			bytes.push_back(ByteType_FLT4);
 
 			float f = (float)*dbl;
 			uint8_t arr[sizeof(float)];
@@ -735,7 +735,7 @@ bytecodes_t expr::Numeric::generate_codes() const
 		}
 		else
 		{
-			bytes.push_back(ByteType_Flt8);
+			bytes.push_back(ByteType_FLT8);
 
 			uint8_t arr[sizeof(double)];
 			std::memcpy(arr, dbl, sizeof(double));

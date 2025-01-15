@@ -84,10 +84,10 @@ bytecodes_t VariableInit::generate_codes() const
 	else if (var_type != Type::FLOAT && expr_type == Type::FLOAT)
 		codes.push_back(BytecodeType_F2I);
 
-	auto id_codes = int_to_bytecodes(*id);
+	auto id_codes = uint_to_bytes(*id);
 	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 
-	codes.push_back(BytecodeType_STORE);
+	codes.push_back(ByteType_STORE);
 
 	return codes;
 }
@@ -190,10 +190,10 @@ bytecodes_t ArrayInitialization::generate_codes() const
 
 	bytecodes_t codes = expr->generate_codes();
 
-	auto id_codes = int_to_bytecodes(*id);
+	auto id_codes = uint_to_bytes(*id);
 	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 
-	codes.push_back(BytecodeType_STORE);
+	codes.push_back(ByteType_STORE);
 
 	return codes;
 }
@@ -276,9 +276,9 @@ bytecodes_t VariableAssign::generate_codes() const
 
 	if (assign_op != "=")
 	{
-		auto id_codes = int_to_bytecodes(*id);
+		auto id_codes = uint_to_bytes(*id);
 		codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
-		codes.push_back(BytecodeType_LOAD);
+		codes.push_back(ByteType_LOAD);
 
 		auto expr_codes = expr->generate_codes();
 		codes.insert(std::end(codes), std::begin(expr_codes), std::end(expr_codes));
@@ -322,10 +322,10 @@ bytecodes_t VariableAssign::generate_codes() const
 		codes.insert(std::end(codes), std::begin(expr_codes), std::end(expr_codes));
 	}
 
-	auto id_codes = int_to_bytecodes(*id);
+	auto id_codes = uint_to_bytes(*id);
 	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 
-	codes.push_back(BytecodeType_STORE);
+	codes.push_back(ByteType_STORE);
 
 	return codes;
 }
@@ -725,11 +725,10 @@ bytecodes_t ArrayMethod::generate_codes() const
 			codes.insert(std::end(codes), std::begin(subscript_codes), std::end(subscript_codes));
 		}
 
-
-		auto num = int_to_bytecodes(subscripts.size());
+		auto num = uint_to_bytes(subscripts.size());
 		codes.insert(std::end(codes), std::begin(num), std::end(num));
 
-		auto id_codes = int_to_bytecodes(*id);
+		auto id_codes = uint_to_bytes(*id);
 		codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 		codes.push_back(BytecodeType_LOAD_ELEM);
 

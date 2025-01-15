@@ -39,18 +39,18 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 
 		switch (*it)
 		{
-		case ByteType_sInt1: s.emplace(interpret_int<int64_t>(it, 1)); break;
-		case ByteType_sInt2: s.emplace(interpret_int<int64_t>(it, 2)); break;
-		case ByteType_sInt4: s.emplace(interpret_int<int64_t>(it, 4)); break;
-		case ByteType_sInt8: s.emplace(interpret_int<int64_t>(it, 8)); break;
+		case ByteType_sINT1: s.emplace(interpret_int<int64_t>(it, 1)); break;
+		case ByteType_sINT2: s.emplace(interpret_int<int64_t>(it, 2)); break;
+		case ByteType_sINT4: s.emplace(interpret_int<int64_t>(it, 4)); break;
+		case ByteType_sINT8: s.emplace(interpret_int<int64_t>(it, 8)); break;
 
-		case ByteType_uInt1: s.emplace(interpret_int<uint64_t>(it, 1)); break;
-		case ByteType_uInt2: s.emplace(interpret_int<uint64_t>(it, 2)); break;
-		case ByteType_uInt4: s.emplace(interpret_int<uint64_t>(it, 4)); break;
-		case ByteType_uInt8: s.emplace(interpret_int<uint64_t>(it, 8)); break;
+		case ByteType_uINT1: s.emplace(interpret_int<uint64_t>(it, 1)); break;
+		case ByteType_uINT2: s.emplace(interpret_int<uint64_t>(it, 2)); break;
+		case ByteType_uINT4: s.emplace(interpret_int<uint64_t>(it, 4)); break;
+		case ByteType_uINT8: s.emplace(interpret_int<uint64_t>(it, 8)); break;
 
-		case ByteType_Flt4: s.emplace(interpret_flt(it, 4)); break;
-		case ByteType_Flt8: s.emplace(interpret_flt(it, 8)); break;
+		case ByteType_FLT4: s.emplace(interpret_flt(it, 4)); break;
+		case ByteType_FLT8: s.emplace(interpret_flt(it, 8)); break;
 
 		case BytecodeType_NEGATIVE_I:
 			s.emplace(-pop(s).as.i);
@@ -262,20 +262,23 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			s.emplace((int64_t)(pop(s).as.d != 0));
 			break;
 
-		case BytecodeType_LOAD:
-			s.emplace(scope.vars[pop(s).as.i]);
-			break;
+		case ByteType_LOAD: {
+			uint64_t id = pop(s).as.ui;
+			s.emplace(scope.vars[id]);
 
-		case BytecodeType_STORE: {
-			auto id = pop(s);
-			scope.vars[id.as.i] = pop(s);
+			break;
+		}
+
+		case ByteType_STORE: {
+			uint64_t id = pop(s).as.ui;
+			scope.vars[id] = pop(s);
 
 			break;
 		}
 
 		case BytecodeType_LOAD_ELEM: {
-			auto id = pop(s).as.i;
-			auto num = pop(s).as.i;
+			uint64_t id = pop(s).as.ui;
+			uint64_t num = pop(s).as.ui;
 			intpr::Value* val = &scope.vars[id];
 			while (num--)
 			{

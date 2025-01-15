@@ -76,17 +76,17 @@ using bytecodes_t = std::list<bytecode_t>;
  * number of bytecodes present.
  */
 enum : bytecode_t {
-	ByteType_sInt1,
-	ByteType_sInt2,
-	ByteType_sInt4,
-	ByteType_sInt8,
-	ByteType_uInt1,
-	ByteType_uInt2,
-	ByteType_uInt4,
-	ByteType_uInt8,
+	ByteType_sINT1,
+	ByteType_sINT2,
+	ByteType_sINT4,
+	ByteType_sINT8,
+	ByteType_uINT1,
+	ByteType_uINT2,
+	ByteType_uINT4,
+	ByteType_uINT8,
 
-	ByteType_Flt4,
-	ByteType_Flt8,
+	ByteType_FLT4,
+	ByteType_FLT8,
 
 	BytecodeType_NEGATIVE_I, BytecodeType_NEGATIVE_F,	// numeric, NEGATIVE 
 	BytecodeType_NOT_I, BytecodeType_NOT_F,				// numeric, NOT
@@ -114,10 +114,10 @@ enum : bytecode_t {
 	BytecodeType_I2F, BytecodeType_F2I,
 	BytecodeType_F2B,
 
-	BytecodeType_LOAD,
+	ByteType_LOAD,
 	BytecodeType_LOAD_ELEM,
 	
-	BytecodeType_STORE,
+	ByteType_STORE,
 	BytecodeType_STORE_INDEX_A,
 	BytecodeType_STORE_INDEX_S,
 	
@@ -145,6 +145,8 @@ enum : bytecode_t {
  * @return The bytecodes representing the integer.
  */
 bytecodes_t int_to_bytecodes(uint64_t uint64, int size = -1);
+
+bytecodes_t uint_to_bytes(uint64_t ui);
 
 namespace night {
 
