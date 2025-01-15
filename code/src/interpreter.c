@@ -52,9 +52,9 @@ Value* interpret_bytecodes(byte_t const* codes, int64_t codes_count, Value** var
 	}
 
 	//(void)freopen("/dev/null", "w", stderr);
-	//for (int64_t i = 0; i < codes_count; ++i)
-	//	printf("%d\n", codes[i]);
-	//printf("\n\n");
+	for (int64_t i = 0; i < codes_count; ++i)
+		printf("%d\n", codes[i]);
+	printf("\n\n");
 
 	for (byte_t const* byte = &codes[0]; byte < codes + codes_count; ++byte)
 	{

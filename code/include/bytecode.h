@@ -1,10 +1,10 @@
 #pragma once
 
-#include <stdint.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include <stdint.h>
 
 /**
  * @brief Data structures representing bytecodes and how they are stored.

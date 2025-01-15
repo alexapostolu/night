@@ -592,6 +592,7 @@ Function::Function(
 	int rtn_type_dim,
 	std::vector<stmt_p> const& _block)
 	: Statement(_loc), name(_name), block(_block)
+	, function(nullptr)
 {
 	for (const auto& param : _parameters)
 	{
@@ -810,19 +811,19 @@ bytes_t expr::FunctionCall::generate_codes() const
 {
 	assert(id.has_value());
 
-	bytes_t codes;
+	bytes_t bytes;
 
 	for (auto const& param : arg_exprs)
 	{
 		assert(param);
 
 		auto param_codes = param->generate_codes();
-		codes.insert(std::end(codes), std::begin(param_codes), std::end(param_codes));
+		bytes.insert(std::end(bytes), std::begin(param_codes), std::end(param_codes));
 	}
 
 	auto id_codes = int_to_bytes(id.value());
-	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
-	codes.push_back(BytecodeType_CALL);
+	bytes.insert(std::end(bytes), std::begin(id_codes), std::end(id_codes));
+	bytes.push_back(BytecodeType_CALL);
 
-	return codes;
+	return bytes;
 }

@@ -3,7 +3,6 @@
 #include "code_gen.hpp"
 #include "error.hpp"
 #include "statement_scope.hpp"
-#include "value.h" // Hanlde return Value for the program.
 #include "interpreter.h"
 
 #include <iostream>
@@ -32,7 +31,9 @@ int main(int argc, char* argv[])
 	}
 
 	byte_t* c_bytes = (byte_t*)malloc(bytes.size() * sizeof(byte_t));
-	std::copy(std::cbegin(bytes), std::cend(bytes), c_bytes);
+	int j = 0;
+	for (auto x : bytes)
+		c_bytes[j++] = x;
 
 	Value** variables = (Value**)malloc(StatementScope::variable_id * sizeof(Value*));
 	for (std::size_t i = 0; i < StatementScope::variable_id; ++i)
@@ -42,7 +43,7 @@ int main(int argc, char* argv[])
 	assert(functions);
 	for (std::size_t i = 0; i < StatementScope::functions.size(); ++i)
 	{
-		for (auto& pair : StatementScope::functions)
+		for (auto const& pair : StatementScope::functions)
 		{
 			if (pair.second.id == i)
 			{
