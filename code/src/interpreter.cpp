@@ -252,15 +252,8 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		case BytecodeType_INDEX_S: push_subscript(s, true); break;
 		case BytecodeType_INDEX_A: push_subscript(s, false); break;
 
-		case BytecodeType_I2F:
-			s.emplace(float(pop(s).as.i));
-			break;
-		case BytecodeType_F2I:
-			s.emplace(int64_t(pop(s).as.d));
-			break;
-		case BytecodeType_F2B:
-			s.emplace((int64_t)(pop(s).as.d != 0));
-			break;
+		case BytecodeType_I2F: s.emplace(float(pop(s).as.i)); break;
+		case BytecodeType_F2I: s.emplace(int64_t(pop(s).as.d)); break;
 
 		case ByteType_LOAD: {
 			uint64_t id = pop(s).as.ui;

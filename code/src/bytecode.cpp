@@ -97,7 +97,6 @@ std::string night::to_str(bytecode_t type)
 
 	case BytecodeType_I2F: return "I2F";
 	case BytecodeType_F2I: return "F2I";
-	case BytecodeType_F2B: return "F2B";
 
 	case ByteType_LOAD: return "LOAD";
 	case BytecodeType_LOAD_ELEM: return "LOAD_ELEM";

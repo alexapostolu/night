@@ -112,8 +112,8 @@ enum : bytecode_t {
 	BytecodeType_INDEX_S,	// numeric(string), INDEX_S
 	BytecodeType_INDEX_A,	// numeric(array), INDEX_A
 
-	BytecodeType_I2F, BytecodeType_F2I,
-	BytecodeType_F2B,
+	BytecodeType_I2F,
+	BytecodeType_F2I,
 
 	ByteType_LOAD,
 	BytecodeType_LOAD_ELEM,

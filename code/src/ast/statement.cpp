@@ -70,19 +70,15 @@ bytecodes_t VariableInit::generate_codes() const
 {
 	assert(id.has_value());
 
-	// Populate expression array
-
 	bytecodes_t codes;
 
 	if (expr)
 		codes = expr->generate_codes();
 
-	if (var_type == Type::BOOL && expr_type == Type::FLOAT)
-		codes.push_back(BytecodeType_F2B);
+	if (var_type != Type::FLOAT&& expr_type == Type::FLOAT)
+		codes.push_back(BytecodeType_F2I);
 	else if (var_type == Type::FLOAT && expr_type != Type::FLOAT)
 		codes.push_back(BytecodeType_I2F);
-	else if (var_type != Type::FLOAT && expr_type == Type::FLOAT)
-		codes.push_back(BytecodeType_F2I);
 
 	auto id_codes = int64_to_bytes(id.value());
 	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));

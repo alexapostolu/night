@@ -561,7 +561,7 @@ std::optional<Type> expr::Array::type_check(StatementScope& scope) noexcept
 		}
 
 		if (type_convert == Type::BOOL && elem_type == Type::FLOAT)
-			type_conversion.push_back(BytecodeType_F2B);
+			type_conversion.push_back(BytecodeType_F2I);
 		else if (type_convert == Type::FLOAT && elem_type != Type::FLOAT)
 			type_conversion.push_back(BytecodeType_I2F);
 		else if (type_convert != Type::FLOAT && elem_type == Type::FLOAT)

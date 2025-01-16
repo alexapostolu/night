@@ -11,8 +11,6 @@
 #include <string>
 #include <assert.h>
 
-static bool does_function_contain_return_stmt = false;
-
 std::vector<stmt_p> parse_file(std::string const& main_file)
 {
 	Lexer lexer(main_file);
@@ -27,7 +25,7 @@ std::vector<stmt_p> parse_file(std::string const& main_file)
 	return stmts;
 }
 
-std::vector<stmt_p> parse_stmts(Lexer& lexer, bool requires_curly, bool* contains_return_stmt)
+std::vector<stmt_p> parse_stmts(Lexer& lexer, bool requires_curly, bool* contains_return)
 {
 	// two cases:
 	//   { stmt1; stmt2; ... }
@@ -40,13 +38,18 @@ std::vector<stmt_p> parse_stmts(Lexer& lexer, bool requires_curly, bool* contain
 
 		lexer.eat();
 
+		bool body_contains_return = false;
+
 		while (lexer.curr().type != TokenType::CLOSE_CURLY)
 		{
-			stmts.push_back(parse_stmt(lexer, contains_return_stmt));
+			stmts.push_back(parse_stmt(lexer, &body_contains_return));
 
 			if (lexer.curr().type == TokenType::END_OF_FILE)
 				throw night::error::get().create_fatal_error("missing closing curly bracket", lexer.loc);
 		}
+
+		if (body_contains_return)
+			*contains_return = true;
 
 		lexer.eat();
 
@@ -58,22 +61,23 @@ std::vector<stmt_p> parse_stmts(Lexer& lexer, bool requires_curly, bool* contain
 		if (requires_curly)
 			throw night::error::get().create_fatal_error("found '" + lexer.curr().str + "', expected opening curly bracket", lexer.loc);
 
-		return { parse_stmt(lexer, contains_return_stmt) };
+		return { parse_stmt(lexer, contains_return) };
 	}
 }
 
-stmt_p parse_stmt(Lexer& lexer, bool* is_return_stmt)
+stmt_p parse_stmt(Lexer& lexer, bool* contains_return)
 {
 	switch (lexer.curr().type)
 	{
 	case TokenType::VARIABLE: return parse_var(lexer);
-	case TokenType::IF:		  return std::make_shared<Conditional>(parse_if(lexer));
-	case TokenType::FOR:	  return std::make_shared<For>(parse_for(lexer));
-	case TokenType::WHILE:	  return std::make_shared<While>(parse_while(lexer));
+	case TokenType::IF:		  return std::make_shared<Conditional>(parse_if(lexer, contains_return));
+	case TokenType::WHILE:	  return std::make_shared<While>(parse_while(lexer, contains_return));
+	case TokenType::FOR:	  return std::make_shared<For>(parse_for(lexer, contains_return));
 	case TokenType::DEF:	  return std::make_shared<Function>(parse_func(lexer));
 	case TokenType::RETURN: {
-		if (is_return_stmt)
-			*is_return_stmt = true;
+		if (contains_return)
+			*contains_return = true;
+
 		return std::make_shared<Return>(parse_return(lexer));
 	}
 
@@ -244,11 +248,14 @@ expr::FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name)
 	return expr::FunctionCall(lexer.loc, func_name, arg_exprs);
 }
 
-Conditional parse_if(Lexer& lexer)
+Conditional parse_if(Lexer& lexer, bool* contains_return)
 {
 	assert(lexer.curr().type == TokenType::IF);
 
 	conditional_container conditionals;
+
+	int number_of_returns = 0;
+	bool contains_else = false;
 
 	do {
 		// Default to else statement.
@@ -261,19 +268,31 @@ Conditional parse_if(Lexer& lexer)
 
 			cond_expr = parse_expr(lexer, true, TokenType::CLOSE_BRACKET);
 		}
+		else
+		{
+			contains_else = true;
+		}
 
 		// Parse body.
 		lexer.eat();
-		conditionals.push_back({ cond_expr, parse_stmts(lexer, false) });
+		bool body_contains_return = false;
+		conditionals.push_back({ cond_expr, parse_stmts(lexer, false, &body_contains_return) });
+
+		if (body_contains_return)
+			number_of_returns++;
 
 	} while (lexer.curr().type == TokenType::IF	  ||
 			 lexer.curr().type == TokenType::ELIF ||
 			 lexer.curr().type == TokenType::ELSE);
 
+	// Every conditional must have a return statement.
+	if (contains_return && number_of_returns == conditionals.size() && contains_else)
+		*contains_return = true;
+
 	return Conditional(lexer.loc, conditionals);
 }
 
-While parse_while(Lexer& lexer)
+While parse_while(Lexer& lexer, bool* contains_return)
 {
 	assert(lexer.curr().type == TokenType::WHILE);
 
@@ -284,10 +303,10 @@ While parse_while(Lexer& lexer)
 
 	// Parse body.
 	lexer.eat();
-	return While(lexer.loc, cond_expr, parse_stmts(lexer, false));
+	return While(lexer.loc, cond_expr, parse_stmts(lexer, false, contains_return));
 }
 
-For parse_for(Lexer& lexer)
+For parse_for(Lexer& lexer, bool* contains_return)
 {
 	assert(lexer.curr().type == TokenType::FOR);
 
@@ -316,7 +335,7 @@ For parse_for(Lexer& lexer)
 
 	lexer.eat();
 
-	auto body = parse_stmts(lexer, false);
+	auto body = parse_stmts(lexer, false, contains_return);
 	body.push_back(std::make_shared<VariableAssign>(var_assign));
 
 	return For(lexer.loc, var_init, condition, body);
@@ -374,19 +393,17 @@ Function parse_func(Lexer& lexer)
 
 	// Parse body.
 
-	does_function_contain_return_stmt = false;
-	auto body = parse_stmts(lexer, true);
+	bool contains_return = false;
+	auto body = parse_stmts(lexer, true, &contains_return);
 
-	if (std::get<0>(rtn_type) == "void" && does_function_contain_return_stmt) {
+	if (std::get<0>(rtn_type) == "void" && contains_return) {
 		throw night::error::get().create_fatal_error(
 			"found return statement, expected no return statement in void function", lexer.loc);
 	}
-	if (std::get<0>(rtn_type) != "void" && !does_function_contain_return_stmt) {
+	if (std::get<0>(rtn_type) != "void" && !contains_return) {
 		throw night::error::get().create_fatal_error(
 			"found no return statement, expected return statement in function", lexer.loc);
 	}
-
-	does_function_contain_return_stmt = false;
 
 	return Function(lexer.loc, func_name, parameters, std::get<0>(rtn_type), std::get<1>(rtn_type), body);
 }
@@ -396,8 +413,6 @@ Return parse_return(Lexer& lexer)
 	assert(lexer.curr().type == TokenType::RETURN);
 
 	auto const& expr = parse_expr(lexer, false, TokenType::SEMICOLON);
-
-	does_function_contain_return_stmt = true;
 
 	lexer.eat();
 	return Return(lexer.loc, expr);

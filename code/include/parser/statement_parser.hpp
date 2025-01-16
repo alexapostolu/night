@@ -21,7 +21,7 @@ std::vector<stmt_p> parse_file(std::string const& main_file);
  *   contains a return statement. This is for non-void functions to check if
  *   their body contains a returns statement.
  */
-std::vector<stmt_p> parse_stmts(Lexer& lexer, bool requires_curly, bool* contains_return_stmt = nullptr);
+std::vector<stmt_p> parse_stmts(Lexer& lexer, bool requires_curly, bool* contains_return = nullptr);
 
 /* Parses a singular statement. Note that a singular statement could also be
  * the only statement in a scope.
@@ -29,7 +29,7 @@ std::vector<stmt_p> parse_stmts(Lexer& lexer, bool requires_curly, bool* contain
  *   start: first token of statement
  *   end: first token of next statement
  */
-stmt_p parse_stmt(Lexer& lexer, bool* is_return_stmt = nullptr);
+stmt_p parse_stmt(Lexer& lexer, bool* contains_return = nullptr);
 
 /* This function handles three cases:
  *   variable initialization
@@ -86,19 +86,19 @@ expr::FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name);
  *   start: if token
  *   end: first token of next statement
  */
-Conditional parse_if(Lexer& lexer);
+Conditional parse_if(Lexer& lexer, bool* contains_return = nullptr);
 
 /* Lexer:
  *   start: while token
  *   end: first token of next statement
  */
-While parse_while(Lexer& lexer);
+While parse_while(Lexer& lexer, bool* contains_return = nullptr);
 
 /* Lexer:
  *   start: while token
  *   end: first token of next statement
  */
-For parse_for(Lexer& lexer);
+For parse_for(Lexer& lexer, bool* contains_return = nullptr);
 
 /* Lexer:
  *   start: def token
