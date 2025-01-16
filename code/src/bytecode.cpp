@@ -112,7 +112,7 @@ std::string night::to_str(bytecode_t type)
 	case BytecodeType_FREE_ARR: return "FREE_ARR";
 
 	case BytecodeType_JUMP: return "JUMP";
-	case BytecodeType_JUMP_N: return "JUMP_N";
+	case ByteType_JUMP_N: return "JUMP_N";
 	case BytecodeType_JUMP_IF_FALSE: return "JUMP_IF_FALSE";
 
 	case BytecodeType_RETURN: return "RETURN";

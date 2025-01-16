@@ -235,6 +235,18 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			s.emplace(int64_t(s1 != s2));
 			break;
 		}
+		case BytecodeType_NOT_EQUALS_F: {
+			auto s1 = pop(s).as.d;
+			auto s2 = pop(s).as.d;
+			s.emplace(int64_t(s1 != s2));
+			break;
+		}
+		case BytecodeType_NOT_EQUALS_S: {
+			auto s1 = pop(s).as.s;
+			auto s2 = pop(s).as.s;
+			s.emplace((int64_t)strcmp(s1, s2));
+			break;
+		}
 
 		case BytecodeType_AND: {
 			auto s1 = pop(s).as.i;
@@ -316,7 +328,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		case BytecodeType_JUMP:
 			std::advance(it, pop(s).as.i);
 			break;
-		case BytecodeType_JUMP_N:
+		case ByteType_JUMP_N:
 			std::advance(it, -pop(s).as.i);
 			freeze = true;
 			break;

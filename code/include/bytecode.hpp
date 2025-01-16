@@ -129,7 +129,7 @@ enum : bytecode_t {
 	BytecodeType_FREE_ARR,
 
 	BytecodeType_JUMP,
-	BytecodeType_JUMP_N,
+	ByteType_JUMP_N,
 	BytecodeType_JUMP_IF_FALSE,
 
 	BytecodeType_RETURN,

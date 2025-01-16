@@ -437,7 +437,6 @@ bytecodes_t Conditional::generate_codes() const
 		night::container_insert(codes, offset_codes, jump_offsets[i]);
 	}
 
-
 	return codes;
 }
 
@@ -501,9 +500,9 @@ bytecodes_t While::generate_codes() const
 
 	// Insert jump negative value and JUMP_N
 	// Set jump negative value to be 8 bit
-	auto jump_n_codes = int_to_bytecodes(codes.size() + 9, 8);
-	codes.insert(std::end(codes), std::begin(jump_n_codes), std::end(jump_n_codes));
-	codes.push_back(BytecodeType_JUMP_N);
+	auto jump_n_bytes = int_to_bytecodes(codes.size() + 9, 8);
+	codes.insert(std::end(codes), std::begin(jump_n_bytes), std::end(jump_n_bytes));
+	codes.push_back(ByteType_JUMP_N);
 
 	return codes;
 }
