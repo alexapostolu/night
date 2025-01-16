@@ -1,0 +1,13 @@
+print("Shift: ");
+shift int = int(input());
+
+print("Message: ");
+message char[] = input();
+
+for (i int = 0; i < len(message); i += 1)
+{
+	curr_char int = int(message[i]) - int('a');
+	new_char int = (curr_char + shift) % 26;
+
+	print(char(int('a') + new_char));
+}

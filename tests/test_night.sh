@@ -15,7 +15,9 @@ night_files=($(find programs/cs50 programs/math -type f -name "*.night" | sort))
 inputs=($(find stdio/cs50 stdio/math -type f -name "*_input.txt" | sort))
 expected_outputs=($(find stdio/cs50 stdio/math -type f -name "*_expected.txt" | sort))
 
-all_tests_passed=0
+tests_failed=0
+
+echo -e "\e[36mRunning ${#night_files[@]} tests...\e[0m\n"
 
 for i in "${!night_files[@]}"; do
     # Night code
@@ -30,28 +32,30 @@ for i in "${!night_files[@]}"; do
 
     # Run the program and capture the output
     "$night" "$night_file" < "$input" > "$actual_output"
+    exit_code=$?
+
+    echo "$night_file"
 
     # Check return value for sanity check
-    status=$?
-    if [ $status -eq 0 ]; then
-        echo "'$night_file' execution succeeded."
-    else
-        echo "'$night_file' execution failed with exit code $status."
+    if [ $exit_code -ne 0 ]; then
+        echo -e "\e[31mFailed. \e[33mCompile error with exit code $exit_code.\e[0m\n"
+        cat "$actual_output"
+        ((tests_failed++))
         continue
     fi
 
     # Remove carriage returns, no CR (fuck windows)
     tr -d '\r' < "$actual_output" > "${actual_output}.nocr"
     tr -d '\r' < "$expected_output" > "${expected_output}.nocr"
-
+    
     # Compare actual output to expected output
     if diff "${actual_output}.nocr" "${expected_output}.nocr" > /dev/null; then
-        echo "Output matches the expected output."
+        echo -e "\e[32mPassed.\e[0m"
     else
-        echo "Output does not match the expected output."
-        echo "Differences:"
+        echo -e "\e[31mFailed. \e[33mOutput does not match the expected output."
+        echo -e "Result/Expected:\e[0m"
         diff "${actual_output}.nocr" "${expected_output}.nocr"
-        all_tests_passed=1
+        ((tests_failed++))
     fi
 
     # Remove temporary files
@@ -61,7 +65,15 @@ for i in "${!night_files[@]}"; do
     echo
 done
 
+if [ $tests_failed -eq 0 ]; then
+    echo -e "\e[32mAll tests passed.\e[0m"
+elif [ $tests_failed -eq 1 ]; then
+    echo -e "\e[31m${tests_failed} test failed.\e[0m"
+else
+    echo -e "\e[31m${tests_failed} tests failed.\e[0m"
+fi
+
 # Remove temporary output file
 rm "$actual_output"
 
-exit $all_tests_passed
+exit $tests_failed

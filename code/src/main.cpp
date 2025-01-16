@@ -20,13 +20,19 @@ int main(int argc, char* argv[])
 
 		InterpreterScope scope;
 		interpret_bytecodes(scope, bytecodes);
+
+		return 0;
 	}
 	catch (night::error const& e) {
 		e.what();
+
+		return 1;
 	}
 	catch (std::exception const& e) {
 		std::cout << "oops! we have come across an unexpected error!\n\n"
 				  << e.what() << "\n\n"
 				  << "please submit an issue on github, https://github.com/alexapostolu/night\n";
+
+		return 1;
 	}
 }

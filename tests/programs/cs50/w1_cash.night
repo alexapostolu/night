@@ -1,0 +1,26 @@
+print("Change Owned: ");
+change int = int(input());
+
+while (change < 0)
+{
+	print("Change Owned: ");
+	change = int(input());
+}
+
+coins int[] = [200, 100, 25, 10, 5, 1];
+
+current_coin int = 0;
+count int = 0;
+
+while (change > 0)
+{
+	if (coins[current_coin] > change)
+		current_coin += 1;
+	else
+	{
+		change -= coins[current_coin];
+		count += 1;
+	}
+}
+
+print(count);
