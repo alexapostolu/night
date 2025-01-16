@@ -407,7 +407,7 @@ bytecodes_t Conditional::generate_codes() const
 		// to jump over
 		codes.push_back(BytecodeType_JUMP_IF_FALSE);
 
-		int jump_if_false_index = (int)codes.size() - 1;
+		uint64_t jump_if_false_index = codes.size() - 1;
 
 		// Used to determine number of codes to jump over for JUMP_IF_FALSE
 		std::size_t stmts_codes_size = 0;
@@ -422,7 +422,7 @@ bytecodes_t Conditional::generate_codes() const
 
 		// Insert jump if false value before JUMP_IF_FALSE, adding on 10 space for the
 		// 10 codes to represent JUMP (1) and its value (9)
-		auto jump_if_false_codes = int_to_bytecodes(stmts_codes_size + 10);
+		auto jump_if_false_codes = int64_to_bytes(stmts_codes_size + 10);
 		night::container_insert(codes, jump_if_false_codes, jump_if_false_index);
 
 		// The value for JUMP is added last after the number of codes to jump back is
@@ -433,7 +433,7 @@ bytecodes_t Conditional::generate_codes() const
 
 	for (int i = (int)jump_offsets.size() - 1; i >= 0; --i)
 	{
-		auto offset_codes = int_to_bytecodes(codes.size() - jump_offsets[i] - 1, 8);
+		auto offset_codes = int64_to_bytes(codes.size() - jump_offsets[i] - 1);
 		night::container_insert(codes, offset_codes, jump_offsets[i]);
 	}
 
@@ -483,24 +483,24 @@ bytecodes_t While::generate_codes() const
 	auto jump_if_false_index = codes.size() - 1;
 
 	// Used to determine number of codes to jump over for JUMP_IF_FALSE
-	int stmt_codes_size = 0;
+	uint64_t stmt_codes_size = 0;
 
 	for (auto const& stmt : block)
 	{
 		auto stmt_codes = stmt->generate_codes();
 		codes.insert(std::end(codes), std::begin(stmt_codes), std::end(stmt_codes));
 
-		stmt_codes_size += (int)stmt_codes.size();
+		stmt_codes_size += stmt_codes.size();
 	}
 
 	// Insert jump if false value before JUMP_IF_FALSE, adding on 10 space for the
 	// 10 codes to represent JUMP_N (1) and its value (9)
-	auto jump_if_false_codes = int_to_bytecodes(stmt_codes_size + 10, 8);
+	auto jump_if_false_codes = int64_to_bytes(stmt_codes_size + 10);
 	night::container_insert(codes, jump_if_false_codes, jump_if_false_index);
 
 	// Insert jump negative value and JUMP_N
 	// Set jump negative value to be 8 bit
-	auto jump_n_bytes = int_to_bytecodes(codes.size() + 9, 8);
+	auto jump_n_bytes = int64_to_bytes(codes.size() + 9);
 	codes.insert(std::end(codes), std::begin(jump_n_bytes), std::end(jump_n_bytes));
 	codes.push_back(ByteType_JUMP_N);
 

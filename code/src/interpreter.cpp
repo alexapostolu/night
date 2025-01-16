@@ -357,7 +357,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 				try {
 					s.emplace((int64_t)std::stoll(str));
 				}
-				catch (std::invalid_argument& e) {
+				catch (std::invalid_argument&) {
 					printf("Cannot convert string '%s' to integral type.\n", str);
 					exit(1);
 				}
@@ -432,10 +432,10 @@ double interpret_flt(bytecodes_t::const_iterator& it, unsigned short size)
 
 void push_str(std::stack<intpr::Value>& s)
 {
-	auto size = pop(s).as.i;
+	uint64_t size = pop(s).as.ui;
 	char* arr = new char[size + 1];
 
-	for (auto i = 0; i < size; ++i)
+	for (uint64_t i = 0; i < size; ++i)
 		arr[i] = (char)pop(s).as.i;
 
 	arr[size] = '\0';
@@ -445,12 +445,12 @@ void push_str(std::stack<intpr::Value>& s)
 
 void push_arr(std::stack<intpr::Value>& s)
 {
-	int size = (int)pop(s).as.i;
+	uint64_t size = pop(s).as.ui;
 	intpr::Value arr;
 	arr.as.a.size = size;
 	arr.as.a.data = new intpr::Value[size];
 
-	for (auto i = 0; i < size; ++i)
+	for (uint64_t i = 0; i < size; ++i)
 		arr.as.a.data[i] = pop(s);
 
 	s.push(arr);
@@ -458,12 +458,12 @@ void push_arr(std::stack<intpr::Value>& s)
 
 void push_arr_and_fill(std::stack<intpr::Value>& s)
 {
-	int dimensions = (int)pop(s).as.i;
+	uint64_t dimensions = pop(s).as.ui;
 	std::vector<int> sizes(dimensions);
 
-	for (int i = dimensions - 1; i >= 0; --i)
-		sizes[i] = (int)pop(s).as.i;
-
+	for (uint64_t i = dimensions; i > 0; --i)
+		sizes[i - 1] = (int)pop(s).as.i;
+	
 	intpr::Value arr;
 	fill_arr(arr, s, sizes, 0);
 

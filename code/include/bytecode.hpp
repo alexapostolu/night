@@ -136,22 +136,11 @@ enum : bytecode_t {
 	BytecodeType_CALL
 };
 
-/**
- * @brief Helper function to convert an integer into bytecodes_t.
- * 
- * @param uint64 The integer to convert
- * @param size Used by conditionals and loops to cast a small int into a
- *   specified larger size for their jump bytecodes.
- * 
- * @return The bytecodes representing the integer.
- */
-bytecodes_t int_to_bytecodes(uint64_t uint64, int size = -1);
-
 template <typename T>
+	requires std::is_same<T, int64_t>::value ||
+			 std::is_same<T, uint64_t>::value
 bytecodes_t int64_to_bytes(T i)
 {
-	static_assert(std::is_same<T, int64_t>::value || std::is_same<T, uint64_t>::value);
-
 	bytecodes_t bytes;
 
 	if (std::is_same<T, int64_t>::value)

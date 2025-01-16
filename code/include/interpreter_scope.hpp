@@ -13,7 +13,7 @@ struct Value;
 struct Array
 {
 	Value* data;
-	int size;
+	std::size_t size;
 };
 
 struct Value
