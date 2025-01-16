@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <list>
 #include <string>
+#include <type_traits>
 
 /**
  * @brief Data structures representing bytecodes and how they are stored.
@@ -146,7 +147,26 @@ enum : bytecode_t {
  */
 bytecodes_t int_to_bytecodes(uint64_t uint64, int size = -1);
 
-bytecodes_t uint_to_bytes(uint64_t ui);
+template <typename T>
+bytecodes_t int64_to_bytes(T i)
+{
+	static_assert(std::is_same<T, int64_t>::value || std::is_same<T, uint64_t>::value);
+
+	bytecodes_t bytes;
+
+	if (std::is_same<T, int64_t>::value)
+		bytes.push_back(ByteType_sINT8);
+	else
+		bytes.push_back(ByteType_uINT8);
+
+	for (int j = 0; j < 8; ++j)
+	{
+		bytes.push_back(i & 0xFF);
+		i >>= 8;
+	}
+
+	return bytes;
+}
 
 namespace night {
 

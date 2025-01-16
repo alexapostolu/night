@@ -69,7 +69,7 @@ scope_func_container::iterator StatementScope::create_function(
 	std::vector<Type> const& param_types,
 	std::optional<Type> const& rtn_type)
 {
-	static bytecode_t func_id = StatementScope::funcs.size();
+	static uint64_t func_id = StatementScope::funcs.size();
 
 	auto [it, range_end] = StatementScope::funcs.equal_range(name);
 

@@ -76,9 +76,9 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			auto s1 = pop(s).as.s;
 			auto s2 = pop(s).as.s;
 
-			int s1_len = strlen(s1);
-			int s2_len = strlen(s2);
-			int len = s1_len + s2_len + 1;
+			size_t s1_len = strlen(s1);
+			size_t s2_len = strlen(s2);
+			size_t len = s1_len + s2_len + 1;
 			char* result = (char*)malloc(sizeof(char) * len);
 			if (!result)
 				exit(1);
@@ -506,7 +506,7 @@ void push_string_input(std::stack<intpr::Value>& s)
 	{
 		if (len == size - 1)
 		{
-			size *= 1.5;
+			size = (int)(size * 1.5);
 			char* new_buf = (char*)realloc(buf, sizeof(char) * size);
 
 			if (!new_buf)

@@ -38,20 +38,6 @@ bytecodes_t int_to_bytecodes(uint64_t uint64, int size)
 	return codes;
 }
 
-bytecodes_t uint_to_bytes(uint64_t ui)
-{
-	int count = 0;
-	bytecodes_t bytes = { ByteType_sINT8 };
-
-	for (int i = 0; i < 8; ++i)
-	{
-		bytes.push_back(ui & 0xFF);
-		ui >>= 8;
-	}
-
-	return bytes;
-}
-
 std::string night::to_str(bytecode_t type)
 {
 	switch (type)

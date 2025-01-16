@@ -41,7 +41,7 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty, std::optional<TokenType
 			break;
 
 		case TokenType::INT_LIT:
-			node = std::make_shared<expr::Numeric>(lexer.loc, Type::INT, std::stoull(lexer.curr().str));
+			node = std::make_shared<expr::Numeric>(lexer.loc, Type::INT, std::stoll(lexer.curr().str));
 			break;
 
 		case TokenType::FLOAT_LIT:

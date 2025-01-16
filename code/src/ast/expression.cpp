@@ -96,7 +96,9 @@ std::optional<Type> expr::UnaryOp::type_check(
 			op_code = BytecodeType_NEGATIVE_F;
 			return Type::FLOAT;
 		}
-		
+
+		[[fallthrough]];
+
 	case UnaryOpType::NOT:
 		switch (expr_type->prim)
 		{
@@ -110,6 +112,9 @@ std::optional<Type> expr::UnaryOp::type_check(
 			op_code = BytecodeType_NOT_F;
 			return Type::BOOL;
 		}
+
+		[[fallthrough]];
+
 	default:
 		return std::nullopt;
 	}
@@ -122,29 +127,26 @@ expr::expr_p expr::UnaryOp::optimize(
 
 	expr = expr->optimize(scope);
 
-	auto num = std::dynamic_pointer_cast<Numeric>(expr);
+	auto numeric = std::dynamic_pointer_cast<Numeric>(expr);
 
-	if (!num)
+	if (!numeric)
 		return std::make_shared<UnaryOp>(*this);
 
 	switch (op_type)
 	{
 	case UnaryOpType::NEGATIVE:
-		if (std::holds_alternative<uint64_t>(num->val))
-			num->val = -(int64_t)std::get<uint64_t>(num->val);
-		else
-			std::visit([](auto&& arg) { arg = -arg; }, num->val);
-
+		std::visit([](auto&& arg) { arg = -arg; }, numeric->val);
 		break;
 
 	case UnaryOpType::NOT:
-		std::visit([](auto&& arg) { arg = !arg; }, num->val);
+		std::visit([](auto&& arg) { arg = !arg; }, numeric->val);
 		break;
 
-	default: throw debug::unhandled_case((int)op_type);
+	default:
+		throw debug::unhandled_case((int)op_type);
 	}
 
-	return num;
+	return numeric;
 }
 
 bytecodes_t expr::UnaryOp::generate_codes() const
@@ -259,7 +261,7 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 			return Type(Type::CHAR, 1);
 		}
 
-		// Fall through 
+		[[fallthrough]];
 
 	case BinaryOpType::SUB:
 	case BinaryOpType::MULT:
@@ -485,7 +487,7 @@ bytecodes_t expr::BinaryOp::generate_codes() const
 expr::Variable::Variable(
 	Location const& _loc,
 	std::string const& _name,
-	std::optional<bytecode_t> const& _id)
+	std::optional<uint64_t> const& _id)
 	: Expression(_loc, Expression::single_precedence), name(_name), id(_id) {}
 
 void expr::Variable::insert_node(
@@ -516,10 +518,10 @@ bytecodes_t expr::Variable::generate_codes() const
 {
 	assert(id.has_value());
 
-	auto codes = uint_to_bytes(*id);
-	codes.push_back((bytecode_t)ByteType_LOAD);
+	auto bytes = int64_to_bytes(id.value());
+	bytes.push_back(ByteType_LOAD);
 
-	return codes;
+	return bytes;
 }
 
 
@@ -692,8 +694,9 @@ bytecodes_t expr::Allocate::generate_codes() const
 expr::Numeric::Numeric(
 	Location const& _loc,
 	Type::Primitive _type,
-	std::variant<int64_t, uint64_t, double> const& _val)
-	: Expression(_loc, Expression::single_precedence), type(_type), val(_val) {}
+	std::variant<int64_t, double> const& _val)
+	: Expression(_loc, Expression::single_precedence)
+	, type(_type), val(_val) {}
 
 void expr::Numeric::insert_node(
 	expr_p node,
@@ -748,7 +751,7 @@ bytecodes_t expr::Numeric::generate_codes() const
 	}
 	else
 	{
-		return std::visit([](auto&& arg) { return int_to_bytecodes((uint64_t)arg); }, val);
+		return int_to_bytecodes((uint64_t)std::get<int64_t>(val));
 	}
 }
 

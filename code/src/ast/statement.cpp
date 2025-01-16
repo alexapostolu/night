@@ -84,7 +84,7 @@ bytecodes_t VariableInit::generate_codes() const
 	else if (var_type != Type::FLOAT && expr_type == Type::FLOAT)
 		codes.push_back(BytecodeType_F2I);
 
-	auto id_codes = uint_to_bytes(*id);
+	auto id_codes = int64_to_bytes(id.value());
 	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 
 	codes.push_back(ByteType_STORE);
@@ -190,7 +190,7 @@ bytecodes_t ArrayInitialization::generate_codes() const
 
 	bytecodes_t codes = expr->generate_codes();
 
-	auto id_codes = uint_to_bytes(*id);
+	auto id_codes = int64_to_bytes(id.value());
 	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 
 	codes.push_back(ByteType_STORE);
@@ -276,7 +276,7 @@ bytecodes_t VariableAssign::generate_codes() const
 
 	if (assign_op != "=")
 	{
-		auto id_codes = uint_to_bytes(*id);
+		auto id_codes = int64_to_bytes(id.value());
 		codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 		codes.push_back(ByteType_LOAD);
 
@@ -322,7 +322,7 @@ bytecodes_t VariableAssign::generate_codes() const
 		codes.insert(std::end(codes), std::begin(expr_codes), std::end(expr_codes));
 	}
 
-	auto id_codes = uint_to_bytes(*id);
+	auto id_codes = int64_to_bytes(id.value());
 	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 
 	codes.push_back(ByteType_STORE);
@@ -725,10 +725,10 @@ bytecodes_t ArrayMethod::generate_codes() const
 			codes.insert(std::end(codes), std::begin(subscript_codes), std::end(subscript_codes));
 		}
 
-		auto num = uint_to_bytes(subscripts.size());
+		auto num = int64_to_bytes(subscripts.size());
 		codes.insert(std::end(codes), std::begin(num), std::end(num));
 
-		auto id_codes = uint_to_bytes(*id);
+		auto id_codes = int64_to_bytes(id.value());
 		codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 		codes.push_back(BytecodeType_LOAD_ELEM);
 
@@ -774,8 +774,8 @@ bytecodes_t ArrayMethod::generate_codes() const
 		codes.insert(std::end(codes), std::begin(assign_codes), std::end(assign_codes));
 	}
 
-	auto index_codes = int_to_bytecodes(*id);
-	codes.insert(std::end(codes), std::begin(index_codes), std::end(index_codes));
+	auto index_bytes = int64_to_bytes(id.value());
+	codes.insert(std::end(codes), std::begin(index_bytes), std::end(index_bytes));
 
 	if (assign_type.has_value() && assign_type->prim == Type::Primitive::CHAR && assign_type->dim == 0)
 		codes.push_back(BytecodeType_STORE_INDEX_S);
@@ -790,7 +790,7 @@ expr::FunctionCall::FunctionCall(
 	Location const& _loc,
 	std::string const& _name,
 	std::vector<expr::expr_p> const& _arg_exprs,
-	std::optional<bytecode_t> const& _id)
+	std::optional<uint64_t> const& _id)
 	: Statement(_loc), Expression(_loc, Expression::single_precedence), name(_name), arg_exprs(_arg_exprs), id(_id), is_expr(true) {}
 
 void expr::FunctionCall::insert_node(
@@ -909,8 +909,8 @@ bytecodes_t expr::FunctionCall::generate_codes() const
 		codes.insert(std::end(codes), std::begin(param_codes), std::end(param_codes));
 	}
 
-	auto id_codes = int_to_bytecodes(*id);
-	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
+	auto id_bytes = int64_to_bytes(id.value());
+	codes.insert(std::end(codes), std::begin(id_bytes), std::end(id_bytes));
 	codes.push_back(BytecodeType_CALL);
 
 	return codes;

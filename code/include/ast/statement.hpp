@@ -93,7 +93,7 @@ private:
 	Type var_type;
 	expr::expr_p expr;
 
-	std::optional<bytecode_t> id;
+	std::optional<uint64_t> id;
 	std::optional<Type> expr_type;
 };
 
@@ -136,7 +136,7 @@ private:
 	std::vector<int> arr_sizes_numerics;
 	expr::expr_p expr;
 
-	std::optional<bytecode_t> id;
+	std::optional<uint64_t> id;
 	std::optional<Type> expr_type;
 
 	// true
@@ -167,7 +167,7 @@ private:
 	expr::expr_p expr;
 
 	std::optional<Type> assign_type;
-	std::optional<bytecode_t> id;
+	std::optional<uint64_t> id;
 };
 
 
@@ -274,7 +274,7 @@ private:
 	std::optional<Type> rtn_type;
 	std::vector<stmt_p> block;
 
-	bytecode_t id;
+	uint64_t id;
 	std::vector<bytecode_t> param_ids;
 };
 
@@ -317,7 +317,7 @@ private:
 	std::vector<expr::expr_p> subscripts;
 	expr::expr_p assign_expr;
 
-	std::optional<bytecode_t> id;
+	std::optional<uint64_t> id;
 	std::optional<Type> assign_type;
 };
 
@@ -331,7 +331,7 @@ public:
 		Location const& _loc,
 		std::string const& _name,
 		std::vector<expr::expr_p> const& _arg_exprs,
-		std::optional<bytecode_t> const& _id = std::nullopt
+		std::optional<uint64_t> const& _id = std::nullopt
 	);
 
 	void insert_node(
@@ -349,7 +349,7 @@ private:
 	std::string name;
 	std::vector<expr::expr_p> arg_exprs;
 
-	std::optional<bytecode_t> id;
+	std::optional<uint64_t> id;
 
 	bool is_expr;
 };

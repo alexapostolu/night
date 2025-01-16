@@ -39,10 +39,10 @@ struct Value
 }
 
 // <id, val>
-using var_container = std::unordered_map<bytecode_t, intpr::Value>;
+using var_container = std::unordered_map<uint64_t, intpr::Value>;
 
 struct InterpreterFunction;
-using func_container = std::unordered_map<bytecode_t, InterpreterFunction>;
+using func_container = std::unordered_map<uint64_t, InterpreterFunction>;
 
 struct InterpreterFunction
 {

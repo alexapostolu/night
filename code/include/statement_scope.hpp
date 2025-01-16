@@ -17,7 +17,7 @@ using scope_func_container = std::unordered_multimap<std::string, StatementFunct
 
 struct StatementVariable
 {
-	bytecode_t id;
+	uint64_t id;
 	Type type;
 	
 	// Keep track of the number of times used so unused variables can be
@@ -29,7 +29,7 @@ struct StatementVariable
 
 struct StatementFunction
 {
-	bytecode_t id;
+	uint64_t id;
 
 	std::vector<std::string> param_names;
 	std::vector<Type> param_types;

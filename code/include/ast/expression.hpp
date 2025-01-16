@@ -91,7 +91,8 @@ protected:
 
 enum class UnaryOpType
 {
-	NEGATIVE, NOT
+	NEGATIVE,
+	NOT
 };
 
 struct UnaryOp : public Expression
@@ -110,6 +111,9 @@ public:
 
 	std::optional<Type> type_check(StatementScope& scope) noexcept override;
 
+	/*
+	 * Can only optimize if its expression evaluates to a Numeric.
+	 */
 	[[nodiscard]]
 	expr_p optimize(StatementScope const& scope) override;
 	
@@ -168,7 +172,7 @@ public:
 	Variable(
 		Location const& _loc,
 		std::string const& _name,
-		std::optional<bytecode_t> const& _id = std::nullopt);
+		std::optional<uint64_t> const& _id = std::nullopt);
 
 	void insert_node(
 		expr_p node,
@@ -184,7 +188,7 @@ public:
 private:
 	std::string name;
 
-	std::optional<bytecode_t> id;
+	std::optional<uint64_t> id;
 };
 
 
@@ -263,7 +267,7 @@ public:
 	Numeric(
 		Location const& _loc,
 		Type::Primitive _type,
-		std::variant<int64_t, uint64_t, double> const& _val);
+		std::variant<int64_t, double> const& _val);
 
 	void insert_node(
 		expr_p node,
@@ -280,7 +284,7 @@ public:
 	bool is_true() const;
 
 public:
-	std::variant<int64_t, uint64_t, double> val;
+	std::variant<int64_t, double> val;
 
 private:
 	Type::Primitive type;
