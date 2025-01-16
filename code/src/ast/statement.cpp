@@ -167,14 +167,10 @@ bool ArrayInitialization::optimize(StatementScope& scope)
 
 	if (expr)
 		expr = expr->optimize(scope);
-
-	if (is_static)
-	{
-		if (!expr)
-			expr = std::make_shared<expr::Array>(loc, std::vector<expr::expr_p>(), false);
-		
-		fill_array(var_type, expr, 0);
-	}
+	else
+		expr = std::make_shared<expr::Array>(loc, std::vector<expr::expr_p>(), false);
+	
+	fill_array(var_type, expr, 0);
 
 	return true;
 }
