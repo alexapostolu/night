@@ -348,7 +348,14 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			case 5: push_string_input(s); break;
 			case 6: break; // char(int); can not remove bytecode because of char(2 + 3) => 2 + 3, and now we have 2, 3, + on the stack that does nothing
 			case 7: {
-				s.emplace((int64_t)std::stoll(pop(s).as.s));
+				char* str = pop(s).as.s;
+				try {
+					s.emplace((int64_t)std::stoll(str));
+				}
+				catch (std::invalid_argument& e) {
+					printf("Cannot convert string '%s' to integral type.\n", str);
+					exit(1);
+				}
 				break;
 			}
 			case 8: {
