@@ -1,3 +1,8 @@
+/*
+ * Expressions in Night are represented as ASTs consisting of operators,
+ * variables, function calls, and values.
+ */
+
 #pragma once
 
 #include "statement_scope.hpp"
@@ -28,8 +33,9 @@ class Expression
 {
 public:
 	/*
-	 * Parameters:
-	 *   _loc Location of error messages used in optimize() and generate_codes()
+	 * @param _loc Location of error messages used in optimize() and
+	 *   generate_codes().
+	 * @param _precedence_ Of the operator if applicable..
 	 */
 	Expression(
 		Location const& _loc,
@@ -46,17 +52,25 @@ public:
 	 *      In this case, the 'node' will be passed down to the children using
 	 *        this->child.insert(node).
 	 *
-	 * Parameters:
-	 *   node  The new node to be inserted into the AST.
-	 *   prev  The connection between the higher node and this. It is nullptr if
-	 *             this is the head node.
+	 * @param node The new node to be inserted into the AST.
+	 * @param prev The connection between the higher node and this. It is nullptr if
+	 *   this is the head node.
 	 */
 	virtual void insert_node(
 		expr_p node,
 		expr_p* prev = nullptr
 	) = 0;
 
+	/*
+	 * @returns the precedence.
+	 */
 	int precedence() const;
+
+	/*
+	 * When gaurd is set, no new node can be inserted as a child of this node.
+	 * In other words it treats this node as one with the highest precedence.
+	 * This is used for brackets.
+	*/
 	void set_guard();
 
 	/* Returns the type of the expression. If std::nullopt is returned, then
@@ -71,12 +85,17 @@ public:
 	 * non-constant expressions unchanged.
 	 * Usage:
 	 *    expr = expr->optimize(scope);
+	 * 
+	 * @param scope The scope in which the expression lies.
 	 */
 	[[nodiscard]]
 	virtual expr_p optimize(
 		StatementScope const& scope
 	) = 0;
 	
+	/*
+	 * @returns The bytecode representation of the expression.
+	 */
 	virtual bytecodes_t generate_codes() const = 0;
 
 protected:
@@ -100,24 +119,32 @@ struct UnaryOp : public Expression
 public:
 	UnaryOp(
 		Location const& _loc,
-		std::string const& _operator);
+		std::string const& _operator
+	);
 
 	UnaryOp(
-		UnaryOp const& other);
+		UnaryOp const& other
+	);
 
 	void insert_node(
 		expr_p node,
-		expr_p* prev = nullptr) override;
+		expr_p* prev = nullptr
+	) override;
 
-	std::optional<Type> type_check(StatementScope& scope) noexcept override;
+	std::optional<Type> type_check(
+		StatementScope& scope
+	) noexcept override;
 
 	/*
-	 * Can only optimize if its expression evaluates to a Numeric.
+	 * Optimizes the expression, and if it is Numeric, then evaluates the
+	 * expression.
 	 */
 	[[nodiscard]]
-	expr_p optimize(StatementScope const& scope) override;
+	expr_p optimize(
+		StatementScope const& scope
+	) override;
 	
-	bytecodes_t generate_codes() const;
+	bytecodes_t generate_codes() const override;
 
 private:
 	UnaryOpType op_type;
@@ -151,10 +178,22 @@ public:
 
 	void insert_node(
 		expr_p node,
-		expr_p* prev = nullptr) override;
+		expr_p* prev = nullptr
+	) override;
 
-	std::optional<Type> type_check(StatementScope& scope) noexcept override;
-	expr_p optimize(StatementScope const& scope) override;
+	std::optional<Type> type_check(
+		StatementScope& scope
+	) noexcept override;
+	
+	/*
+	 * Optimizes left and right hand side, and if both are Numerics, then
+	 * evaluates the expression.
+	 */
+	[[nodiscard]]
+	expr_p optimize(
+		StatementScope const& scope
+	) override;
+	
 	bytecodes_t generate_codes() const override;
 
 private:
@@ -172,16 +211,26 @@ public:
 	Variable(
 		Location const& _loc,
 		std::string const& _name,
-		std::optional<uint64_t> const& _id = std::nullopt);
+		std::optional<uint64_t> const& _id = std::nullopt
+	);
 
 	void insert_node(
 		expr_p node,
-		expr_p* prev = nullptr) override;
+		expr_p* prev = nullptr
+	) override;
 
-	std::optional<Type> type_check(StatementScope& scope) noexcept override;
+	std::optional<Type> type_check(
+		StatementScope& scope
+	) noexcept override;
 
+	/*
+	 * No optimization done, just returns itself. Constant variables can be
+	 * optimized as their values, but constants don't exist in Night yet.
+	 */
 	[[nodiscard]]
-	expr_p optimize(StatementScope const& scope) override;
+	expr_p optimize(
+		StatementScope const& scope
+	) override;
 	
 	bytecodes_t generate_codes() const override;
 
@@ -200,16 +249,25 @@ public:
 		std::vector<expr_p> const& _elements,
 		bool _is_str_,
 		std::optional<Type> const& _type_convert = std::nullopt,
-		std::vector<std::optional<bytecode_t>> const& _type_conversion = {});
+		std::vector<std::optional<bytecode_t>> const& _type_conversion = {}
+	);
 
 	void insert_node(
 		expr_p node,
-		expr_p* prev = nullptr) override;
+		expr_p* prev = nullptr
+	) override;
 
-	std::optional<Type> type_check(StatementScope& scope) noexcept override;
+	std::optional<Type> type_check(
+		StatementScope& scope
+	) noexcept override;
 
+	/*
+	 * Optimizes each element of the array.
+	 */
 	[[nodiscard]]
-	expr_p optimize(StatementScope const& scope) override;
+	expr_p optimize(
+		StatementScope const& scope
+	) override;
 
 	bytecodes_t generate_codes() const override;
 
@@ -219,8 +277,7 @@ public:
 	std::vector<expr_p> elements;
 
 	// Note: Strings are stored as character arrays, but have special
-	// properties such as being able to work with addition. This is why we have
-	// a flag for it.
+	// properties such as being able to work with addition.
 	bool is_str_;
 
 	std::optional<Type> type_convert;
@@ -228,6 +285,9 @@ public:
 };
 
 
+/*
+ * Array element access.
+ */
 class Allocate : public Expression
 {
 public:
@@ -246,6 +306,9 @@ public:
 		StatementScope& scope
 	) noexcept override;
 
+	/*
+	 * Optimizes each size of the array allocation.
+	 */
 	[[nodiscard]]
 	expr_p optimize(
 		StatementScope const& scope
@@ -259,25 +322,31 @@ public:
 };
 
 
-/* Note signed types are represented through a Unary Operator
- */
 class Numeric : public Expression
 {
 public:
 	Numeric(
 		Location const& _loc,
 		Type::Primitive _type,
-		std::variant<int64_t, double> const& _val);
+		std::variant<int64_t, double> const& _val
+	);
 
 	void insert_node(
 		expr_p node,
-		expr_p* prev = nullptr) override;
+		expr_p* prev = nullptr
+	) override;
 
-	std::optional<Type> type_check(StatementScope& scope) noexcept override;
+	std::optional<Type> type_check(
+		StatementScope& scope
+	) noexcept override;
 
+	/*
+	 * Returns itself for optimization.
+	 */
 	[[nodiscard]]
 	expr_p optimize(
-		StatementScope const& scope) override;
+		StatementScope const& scope
+	) override;
 	
 	bytecodes_t generate_codes() const override;
 
