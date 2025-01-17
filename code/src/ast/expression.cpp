@@ -622,7 +622,7 @@ bytecodes_t expr::Array::generate_codes() const
 	}
 
 	// Generate codes for size.
-	auto size_codes = int64_to_bytes(elements.size());
+	auto size_codes = int64_to_bytes<uint64_t>(elements.size());
 	codes.insert(std::end(codes), std::begin(size_codes), std::end(size_codes));
 
 	if (is_str())
@@ -682,7 +682,7 @@ bytecodes_t expr::Allocate::generate_codes() const
 		codes.insert(std::end(codes), std::begin(size_codes), std::end(size_codes));
 	}
 
-	auto dimension_bytes = int64_to_bytes(sizes.size());
+	auto dimension_bytes = int64_to_bytes<uint64_t>(sizes.size());
 	codes.insert(std::end(codes), std::begin(dimension_bytes), std::end(dimension_bytes));
 	
 	codes.push_back((bytecode_t)BytecodeType_ALLOCATE_ARR_AND_FILL);
