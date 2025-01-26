@@ -44,7 +44,7 @@ for i in "${!night_files[@]}"; do
         continue
     fi
 
-    # Remove carriage returns, no CR (fuck windows)
+    # Remove carriage returns (no CR)
     tr -d '\r' < "$actual_output" > "${actual_output}.nocr"
     tr -d '\r' < "$expected_output" > "${expected_output}.nocr"
     

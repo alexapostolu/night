@@ -77,6 +77,8 @@ using bytecodes_t = std::list<bytecode_t>;
  * number of bytecodes present.
  */
 enum : bytecode_t {
+	_ByteType_INVALID_ = 0,
+
 	ByteType_sINT1,
 	ByteType_sINT2,
 	ByteType_sINT4,

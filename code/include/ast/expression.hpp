@@ -8,7 +8,6 @@
 #include "statement_scope.hpp"
 #include "bytecode.hpp"
 #include "type.hpp"
-#include "error.hpp"
 
 #include <memory>
 #include <variant>
@@ -20,6 +19,8 @@ namespace expr
 
 class Expression;
 using expr_p = std::shared_ptr<Expression>;
+
+class Array;
 
 
 /*
@@ -39,7 +40,7 @@ public:
 	 */
 	Expression(
 		Location const& _loc,
-		int _precedence_ = 0
+		int _precedence_
 	);
 
 	/* Inserts a node into the AST. There are three cases:
@@ -186,22 +187,47 @@ public:
 	) noexcept override;
 	
 	/*
-	 * Optimizes left and right hand side, and if both are Numerics, then
-	 * evaluates the expression.
+	 * Optimizes in the following order,
+	 *   1) Optimizes left and right hand expressions
+	 *   2) If both are strings and operator is ADD, then perform string
+	 *        concatenation.
+	 *   2) If both are Numeric, evaluate the binary expression
+	 *   3) Otherwise, return self
+	 * 
+	 * lhs and rhs must be initialized before this function is called.
 	 */
 	[[nodiscard]]
 	expr_p optimize(
 		StatementScope const& scope
 	) override;
 	
+	/*
+	 * Generates bytes in the following order,
+	 *   1) Left hand side and its type cast if it has one
+	 *   2) Right hand side and its type cast if it has one
+	 *   3) Operator
+	 * 
+	 * lhs, rhs and op_code must be initialized before this function is called.
+	 */
 	bytecodes_t generate_codes() const override;
 
 private:
-	BinaryOpType op_type;
-	expr::expr_p lhs, rhs;
+	/*
+	 * Returns a pair of string Arrays if operator is ADD and both left and right
+	 * hand side expressions are strings. Otherwise return a pair of NULLs.
+	 */
+	std::pair<std::shared_ptr<Array>, std::shared_ptr<Array>> is_string_concatenation() const;
 
-	std::optional<bytecode_t> cast_lhs, cast_rhs;
-	bytecode_t op_code;
+private:
+	// Given an operator as a string, provides the precedence and operator type.
+	static std::unordered_map<std::string, std::tuple<int, BinaryOpType>> const operators;
+
+	BinaryOpType op_type; // Initialized in constructor
+
+	expr::expr_p lhs, rhs; // Initialized in insert_node()
+	
+	bytecode_t op_code;			   // Initialized in type_check()
+	bytecode_t cast_lhs, cast_rhs; // Optionally initialized in type_check()
 };
 
 

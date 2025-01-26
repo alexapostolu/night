@@ -58,10 +58,11 @@ First, clone the repo and move into that directory. Generate MinGW or Unix Makef
 git clone https://github.com/alex/apostolu/night.git
 cd night
 
-cmake -G "MinGW Makefiles" .
+mkdir build
+cd build
+
+cmake -G "MinGW Makefiles" ..
 cmake --build .
-# Optional
-# cmake --build . --Release
 
 night source.night
 ```
@@ -71,7 +72,10 @@ night source.night
 ```sh
 cd night
 
-cmake -G "Unix Makefiles" .
+mkdir build
+cd build
+
+cmake -G "Unix Makefiles" ..
 cmake --build .
 
 ./night source.night

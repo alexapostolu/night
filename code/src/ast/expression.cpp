@@ -4,6 +4,7 @@
 #include "scope_check.hpp"
 #include "bytecode.hpp"
 #include "type.hpp"
+#include "util.hpp"
 #include "error.hpp"
 #include "debug.hpp"
 
@@ -158,41 +159,42 @@ bytecodes_t expr::UnaryOp::generate_codes() const
 }
 
 
+std::unordered_map<std::string, std::tuple<int, expr::BinaryOpType>> const expr::BinaryOp::operators{
+	{ "&&", std::make_tuple(1, BinaryOpType::AND) },
+	{ "||", std::make_tuple(1, BinaryOpType::OR) },
+	{ "==", std::make_tuple(2, BinaryOpType::EQUALS) },
+	{ "!=", std::make_tuple(2, BinaryOpType::NOT_EQUALS) },
+	{ "<",  std::make_tuple(3, BinaryOpType::LESSER) },
+	{ "<=", std::make_tuple(3, BinaryOpType::LESSER_EQUALS) },
+	{ ">",  std::make_tuple(3, BinaryOpType::GREATER) },
+	{ ">=", std::make_tuple(3, BinaryOpType::GREATER_EQUALS) },
+	{ "+",  std::make_tuple(4, BinaryOpType::ADD) },
+	{ "-",  std::make_tuple(4, BinaryOpType::SUB) },
+	{ "*",  std::make_tuple(5, BinaryOpType::MULT) },
+	{ "/",  std::make_tuple(5, BinaryOpType::DIV) },
+	{ "%",  std::make_tuple(5, BinaryOpType::MOD) },
+	{ "[",  std::make_tuple(6, BinaryOpType::SUBSCRIPT) }
+};
+
 expr::BinaryOp::BinaryOp(
 	Location const& _loc,
 	std::string const& _operator)
-	: Expression(Location{"", 0, 0})
-{
-	static std::unordered_map<std::string, std::tuple<int, BinaryOpType>> binary_operator_map{
-		{ "&&", std::make_tuple(1, BinaryOpType::AND) },
-		{ "||", std::make_tuple(1, BinaryOpType::OR) },
-		{ "==", std::make_tuple(2, BinaryOpType::EQUALS) },
-		{ "!=", std::make_tuple(2, BinaryOpType::NOT_EQUALS) },
-		{ "<", std::make_tuple(3, BinaryOpType::LESSER) },
-		{ "<=", std::make_tuple(3, BinaryOpType::LESSER_EQUALS) },
-		{ ">", std::make_tuple(3, BinaryOpType::GREATER) },
-		{ ">=", std::make_tuple(3, BinaryOpType::GREATER_EQUALS) },
-		{ "+", std::make_tuple(4, BinaryOpType::ADD) },
-		{ "-", std::make_tuple(4, BinaryOpType::SUB) },
-		{ "*", std::make_tuple(5, BinaryOpType::MULT) },
-		{ "/", std::make_tuple(5, BinaryOpType::DIV) },
-		{ "%", std::make_tuple(5, BinaryOpType::MOD) },
-		{ "[", std::make_tuple(6, BinaryOpType::SUBSCRIPT) }
-	};
-
-	assert(binary_operator_map.contains(_operator));
-
-	precedence_ = Expression::binary_precedence + std::get<int>(binary_operator_map[_operator]);
-	op_type	= std::get<BinaryOpType>(binary_operator_map[_operator]);
-}
+	: Expression(
+		Location{"", 0, 0},
+		Expression::binary_precedence + std::get<int>(operators.at(_operator))
+	  )
+	, op_type(std::get<BinaryOpType>(operators.at(_operator)))
+	, lhs(nullptr), rhs(nullptr)
+	, op_code(_ByteType_INVALID_)
+	, cast_lhs(_ByteType_INVALID_), cast_rhs(_ByteType_INVALID_) {}
 
 expr::BinaryOp::BinaryOp(
 	BinaryOp const& other)
 	: Expression(other.loc, other.precedence_)
 	, op_type(other.op_type)
 	, lhs(other.lhs), rhs(other.rhs)
-	, cast_lhs(other.cast_lhs), cast_rhs(other.cast_rhs)
-	, op_code(other.op_code) {}
+	, op_code(other.op_code)
+	, cast_lhs(other.cast_lhs), cast_rhs(other.cast_rhs) {}
 
 void expr::BinaryOp::insert_node(
 	expr::expr_p node,
@@ -223,7 +225,7 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 {
 	// Operations where strings are supported are handled separately in the
 	// switch statement.
-	std::unordered_map<BinaryOpType, std::tuple<bytecode_t, bytecode_t, std::optional<bytecode_t>>> m{
+	static std::unordered_map<BinaryOpType, std::tuple<bytecode_t, bytecode_t, std::optional<bytecode_t>>> m{
 		{ BinaryOpType::ADD,			std::make_tuple(BytecodeType_ADD_I,			BytecodeType_ADD_F,			BytecodeType_ADD_S) },
 		{ BinaryOpType::SUB,			std::make_tuple(BytecodeType_SUB_I,			BytecodeType_SUB_F,			std::nullopt) },
 		{ BinaryOpType::MULT,			std::make_tuple(BytecodeType_MULT_I,			BytecodeType_MULT_F,			std::nullopt) },
@@ -390,6 +392,19 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 	return std::nullopt;
 }
 
+#define BinaryOpEvaluateNumeric(op, is_result_bool)	{																							 \
+	if (std::holds_alternative<double>(lhs_num->val) || std::holds_alternative<double>(rhs_num->val))											 \
+		return std::make_shared<Numeric>(																										 \
+			loc, is_result_bool ? Type::BOOL : Type::FLOAT,																						 \
+			std::visit([](auto&& arg1, auto&& arg2) { return double(arg1 op arg2); }, lhs_num->val, rhs_num->val)								 \
+		);																																		 \
+																																				 \
+	return std::make_shared<Numeric>(																											 \
+		loc, is_result_bool ? Type::BOOL : Type::INT,																							 \
+		int64_t(std::get<int64_t>(lhs_num->val) op std::get<int64_t>(rhs_num->val))																 \
+	);																																			 \
+}
+
 expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
 {
 	assert(lhs && rhs);
@@ -397,66 +412,49 @@ expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
 	lhs = lhs->optimize(scope);
 	rhs = rhs->optimize(scope);
 
-	// String concatenation.
-	if (op_type == BinaryOpType::ADD)
+	// Optimize string concatenation.
+	if (auto [lhs_str, rhs_str] = is_string_concatenation(); lhs_str && rhs_str)
 	{
-		auto lhs_arr = std::dynamic_pointer_cast<Array>(lhs);
-		auto rhs_arr = std::dynamic_pointer_cast<Array>(rhs);
+		std::vector<expr_p> new_str;
+		night::container_concat(new_str, lhs_str->elements);
+		night::container_concat(new_str, rhs_str->elements);
 
-		if (lhs_arr && lhs_arr->is_str() && rhs_arr && rhs_arr->is_str())
-		{
-			std::vector<expr_p> new_str;
-			new_str.insert(std::end(new_str), std::begin(lhs_arr->elements), std::end(lhs_arr->elements));
-			new_str.insert(std::end(new_str), std::begin(rhs_arr->elements), std::end(rhs_arr->elements));
-
-			return std::make_shared<Array>(loc, new_str, true);
-		}
+		return std::make_shared<Array>(loc, new_str, true);
 	}
 
-	auto lhs_lit = std::dynamic_pointer_cast<Numeric>(lhs);
-	auto rhs_lit = std::dynamic_pointer_cast<Numeric>(rhs);
+	auto lhs_num = std::dynamic_pointer_cast<Numeric>(lhs);
+	auto rhs_num = std::dynamic_pointer_cast<Numeric>(rhs);
 
-	if (!lhs_lit || !rhs_lit)
+	// Both left and right hand side are not Numerics, so binary expression can
+	// not be optimized.
+	if (!lhs_num || !rhs_num)
 		return std::make_shared<BinaryOp>(*this);
 
-	auto op = [&loc = this->loc, &lhs_lit, &rhs_lit](bool is_bool, auto eval) -> std::shared_ptr<Numeric> {
-		if (std::holds_alternative<double>(lhs_lit->val) || std::holds_alternative<double>(rhs_lit->val))
-			return std::make_shared<Numeric>(
-				loc, is_bool ? Type::BOOL : Type::FLOAT,
-				eval(std::visit([](auto&& arg) { return (double)arg; }, lhs_lit->val), std::visit([](auto&& arg) { return (double)arg; }, rhs_lit->val))
-			);
-	
-		return std::make_shared<Numeric>(
-			loc, is_bool ? Type::BOOL : Type::INT,
-			eval(std::visit([](auto&& arg) { return (int64_t)arg; }, lhs_lit->val), std::visit([](auto&& arg) { return (int64_t)arg; }, rhs_lit->val))
-		);
-	};
-
-	// Modulo and subscript operator are excluded because an exception needs to
-	// be thrown instead of an error.
 	switch (op_type)
 	{
-	case BinaryOpType::ADD:  return op(false, [](auto p1, auto p2) { return p1 + p2; });
-	case BinaryOpType::SUB:  return op(false, [](auto p1, auto p2) { return p1 - p2; });
-	case BinaryOpType::MULT: return op(false, [](auto p1, auto p2) { return p1 * p2; });
-	case BinaryOpType::DIV:  return op(false, [](auto p1, auto p2) { return p1 / p2; });
-	case BinaryOpType::MOD: {
-		return std::make_shared<Numeric>(
-			loc, Type::INT,
-			std::visit([](auto&& arg) { return (int64_t)arg; }, lhs_lit->val) % std::visit([](auto&& arg) { return (int64_t)arg; }, rhs_lit->val)
+	case BinaryOpType::ADD:  BinaryOpEvaluateNumeric(+, false);
+	case BinaryOpType::SUB:  BinaryOpEvaluateNumeric(-, false);
+	case BinaryOpType::MULT: BinaryOpEvaluateNumeric(*, false);
+	case BinaryOpType::DIV:  BinaryOpEvaluateNumeric(/, false);
+	case BinaryOpType::MOD:
+		return std::make_shared<Numeric>(loc, Type::INT,
+			std::visit([](auto&& arg1, auto&& arg2) {
+				return (int64_t)arg1 % (int64_t)arg2;
+			}, lhs_num->val, rhs_num->val)
 		);
-	}
 
-	case BinaryOpType::LESSER:		   return op(true, [](auto p1, auto p2) { return (int64_t)(p1 < p2); });
-	case BinaryOpType::GREATER:		   return op(true, [](auto p1, auto p2) { return (int64_t)(p1 < p2); });
-	case BinaryOpType::LESSER_EQUALS:  return op(true, [](auto p1, auto p2) { return (int64_t)(p1 <= p2); });
-	case BinaryOpType::GREATER_EQUALS: return op(true, [](auto p1, auto p2) { return (int64_t)(p1 >= p2); });
-	case BinaryOpType::EQUALS:		   return op(true, [](auto p1, auto p2) { return (int64_t)(p1 == p2); });
-	case BinaryOpType::NOT_EQUALS:	   return op(true, [](auto p1, auto p2) { return (int64_t)(p1 != p2); });
-	case BinaryOpType::AND:			   return op(true, [](auto p1, auto p2) { return (int64_t)(p1 && p2); });
-	case BinaryOpType::OR:			   return op(true, [](auto p1, auto p2) { return (int64_t)(p1 || p2); });
+	case BinaryOpType::LESSER:		   BinaryOpEvaluateNumeric(<, true);
+	case BinaryOpType::GREATER:		   BinaryOpEvaluateNumeric(>, true);
+	case BinaryOpType::LESSER_EQUALS:  BinaryOpEvaluateNumeric(<=, true);
+	case BinaryOpType::GREATER_EQUALS: BinaryOpEvaluateNumeric(>=, true);
+	case BinaryOpType::EQUALS:		   BinaryOpEvaluateNumeric(==, true);
+	case BinaryOpType::NOT_EQUALS:	   BinaryOpEvaluateNumeric(!=, true);
+	case BinaryOpType::AND:			   BinaryOpEvaluateNumeric(&&, true);
+	case BinaryOpType::OR:			   BinaryOpEvaluateNumeric(||, true);
 
-	default: break;//debug::unhandled_case((int)op_type);
+	// No optimization can be done for Subscript operator.
+	default:
+		break;
 	}
 
 	return std::make_shared<BinaryOp>(*this);
@@ -464,23 +462,39 @@ expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
 
 bytecodes_t expr::BinaryOp::generate_codes() const
 {
-	bytecodes_t codes;
+	assert(lhs && rhs);
+	assert(op_code != _ByteType_INVALID_);
 
-	auto codes_lhs = lhs->generate_codes();
-	codes.insert(std::end(codes), std::begin(codes_lhs), std::end(codes_lhs));
+	bytecodes_t bytes;
 
-	if (cast_lhs.has_value())
-		codes.push_back((bytecode_t)*cast_lhs);
+	// Generate left hand side bytes.
+	night::container_concat(bytes, lhs->generate_codes());
+	if (cast_lhs != _ByteType_INVALID_)
+		bytes.push_back(cast_lhs);
 	
-	auto codes_rhs = rhs->generate_codes();
-	codes.insert(std::end(codes), std::begin(codes_rhs), std::end(codes_rhs));
+	// Generate right hand side bytes.
+	night::container_concat(bytes, rhs->generate_codes());
+	if (cast_rhs != _ByteType_INVALID_)
+		bytes.push_back(cast_rhs);
 
-	if (cast_rhs.has_value())
-		codes.push_back((bytecode_t)*cast_rhs);
+	// Generate operator bytes.
+	bytes.push_back(op_code);
 
-	codes.push_back((bytecode_t)op_code);
+	return bytes;
+}
 
-	return codes;
+std::pair<std::shared_ptr<expr::Array>, std::shared_ptr<expr::Array>> expr::BinaryOp::is_string_concatenation() const
+{
+	if (op_type == BinaryOpType::ADD)
+	{
+		auto lhs_arr = std::dynamic_pointer_cast<Array>(lhs);
+		auto rhs_arr = std::dynamic_pointer_cast<Array>(rhs);
+
+		if (lhs_arr && lhs_arr->is_str() && rhs_arr && rhs_arr->is_str())
+			return std::make_pair(lhs_arr, rhs_arr);
+	}
+
+	return std::make_pair(nullptr, nullptr);
 }
 
 
@@ -531,7 +545,10 @@ expr::Array::Array(
 	bool _is_str_,
 	std::optional<Type> const& _type_convert,
 	std::vector<std::optional<bytecode_t>> const& _type_conversion)
-	: Expression(_loc, Expression::single_precedence), elements(_elements), is_str_(_is_str_), type_convert(_type_convert), type_conversion(_type_conversion) {}
+	: Expression(_loc, Expression::single_precedence)
+	, elements(_elements), is_str_(_is_str_)
+	, type_convert(_type_convert)
+	, type_conversion(_type_conversion) {}
 
 void expr::Array::insert_node(
 	expr_p node,
@@ -609,13 +626,13 @@ bytecodes_t expr::Array::generate_codes() const
 
 	// Generate codes for elements.
 
-	assert(type_conversion.size() == elements.size());
+	assert(is_str() || type_conversion.size() == elements.size());
 
 	for (auto i = 0; i < elements.size(); ++i)
 	{
 		auto elem_codes = elements[i]->generate_codes();
 
-		if (type_conversion[i].has_value())
+		if (!is_str() && type_conversion[i].has_value())
 			elem_codes.push_back((bytecode_t)*type_conversion[i]);
 
 		codes.insert(std::begin(codes), std::begin(elem_codes), std::end(elem_codes));
