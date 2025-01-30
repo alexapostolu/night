@@ -98,7 +98,7 @@ enum : bytecode_t {
 	BytecodeType_SUB_I, BytecodeType_SUB_F,						// numeric, numeric, SUB
 	BytecodeType_MULT_I, BytecodeType_MULT_F,					// numeric, numeric, MULT
 	BytecodeType_DIV_I, BytecodeType_DIV_F,						// numeric(non-zero), numeric, DIV
-	BytecodeType_MOD_I,											// numeric(int), numeric(int), MOD
+	ByteType_MOD,
 
 	BytecodeType_LESSER_I, BytecodeType_LESSER_F, BytecodeType_LESSER_S,							// numeric(left), numeric(right), LESSER
 	BytecodeType_GREATER_I, BytecodeType_GREATER_F, BytecodeType_GREATER_S,							// numeric(left), numeric(right), GREATER

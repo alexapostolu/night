@@ -32,7 +32,7 @@ std::string night::to_str(bytecode_t type)
 	case BytecodeType_MULT_F: return "MULT_F";
 	case BytecodeType_DIV_I: return "DIV_I";
 	case BytecodeType_DIV_F: return "DIV_F";
-	case BytecodeType_MOD_I: return "MOD_I";
+	case ByteType_MOD: return "MOD";
 
 	case BytecodeType_LESSER_I: return "LESSER_I";
 	case BytecodeType_LESSER_F: return "LESSER_F";

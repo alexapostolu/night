@@ -215,19 +215,34 @@ private:
 	/*
 	 * Returns a pair of string Arrays if operator is ADD and both left and right
 	 * hand side expressions are strings. Otherwise return a pair of NULLs.
+	 * 
+	 * Used in optimize().
 	 */
 	std::pair<std::shared_ptr<Array>, std::shared_ptr<Array>> is_string_concatenation() const;
+
+	/*
+	 * Returns the byte type of the operator.
+	 * 
+	 * Used in generate_codes().
+	 */
+	bytecode_t compute_operator_byte() const;
 
 private:
 	// Given an operator as a string, provides the precedence and operator type.
 	static std::unordered_map<std::string, std::tuple<int, BinaryOpType>> const operators;
 
-	BinaryOpType op_type; // Initialized in constructor
+	// Initialized in constructor.
+	BinaryOpType operator_type;
 
-	expr::expr_p lhs, rhs; // Initialized in insert_node()
+	// Initialized in insert_node().
+	expr::expr_p lhs, rhs;
+
+	// Initialized in type_check().
+	// Used to determine type of operator bytecode in generate_codes().
+	std::optional<Type> lhs_type, rhs_type;
 	
-	bytecode_t op_code;			   // Initialized in type_check()
-	bytecode_t cast_lhs, cast_rhs; // Optionally initialized in type_check()
+	// Optionally initialized in type_check().
+	bytecode_t cast_lhs, cast_rhs;
 };
 
 
@@ -380,9 +395,9 @@ public:
 
 public:
 	std::variant<int64_t, double> val;
+	Type::Primitive type;
 
 private:
-	Type::Primitive type;
 };
 
 }

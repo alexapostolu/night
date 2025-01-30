@@ -127,7 +127,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			s.emplace(pop(s).as.d / s2.as.d);
 			break;
 		}
-		case BytecodeType_MOD_I: {
+		case ByteType_MOD: {
 			auto s2 = pop(s);
 			s.emplace(pop(s).as.i % s2.as.i);
 			break;

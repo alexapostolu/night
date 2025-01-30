@@ -183,17 +183,17 @@ expr::BinaryOp::BinaryOp(
 		Location{"", 0, 0},
 		Expression::binary_precedence + std::get<int>(operators.at(_operator))
 	  )
-	, op_type(std::get<BinaryOpType>(operators.at(_operator)))
+	, operator_type(std::get<BinaryOpType>(operators.at(_operator)))
 	, lhs(nullptr), rhs(nullptr)
-	, op_code(_ByteType_INVALID_)
+	, lhs_type(std::nullopt), rhs_type(std::nullopt)
 	, cast_lhs(_ByteType_INVALID_), cast_rhs(_ByteType_INVALID_) {}
 
 expr::BinaryOp::BinaryOp(
 	BinaryOp const& other)
 	: Expression(other.loc, other.precedence_)
-	, op_type(other.op_type)
+	, operator_type(other.operator_type)
 	, lhs(other.lhs), rhs(other.rhs)
-	, op_code(other.op_code)
+	, lhs_type(other.lhs_type), rhs_type(other.rhs_type)
 	, cast_lhs(other.cast_lhs), cast_rhs(other.cast_rhs) {}
 
 void expr::BinaryOp::insert_node(
@@ -223,35 +223,15 @@ void expr::BinaryOp::insert_node(
 
 std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 {
-	// Operations where strings are supported are handled separately in the
-	// switch statement.
-	static std::unordered_map<BinaryOpType, std::tuple<bytecode_t, bytecode_t, std::optional<bytecode_t>>> m{
-		{ BinaryOpType::ADD,			std::make_tuple(BytecodeType_ADD_I,			BytecodeType_ADD_F,			BytecodeType_ADD_S) },
-		{ BinaryOpType::SUB,			std::make_tuple(BytecodeType_SUB_I,			BytecodeType_SUB_F,			std::nullopt) },
-		{ BinaryOpType::MULT,			std::make_tuple(BytecodeType_MULT_I,			BytecodeType_MULT_F,			std::nullopt) },
-		{ BinaryOpType::DIV,			std::make_tuple(BytecodeType_DIV_I,			BytecodeType_DIV_F,			std::nullopt) },
-		{ BinaryOpType::LESSER,			std::make_tuple(BytecodeType_LESSER_I,			BytecodeType_LESSER_F,			BytecodeType_LESSER_S) },
-		{ BinaryOpType::GREATER,		std::make_tuple(BytecodeType_GREATER_I,		BytecodeType_GREATER_F,		BytecodeType_GREATER_S) },
-		{ BinaryOpType::LESSER_EQUALS,	std::make_tuple(BytecodeType_LESSER_EQUALS_I,	BytecodeType_LESSER_EQUALS_F,	BytecodeType_LESSER_EQUALS_S) },
-		{ BinaryOpType::GREATER_EQUALS,	std::make_tuple(BytecodeType_GREATER_EQUALS_I, BytecodeType_GREATER_EQUALS_F,	BytecodeType_GREATER_EQUALS_S) },
-		{ BinaryOpType::EQUALS,			std::make_tuple(BytecodeType_EQUALS_I,			BytecodeType_EQUALS_F,			BytecodeType_EQUALS_S) },
-		{ BinaryOpType::NOT_EQUALS,		std::make_tuple(BytecodeType_NOT_EQUALS_I,		BytecodeType_NOT_EQUALS_F,		BytecodeType_NOT_EQUALS_S) }
-	};
+	assert(lhs && rhs);
 
-	auto op_code_int = std::get<0>(m[op_type]);
-	auto op_code_float = std::get<1>(m[op_type]);
-	auto op_code_str = std::get<2>(m[op_type]);
-
-	assert(lhs);
-	assert(rhs);
-
-	auto lhs_type = lhs->type_check(scope);
-	auto rhs_type = rhs->type_check(scope);
+	lhs_type = lhs->type_check(scope);
+	rhs_type = rhs->type_check(scope);
 
 	if (!lhs_type.has_value() || !rhs_type.has_value())
 		return std::nullopt;
 
-	switch (op_type)
+	switch (operator_type)
 	{
 	case BinaryOpType::ADD:
 		if (lhs_type->is_str())
@@ -259,7 +239,6 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 			if (!rhs_type->is_str())
 				break;
 
-			op_code = BytecodeType_ADD_S;
 			return Type(Type::CHAR, 1);
 		}
 
@@ -275,7 +254,6 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 				if (rhs_type != Type::FLOAT)
 					cast_rhs = BytecodeType_I2F;
 
-				op_code = op_code_float;
 				return Type::FLOAT;
 			}
 
@@ -284,11 +262,9 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 				if (lhs_type != Type::FLOAT)
 					cast_lhs = BytecodeType_I2F;
 
-				op_code = op_code_float;
 				return Type::FLOAT;
 			}
 
-			op_code = op_code_int;
 			return Type::INT;
 		}
 
@@ -296,10 +272,7 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 
 	case BinaryOpType::MOD:
 		if (lhs_type == Type::INT && rhs_type == Type::INT)
-		{
-			op_code = BytecodeType_MOD_I;
 			return Type::INT;
-		}
 		break;
 
 	case BinaryOpType::LESSER:
@@ -309,11 +282,7 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 	case BinaryOpType::EQUALS:
 	case BinaryOpType::NOT_EQUALS:
 		if (lhs_type->is_str() && rhs_type->is_str())
-		{
-			assert(op_code_str.has_value());
-			op_code = *op_code_str;
 			return Type::BOOL;
-		}
 
 		if (!lhs_type->is_arr() && !rhs_type->is_arr())
 		{
@@ -321,19 +290,11 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 			{
 				if (rhs_type != Type::FLOAT)
 					cast_rhs = BytecodeType_I2F;
-
-				op_code = op_code_float;
 			}
 			else if (rhs_type == Type::FLOAT)
 			{
 				if (lhs_type != Type::FLOAT)
 					cast_lhs = BytecodeType_I2F;
-
-				op_code = op_code_float;
-			}
-			else
-			{
-				op_code = op_code_int;
 			}
 
 			return Type::BOOL;
@@ -356,9 +317,6 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 					cast_lhs = BytecodeType_I2F;
 			}
 
-			op_code = op_type == BinaryOpType::AND
-						? BytecodeType_AND
-						: BytecodeType_OR;
 			return Type::BOOL;
 		}
 
@@ -368,15 +326,9 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 		if (lhs_type == Type::INT)
 		{
 			if (rhs_type->is_str())
-			{
-				op_code = BytecodeType_INDEX_S;
 				return Type::CHAR;
-			}
 			else if (rhs_type->is_arr())
-			{
-				op_code = BytecodeType_INDEX_A;
 				return Type(rhs_type->prim, rhs_type->dim - 1);
-			}
 		}
 
 		// Special error case for subscript.
@@ -385,7 +337,6 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 
 	default:
 		return std::nullopt;
-		//throw debug::unhandled_case((int)op_type);
 	}
 
 	night::error::get().create_minor_error("type mismatch between '" + night::to_str(*lhs_type) + "' and '" + night::to_str(*rhs_type) + "'", loc);
@@ -393,14 +344,14 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 }
 
 #define BinaryOpEvaluateNumeric(op, is_result_bool)	{																							 \
-	if (std::holds_alternative<double>(lhs_num->val) || std::holds_alternative<double>(rhs_num->val))											 \
+	if (lhs_num->type == Type::FLOAT || rhs_num->type == Type::FLOAT)																			 \
 		return std::make_shared<Numeric>(																										 \
-			loc, is_result_bool ? Type::BOOL : Type::FLOAT,																						 \
+			loc, (is_result_bool) ? Type::BOOL : Type::FLOAT,																					 \
 			std::visit([](auto&& arg1, auto&& arg2) { return double(arg1 op arg2); }, lhs_num->val, rhs_num->val)								 \
 		);																																		 \
 																																				 \
 	return std::make_shared<Numeric>(																											 \
-		loc, is_result_bool ? Type::BOOL : Type::INT,																							 \
+		loc, (is_result_bool) ? Type::BOOL : Type::INT,																							 \
 		int64_t(std::get<int64_t>(lhs_num->val) op std::get<int64_t>(rhs_num->val))																 \
 	);																																			 \
 }
@@ -430,12 +381,14 @@ expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
 	if (!lhs_num || !rhs_num)
 		return std::make_shared<BinaryOp>(*this);
 
-	switch (op_type)
+	switch (operator_type)
 	{
 	case BinaryOpType::ADD:  BinaryOpEvaluateNumeric(+, false);
 	case BinaryOpType::SUB:  BinaryOpEvaluateNumeric(-, false);
 	case BinaryOpType::MULT: BinaryOpEvaluateNumeric(*, false);
 	case BinaryOpType::DIV:  BinaryOpEvaluateNumeric(/, false);
+
+	// Separate case for modulus.
 	case BinaryOpType::MOD:
 		return std::make_shared<Numeric>(loc, Type::INT,
 			std::visit([](auto&& arg1, auto&& arg2) {
@@ -463,7 +416,6 @@ expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
 bytecodes_t expr::BinaryOp::generate_codes() const
 {
 	assert(lhs && rhs);
-	assert(op_code != _ByteType_INVALID_);
 
 	bytecodes_t bytes;
 
@@ -477,24 +429,84 @@ bytecodes_t expr::BinaryOp::generate_codes() const
 	if (cast_rhs != _ByteType_INVALID_)
 		bytes.push_back(cast_rhs);
 
-	// Generate operator bytes.
-	bytes.push_back(op_code);
+	// Generate operator byte.
+	bytecode_t operator_byte = compute_operator_byte();
+	bytes.push_back(operator_byte);
 
 	return bytes;
 }
 
 std::pair<std::shared_ptr<expr::Array>, std::shared_ptr<expr::Array>> expr::BinaryOp::is_string_concatenation() const
 {
-	if (op_type == BinaryOpType::ADD)
+	/*
+	 * String concatenation requires three conditions,
+	 *   1) The operator is ADD
+	 *   2) Both left and right hand expressions are Arrays
+	 *   3) Both left and right hand Arrays are Strings
+	 */
+
+	if (operator_type == BinaryOpType::ADD)
 	{
 		auto lhs_arr = std::dynamic_pointer_cast<Array>(lhs);
 		auto rhs_arr = std::dynamic_pointer_cast<Array>(rhs);
 
+		// If both left and right hand expressions are strings, return them.
 		if (lhs_arr && lhs_arr->is_str() && rhs_arr && rhs_arr->is_str())
 			return std::make_pair(lhs_arr, rhs_arr);
 	}
 
 	return std::make_pair(nullptr, nullptr);
+}
+
+bytecode_t expr::BinaryOp::compute_operator_byte() const
+{
+	/*
+	 * Most operators have multiple types depending on the type of expressions
+	 * they are dealing with. For example, operator ADD has three types, one for
+	 * integers, floats and strings, corresponding to ADD_I, ADD_F and ADD_S
+	 * respectively.
+	 * 
+	 * This struct stores the three types for each operator, with _INVALID_ as a
+	 * placeholder for types an operator should not have, such as the string
+	 * type for the SUB operator.
+	 * 
+	 * Array subscripts are handled in a separate case.
+	 */
+	struct OperatorByte {
+		bytecode_t int_, float_, str_;
+	};
+
+	static std::unordered_map<BinaryOpType, OperatorByte> operator_bytes{
+		{ BinaryOpType::ADD,			{ BytecodeType_ADD_I,			 BytecodeType_ADD_F,			BytecodeType_ADD_S			  } },
+		{ BinaryOpType::SUB,			{ BytecodeType_SUB_I,			 BytecodeType_SUB_F,			_ByteType_INVALID_			  } },
+		{ BinaryOpType::MULT,			{ BytecodeType_MULT_I,			 BytecodeType_MULT_F,			_ByteType_INVALID_			  } },
+		{ BinaryOpType::DIV,			{ BytecodeType_DIV_I,			 BytecodeType_DIV_F,			_ByteType_INVALID_			  } },
+		{ BinaryOpType::MOD,			{ ByteType_MOD,					 ByteType_MOD,					_ByteType_INVALID_			  } },
+		{ BinaryOpType::LESSER,			{ BytecodeType_LESSER_I,		 BytecodeType_LESSER_F,		    BytecodeType_LESSER_S		  } },
+		{ BinaryOpType::GREATER,		{ BytecodeType_GREATER_I,		 BytecodeType_GREATER_F,		BytecodeType_GREATER_S		  } },
+		{ BinaryOpType::LESSER_EQUALS,	{ BytecodeType_LESSER_EQUALS_I,	 BytecodeType_LESSER_EQUALS_F,  BytecodeType_LESSER_EQUALS_S  } },
+		{ BinaryOpType::GREATER_EQUALS,	{ BytecodeType_GREATER_EQUALS_I, BytecodeType_GREATER_EQUALS_F, BytecodeType_GREATER_EQUALS_S } },
+		{ BinaryOpType::EQUALS,			{ BytecodeType_EQUALS_I,	  	 BytecodeType_EQUALS_F,		    BytecodeType_EQUALS_S		  } },
+		{ BinaryOpType::NOT_EQUALS,		{ BytecodeType_NOT_EQUALS_I, 	 BytecodeType_NOT_EQUALS_F,	    BytecodeType_NOT_EQUALS_S	  } },
+		{ BinaryOpType::AND,			{ BytecodeType_AND,				 BytecodeType_AND,			    _ByteType_INVALID_			  } },
+		{ BinaryOpType::OR,				{ BytecodeType_OR,				 BytecodeType_OR,			    _ByteType_INVALID_			  } },
+		{ BinaryOpType::SUBSCRIPT,		{ _ByteType_INVALID_,			 _ByteType_INVALID_,			BytecodeType_INDEX_S		  } }
+	};
+
+	assert(lhs_type.has_value() && rhs_type.has_value());
+
+	if (lhs_type->is_str() || rhs_type->is_str())
+		return operator_bytes[operator_type].str_;
+	
+	// Separate case for array subscripts.
+	if (lhs_type->is_arr() || rhs_type->is_arr())
+		return BytecodeType_INDEX_A;
+
+	// Note that this is not the same as,
+	//   lhs_type == Type::INT || rhs_type == Type::INT
+	return lhs_type == Type::FLOAT || rhs_type == Type::FLOAT
+		? operator_bytes[operator_type].float_
+		: operator_bytes[operator_type].int_;
 }
 
 
