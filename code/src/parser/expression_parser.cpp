@@ -2,6 +2,7 @@
 
 #include "lexer.hpp"
 #include "ast/expression.hpp"
+#include "ast/expression_operator.hpp"
 #include "ast/statement.hpp"
 #include "parser/statement_parser.hpp"
 #include "token.hpp"
