@@ -1,6 +1,10 @@
 /*
  * Expressions in Night are represented as ASTs consisting of operators,
  * variables, function calls, and values.
+ * 
+ * Common error: When coding the copy constructor, not all the member variables
+ * are copied over.
+ * 
  */
 
 #pragma once
@@ -44,12 +48,12 @@ public:
 	);
 
 	/* Inserts a node into the AST. There are three cases:
-	 *   1. Node needs to be inserted in the current position.
+	 *   1) Node needs to be inserted in the current position.
 	 *      In this case, 'prev' will be assigned to the node, and then the node
 	 *        will be assigned to the current position.
-	 *   2. Node needs to be inserted as a child.
+	 *   2) Node needs to be inserted as a child.
 	 *      In this case, the 'node' will be appropriately inserted as a child node.
-	 *   3. Node needs to be inserted further down the AST.
+	 *   3) Node needs to be inserted further down the AST.
 	 *      In this case, the 'node' will be passed down to the children using
 	 *        this->child.insert(node).
 	 *
@@ -213,6 +217,36 @@ public:
 
 private:
 	/*
+	 * String concatenation only works with the addition operator on two strings.
+	 */
+	std::optional<Type> type_check_string_concat();
+
+	/*
+	 * Arithmetic only works on two primitives.
+	 */
+	std::optional<Type> type_check_arithmetic();
+
+	/*
+	 * Modulus only works on two integers.
+	 */
+	std::optional<Type> type_check_mod() const;
+
+	/*
+	 * Comparisons only works on two non-arrays.
+	 */
+	std::optional<Type> type_check_comparision();
+
+	/*
+	 * Booleans only works on two primitives.
+	 */
+	std::optional<Type> type_check_boolean();
+
+	/*
+	 * Subscript only works with integer indices on an array or string.
+	 */
+	std::optional<Type> type_check_subscript() const;
+
+	/*
 	 * Returns a pair of string Arrays if operator is ADD and both left and right
 	 * hand side expressions are strings. Otherwise return a pair of NULLs.
 	 * 
@@ -226,6 +260,8 @@ private:
 	 * Used in generate_codes().
 	 */
 	bytecode_t compute_operator_byte() const;
+
+	std::string operator_type_to_str() const;
 
 private:
 	// Given an operator as a string, provides the precedence and operator type.

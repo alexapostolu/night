@@ -234,46 +234,18 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 	switch (operator_type)
 	{
 	case BinaryOpType::ADD:
-		if (lhs_type->is_str())
-		{
-			if (!rhs_type->is_str())
-				break;
-
-			return Type(Type::CHAR, 1);
-		}
+		if (auto string_concat = type_check_string_concat(); string_concat.has_value())
+			return string_concat;
 
 		[[fallthrough]];
 
 	case BinaryOpType::SUB:
 	case BinaryOpType::MULT:
 	case BinaryOpType::DIV:
-		if (!lhs_type->is_arr() && !rhs_type->is_arr())
-		{
-			if (lhs_type == Type::FLOAT)
-			{
-				if (rhs_type != Type::FLOAT)
-					cast_rhs = BytecodeType_I2F;
-
-				return Type::FLOAT;
-			}
-
-			if (rhs_type == Type::FLOAT)
-			{
-				if (lhs_type != Type::FLOAT)
-					cast_lhs = BytecodeType_I2F;
-
-				return Type::FLOAT;
-			}
-
-			return Type::INT;
-		}
-
-		break;
+		return type_check_arithmetic();
 
 	case BinaryOpType::MOD:
-		if (lhs_type == Type::INT && rhs_type == Type::INT)
-			return Type::INT;
-		break;
+		return type_check_mod();
 
 	case BinaryOpType::LESSER:
 	case BinaryOpType::GREATER:
@@ -281,65 +253,188 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 	case BinaryOpType::GREATER_EQUALS:
 	case BinaryOpType::EQUALS:
 	case BinaryOpType::NOT_EQUALS:
-		if (lhs_type->is_str() && rhs_type->is_str())
-			return Type::BOOL;
-
-		if (!lhs_type->is_arr() && !rhs_type->is_arr())
-		{
-			if (lhs_type == Type::FLOAT)
-			{
-				if (rhs_type != Type::FLOAT)
-					cast_rhs = BytecodeType_I2F;
-			}
-			else if (rhs_type == Type::FLOAT)
-			{
-				if (lhs_type != Type::FLOAT)
-					cast_lhs = BytecodeType_I2F;
-			}
-
-			return Type::BOOL;
-		}
-
-		break;
+		return type_check_comparision();
 
 	case BinaryOpType::AND:
 	case BinaryOpType::OR:
-		if (!lhs_type->is_arr() && !rhs_type->is_arr())
-		{
-			if (lhs_type == Type::FLOAT)
-			{
-				if (rhs_type != Type::FLOAT)
-					cast_rhs = BytecodeType_I2F;
-			}
-			else if (rhs_type != Type::FLOAT)
-			{
-				if (lhs_type != Type::FLOAT)
-					cast_lhs = BytecodeType_I2F;
-			}
-
-			return Type::BOOL;
-		}
-
-		break;
+		return type_check_boolean();
 
 	case BinaryOpType::SUBSCRIPT:
-		if (lhs_type == Type::INT)
-		{
-			if (rhs_type->is_str())
-				return Type::CHAR;
-			else if (rhs_type->is_arr())
-				return Type(rhs_type->prim, rhs_type->dim - 1);
-		}
-
-		// Special error case for subscript.
-		night::error::get().create_minor_error("subscript operator used on type '" + night::to_str(*rhs_type) + "', it can only be used on arrays", loc);
-		return std::nullopt;
+		return type_check_subscript();
 
 	default:
-		return std::nullopt;
+		throw std::runtime_error("Unhandled case in " + std::string(std::source_location::current().function_name()));
+	}
+}
+
+std::optional<Type> expr::BinaryOp::type_check_string_concat()
+{
+	assert(lhs_type.has_value() && rhs_type.has_value());
+
+	return lhs_type->is_str() && rhs_type->is_str()
+		? std::optional(Type(Type::CHAR, 1))
+		: std::nullopt;
+}
+
+std::optional<Type> expr::BinaryOp::type_check_arithmetic()
+{
+	assert(lhs_type.has_value() && rhs_type.has_value());
+
+	if (lhs_type->is_prim() && rhs_type->is_prim())
+	{
+		if (lhs_type == Type::FLOAT)
+		{
+			if (rhs_type != Type::FLOAT)
+				cast_rhs = BytecodeType_I2F;
+
+			return Type::FLOAT;
+		}
+
+		if (rhs_type == Type::FLOAT)
+		{
+			if (lhs_type != Type::FLOAT)
+				cast_lhs = BytecodeType_I2F;
+
+			return Type::FLOAT;
+		}
+
+		return Type::INT;
 	}
 
-	night::error::get().create_minor_error("type mismatch between '" + night::to_str(*lhs_type) + "' and '" + night::to_str(*rhs_type) + "'", loc);
+	if (!lhs_type->is_prim() && rhs_type->is_prim())
+		night::error::get().create_minor_error(
+			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on two primitive types.", loc);
+	else if (lhs_type->is_prim() && !rhs_type->is_prim())
+		night::error::get().create_minor_error(
+			"The right hand expression is a " + night::to_str(lhs_type.value()) + " type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on two primitive types.", loc);
+	else
+		night::error::get().create_minor_error(
+			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type and "
+			"the right hand expression is a " + night::to_str(rhs_type.value()) + " type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on two integer types.", loc);
+
+	return std::nullopt;
+}
+
+std::optional<Type> expr::BinaryOp::type_check_mod() const
+{
+	assert(lhs_type.has_value() && rhs_type.has_value());
+
+	if (lhs_type == Type::INT && rhs_type == Type::INT)
+		return Type::INT;
+
+	if (lhs_type != Type::INT && rhs_type == Type::INT)
+		night::error::get().create_minor_error(
+			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type.\n"
+			"The modulus operator can only be used on two integer types.", loc);
+	else if (lhs_type == Type::INT && rhs_type != Type::INT)
+		night::error::get().create_minor_error(
+			"The right hand expression is a " + night::to_str(lhs_type.value()) + " type.\n"
+			"The modulus operator can only be used on two integer types.", loc);
+	else
+		night::error::get().create_minor_error(
+			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type and "
+			"the right hand expression is a " + night::to_str(rhs_type.value()) + " type.\n"
+			"The modulus operator can only be used on two integer types.", loc);
+
+	return std::nullopt;
+}
+
+std::optional<Type> expr::BinaryOp::type_check_comparision()
+{
+	assert(lhs_type.has_value() && rhs_type.has_value());
+
+	if (lhs_type->is_str() && rhs_type->is_str())
+		return Type::BOOL;
+
+	if (!lhs_type->is_arr() && !rhs_type->is_arr())
+	{
+		if (lhs_type == Type::FLOAT && rhs_type != Type::FLOAT)
+			cast_rhs = BytecodeType_I2F;
+		else if (rhs_type == Type::FLOAT && lhs_type != Type::FLOAT)
+			cast_lhs = BytecodeType_I2F;
+
+		return Type::BOOL;
+	}
+
+	if (lhs_type->is_arr() && !rhs_type->is_arr())
+		night::error::get().create_minor_error(
+			"The left hand expression is an array type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on two non-array types.", loc);
+	else if (!lhs_type->is_arr() && rhs_type->is_arr())
+		night::error::get().create_minor_error(
+			"The right hand expression is a " + night::to_str(lhs_type.value()) + " type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on two non-array types.", loc);
+	else
+		night::error::get().create_minor_error(
+			"The left and right hand expressions are both array types.\n"
+			"The " + operator_type_to_str() + " operator can only be used on two non-array types.", loc);
+
+	return std::nullopt;
+}
+
+std::optional<Type> expr::BinaryOp::type_check_boolean()
+{
+	assert(lhs_type.has_value() && rhs_type.has_value());
+
+	if (!lhs_type->is_arr() && !rhs_type->is_arr())
+	{
+		if (lhs_type == Type::FLOAT)
+		{
+			if (rhs_type != Type::FLOAT)
+				cast_rhs = BytecodeType_I2F;
+		}
+		else if (rhs_type != Type::FLOAT)
+		{
+			if (lhs_type != Type::FLOAT)
+				cast_lhs = BytecodeType_I2F;
+		}
+
+		return Type::BOOL;
+	}
+
+	if (!lhs_type->is_prim() && rhs_type->is_prim())
+		night::error::get().create_minor_error(
+			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on two primitive types.", loc);
+	else if (lhs_type->is_prim() && !rhs_type->is_prim())
+		night::error::get().create_minor_error(
+			"The right hand expression is a " + night::to_str(lhs_type.value()) + " type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on two primitive types.", loc);
+	else
+		night::error::get().create_minor_error(
+			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type and "
+			"the right hand expression is a " + night::to_str(rhs_type.value()) + " type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on two primitive types.", loc);
+
+	return std::nullopt;
+}
+
+std::optional<Type> expr::BinaryOp::type_check_subscript() const
+{
+	assert(lhs_type.has_value() && rhs_type.has_value());
+
+	if (lhs_type == Type::INT)
+	{
+		// Check if it is string first before checking if it is array because
+		// array encompasses strings.
+		if (rhs_type->is_str())
+			return Type::CHAR;
+		else if (rhs_type->is_arr())
+			return Type(rhs_type->prim, rhs_type->dim - 1);
+	}
+
+	if (lhs_type != Type::INT)
+		night::error::get().create_minor_error(
+			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type.\n"
+			"The subscript operator's index can only be an integer type.", loc);
+	else if (!rhs_type->is_str() && !rhs_type->is_arr())
+		night::error::get().create_minor_error(
+			"The right hand expression is a " + night::to_str(rhs_type.value()) + " type.\n"
+			"The subscript operator can only be used on an array or string type.", loc);
+
 	return std::nullopt;
 }
 
@@ -507,6 +602,28 @@ bytecode_t expr::BinaryOp::compute_operator_byte() const
 	return lhs_type == Type::FLOAT || rhs_type == Type::FLOAT
 		? operator_bytes[operator_type].float_
 		: operator_bytes[operator_type].int_;
+}
+
+std::string expr::BinaryOp::operator_type_to_str() const
+{
+	switch (operator_type)
+	{
+	case BinaryOpType::ADD: return "addition";
+	case BinaryOpType::SUB: return "subtraction";
+	case BinaryOpType::MULT: return "multiplication";
+	case BinaryOpType::DIV: return "division";
+	case BinaryOpType::MOD: return "modulus";
+	case BinaryOpType::LESSER: return "lesser";
+	case BinaryOpType::GREATER: return "greater";
+	case BinaryOpType::LESSER_EQUALS: return "lesser or equals";
+	case BinaryOpType::GREATER_EQUALS: return "greater or equals";
+	case BinaryOpType::EQUALS: return "equals";
+	case BinaryOpType::NOT_EQUALS: return "not equals";
+	case BinaryOpType::AND: return "and";
+	case BinaryOpType::OR: return "or";
+	case BinaryOpType::SUBSCRIPT: return "subscript";
+	default: return "UNKNOWN";
+	}
 }
 
 

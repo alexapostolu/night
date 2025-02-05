@@ -48,9 +48,9 @@ std::string night::to_str(Type const& type)
 	std::string is_arr_str = (type.is_arr() ? " array" : "");
 	switch (type.prim)
 	{
-	case Type::BOOL:  return "bool" + is_arr_str;
-	case Type::CHAR:  return "char" + is_arr_str;
-	case Type::INT:   return "int" + is_arr_str;
+	case Type::BOOL:  return "boolean" + is_arr_str;
+	case Type::CHAR:  return "character" + is_arr_str;
+	case Type::INT:   return "integer" + is_arr_str;
 	case Type::FLOAT: return "float" + is_arr_str;
 	default: throw debug::unhandled_case(type.prim);
 	}

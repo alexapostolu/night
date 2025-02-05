@@ -45,6 +45,25 @@ void night::error::what() const
 {
 	for (auto const& err : errors)
 	{
+		std::string s = err.message;
+
+		size_t pos = 0;
+		while ((pos = s.find("integer", pos)) != std::string::npos) {
+			s.replace(pos, strlen("integer"), "\033[36minteger\033[0m");
+			pos += strlen("\033[36minteger\033[0m");
+		}
+		pos = 0;
+		while ((pos = s.find("float", pos)) != std::string::npos) {
+			s.replace(pos, strlen("float"), "\033[36mfloat\033[0m");
+			pos += strlen("\033[36mfloat\033[0m");
+		}
+		pos = 0;
+		while ((pos = s.find("character", pos)) != std::string::npos) {
+			s.replace(pos, strlen("character"), "\033[36mcharacter\033[0m");
+			pos += strlen("\033[36mcharacter\033[0m");
+		}
+
+
 		set_text_colour(RED);
 
 		std::cout << "[ ";
@@ -74,7 +93,7 @@ void night::error::what() const
 		if (error::get().debug_flag)
 			std::cout << err.source_location.file_name() << " " << std::to_string(err.source_location.line()) << '\n';
 
-		std::cout << '\n' << err.message << "\n\n";
+		std::cout << '\n' << s << "\n\n";
 
 		std::string error_line;
 		std::ifstream error_file(err.location.file);

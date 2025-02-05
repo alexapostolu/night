@@ -66,11 +66,11 @@ for i in "${!night_files[@]}"; do
 done
 
 if [ $tests_failed -eq 0 ]; then
-    echo -e "\e[32mAll tests passed.\e[0m"
+    echo -e "\e[1;32mAll tests passed.\e[0m"
 elif [ $tests_failed -eq 1 ]; then
-    echo -e "\e[31m${tests_failed} test failed.\e[0m"
+    echo -e "\e[1;31m${tests_failed} test failed.\e[0m"
 else
-    echo -e "\e[31m${tests_failed} tests failed.\e[0m"
+    echo -e "\e[1;31m${tests_failed} tests failed.\e[0m"
 fi
 
 # Remove temporary output file
