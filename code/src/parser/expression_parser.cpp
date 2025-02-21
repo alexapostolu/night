@@ -26,74 +26,85 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty, std::optional<TokenType
 	while (true)
 	{
 		// The new node to be constructed.
-		expr::expr_p node;
-
-		auto save_type = lexer.eat().type;
-
-		switch (lexer.curr().type)
+		expr::expr_p new_node;
+		
+		switch (lexer.eat().type)
 		{
 		case TokenType::BOOL_LIT:
-			node = std::make_shared<expr::Numeric>(lexer.loc, Type::BOOL, (int64_t)(lexer.curr().str == "true"));
+			parse_check_value(previous_token_type, lexer);
+			new_node = std::make_shared<expr::Numeric>(lexer.loc, Type::BOOL, (int64_t)(lexer.curr().str == "true"));
 			break;
 
 		case TokenType::CHAR_LIT:
+			parse_check_value(previous_token_type, lexer);
 			assert(lexer.curr().str.length() == 1);
-			node = std::make_shared<expr::Numeric>(lexer.loc, Type::CHAR, (int64_t)lexer.curr().str[0]);
+			new_node = std::make_shared<expr::Numeric>(lexer.loc, Type::CHAR, (int64_t)lexer.curr().str[0]);
 			break;
 
 		case TokenType::INT_LIT:
-			node = std::make_shared<expr::Numeric>(lexer.loc, Type::INT, std::stoll(lexer.curr().str));
+			parse_check_value(previous_token_type, lexer);
+			new_node = std::make_shared<expr::Numeric>(lexer.loc, Type::INT, std::stoll(lexer.curr().str));
 			break;
 
 		case TokenType::FLOAT_LIT:
-			node = std::make_shared<expr::Numeric>(lexer.loc, Type::FLOAT, std::stod(lexer.curr().str));
+			parse_check_value(previous_token_type, lexer);
+			new_node = std::make_shared<expr::Numeric>(lexer.loc, Type::FLOAT, std::stod(lexer.curr().str));
 			break;
 
 		case TokenType::STRING_LIT:
-			node = parse_string(lexer);
+			parse_check_value(previous_token_type, lexer);
+			new_node = parse_string(lexer);
 			break;
 
 		case TokenType::TYPE:
 		case TokenType::VARIABLE:
-			node = parse_variable_or_call(lexer);
+			parse_check_value(previous_token_type, lexer);
+			new_node = parse_variable_or_call(lexer);
 			break;
 
 		case TokenType::OPEN_SQUARE:
-			node = parse_subscript_or_array(lexer, previous_token_type);
+			parse_check_open_square(previous_token_type, lexer);
+			new_node = parse_subscript_or_array(lexer, previous_token_type);
 			break;
 
 		case TokenType::UNARY_OPERATOR:
-			node = std::make_shared<expr::UnaryOp>(lexer.loc, lexer.curr().str);
+			parse_check_unary_operator(previous_token_type, lexer);
+			new_node = std::make_shared<expr::UnaryOp>(lexer.loc, lexer.curr().str);
 			break;
 
 		case TokenType::BINARY_OPERATOR:
-			node = parse_subtract_or_negative(lexer, previous_token_type);
+			parse_check_binary_operator(previous_token_type, lexer);
+			new_node = parse_subtract_or_negative(lexer, previous_token_type);
 			break;
 
 		case TokenType::OPEN_BRACKET:
-			node = parse_bracket(lexer, err_on_empty);
+			parse_check_open_bracket(previous_token_type, lexer);
+			new_node = parse_bracket(lexer, err_on_empty);
+			previous_token_type = TokenType::CLOSE_BRACKET;
 			break;
 
 		default:
 		{
 			if (err_on_empty && !head)
-				throw night::error::get().create_fatal_error("found '" + lexer.curr().str + "', expected expression", lexer.loc);
+				throw night::error::get().create_fatal_error("Found '" + lexer.curr().str + "', expected expression", lexer.loc);
 
 			if (end_token.has_value())
 				lexer.curr_is(*end_token);
 
+			parse_check_expression_ending(previous_token_type, lexer);
+
 			return head;
 		}
 		}
-
-		assert(node);
+		
+		assert(new_node);
 
 		if (!head)
-			head = node;
+			head = new_node;
 		else
-			head->insert_node(node, &head);
+			head->insert_node(new_node, &head);
 
-		previous_token_type = save_type;
+		previous_token_type = lexer.curr().type;
 	}
 }
 
@@ -202,4 +213,75 @@ expr::expr_p parse_bracket(Lexer& lexer, bool err_on_empty)
 	lexer.curr_is(TokenType::CLOSE_BRACKET);
 	
 	return node;
+}
+
+void parse_check_value(std::optional<TokenType> const& previous_type, Lexer const& lexer)
+{
+	if (previous_type.has_value() &&
+		previous_type != TokenType::UNARY_OPERATOR &&
+		previous_type != TokenType::BINARY_OPERATOR &&
+		previous_type != TokenType::OPEN_SQUARE &&
+		previous_type != TokenType::OPEN_BRACKET)
+		throw night::error::get().create_fatal_error("Expected operator before value " + lexer.curr().str + ".", lexer.loc);
+}
+
+void parse_check_unary_operator(std::optional<TokenType> const& previous_type, Lexer const& lexer)
+{
+	if (previous_type.has_value() &&
+		previous_type != TokenType::UNARY_OPERATOR &&
+		previous_type != TokenType::BINARY_OPERATOR &&
+		previous_type != TokenType::OPEN_SQUARE &&
+		previous_type != TokenType::OPEN_BRACKET)
+		throw night::error::get().create_fatal_error("Expected operator before unary operator " + lexer.curr().str + ".", lexer.loc);
+}
+
+void parse_check_binary_operator(std::optional<TokenType> const& previous_type, Lexer const& lexer)
+{
+	if (!previous_type.has_value() ||
+		(previous_type != TokenType::BOOL_LIT &&
+		previous_type != TokenType::CHAR_LIT &&
+		previous_type != TokenType::INT_LIT &&
+		previous_type != TokenType::FLOAT_LIT &&
+		previous_type != TokenType::STRING_LIT &&
+		previous_type != TokenType::VARIABLE &&
+		previous_type != TokenType::CLOSE_BRACKET &&
+		previous_type != TokenType::CLOSE_SQUARE))
+		throw night::error::get().create_fatal_error("Expected value or expression before binary operator " + lexer.curr().str + ".", lexer.loc);
+}
+
+void parse_check_open_square(std::optional<TokenType> const& previous_type, Lexer const& lexer)
+{
+	if (previous_type.has_value() &&
+		previous_type != TokenType::BINARY_OPERATOR &&
+		previous_type != TokenType::OPEN_BRACKET &&
+		previous_type != TokenType::CLOSE_SQUARE &&
+		previous_type != TokenType::BOOL_LIT &&
+		previous_type != TokenType::CHAR_LIT &&
+		previous_type != TokenType::INT_LIT &&
+		previous_type != TokenType::FLOAT_LIT &&
+		previous_type != TokenType::STRING_LIT &&
+		previous_type != TokenType::VARIABLE)
+		throw night::error::get().create_fatal_error("Expected binary operator, open bracket or closing square before open square.", lexer.loc);
+}
+
+void parse_check_open_bracket(std::optional<TokenType> const& previous_type, Lexer const& lexer)
+{
+	if (previous_type.has_value() &&
+		previous_type != TokenType::UNARY_OPERATOR &&
+		previous_type != TokenType::BINARY_OPERATOR)
+		throw night::error::get().create_fatal_error("Expected operator before open bracket.", lexer.loc);
+}
+
+void parse_check_expression_ending(std::optional<TokenType> const& previous_type, Lexer const& lexer)
+{
+	if (previous_type.has_value() &&
+		previous_type != TokenType::CLOSE_BRACKET &&
+		previous_type != TokenType::CLOSE_SQUARE &&
+		previous_type != TokenType::BOOL_LIT &&
+		previous_type != TokenType::CHAR_LIT &&
+		previous_type != TokenType::INT_LIT &&
+		previous_type != TokenType::FLOAT_LIT &&
+		previous_type != TokenType::STRING_LIT &&
+		previous_type != TokenType::VARIABLE)
+		throw night::error::get().create_fatal_error("Expected closing bracket, literal or variable at the end of the expression.", lexer.loc);
 }

@@ -11,7 +11,6 @@
 #include <optional>
 #include <memory>
 #include <vector>
-#include <limits>
 #include <tuple>
 #include <variant>
 #include <string>
@@ -198,7 +197,8 @@ expr::Allocate::Allocate(
 	Type::Primitive const _type,
 	std::vector<expr_p> const& _sizes)
 	: Expression(_loc, Expression::single_precedence)
-	, type(_type), sizes(_sizes) {}
+	, type(_type)
+	, sizes(_sizes) {}
 
 void expr::Allocate::insert_node(
 	expr_p node,
@@ -239,7 +239,7 @@ bytecodes_t expr::Allocate::generate_codes() const
 	auto dimension_bytes = int64_to_bytes<uint64_t>(sizes.size());
 	codes.insert(std::end(codes), std::begin(dimension_bytes), std::end(dimension_bytes));
 	
-	codes.push_back((bytecode_t)BytecodeType_ALLOCATE_ARR_AND_FILL);
+	codes.push_back(BytecodeType_ALLOCATE_ARR_AND_FILL);
 
 	return codes;
 }
@@ -256,6 +256,7 @@ void expr::Numeric::insert_node(
 	expr_p node,
 	expr_p* prev)
 {
+	assert(node);
 	assert(prev);
 
 	node->insert_node(std::make_shared<expr::Numeric>(loc, type, val));
@@ -274,31 +275,27 @@ expr::expr_p expr::Numeric::optimize(StatementScope const& scope)
 
 bytecodes_t expr::Numeric::generate_codes() const
 {
-	if (double const* dbl = std::get_if<double>(&val))
+	if (double const* d = std::get_if<double>(&val))
 	{
 		bytecodes_t bytes;
 
-		// Check if the value is within the range of a float
-		if (*dbl >= std::numeric_limits<float>::min() && *dbl <= std::numeric_limits<float>::max())
+		// Check if the double can be converted to a float without loss of
+		// decimal precision.
+		if (*d == static_cast<double>(static_cast<float>(*d)))
 		{
 			bytes.push_back(ByteType_FLT4);
 
-			float f = (float)*dbl;
-			uint8_t arr[sizeof(float)];
-			std::memcpy(arr, &f, sizeof(float));
+			float f = static_cast<float>(*d);
+			uint8_t* p = reinterpret_cast<uint8_t*>(&f);
 
-			for (int i = 0; i < sizeof(float); ++i)
-				bytes.push_back(arr[i]);
+			bytes.insert(std::end(bytes), p, p + sizeof(float));
 		}
 		else
 		{
 			bytes.push_back(ByteType_FLT8);
 
-			uint8_t arr[sizeof(double)];
-			std::memcpy(arr, dbl, sizeof(double));
-
-			for (int i = 0; i < sizeof(double); ++i)
-				bytes.push_back(arr[i]);
+			uint8_t const* p = reinterpret_cast<uint8_t const*>(d);
+			bytes.insert(std::end(bytes), p, p + sizeof(double));
 		}
 
 		return bytes;

@@ -22,3 +22,15 @@ expr::expr_p parse_variable_or_call(Lexer& lexer);
 expr::expr_p parse_subscript_or_array(Lexer& lexer, std::optional<TokenType> previous_token_type);
 expr::expr_p parse_subtract_or_negative(Lexer& lexer, std::optional<TokenType> previous_token_type);
 expr::expr_p parse_bracket(Lexer& lexer, bool err_on_empty);
+
+void parse_check_value(std::optional<TokenType> const& previous_type, Lexer const& lexer);
+
+void parse_check_unary_operator(std::optional<TokenType> const& previous_type, Lexer const& lexer);
+
+void parse_check_binary_operator(std::optional<TokenType> const& previous_type, Lexer const& lexer);
+
+void parse_check_open_square(std::optional<TokenType> const& previous_type, Lexer const& lexer);
+
+void parse_check_open_bracket(std::optional<TokenType> const& previous_type, Lexer const& lexer);
+
+void parse_check_expression_ending(std::optional<TokenType> const& previous_type, Lexer const& lexer);

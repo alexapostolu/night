@@ -72,7 +72,7 @@ public:
 	int precedence() const;
 
 	/*
-	 * When gaurd is set, no new node can be inserted as a child of this node.
+	 * When guard is set, no new node can be inserted as a child of this node.
 	 * In other words it treats this node as one with the highest precedence.
 	 * This is used for brackets.
 	*/
