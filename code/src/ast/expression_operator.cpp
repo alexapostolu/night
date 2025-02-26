@@ -72,7 +72,8 @@ std::optional<Type> expr::UnaryOp::type_check(
 		return Type::BOOL;
 
 	default:
-		throw debug::unhandled_case((unsigned)operator_type);
+		assert(false);
+		return std::nullopt;
 	}
 }
 
@@ -173,7 +174,7 @@ expr::BinaryOp::BinaryOp(
 	Location const& _loc,
 	std::string const& _operator)
 	: Expression(
-		Location{ "", 0, 0 },
+		_loc,
 		Expression::binary_precedence + std::get<int>(operators.at(_operator))
 	)
 	, operator_type(std::get<BinaryOpType>(operators.at(_operator)))
@@ -256,7 +257,8 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 		return type_check_subscript();
 
 	default:
-		throw std::runtime_error("Unhandled case in " + std::string(std::source_location::current().function_name()));
+		assert(false);
+		return std::nullopt;
 	}
 }
 

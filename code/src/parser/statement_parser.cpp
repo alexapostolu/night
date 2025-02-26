@@ -91,7 +91,8 @@ stmt_p parse_var(Lexer& lexer)
 {
 	assert(lexer.curr().type == TokenType::VARIABLE);
 
-	std::string var_name = lexer.curr().str;
+	std::string name = lexer.curr().str;
+	Location name_location = lexer.loc;
 
 	switch (lexer.peek().type)
 	{
@@ -100,14 +101,14 @@ stmt_p parse_var(Lexer& lexer)
 
 		if (lexer.peek().type == TokenType::OPEN_SQUARE)
 		{
-			auto const& ast = std::make_shared<ArrayInitialization>(parse_array_init(lexer, var_name));
+			auto const& ast = std::make_shared<ArrayInitialization>(parse_array_init(lexer, name, name_location));
 
 			lexer.eat();
 			return ast;
 		}
 		else
 		{
-			auto const& ast = std::make_shared<VariableInit>(parse_var_init(lexer, var_name));
+			auto const& ast = std::make_shared<VariableInit>(parse_var_init(lexer, name, name_location));
 
 			lexer.eat();
 			return ast;
@@ -117,20 +118,20 @@ stmt_p parse_var(Lexer& lexer)
 	case TokenType::ASSIGN_OPERATOR: {
 		lexer.eat();
 
-		auto const& ast = std::make_shared<VariableAssign>(parse_var_assign(lexer, var_name));
+		auto const& ast = std::make_shared<VariableAssign>(parse_var_assign(lexer, name, name_location));
 		lexer.curr_is(TokenType::SEMICOLON);
 
 		lexer.eat();
 		return ast;
 	}
 	case TokenType::OPEN_SQUARE: {
-		auto const& ast = std::make_shared<ArrayMethod>(parse_array_method(lexer, var_name));
+		auto const& ast = std::make_shared<ArrayMethod>(parse_array_method(lexer, name));
 		return ast;
 	}
 	case TokenType::OPEN_BRACKET: {
 		lexer.eat();
 
-		auto const& ast = std::make_shared<expr::FunctionCall>(parse_func_call(lexer, var_name));
+		auto const& ast = std::make_shared<expr::FunctionCall>(parse_func_call(lexer, name));
 		lexer.expect(TokenType::SEMICOLON);
 
 		lexer.eat();
@@ -142,7 +143,7 @@ stmt_p parse_var(Lexer& lexer)
 	}
 }
 
-VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
+VariableInit parse_var_init(Lexer& lexer, std::string const& name, Location const& name_location)
 {
 	assert(lexer.curr().type == TokenType::TYPE);
 
@@ -157,10 +158,10 @@ VariableInit parse_var_init(Lexer& lexer, std::string const& var_name)
 
 	lexer.curr_is(TokenType::SEMICOLON);
 
-	return VariableInit(lexer.loc, var_name, type, expr);
+	return VariableInit(lexer.loc, name, name_location, type, expr);
 }
 
-ArrayInitialization parse_array_init(Lexer& lexer, std::string const& var_name)
+ArrayInitialization parse_array_init(Lexer& lexer, std::string const& name, Location const& name_location)
 {
 	assert(lexer.curr().type == TokenType::TYPE);
 
@@ -184,10 +185,10 @@ ArrayInitialization parse_array_init(Lexer& lexer, std::string const& var_name)
 
 	lexer.curr_is(TokenType::SEMICOLON);
 
-	return ArrayInitialization(lexer.loc, var_name, type, arr_sizes, expr);
+	return ArrayInitialization(lexer.loc, name, name_location, type, arr_sizes, expr);
 }
 
-VariableAssign parse_var_assign(Lexer& lexer, std::string const& var_name)
+VariableAssign parse_var_assign(Lexer& lexer, std::string const& var_name, Location const& variable_name_location)
 {
 	assert(lexer.curr().type == TokenType::ASSIGN ||
 		   lexer.curr().type == TokenType::ASSIGN_OPERATOR);
@@ -195,7 +196,7 @@ VariableAssign parse_var_assign(Lexer& lexer, std::string const& var_name)
 	auto assign_operator = lexer.curr().str;
 	auto expression		 = parse_expr(lexer, true);
 
-	return VariableAssign(lexer.loc, var_name, assign_operator, expression);
+	return VariableAssign(lexer.loc, var_name, assign_operator, expression, variable_name_location);
 }
 
 ArrayMethod parse_array_method(Lexer& lexer, std::string const& var_name)
@@ -314,10 +315,11 @@ For parse_for(Lexer& lexer, bool* contains_return)
 
 	// Parse variable initialization.
 
-	auto var_init_name = lexer.expect(TokenType::VARIABLE).str;
+	std::string variable_name = lexer.expect(TokenType::VARIABLE).str;
+	Location variable_location = lexer.loc;
 	lexer.expect(TokenType::TYPE);
 
-	auto var_init = parse_var_init(lexer, var_init_name);
+	auto var_init = parse_var_init(lexer, variable_name, variable_location);
 	
 	// Parse condition.
 
@@ -326,9 +328,11 @@ For parse_for(Lexer& lexer, bool* contains_return)
 	// Parse assignment.
 
 	std::string var_assign_name = lexer.expect(TokenType::VARIABLE).str;
+	Location variable_name_location = lexer.loc;
+
 	lexer.eat();
 
-	auto var_assign = parse_var_assign(lexer, var_assign_name);
+	auto var_assign = parse_var_assign(lexer, var_assign_name, variable_name_location);
 	lexer.curr_is(TokenType::CLOSE_BRACKET);
 
 	// Parse body, and include the increment statement in the body.
@@ -345,27 +349,28 @@ Function parse_func(Lexer& lexer)
 {
 	assert(lexer.curr().type == TokenType::DEF);
 
-	std::string func_name = lexer.expect(TokenType::VARIABLE).str;
+	std::string name = lexer.expect(TokenType::VARIABLE).str;
+	Location name_location = lexer.loc;
 
 	// Parser parameters.
 
 	lexer.expect(TokenType::OPEN_BRACKET);
 
-	// Name and types.
-	std::vector<std::tuple<std::string, std::string, bool>> parameters;
+	std::vector<Parameter> parameters;
 
 	while (true)
 	{
 		if (lexer.eat().type == TokenType::CLOSE_BRACKET)
 			break;
 
-		auto name = lexer.curr_is(TokenType::VARIABLE).str;
-		auto type = lexer.expect(TokenType::TYPE).str;
-		auto is_arr = false;
+		std::string name = lexer.curr_is(TokenType::VARIABLE).str;
+		Location location = lexer.loc;
+		std::string type = lexer.expect(TokenType::TYPE).str;
+		bool is_arr = false;
 
 		if (lexer.eat().type == TokenType::CLOSE_BRACKET)
 		{
-			parameters.push_back(std::make_tuple(name, type, is_arr));
+			parameters.push_back({ name, type, is_arr, location });
 			break;
 		}
 
@@ -376,14 +381,14 @@ Function parse_func(Lexer& lexer)
 
 			if (lexer.eat().type == TokenType::CLOSE_BRACKET)
 			{
-				parameters.push_back(std::make_tuple(name, type, is_arr));
+				parameters.push_back({ name, type, is_arr, location });
 				break;
 			}
 		}
 		
 		lexer.curr_is(TokenType::COMMA);
 
-		parameters.push_back(std::make_tuple(name, type, is_arr));
+		parameters.push_back({ name, type, is_arr, location });
 	}
 
 	// Parse return type.
@@ -405,7 +410,7 @@ Function parse_func(Lexer& lexer)
 			"found no return statement, expected return statement in function", lexer.loc);
 	}
 
-	return Function(lexer.loc, func_name, parameters, std::get<0>(rtn_type), std::get<1>(rtn_type), body);
+	return Function(name, name_location, parameters, std::get<0>(rtn_type), std::get<1>(rtn_type), body);
 }
 
 Return parse_return(Lexer& lexer)

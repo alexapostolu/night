@@ -7,8 +7,9 @@
 #include <optional>
 #include <string>
 #include <assert.h>
+#include <unordered_set>
 
-scope_func_container StatementScope::funcs = {
+scope_func_container StatementScope::functions = {
 	{ "print", StatementFunction{ 0,  {}, { Type::BOOL		    }, std::nullopt			} },
 	{ "print", StatementFunction{ 1,  {}, { Type::CHAR		    }, std::nullopt			} },
 	{ "print", StatementFunction{ 2,  {}, { Type::INT		    }, std::nullopt			} },
@@ -24,62 +25,114 @@ scope_func_container StatementScope::funcs = {
 };
 
 StatementScope::StatementScope()
-	: vars() {}
+	: variables() {}
 
-StatementScope::StatementScope(StatementScope const& upper_scope)
-	: vars(upper_scope.vars), rtn_type(upper_scope.rtn_type) {}
+StatementScope::StatementScope(
+	StatementScope const& parent_scope)
+	: variables(parent_scope.variables)
+	, return_type(parent_scope.return_type) {}
 
-StatementScope::StatementScope(StatementScope const& upper_scope, std::optional<Type> const& _rtn_type)
-	: vars(upper_scope.vars), rtn_type(_rtn_type) {}
+StatementScope::StatementScope(
+	StatementScope const& parent_scope,
+	std::optional<Type> const& _return_type)
+	: variables(parent_scope.variables)
+	, return_type(_return_type) {}
 
-std::optional<bytecode_t> StatementScope::create_variable(
+std::optional<id_t> StatementScope::create_variable(
 	std::string const& name,
-	Type const& type,
-	Location const& loc)
+	Location	const& name_location,
+	Type const& type)
 {
-	static bytecode_t var_id = 0;
+	static id_t variable_id = 0;
+	static id_t const max_variables = std::numeric_limits<id_t>::max();
 
-	if (vars.contains(name))
-		night::error::get().create_minor_error("variable '" + name + "' is already defined", loc);
+	if (variables.contains(name))
+		night::error::get().create_minor_error(
+			"Variable '" + name + "' is already defined in the current or parent scope.", name_location);
 
-	if (var_id == std::numeric_limits<bytecode_t>::max())
-		night::error::get().create_minor_error("only " + std::to_string(std::numeric_limits<bytecode_t>::max()) + " variables allowed per scope", loc);
+	if (variable_id == max_variables)
+		night::error::get().create_minor_error(
+			"Only " + std::to_string(max_variables) + " variables are allowed per scope.", name_location);
 
 	if (night::error::get().has_minor_errors())
 		return std::nullopt;
 
-	vars[name] = { var_id, type, 0 };
-	return var_id++;
+	variables[name] = { variable_id, type, 0 };
+
+	return variable_id++;
 }
 
-StatementVariable const* StatementScope::get_var(std::string const& name)
-{
-	auto var = vars.find(name);
-
-	if (var == std::end(vars))
-		return nullptr;
-
-	++vars[name].times_used;
-	return &var->second;
-}
-
-scope_func_container::iterator StatementScope::create_function(
+StatementVariable const* StatementScope::get_variable(
 	std::string const& name,
-	std::vector<std::string> const& param_names,
-	std::vector<Type> const& param_types,
-	std::optional<Type> const& rtn_type)
+	Location const& name_location)
 {
-	static uint64_t func_id = StatementScope::funcs.size();
+	/*
+	 * When an undefined variable is used in multiple locations, Night will only
+	 * generate one error for that undefined variable.
+	 * 
+	 * If a variable is already in the undefined variables set, then no error
+	 * will be generated.
+	 */
+	static std::unordered_set<std::string> undefined_variables;
 
-	auto [it, range_end] = StatementScope::funcs.equal_range(name);
+	auto variable = variables.find(name);
+
+	// Check to see if variable exists.
+	if (variable == std::end(variables))
+	{
+		if (!undefined_variables.contains(name))
+		{
+			night::error::get().create_minor_error(
+				"Variable '" + name + "' is undefined.",
+				name_location
+			);
+
+			undefined_variables.insert(name);
+		}
+
+		return nullptr;
+	}
+
+	variable->second.times_used += 1;
+
+	return &variable->second;
+}
+
+std::optional<id_t> StatementScope::create_function(
+	std::string const& name,
+	Location	const& name_location,
+	std::vector<std::string> const& param_names,
+	std::vector<Type>		 const& param_types,
+	std::optional<Type> const& _return_type)
+{
+	static id_t function_id = StatementScope::functions.size();
+	static id_t const max_functions = std::numeric_limits<id_t>::max();
+
+	// Check if function has been defined before by searching if there is any
+	// function with the same name and parameters.
+
+	auto [it, range_end] = StatementScope::functions.equal_range(name);
 
 	for (; it != range_end; ++it)
 	{
 		if (std::equal(std::begin(param_types), std::end(param_types),
 					   std::begin(it->second.param_types), std::end(it->second.param_types),
 					   is_same))
-			throw "function is already defined";
+		{
+			night::error::get().create_minor_error(
+				"Function '" + name + "' has already been defined.", name_location);
+			break;
+		}
 	}
 
-	return funcs.emplace(name, StatementFunction{ func_id++, param_names, param_types, rtn_type });
+	if (function_id == max_functions)
+		night::error::get().create_minor_error(
+			"Only " + std::to_string(max_functions) + " functions are allowed.", name_location);
+
+	if (night::error::get().has_minor_errors())
+		return std::nullopt;
+
+	functions.emplace(name, StatementFunction{ function_id , param_names, param_types, _return_type });
+
+	return function_id++;
 }

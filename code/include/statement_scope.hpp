@@ -15,9 +15,11 @@ struct StatementFunction;
 using scope_var_container  = std::unordered_map<std::string, StatementVariable>;
 using scope_func_container = std::unordered_multimap<std::string, StatementFunction>;
 
+using id_t = uint64_t;
+
 struct StatementVariable
 {
-	uint64_t id;
+	id_t id;
 	Type type;
 	
 	// Keep track of the number of times used so unused variables can be
@@ -29,43 +31,67 @@ struct StatementVariable
 
 struct StatementFunction
 {
-	uint64_t id;
+	id_t id;
 
 	std::vector<std::string> param_names;
 	std::vector<Type> param_types;
 	std::optional<Type> rtn_type;
 };
 
-struct StatementScope
+class StatementScope
 {
 public:
 	StatementScope();
-	StatementScope(StatementScope const& upper_scope);
-	StatementScope(StatementScope const& upper_scope, std::optional<Type> const& _rtn_type);
 
-	// returns id for new variable if successful
-	// returns nullopt if unsuccessful - redefinition or variable scope limit
-	std::optional<bytecode_t> create_variable(
-		std::string const& name,
-		Type const& type,
-		Location const& loc
+	StatementScope(
+		StatementScope const& parent_scope
 	);
 
-	StatementVariable const* get_var(std::string const& name);
-
-	// returns func it if successful
-	// throws const char* if unsuccessful
-	static scope_func_container::iterator create_function(
-		std::string const& name,
-		std::vector<std::string> const& param_names,
-		std::vector<Type> const& param_types,
-		std::optional<Type> const& rtn_type
+	StatementScope(
+		StatementScope const& parent_scope,
+		std::optional<Type> const& _return_type
 	);
 
-	static scope_func_container funcs;
+	/*
+	 * Creates a new variables and returns its ID.
+	 * Returns nullopt if the variable is already defined or the maximum
+	 * allowed variables has been reached.
+	 * 
+	 * @param name_location is to display the correct error location for the
+	 *   variable name.
+	 */
+	std::optional<id_t> create_variable(
+		std::string const& name,
+		Location	const& name_location,
+		Type const& type
+	);
 
-	std::optional<Type> rtn_type;
+	/*
+	 * Returns a pointer to the variable if the variable is defined in the scope.
+	 * Otherwise creates a minor error and returns nullptr.
+	 */
+	StatementVariable const* get_variable(
+		std::string const& name,
+		Location const& name_location
+	);
+
+	/*
+	 * Creates a new function and returns its ID.
+	 * Returns nullopt if the function has already been defined or the maximum
+	 * allowed functions has been reached.
+	 */
+	static std::optional<id_t> create_function(
+		std::string const& name,
+		Location	const& name_location,
+		std::vector<std::string> const& _param_names,
+		std::vector<Type> const& _param_types,
+		std::optional<Type> const& _return_type
+	);
+
+	static scope_func_container functions;
+
+	std::optional<Type> return_type;
 
 private:
-	scope_var_container vars;
+	scope_var_container variables;
 };

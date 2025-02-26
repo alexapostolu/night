@@ -37,6 +37,8 @@ class Statement
 public:
 	Statement(Location const& loc);
 
+	Statement();
+
 	/* This method MUST be called before optimize() and generate_codes().
 	 * 
 	 * The purpose of this method is to ensure the statement is correct for
@@ -77,6 +79,7 @@ public:
 	VariableInit(
 		Location const& _loc,
 		std::string const& _name,
+		Location const& _name_location,
 		std::string const& _type,
 		expr::expr_p const& _expr
 	);
@@ -87,6 +90,7 @@ public:
 
 public:
 	std::string name;
+	Location const& name_location;
 
 private:
 	std::string type;
@@ -110,6 +114,7 @@ public:
 	ArrayInitialization(
 		Location const& loc,
 		std::string const& _name,
+		Location const& _name_location,
 		std::string const& _type,
 		std::vector<expr::expr_p> const& _arr_sizes,
 		expr::expr_p const& _expr
@@ -128,6 +133,7 @@ public:
 
 public:
 	std::string name;
+	Location const& name_location;
 
 private:
 	std::string type;
@@ -154,7 +160,8 @@ public:
 		Location const& _loc,
 		std::string const& _var_name,
 		std::string const& _assign_op,
-		expr::expr_p const& _expr
+		expr::expr_p const& _expr,
+		Location const& _variable_name_location
 	);
 
 	void check(StatementScope& scope) override;
@@ -168,6 +175,8 @@ private:
 
 	std::optional<Type> assign_type;
 	std::optional<uint64_t> id;
+
+	Location variable_name_location;
 };
 
 
@@ -251,16 +260,31 @@ private:
 };
 
 
+struct Parameter
+{
+	Parameter(
+		std::string const& _name,
+		std::string const& _type,
+		bool is_arr,
+		Location const& _location
+	);
+
+	std::string name;
+	Type type;
+
+	Location location;
+};
+
 class Function : public Statement
 {
 public:
 	Function(
-		Location const& _loc,
 		std::string const& _name,
-		std::vector<std::tuple<std::string, std::string, bool>> const& _parameters,
+		Location const& _name_location,
+		std::vector<Parameter> const& _parameters,
 		std::string const& _rtn_type,
 		int rtn_type_dim,
-		std::vector<stmt_p> const& _block
+		std::vector<stmt_p> const& _body
 	);
 
 	void check(StatementScope& scope) override;
@@ -269,13 +293,19 @@ public:
 
 private:
 	std::string name;
-	std::vector<std::string> param_names;
-	std::vector<Type> param_types;
-	std::optional<Type> rtn_type;
-	std::vector<stmt_p> block;
+	Location name_location;
 
-	uint64_t id;
-	std::vector<bytecode_t> param_ids;
+	std::vector<Parameter> parameters;
+
+	std::optional<Type> rtn_type;
+	
+	std::vector<stmt_p> body;
+
+	// Initialized in check().
+	std::optional<id_t> id;
+
+	// Initialized in check().
+	std::vector<id_t> parameter_ids;
 };
 
 

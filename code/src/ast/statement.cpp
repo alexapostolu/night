@@ -3,7 +3,6 @@
 #include "bytecode.hpp"
 #include "interpreter_scope.hpp"
 #include "statement_scope.hpp"
-#include "scope_check.hpp"
 #include "type.hpp"
 #include "util.hpp"
 #include "error.hpp"
@@ -11,6 +10,7 @@
 
 #include <limits>
 #include <iterator>
+#include <ranges>
 #include <vector>
 #include <memory>
 #include <assert.h>
@@ -19,18 +19,25 @@
 Statement::Statement(Location const& _loc)
 	: loc(_loc) {}
 
+Statement::Statement() {}
+
 
 VariableInit::VariableInit(
 	Location const& _loc,
 	std::string const& _name,
+	Location const& _name_location,
 	std::string const& _type,
 	expr::expr_p const& _expr)
-	: Statement(_loc), name(_name), type(_type), expr(_expr) {}
+	: Statement(_loc)
+	, name(_name)
+	, name_location(_name_location)
+	, type(_type)
+	, expr(_expr) {}
 
 void VariableInit::check(StatementScope& scope)
 {
 	var_type = Type(type, 0);
-	id = scope.create_variable(name, var_type, loc);
+	id = scope.create_variable(name, name_location, var_type);
 
 	// Return if there are minor errors.
 
@@ -92,10 +99,15 @@ bytecodes_t VariableInit::generate_codes() const
 ArrayInitialization::ArrayInitialization(
 	Location const& _loc,
 	std::string const& _name,
+	Location const& _name_location,
 	std::string const& _type,
 	std::vector<expr::expr_p> const& _arr_sizes,
 	expr::expr_p const& _expr)
-	: Statement(_loc), name(_name), type(_type), arr_sizes(_arr_sizes)
+	: Statement(_loc)
+	, name(_name)
+	, name_location(_name_location)
+	, type(_type)
+	, arr_sizes(_arr_sizes)
 	, expr(_expr) {}
 
 void ArrayInitialization::check(StatementScope& scope)
@@ -121,7 +133,7 @@ void ArrayInitialization::check(StatementScope& scope)
 	// Deduce type of variable.
 
 	var_type = Type(type, (int)arr_sizes.size());
-	id = scope.create_variable(name, var_type, loc);
+	id = scope.create_variable(name, name_location, var_type);
 
 	// Return if there are minor errors.
 
@@ -226,34 +238,31 @@ VariableAssign::VariableAssign(
 	Location const& _loc,
 	std::string const& _var_name,
 	std::string const& _assign_op,
-	expr::expr_p const& _expr)
+	expr::expr_p const& _expr,
+	Location const& _variable_name_location)
 	: Statement(_loc), var_name(_var_name), assign_op(_assign_op), expr(_expr)
-	, assign_type(std::nullopt), id(std::nullopt) {}
+	, assign_type(std::nullopt), id(std::nullopt)
+	, variable_name_location(_variable_name_location) {}
 
 void VariableAssign::check(StatementScope& scope)
 {
 	assert(expr);
 
-	auto var = scope.get_var(var_name);
-
-	if (!var)
-		night::error::get().create_minor_error("variable '" + var_name + "' is undefined", loc);
+	auto variable = scope.get_variable(var_name, loc);
+	if (variable)
+		id = variable->id;
 
 	auto expr_type = expr->type_check(scope);
 
 	if (!expr_type.has_value() || night::error::get().has_minor_errors())
 		return;
 
-	assert(var);
-	id = var->id;
-
-	if (!is_same_or_primitive(var->type, *expr_type))
+	if (!is_same_or_primitive(variable->type, *expr_type))
 		night::error::get().create_minor_error(
-			"variable '" + var_name + "' of type '" + night::to_str(var->type) +
+			"variable '" + var_name + "' of type '" + night::to_str(variable->type) +
 			"can not be assigned to type '" + night::to_str(*expr_type) + "'", loc);
 
 	assign_type = *expr_type;
-
 }
 
 bool VariableAssign::optimize(StatementScope& scope)
@@ -538,21 +547,29 @@ bytecodes_t For::generate_codes() const
 }
 
 
-Function::Function(
-	Location const& _loc,
+Parameter::Parameter(
 	std::string const& _name,
-	std::vector<std::tuple<std::string, std::string, bool>> const& _parameters,
+	std::string const& _type,
+	bool is_arr,
+	Location const& _location)
+	: name(_name)
+	, type(_type, static_cast<int>(is_arr))
+	, location(_location) {}
+
+Function::Function(
+	std::string const& _name,
+	Location const& _name_location,
+	std::vector<Parameter> const& _parameters,
 	std::string const& _rtn_type,
 	int rtn_type_dim,
-	std::vector<stmt_p> const& _block)
-	: Statement(_loc), name(_name), block(_block)
+	std::vector<stmt_p> const& _body)
+	: Statement()
+	, name(_name)
+	, name_location(_name_location)
+	, parameters(_parameters)
+	, body(_body)
+	, id(std::nullopt)
 {
-	for (const auto& param : _parameters)
-	{
-		param_names.push_back(std::get<0>(param));
-		param_types.emplace_back(std::get<1>(param), (int)std::get<2>(param));
-	}
-
 	if (_rtn_type == "void")
 		rtn_type = std::nullopt;
 	else
@@ -563,25 +580,28 @@ void Function::check(StatementScope& global_scope)
 {
 	StatementScope func_scope(global_scope, rtn_type);
 
-	for (std::size_t i = 0; i < param_names.size(); ++i)
+	for (auto const& parameter : parameters)
 	{
-		auto param_id = func_scope.create_variable(param_names[i], param_types[i], loc);
+		auto param_id = func_scope.create_variable(parameter.name, parameter.location, parameter.type);
 
 		if (param_id.has_value())
-			param_ids.push_back(*param_id);
+			parameter_ids.push_back(param_id.value());
 	}
 
-	try {
-		// define the function now in ParserScope so it will be defined in recursive calls
-		auto func_it = StatementScope::create_function(name, param_names, param_types, rtn_type);
-		id = func_it->second.id;
-	}
-	catch (std::string const& e) {
-		night::error::get().create_minor_error(e, loc);
-	}
+	auto parameter_names = parameters | std::views::transform([](Parameter const& p) { return p.name; });
+	auto parameter_types = parameters | std::views::transform([](Parameter const& p) { return p.type; });
 
-	for (auto& stmt : block)
-		stmt->check(func_scope);
+	// Create the function now in ParserScope so it will be defined in recursive calls.
+	id = StatementScope::create_function(
+		name,
+		name_location,
+		std::vector<std::string>(std::begin(parameter_names), std::end(parameter_names)),
+		std::vector<Type>(std::begin(parameter_types), std::end(parameter_types)),
+		rtn_type
+	);
+
+	for (auto& statement : body)
+		statement->check(func_scope);
 }
 
 bool Function::optimize(StatementScope& scope)
@@ -591,16 +611,19 @@ bool Function::optimize(StatementScope& scope)
 
 bytecodes_t Function::generate_codes() const
 {
-	InterpreterScope::funcs[id] = {};
+	assert(id.has_value());
+	assert(parameter_ids.size() == parameters.size());
 
-	for (auto const& param_id : param_ids)
-		InterpreterScope::funcs[id].param_ids.push_back(param_id);
+	InterpreterScope::funcs[id.value()] = {};
 
-	for (auto const& stmt : block)
+	for (auto const& param_id : parameter_ids)
+		InterpreterScope::funcs[id.value()].param_ids.push_back(param_id);
+
+	for (auto const& stmt : body)
 	{
 		auto stmt_codes = stmt->generate_codes();
-		InterpreterScope::funcs[id].codes.insert(
-			std::end(InterpreterScope::funcs[id].codes),
+		InterpreterScope::funcs[id.value()].codes.insert(
+			std::end(InterpreterScope::funcs[id.value()].codes),
 			std::begin(stmt_codes), std::end(stmt_codes));
 	}
 
@@ -619,22 +642,25 @@ void Return::check(StatementScope& scope)
 
 	if (expr_type.has_value())
 	{
-		if (!scope.rtn_type.has_value())
+		if (!scope.return_type.has_value()) {
 			night::error::get().create_minor_error(
 				"found return type '" + night::to_str(*expr_type) + "', "
 				"expected void return type", loc);
 
-		if (!is_same_or_primitive(*scope.rtn_type, *expr_type))
+			return;
+		}
+
+		if (!is_same_or_primitive(scope.return_type, *expr_type))
 			night::error::get().create_minor_error(
 				"found return type '" + night::to_str(*expr_type) + "', "
-				"expected return type '" + night::to_str(*scope.rtn_type) + "'", loc);
+				"expected return type '" + night::to_str(*scope.return_type) + "'", loc);
 	}
 	else
 	{
-		if (scope.rtn_type.has_value())
+		if (scope.return_type.has_value())
 			night::error::get().create_minor_error(
 				"found void return type, expected return type '" +
-				night::to_str(*scope.rtn_type) + "'", loc);
+				night::to_str(*scope.return_type) + "'", loc);
 	}
 }
 
@@ -664,10 +690,9 @@ ArrayMethod::ArrayMethod(
 
 void ArrayMethod::check(StatementScope& scope)
 {
-	auto var = scope.get_var(var_name);
-
-	if (!var)
-		night::error::get().create_minor_error("variable '" + var_name + "' is undefined", loc);
+	auto variable = scope.get_variable(var_name, loc);
+	if (variable)
+		id = variable->id;
 
 	for (auto const& subscript : subscripts)
 	{
@@ -679,11 +704,7 @@ void ArrayMethod::check(StatementScope& scope)
 	}
 
 	if (assign_expr)
-	{
 		assign_type = assign_expr->type_check(scope);
-	}
-
-	id = var->id;
 }
 
 bool ArrayMethod::optimize(StatementScope& scope)
@@ -820,7 +841,7 @@ std::optional<Type> expr::FunctionCall::type_check(StatementScope& scope) noexce
 
 	// Get all functions with the same name as the function call
 
-	auto [funcs_with_same_name, funcs_with_same_name_end] = StatementScope::funcs.equal_range(name);
+	auto [funcs_with_same_name, funcs_with_same_name_end] = StatementScope::functions.equal_range(name);
 
 	if (funcs_with_same_name == funcs_with_same_name_end)
 	{

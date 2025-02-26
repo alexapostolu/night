@@ -1,0 +1,31 @@
+def is_digit(c char) bool
+{
+	difference int = '9' - c;
+	return difference >= 0 && difference <= 9;
+}
+
+def char_to_int(c char) int
+{
+	return c - '0';
+}
+
+n int = int(input());
+s char[] = input();
+
+total_sum int = 0;
+local_sum int = 0;
+
+for (i int = 0; i < n; i += 1)
+{
+	if (is_digit(s[i]))
+	{
+		local_sum = (local_sum * 10) + char_to_int(s[i]);
+	}
+	else
+	{
+		total_sum += local_sum;
+		local_sum = 0;
+	}
+}
+
+print(total_sum);

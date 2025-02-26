@@ -49,9 +49,9 @@ stmt_p parse_var(Lexer& lexer);
  *   my_var int = [expression];
  *   my_var int[2] = [array];
  */
-VariableInit parse_var_init(Lexer& lexer, std::string const& var_name);
+VariableInit parse_var_init(Lexer& lexer, std::string const& name, Location const& name_location);
 
-ArrayInitialization parse_array_init(Lexer& lexer, std::string const& var_name);
+ArrayInitialization parse_array_init(Lexer& lexer, std::string const& name, Location const& name_location);
 
 /* It is the callers responsibility to check if lexer.curr() is their expected
  * token after this function is called.
@@ -62,7 +62,7 @@ ArrayInitialization parse_array_init(Lexer& lexer, std::string const& var_name);
  *   my_var = [expression];
  *   for (;; my_var += 1) {}
  */
-VariableAssign parse_var_assign(Lexer& lexer, std::string const& var_name);
+VariableAssign parse_var_assign(Lexer& lexer, std::string const& var_name, Location const& variable_name_location);
 
 /* Lexer:
  *   start: variable name

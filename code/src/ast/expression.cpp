@@ -1,7 +1,6 @@
 #include "ast/expression.hpp"
 
 #include "statement_scope.hpp"
-#include "scope_check.hpp"
 #include "bytecode.hpp"
 #include "type.hpp"
 #include "util.hpp"
@@ -52,11 +51,13 @@ void expr::Variable::insert_node(
 
 std::optional<Type> expr::Variable::type_check(StatementScope& scope) noexcept
 {
-	if (!check_variable_defined(scope, name, loc))
+	auto variable = scope.get_variable(name, loc);
+	if (!variable)
 		return std::nullopt;
 
-	id = scope.get_var(name)->id;
-	return scope.get_var(name)->type;
+	id = variable->id;
+
+	return variable->type;
 }
 
 expr::expr_p expr::Variable::optimize(StatementScope const& scope)
