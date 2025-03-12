@@ -94,9 +94,21 @@ void night::error::what() const
 		// -1 because the lexer ends one position after the token when it eats.
 		int token_position = err.location.col - 1;
 
-		for (int i = 0; i < indent_size + token_position; ++i)
-			std::cout << ' ';
-		std::cout << green << "^\n\n" << clear;
+		if (err.token.str.empty())
+		{
+			for (int i = 0; i < indent_size + token_position; ++i)
+				std::cout << ' ';
+			std::cout << green << "^\n\n" << clear;
+		}
+		else
+		{
+			for (int i = 0; i < indent_size + token_position - err.token.str.empty(); ++i)
+				std::cout << ' ';
+			std::cout << blue;
+			for (int i = 0; i < err.token.str.length(); ++i)
+				std::cout << "~";
+			std::cout << "\n\n" << clear;
+		}
 	}
 }
 
@@ -113,7 +125,16 @@ void night::error::create_minor_error(
 	Location const& loc,
 	std::source_location const& s_loc) noexcept
 {
-	error::get().errors.emplace_back(ErrorType::Minor, loc, s_loc, msg);
+	error::get().errors.emplace_back(ErrorType::Minor, loc, s_loc, msg, Token{ TokenType{}, "", Location{} });
+	has_minor_errors_ = true;
+}
+
+void night::error::create_minor_error(
+	std::string const& message,
+	Token const& token,
+	std::source_location const& s_loc) noexcept
+{
+	error::get().errors.emplace_back(ErrorType::Minor, token.loc, s_loc, message, token);
 	has_minor_errors_ = true;
 }
 

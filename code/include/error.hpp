@@ -16,16 +16,12 @@
 
 #pragma once
 
+#include "token.hpp"
+
 #include <source_location>
 #include <stdexcept>
 #include <vector>
 #include <string>
-
-struct Location
-{
-	std::string file;
-	int line, col;
-};
 
 enum class ErrorType
 {
@@ -41,6 +37,8 @@ struct ErrorData
 	Location location;
 	std::source_location source_location;
 	std::string message;
+
+	Token token;
 };
 
 namespace night {
@@ -62,6 +60,12 @@ public:
 	void create_minor_error(
 		std::string const& msg,
 		Location const& loc,
+		std::source_location const& s_loc = std::source_location::current()
+	) noexcept;
+
+	void create_minor_error(
+		std::string const& message,
+		Token const& token,
 		std::source_location const& s_loc = std::source_location::current()
 	) noexcept;
 

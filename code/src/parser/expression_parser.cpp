@@ -121,12 +121,13 @@ expr::expr_p parse_string(Lexer& lexer)
 expr::expr_p parse_variable_or_call(Lexer& lexer)
 {
 	auto var_name = lexer.curr().str;
+	Token var = lexer.curr();
 
 	// Parse function call.
 	if (lexer.peek().type == TokenType::OPEN_BRACKET)
 	{
 		lexer.eat();
-		return std::make_shared<expr::FunctionCall>(parse_func_call(lexer, var_name));
+		return std::make_shared<expr::FunctionCall>(parse_func_call(lexer, var));
 	}
 	
 	// Parse array allocation.
@@ -237,15 +238,15 @@ void parse_check_unary_operator(std::optional<TokenType> const& previous_type, L
 
 void parse_check_binary_operator(std::optional<TokenType> const& previous_type, Lexer const& lexer)
 {
-	if (!previous_type.has_value() ||
-		(previous_type != TokenType::BOOL_LIT &&
+	if (previous_type.has_value() &&
+		previous_type != TokenType::BOOL_LIT &&
 		previous_type != TokenType::CHAR_LIT &&
 		previous_type != TokenType::INT_LIT &&
 		previous_type != TokenType::FLOAT_LIT &&
 		previous_type != TokenType::STRING_LIT &&
 		previous_type != TokenType::VARIABLE &&
 		previous_type != TokenType::CLOSE_BRACKET &&
-		previous_type != TokenType::CLOSE_SQUARE))
+		previous_type != TokenType::CLOSE_SQUARE)
 		throw night::error::get().create_fatal_error("Expected value or expression before binary operator " + lexer.curr().str + ".", lexer.loc);
 }
 

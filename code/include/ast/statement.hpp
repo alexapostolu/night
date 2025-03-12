@@ -4,6 +4,7 @@
 #include "expression.hpp"
 #include "bytecode.hpp"
 #include "type.hpp"
+#include "token.hpp"
 #include "error.hpp"
 
 #include <vector>
@@ -77,7 +78,6 @@ class VariableInit : public Statement
 {
 public:
 	VariableInit(
-		Location const& _loc,
 		std::string const& _name,
 		Location const& _name_location,
 		std::string const& _type,
@@ -90,7 +90,7 @@ public:
 
 public:
 	std::string name;
-	Location const& name_location;
+	Location name_location;
 
 private:
 	std::string type;
@@ -133,7 +133,7 @@ public:
 
 public:
 	std::string name;
-	Location const& name_location;
+	Location name_location;
 
 private:
 	std::string type;
@@ -358,8 +358,7 @@ class FunctionCall : public Statement, public expr::Expression
 {
 public:
 	FunctionCall(
-		Location const& _loc,
-		std::string const& _name,
+		Token const& _name,
 		std::vector<expr::expr_p> const& _arg_exprs,
 		std::optional<uint64_t> const& _id = std::nullopt
 	);
@@ -376,7 +375,8 @@ public:
 	bytecodes_t generate_codes() const override;
 
 private:
-	std::string name;
+	Token name;
+
 	std::vector<expr::expr_p> arg_exprs;
 
 	std::optional<uint64_t> id;

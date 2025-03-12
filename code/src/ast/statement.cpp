@@ -23,12 +23,11 @@ Statement::Statement() {}
 
 
 VariableInit::VariableInit(
-	Location const& _loc,
 	std::string const& _name,
 	Location const& _name_location,
 	std::string const& _type,
 	expr::expr_p const& _expr)
-	: Statement(_loc)
+	: Statement(_name_location)
 	, name(_name)
 	, name_location(_name_location)
 	, type(_type)
@@ -257,7 +256,7 @@ void VariableAssign::check(StatementScope& scope)
 	if (!expr_type.has_value() || night::error::get().has_minor_errors())
 		return;
 
-	if (!is_same_or_primitive(variable->type, *expr_type))
+	if (variable && !is_same_or_primitive(variable->type, *expr_type))
 		night::error::get().create_minor_error(
 			"variable '" + var_name + "' of type '" + night::to_str(variable->type) +
 			"can not be assigned to type '" + night::to_str(*expr_type) + "'", loc);
@@ -799,17 +798,21 @@ bytecodes_t ArrayMethod::generate_codes() const
 
 
 expr::FunctionCall::FunctionCall(
-	Location const& _loc,
-	std::string const& _name,
+	Token const& _name,
 	std::vector<expr::expr_p> const& _arg_exprs,
 	std::optional<uint64_t> const& _id)
-	: Statement(_loc), Expression(_loc, Expression::single_precedence), name(_name), arg_exprs(_arg_exprs), id(_id), is_expr(true) {}
+	: Statement(_name.loc)
+	, Expression(_name.loc, Expression::single_precedence)
+	, name(_name)
+	, arg_exprs(_arg_exprs)
+	, id(_id)
+	, is_expr(true) {}
 
 void expr::FunctionCall::insert_node(
 	expr::expr_p node,
 	expr::expr_p* prev)
 {
-	node->insert_node(std::make_shared<FunctionCall>(Statement::loc, name, arg_exprs));
+	node->insert_node(std::make_shared<FunctionCall>(name, arg_exprs));
 	*prev = node;
 }
 
@@ -841,11 +844,11 @@ std::optional<Type> expr::FunctionCall::type_check(StatementScope& scope) noexce
 
 	// Get all functions with the same name as the function call
 
-	auto [funcs_with_same_name, funcs_with_same_name_end] = StatementScope::functions.equal_range(name);
+	auto [funcs_with_same_name, funcs_with_same_name_end] = StatementScope::functions.equal_range(name.str);
 
 	if (funcs_with_same_name == funcs_with_same_name_end)
 	{
-		night::error::get().create_minor_error("function call '" + name + "' is undefined", Statement::loc);
+		night::error::get().create_minor_error("function call '" + name.str + "' is undefined", Statement::loc);
 		return std::nullopt;
 	}
 
@@ -871,12 +874,12 @@ std::optional<Type> expr::FunctionCall::type_check(StatementScope& scope) noexce
 
 		if (arg_types.empty())
 		{
-			night::error::get().create_minor_error("function call '" + name + "' has no arguments, "
+			night::error::get().create_minor_error("function call '" + name.str + "' has no arguments, "
 				"and do not match with the parameters in its function definition", Statement::loc);
 		}
 		else
 		{
-			night::error::get().create_minor_error("arguments in function call '" + name + "' are of type '" + s_types +
+			night::error::get().create_minor_error("arguments in function call '" + name.str + "' are of type '" + s_types +
 				"', and do not match with the parameters in its function definition", Statement::loc);
 		}
 	}
@@ -904,7 +907,7 @@ expr::expr_p expr::FunctionCall::optimize(StatementScope const& scope)
 	for (auto& arg : arg_exprs)
 		arg = arg->optimize(scope);
 
-	return std::make_shared<FunctionCall>(Expression::loc, name, arg_exprs, id);
+	return std::make_shared<FunctionCall>(name, arg_exprs, id);
 }
 
 bytecodes_t expr::FunctionCall::generate_codes() const

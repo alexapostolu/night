@@ -149,7 +149,7 @@ Token Lexer::eat_string()
 	}
 
 	++loc.col;
-	return { TokenType::STRING_LIT, str };
+	return { TokenType::STRING_LIT, str, loc };
 }
 
 Token Lexer::eat_character()
@@ -187,7 +187,7 @@ Token Lexer::eat_character()
 		throw night::error::get().create_fatal_error(std::string() + "found '" + file_line[loc.col] + "', expected closing quote at the end of character", loc);
 
 	++loc.col;
-	return { TokenType::CHAR_LIT, std::string(1, chr) };
+	return { TokenType::CHAR_LIT, std::string(1, chr), loc };
 }
 
 Token Lexer::eat_keyword()
@@ -217,9 +217,9 @@ Token Lexer::eat_keyword()
 	} while (loc.col < file_line.length() && (std::isalpha(file_line[loc.col]) || std::isdigit(file_line[loc.col]) || file_line[loc.col] == '_'));
 
 	if (auto it = keywords.find(keyword); it != keywords.end())
-		return Token{ it->second, keyword };
+		return Token{ it->second, keyword, loc };
 	else
-		return Token{ TokenType::VARIABLE, keyword };
+		return Token{ TokenType::VARIABLE, keyword, loc };
 }
 
 Token Lexer::eat_number()
@@ -243,10 +243,10 @@ Token Lexer::eat_number()
 			++loc.col;
 		} while (loc.col < file_line.length() && std::isdigit(file_line[loc.col]));
 
-		return { TokenType::FLOAT_LIT, number };
+		return { TokenType::FLOAT_LIT, number, loc };
 	}
 
-	return { TokenType::INT_LIT, number };
+	return { TokenType::INT_LIT, number, loc };
 }
 
 Token Lexer::eat_symbol()
@@ -283,24 +283,24 @@ Token Lexer::eat_symbol()
 
 	auto symbol = symbols.find(file_line[loc.col]);
 	if (symbol == symbols.end())
-		throw  night::error::get().create_fatal_error("unknown symbol '" + std::string(1, file_line[loc.col]) + "'", loc);
+		throw night::error::get().create_fatal_error("unknown symbol '" + std::string(1, file_line[loc.col]) + "'", loc);
 
 	for (auto& [c, tok_type] : symbol->second)
 	{
 		if (c == '\0')
 		{
 			++loc.col;
-			return { tok_type, std::string(1, file_line[loc.col - 1]) };
+			return { tok_type, std::string(1, file_line[loc.col - 1]), loc };
 		}
 
 		if (loc.col < file_line.length() - 1 && file_line[loc.col + 1] == c)
 		{
 			loc.col += 2;
-			return { tok_type, std::string(1, file_line[loc.col - 2]) + std::string(1, c) };;
+			return { tok_type, std::string(1, file_line[loc.col - 2]) + std::string(1, c), loc };
 		}
 	}
 
-	throw  night::error::get().create_fatal_error("unknown symbol '" + file_line.substr(loc.col, 2) + "'", loc);
+	throw night::error::get().create_fatal_error("unknown symbol '" + file_line.substr(loc.col, 2) + "'", loc);
 }
 
 bool Lexer::new_line()
@@ -314,7 +314,7 @@ bool Lexer::new_line()
 Token Lexer::eat_new_line()
 {
 	if (!new_line())
-		return { TokenType::END_OF_FILE, "end of file" };
+		return { TokenType::END_OF_FILE, "End of File", loc };
 
 	return eat();
 }

@@ -91,8 +91,7 @@ stmt_p parse_var(Lexer& lexer)
 {
 	assert(lexer.curr().type == TokenType::VARIABLE);
 
-	std::string name = lexer.curr().str;
-	Location name_location = lexer.loc;
+	Token name = lexer.curr();
 
 	switch (lexer.peek().type)
 	{
@@ -101,14 +100,14 @@ stmt_p parse_var(Lexer& lexer)
 
 		if (lexer.peek().type == TokenType::OPEN_SQUARE)
 		{
-			auto const& ast = std::make_shared<ArrayInitialization>(parse_array_init(lexer, name, name_location));
+			auto const& ast = std::make_shared<ArrayInitialization>(parse_array_initialization(lexer, name));
 
 			lexer.eat();
 			return ast;
 		}
 		else
 		{
-			auto const& ast = std::make_shared<VariableInit>(parse_var_init(lexer, name, name_location));
+			auto const& ast = std::make_shared<VariableInit>(parse_variable_initialization(lexer, name));
 
 			lexer.eat();
 			return ast;
@@ -118,15 +117,14 @@ stmt_p parse_var(Lexer& lexer)
 	case TokenType::ASSIGN_OPERATOR: {
 		lexer.eat();
 
-		auto const& ast = std::make_shared<VariableAssign>(parse_var_assign(lexer, name, name_location));
+		auto const& ast = std::make_shared<VariableAssign>(parse_variable_assignment(lexer, name));
 		lexer.curr_is(TokenType::SEMICOLON);
 
 		lexer.eat();
 		return ast;
 	}
 	case TokenType::OPEN_SQUARE: {
-		auto const& ast = std::make_shared<ArrayMethod>(parse_array_method(lexer, name));
-		return ast;
+		return std::make_shared<ArrayMethod>(parse_array_method(lexer, name));
 	}
 	case TokenType::OPEN_BRACKET: {
 		lexer.eat();
@@ -143,86 +141,89 @@ stmt_p parse_var(Lexer& lexer)
 	}
 }
 
-VariableInit parse_var_init(Lexer& lexer, std::string const& name, Location const& name_location)
+VariableInit parse_variable_initialization(Lexer& lexer, Token const& name)
 {
 	assert(lexer.curr().type == TokenType::TYPE);
 
-	auto type = lexer.curr().str;
+	std::string type = lexer.curr().str;
+	expr::expr_p expr;
 
-	// Determine the expression the variable is being assigned to, if any.
-
-	expr::expr_p expr(nullptr);
-	
 	if (lexer.eat().type == TokenType::ASSIGN)
 		expr = parse_expr(lexer, true);
 
 	lexer.curr_is(TokenType::SEMICOLON);
 
-	return VariableInit(lexer.loc, name, name_location, type, expr);
+	return VariableInit(name.str, name.loc, type, expr);
 }
 
-ArrayInitialization parse_array_init(Lexer& lexer, std::string const& name, Location const& name_location)
+ArrayInitialization parse_array_initialization(Lexer& lexer, Token const& name)
 {
 	assert(lexer.curr().type == TokenType::TYPE);
 
-	auto type = lexer.curr().str;
+	std::string type = lexer.curr().str;
 
 	lexer.eat();
 
-	std::vector<expr::expr_p> arr_sizes;
+	std::vector<expr::expr_p> array_sizes;
+	array_sizes.reserve(AVG_ARRAY_DIMENSION);
+
 	while (lexer.curr().type == TokenType::OPEN_SQUARE)
 	{
-		arr_sizes.push_back(parse_expr(lexer, false, TokenType::CLOSE_SQUARE));
+		expr::expr_p array_size = parse_expr(lexer, false, TokenType::CLOSE_SQUARE);
+		array_sizes.push_back(array_size);
+
 		lexer.eat();
 	}
 
-	// Determine the expression the variable is being assigned to, if any.
-
-	expr::expr_p expr(nullptr);
+	expr::expr_p expr;
 
 	if (lexer.curr().type == TokenType::ASSIGN)
 		expr = parse_expr(lexer, true);
 
 	lexer.curr_is(TokenType::SEMICOLON);
 
-	return ArrayInitialization(lexer.loc, name, name_location, type, arr_sizes, expr);
+	return ArrayInitialization(lexer.loc, name.str, name.loc, type, array_sizes, expr);
 }
 
-VariableAssign parse_var_assign(Lexer& lexer, std::string const& var_name, Location const& variable_name_location)
+VariableAssign parse_variable_assignment(Lexer& lexer, Token const& name)
 {
 	assert(lexer.curr().type == TokenType::ASSIGN ||
 		   lexer.curr().type == TokenType::ASSIGN_OPERATOR);
 
-	auto assign_operator = lexer.curr().str;
-	auto expression		 = parse_expr(lexer, true);
+	std::string	 assignment_operator = lexer.curr().str;
+	expr::expr_p expression			 = parse_expr(lexer, true);
 
-	return VariableAssign(lexer.loc, var_name, assign_operator, expression, variable_name_location);
+	return VariableAssign(lexer.loc, name.str, assignment_operator, expression, name.loc);
 }
 
-ArrayMethod parse_array_method(Lexer& lexer, std::string const& var_name)
+ArrayMethod parse_array_method(Lexer& lexer, Token const& name)
 {
 	assert(lexer.curr().type == TokenType::VARIABLE);
 
 	// Parse subscripts.
 
 	std::vector<expr::expr_p> subscripts;
+	subscripts.reserve(AVG_ARRAY_DIMENSION);
 
 	while (lexer.eat().type == TokenType::OPEN_SQUARE)
-		subscripts.push_back(parse_expr(lexer, true, TokenType::CLOSE_SQUARE));
+	{
+		expr::expr_p subscript = parse_expr(lexer, true, TokenType::CLOSE_SQUARE);
+		subscripts.emplace_back(subscript);
+	}
 
 	// Parse operator and expression.
 
 	if (lexer.curr().type != TokenType::ASSIGN && lexer.curr().type != TokenType::ASSIGN_OPERATOR)
-		throw night::error::get().create_fatal_error("found '" + lexer.curr().str + "', expected assignment operator", lexer.loc);
+		throw night::error::get().create_fatal_error("Found '" + lexer.curr().str + "', expected assignment operator", lexer.loc);
 
 	auto assign_operator = lexer.curr().str;
-	auto assign_expr	 = parse_expr(lexer, true, TokenType::SEMICOLON);
+	auto assign_expr = parse_expr(lexer, true, TokenType::SEMICOLON);
 
 	lexer.eat();
-	return ArrayMethod(lexer.loc, var_name, assign_operator, subscripts, assign_expr);
+	return ArrayMethod(lexer.loc, name.str, assign_operator, subscripts, assign_expr);
 }
 
-expr::FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name)
+expr::FunctionCall parse_func_call(Lexer& lexer, Token const& name)
 {
 	assert(lexer.curr().type == TokenType::OPEN_BRACKET);
 
@@ -246,7 +247,7 @@ expr::FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name)
 		lexer.curr_is(TokenType::COMMA);
 	}
 
-	return expr::FunctionCall(lexer.loc, func_name, arg_exprs);
+	return expr::FunctionCall(name, arg_exprs);
 }
 
 Conditional parse_if(Lexer& lexer, bool* contains_return)
@@ -315,11 +316,10 @@ For parse_for(Lexer& lexer, bool* contains_return)
 
 	// Parse variable initialization.
 
-	std::string variable_name = lexer.expect(TokenType::VARIABLE).str;
-	Location variable_location = lexer.loc;
+	Token variable_initialization = lexer.expect(TokenType::VARIABLE);
 	lexer.expect(TokenType::TYPE);
 
-	auto var_init = parse_var_init(lexer, variable_name, variable_location);
+	auto var_init = parse_variable_initialization(lexer, variable_initialization);
 	
 	// Parse condition.
 
@@ -327,12 +327,11 @@ For parse_for(Lexer& lexer, bool* contains_return)
 
 	// Parse assignment.
 
-	std::string var_assign_name = lexer.expect(TokenType::VARIABLE).str;
-	Location variable_name_location = lexer.loc;
+	Token variable_assignment = lexer.expect(TokenType::VARIABLE);
 
 	lexer.eat();
 
-	auto var_assign = parse_var_assign(lexer, var_assign_name, variable_name_location);
+	auto var_assign = parse_variable_assignment(lexer, variable_assignment);
 	lexer.curr_is(TokenType::CLOSE_BRACKET);
 
 	// Parse body, and include the increment statement in the body.

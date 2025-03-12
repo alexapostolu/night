@@ -8,6 +8,14 @@
 #include <string>
 #include <tuple>
 
+/*
+ * Used to reserve space in vector<expr_p>'s used to store dimensions or
+ * subscripts.
+ * 
+ * The average array dimension is 3.
+ */
+constexpr short AVG_ARRAY_DIMENSION = 3;
+
 /* The starting function for parsing a file.
  */
 std::vector<stmt_p> parse_file(std::string const& main_file);
@@ -41,45 +49,71 @@ stmt_p parse_stmt(Lexer& lexer, bool* contains_return = nullptr);
  */
 stmt_p parse_var(Lexer& lexer);
 
-/* Lexer:
- *   start: variable type
- *   end: semicolon
- * Examples:
+/*
+ * Lexer starts at variable type and ends at semicolon.
+ * 
+ * Examples,
  *   my_var int;
- *   my_var int = [expression];
- *   my_var int[2] = [array];
+ *   my_var int = <expr>;
  */
-VariableInit parse_var_init(Lexer& lexer, std::string const& name, Location const& name_location);
+VariableInit parse_variable_initialization(
+	Lexer& lexer,
+	Token const& name
+);
 
-ArrayInitialization parse_array_init(Lexer& lexer, std::string const& name, Location const& name_location);
+/*
+ * Lexer starts at variable type and ends at semicolon.
+ *
+ * Examples,
+ *   my_var int[<expr>];
+ *   my_var int[<expr>] = [<expr>];
+ */
+ArrayInitialization parse_array_initialization(
+	Lexer& lexer,
+	Token const& name
+);
 
-/* It is the callers responsibility to check if lexer.curr() is their expected
+/*
+ * It is the callers responsibility to check if lexer.curr() is their expected
  * token after this function is called.
- * Lexer:
- *   start: assignment operator
- *   end: first token of next statement
- * Examples:
- *   my_var = [expression];
- *   for (;; my_var += 1) {}
+ * 
+ * Lexer starts at assignment operator and ends at first token of next
+ * statement.
+ * 
+ * Examples,
+ *   my_var = <expr>;
+ *   for (;; my_var += <expr>) {}
  */
-VariableAssign parse_var_assign(Lexer& lexer, std::string const& var_name, Location const& variable_name_location);
+VariableAssign parse_variable_assignment(
+	Lexer& lexer,
+	Token const& name
+);
 
-/* Lexer:
- *   start: variable name
- *   end: first token of next statement
+/*
+ * Lexer starts at variable name and ends at first token of next statement.
+ * 
+ * Examples,
+ *   my_var[<expr>] += <expr>;
  */
-ArrayMethod parse_array_method(Lexer& lexer, std::string const& var_name);
+ArrayMethod parse_array_method(
+	Lexer& lexer,
+	Token const& name
+);
 
-/* It is the callers responsibility to check if lexer.curr() is their expected
+/*
+ * It is the callers responsibility to check if lexer.curr() is their expected
  * token after this function is called.
- * Lexer:
- *   start: open bracket
- *   end: closing bracket
- * Examples:
- *   print(" ");
- *	 my_var = func(2) * 3;
+ * 
+ * Lexer starts at open bracket and ends at closing bracket.
+ * 
+ * Examples,
+ *   my_func();
+ *	 my_var = my_func();
  */
-expr::FunctionCall parse_func_call(Lexer& lexer, std::string const& func_name);
+expr::FunctionCall parse_func_call(
+	Lexer& lexer,
+	Token const& name
+);
 
 /* Parses the entire conditional chain (every 'else if' and 'else' that follows)
  * Lexer:

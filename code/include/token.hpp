@@ -2,6 +2,12 @@
 
 #include <string>
 
+struct Location
+{
+	std::string file;
+	int line, col;
+};
+
 enum class TokenType
 {
 	OPEN_BRACKET,
@@ -48,6 +54,8 @@ struct Token
 {
 	TokenType type;
 	std::string str;
+
+	Location loc;
 };
 
 namespace night
