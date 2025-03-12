@@ -302,10 +302,10 @@ private:
 	std::vector<stmt_p> body;
 
 	// Initialized in check().
-	std::optional<id_t> id;
+	std::optional<night::id_t> id;
 
 	// Initialized in check().
-	std::vector<id_t> parameter_ids;
+	std::vector<night::id_t> parameter_ids;
 };
 
 

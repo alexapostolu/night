@@ -15,11 +15,15 @@ struct StatementFunction;
 using scope_var_container  = std::unordered_map<std::string, StatementVariable>;
 using scope_func_container = std::unordered_multimap<std::string, StatementFunction>;
 
+namespace night {
+
 using id_t = uint64_t;
+
+} // night::
 
 struct StatementVariable
 {
-	id_t id;
+	night::id_t id;
 	Type type;
 	
 	// Keep track of the number of times used so unused variables can be
@@ -31,7 +35,7 @@ struct StatementVariable
 
 struct StatementFunction
 {
-	id_t id;
+	night::id_t id;
 
 	std::vector<std::string> param_names;
 	std::vector<Type> param_types;
@@ -60,7 +64,7 @@ public:
 	 * @param name_location is to display the correct error location for the
 	 *   variable name.
 	 */
-	std::optional<id_t> create_variable(
+	std::optional<night::id_t> create_variable(
 		std::string const& name,
 		Location	const& name_location,
 		Type const& type
@@ -80,7 +84,7 @@ public:
 	 * Returns nullopt if the function has already been defined or the maximum
 	 * allowed functions has been reached.
 	 */
-	static std::optional<id_t> create_function(
+	static std::optional<night::id_t> create_function(
 		std::string const& name,
 		Location	const& name_location,
 		std::vector<std::string> const& _param_names,

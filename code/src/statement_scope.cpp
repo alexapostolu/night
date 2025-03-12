@@ -38,13 +38,13 @@ StatementScope::StatementScope(
 	: variables(parent_scope.variables)
 	, return_type(_return_type) {}
 
-std::optional<id_t> StatementScope::create_variable(
+std::optional<night::id_t> StatementScope::create_variable(
 	std::string const& name,
 	Location	const& name_location,
 	Type const& type)
 {
-	static id_t variable_id = 0;
-	static id_t const max_variables = std::numeric_limits<id_t>::max();
+	static night::id_t variable_id = 0;
+	static night::id_t const max_variables = std::numeric_limits<night::id_t>::max();
 
 	if (variables.contains(name))
 		night::error::get().create_minor_error(
@@ -98,15 +98,15 @@ StatementVariable const* StatementScope::get_variable(
 	return &variable->second;
 }
 
-std::optional<id_t> StatementScope::create_function(
+std::optional<night::id_t> StatementScope::create_function(
 	std::string const& name,
 	Location	const& name_location,
 	std::vector<std::string> const& param_names,
 	std::vector<Type>		 const& param_types,
 	std::optional<Type> const& _return_type)
 {
-	static id_t function_id = StatementScope::functions.size();
-	static id_t const max_functions = std::numeric_limits<id_t>::max();
+	static night::id_t function_id = StatementScope::functions.size();
+	static night::id_t const max_functions = std::numeric_limits<night::id_t>::max();
 
 	// Check if function has been defined before by searching if there is any
 	// function with the same name and parameters.
