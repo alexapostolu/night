@@ -36,10 +36,6 @@ using conditional_container = std::vector<
 class Statement
 {
 public:
-	Statement(Location const& loc);
-
-	Statement();
-
 	/* This method MUST be called before optimize() and generate_codes().
 	 * 
 	 * The purpose of this method is to ensure the statement is correct for
@@ -62,15 +58,16 @@ public:
 	virtual bool optimize(StatementScope& global_scope) = 0;
 	
 	virtual bytecodes_t generate_codes() const = 0;
-
-protected:
-	Location loc;
 };
 
 
-/* Initialization of non-arrays.
+/*
+ * Initialization of non-array variables.
  * 
- * Use Cases:
+ * When expression is null, a default value will be provided respectful to the
+ * type.
+ * 
+ * Examples,
  *    my_var int;
  *    my_var int = 3;
  */
@@ -79,32 +76,49 @@ class VariableInit : public Statement
 public:
 	VariableInit(
 		std::string const& _name,
-		Location const& _name_location,
+		Location const& _name_loc,
 		std::string const& _type,
 		expr::expr_p const& _expr
 	);
 
-	void check(StatementScope& scope) override;
-	bool optimize(StatementScope& scope) override;
+	void check(
+		StatementScope& scope
+	) override;
+
+	bool optimize(
+		StatementScope& scope
+	) override;
+	
+	/*
+	 * Bytes are generated in the following order,
+	 *   1) Expression bytes
+	 *   2) ID bytes
+	 *   3) STORE
+	 */
 	bytecodes_t generate_codes() const override;
 
-public:
-	std::string name;
-	Location name_location;
-
 private:
-	std::string type;
-	Type var_type;
+	std::string name;
+	Location name_loc;
+
+	Type type;
 	expr::expr_p expr;
 
+	// Initialized in check().
 	std::optional<uint64_t> id;
+
+	// Initialized in check().
 	std::optional<Type> expr_type;
 };
 
 
-/* Initialization of arrays.
+/*
+ * Initialization of arrays.
  * 
- * Use Cases:
+ * The dimensions of the array are purely for type checking, and do not impact
+ * bytecode generation.
+ * 
+ * Examples,
  *    my_var int[2][3];
  *    my_var int[] = [ 1, 2, 3 ];
  */
@@ -112,16 +126,27 @@ class ArrayInitialization : public Statement
 {
 public:
 	ArrayInitialization(
-		Location const& loc,
 		std::string const& _name,
-		Location const& _name_location,
+		Location const& _name_loc,
 		std::string const& _type,
 		std::vector<expr::expr_p> const& _arr_sizes,
 		expr::expr_p const& _expr
 	);
 
-	void check(StatementScope& scope) override;
-	bool optimize(StatementScope& scope) override;
+	void check(
+		StatementScope& scope
+	) override;
+
+	bool optimize(
+		StatementScope& scope
+	) override;
+
+	/*
+	 * Bytes are generated in the following order,
+	 *   1) Expression bytes
+	 *   2) ID bytes
+	 *   3) STORE
+	 */
 	bytecodes_t generate_codes() const override;
 
 	// Precondition:
@@ -131,18 +156,19 @@ public:
 	// 'type' is to set type_conversions for Array
 	void fill_array(Type const& type, expr::expr_p expr, int depth) const;
 
-public:
-	std::string name;
-	Location name_location;
-
 private:
-	std::string type;
-	Type var_type;
+	std::string name;
+	Location name_loc;
+	
+	Type type;
 	std::vector<expr::expr_p> arr_sizes;
 	std::vector<int> arr_sizes_numerics;
 	expr::expr_p expr;
 
-	std::optional<uint64_t> id;
+	// Initialized in check().
+	std::optional<night::id_t> id;
+
+	// Initialized in check().
 	std::optional<Type> expr_type;
 
 	// true
@@ -170,6 +196,8 @@ public:
 
 private:
 	std::string var_name;
+	Location name_loc;
+
 	std::string assign_op;
 	expr::expr_p expr;
 
@@ -202,6 +230,8 @@ public:
 	bytecodes_t generate_codes() const override;
 
 private:
+	Location loc;
+
 	// If a conditional epxression is nullptr, then it represents and else
 	// statement and should be treated the same as a true if statement.
 	conditional_container conditionals;
@@ -231,6 +261,8 @@ public:
 	bytecodes_t generate_codes() const override;
 
 private:
+	Location loc;
+
 	expr::expr_p cond_expr;
 	std::vector<stmt_p> block;
 };
@@ -322,6 +354,8 @@ public:
 	bytecodes_t generate_codes() const override;
 
 private:
+	Location loc;
+
 	expr::expr_p expr;
 };
 
@@ -343,6 +377,8 @@ public:
 
 private:
 	std::string var_name;
+	Location name_loc;
+
 	std::string assign_op;
 	std::vector<expr::expr_p> subscripts;
 	expr::expr_p assign_expr;

@@ -182,7 +182,7 @@ ArrayInitialization parse_array_initialization(Lexer& lexer, Token const& name)
 
 	lexer.curr_is(TokenType::SEMICOLON);
 
-	return ArrayInitialization(lexer.loc, name.str, name.loc, type, array_sizes, expr);
+	return ArrayInitialization(name.str, name.loc, type, array_sizes, expr);
 }
 
 VariableAssign parse_variable_assignment(Lexer& lexer, Token const& name)

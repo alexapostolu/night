@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
 
 		return 0;
 	}
-	catch (night::error const& e) {
+	catch (night::error& e) {
 		e.what();
 
 		return 1;

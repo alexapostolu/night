@@ -15,57 +15,37 @@
 #include <memory>
 #include <assert.h>
 
-
-Statement::Statement(Location const& _loc)
-	: loc(_loc) {}
-
-Statement::Statement() {}
-
-
 VariableInit::VariableInit(
 	std::string const& _name,
-	Location const& _name_location,
+	Location const& _name_loc,
 	std::string const& _type,
 	expr::expr_p const& _expr)
-	: Statement(_name_location)
-	, name(_name)
-	, name_location(_name_location)
-	, type(_type)
-	, expr(_expr) {}
+	: name(_name)
+	, name_loc(_name_loc)
+	, type(_type, 0)
+	, expr(_expr)
+	, id(std::nullopt)
+	, expr_type(std::nullopt) {}
 
 void VariableInit::check(StatementScope& scope)
 {
-	var_type = Type(type, 0);
-	id = scope.create_variable(name, name_location, var_type);
-
-	// Return if there are minor errors.
-
-	if (night::error::get().has_minor_errors())
+	id = scope.create_variable(name, name_loc, type);
+	if (!id.has_value())
 		return;
-
-	// Compare variable type with expression type.
 
 	if (expr)
 	{
 		expr_type = expr->type_check(scope);
 
-		if (expr_type.has_value() && !is_same_or_primitive(var_type, expr_type))
+		if (expr_type.has_value() && !is_same_or_primitive(type, expr_type))
 			night::error::get().create_minor_error(
-				"variable '" + name + "' of type '" + night::to_str(type) +
-				"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", loc);
+				"Variable '" + name + "' of type '" + night::to_str(type) +
+				"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'.", name_loc);
 	}
 }
 
 bool VariableInit::optimize(StatementScope& scope)
 {
-	/* Process
-	 *   1. If variable is never used, return false, else,
-	 *   2. Optimize expression if it exists.
-	 *
-	 * Note: Array sizes have already been optimized in check(), so there is no
-	 * need to optimize them here.
-	 */
-
 	if (expr)
 		expr = expr->optimize(scope);
 
@@ -76,93 +56,70 @@ bytecodes_t VariableInit::generate_codes() const
 {
 	assert(id.has_value());
 
-	bytecodes_t codes;
+	bytecodes_t bytes;
 
 	if (expr)
-		codes = expr->generate_codes();
+		bytes = expr->generate_codes();
 
-	if (var_type != Type::FLOAT&& expr_type == Type::FLOAT)
-		codes.push_back(BytecodeType_F2I);
-	else if (var_type == Type::FLOAT && expr_type != Type::FLOAT)
-		codes.push_back(BytecodeType_I2F);
+	if (type != Type::FLOAT && expr_type == Type::FLOAT)
+		bytes.push_back(BytecodeType_F2I);
+	else if (type == Type::FLOAT && expr_type != Type::FLOAT)
+		bytes.push_back(BytecodeType_I2F);
 
-	auto id_codes = int64_to_bytes(id.value());
-	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
+	bytecodes_t id_bytes = int64_to_bytes(id.value());
+	night::container_concat(bytes, id_bytes);
 
-	codes.push_back(ByteType_STORE);
+	bytes.push_back(ByteType_STORE);
 
-	return codes;
+	return bytes;
 }
 
 
 ArrayInitialization::ArrayInitialization(
-	Location const& _loc,
 	std::string const& _name,
 	Location const& _name_location,
 	std::string const& _type,
 	std::vector<expr::expr_p> const& _arr_sizes,
 	expr::expr_p const& _expr)
-	: Statement(_loc)
-	, name(_name)
-	, name_location(_name_location)
-	, type(_type)
+	: name(_name)
+	, name_loc(_name_location)
+	, type(_type, (int)_arr_sizes.size())
 	, arr_sizes(_arr_sizes)
 	, expr(_expr) {}
 
 void ArrayInitialization::check(StatementScope& scope)
 {
-	// Type check variable sizes.
-
-	for (auto& arr_size : arr_sizes)
+	for (expr::expr_p& arr_size : arr_sizes)
 	{
 		if (!arr_size)
 			continue;
 
-		// Type check by expecting primitive types.
+		std::optional<Type> arr_size_type = arr_size->type_check(scope);
 
-		auto arr_size_type = arr_size->type_check(scope);
-
-		if (arr_size_type.has_value() && !arr_size_type->is_prim()) {
+		if (arr_size_type.has_value() && !arr_size_type->is_prim())
 			night::error::get().create_minor_error(
-				"found type '" + night::to_str(*arr_size_type) + "' in array size, "
-				"expected primitive type", loc);
-		}
+				"Found type '" + night::to_str(*arr_size_type) + "' in array size.\n"
+				"Expected primitive type.", name_loc);
 	}
 
-	// Deduce type of variable.
-
-	var_type = Type(type, (int)arr_sizes.size());
-	id = scope.create_variable(name, name_location, var_type);
-
-	// Return if there are minor errors.
-
-	if (night::error::get().has_minor_errors())
+	id = scope.create_variable(name, name_loc, type);
+	if (!id.has_value())
 		return;
-
-	// Compare variable type with expression type.
 
 	if (expr)
 	{
 		expr_type = expr->type_check(scope);
 
-		if (expr_type.has_value() && !is_same_or_primitive(var_type, expr_type))
+		if (expr_type.has_value() && !is_same_or_primitive(type, expr_type))
 			night::error::get().create_minor_error(
-				"variable '" + name + "' of type '" + night::to_str(var_type) +
-				"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", loc);
+				"Variable '" + name + "' of type '" + night::to_str(type) +
+				"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", name_loc);
 	}
 }
 
 bool ArrayInitialization::optimize(StatementScope& scope)
 {
-	/* Process
-	 *   1. If variable is never used, return false, else,
-	 *   2. Optimize expression if it exists.
-	 * 
-	 * Note: Array sizes have already been optimized in check(), so there is no
-	 * need to optimize them here.
-	 */
-
-	for (auto& arr_size : arr_sizes)
+	for (expr::expr_p& arr_size : arr_sizes)
 	{
 		if (!arr_size)
 		{
@@ -179,9 +136,9 @@ bool ArrayInitialization::optimize(StatementScope& scope)
 	if (expr)
 		expr = expr->optimize(scope);
 	else
-		expr = std::make_shared<expr::Array>(loc, std::vector<expr::expr_p>(), false);
+		expr = std::make_shared<expr::Array>(name_loc, std::vector<expr::expr_p>(), false);
 	
-	fill_array(var_type, expr, 0);
+	fill_array(type, expr, 0);
 
 	return true;
 }
@@ -191,14 +148,14 @@ bytecodes_t ArrayInitialization::generate_codes() const
 	assert(id.has_value());
 	assert(expr);
 
-	bytecodes_t codes = expr->generate_codes();
+	bytecodes_t bytes = expr->generate_codes();
 
-	auto id_codes = int64_to_bytes(id.value());
-	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
+	auto id_bytes = int64_to_bytes(id.value());
+	night::container_concat(bytes, id_bytes);
 
-	codes.push_back(ByteType_STORE);
+	bytes.push_back(ByteType_STORE);
 
-	return codes;
+	return bytes;
 }
 
 void ArrayInitialization::fill_array(Type const& type, expr::expr_p expr, int depth) const
@@ -212,7 +169,7 @@ void ArrayInitialization::fill_array(Type const& type, expr::expr_p expr, int de
 		{
 			for (int i = (int)arr->elements.size(); i < arr_sizes_numerics[depth]; ++i)
 			{
-				arr->elements.push_back(std::make_shared<expr::Numeric>(loc, Type(type).prim, (int64_t)0));
+				arr->elements.push_back(std::make_shared<expr::Numeric>(name_loc, type.prim, (int64_t)0));
 				arr->type_conversion.push_back(std::nullopt);
 			}
 
@@ -221,7 +178,7 @@ void ArrayInitialization::fill_array(Type const& type, expr::expr_p expr, int de
 		else if (arr_sizes_numerics[depth] != -1)
 		{
 			for (int i = (int)arr->elements.size(); i < arr_sizes_numerics[depth]; ++i)
-				arr->elements.push_back(std::make_shared<expr::Array>(loc, std::vector<expr::expr_p>(), false));
+				arr->elements.push_back(std::make_shared<expr::Array>(name_loc, std::vector<expr::expr_p>(), false));
 		}
 
 		if (arr_sizes_numerics[depth] != -1)
@@ -239,15 +196,19 @@ VariableAssign::VariableAssign(
 	std::string const& _assign_op,
 	expr::expr_p const& _expr,
 	Location const& _variable_name_location)
-	: Statement(_loc), var_name(_var_name), assign_op(_assign_op), expr(_expr)
-	, assign_type(std::nullopt), id(std::nullopt)
+	: var_name(_var_name)
+	, name_loc(_loc)
+	, assign_op(_assign_op)
+	, expr(_expr)
+	, assign_type(std::nullopt)
+	, id(std::nullopt)
 	, variable_name_location(_variable_name_location) {}
 
 void VariableAssign::check(StatementScope& scope)
 {
 	assert(expr);
 
-	auto variable = scope.get_variable(var_name, loc);
+	auto variable = scope.get_variable(var_name, name_loc);
 	if (variable)
 		id = variable->id;
 
@@ -258,8 +219,8 @@ void VariableAssign::check(StatementScope& scope)
 
 	if (variable && !is_same_or_primitive(variable->type, *expr_type))
 		night::error::get().create_minor_error(
-			"variable '" + var_name + "' of type '" + night::to_str(variable->type) +
-			"can not be assigned to type '" + night::to_str(*expr_type) + "'", loc);
+			"Variable '" + var_name + "' of type '" + night::to_str(variable->type) +
+			"can not be assigned to type '" + night::to_str(*expr_type) + "'", name_loc);
 
 	assign_type = *expr_type;
 }
@@ -334,7 +295,8 @@ bytecodes_t VariableAssign::generate_codes() const
 Conditional::Conditional(
 	Location const& _loc,
 	conditional_container const& _conditionals)
-	: Statement(_loc), conditionals(_conditionals) {}
+	: loc(_loc)
+	, conditionals(_conditionals) {}
 
 void Conditional::check(StatementScope& scope)
 {
@@ -449,7 +411,9 @@ While::While(
 	Location const& _loc,
 	expr::expr_p const& _cond,
 	std::vector<stmt_p> const& _block)
-	: Statement(_loc), cond_expr(_cond), block(_block) {}
+	: loc(_loc)
+	, cond_expr(_cond)
+	, block(_block) {}
 
 void While::check(StatementScope& scope)
 {
@@ -517,7 +481,7 @@ For::For(
 	VariableInit const& _var_init,
 	expr::expr_p const& _cond_expr,
 	std::vector<stmt_p> const& _block)
-	: Statement(_loc), var_init(_var_init), loop(_loc, _cond_expr, _block) {}
+	: var_init(_var_init), loop(_loc, _cond_expr, _block) {}
 
 void For::check(StatementScope& scope)
 {
@@ -633,7 +597,8 @@ bytecodes_t Function::generate_codes() const
 Return::Return(
 	Location const& _loc,
 	expr::expr_p const& _expr)
-	: Statement(_loc), expr(_expr) {}
+	: loc(_loc)
+	, expr(_expr) {}
 
 void Return::check(StatementScope& scope)
 {
@@ -685,11 +650,11 @@ ArrayMethod::ArrayMethod(
 	std::string const& _assign_op,
 	std::vector<expr::expr_p> const& _subscripts,
 	expr::expr_p const& _assign_expr)
-	: Statement(_loc), var_name(_var_name), assign_op(_assign_op), subscripts(_subscripts), assign_expr(_assign_expr), id(std::nullopt) {}
+	: name_loc(_loc), var_name(_var_name), assign_op(_assign_op), subscripts(_subscripts), assign_expr(_assign_expr), id(std::nullopt) {}
 
 void ArrayMethod::check(StatementScope& scope)
 {
-	auto variable = scope.get_variable(var_name, loc);
+	auto variable = scope.get_variable(var_name, name_loc);
 	if (variable)
 		id = variable->id;
 
@@ -699,7 +664,7 @@ void ArrayMethod::check(StatementScope& scope)
 
 		auto subscript_type = subscript->type_check(scope);
 		if (subscript_type.has_value() && subscript_type->is_arr())
-			night::error::get().create_minor_error("subscript is type '" + night::to_str(*subscript_type) + "', expected type bool, char, or int'", loc);
+			night::error::get().create_minor_error("subscript is type '" + night::to_str(*subscript_type) + "', expected type bool, char, or int'", name_loc);
 	}
 
 	if (assign_expr)
@@ -801,8 +766,7 @@ expr::FunctionCall::FunctionCall(
 	Token const& _name,
 	std::vector<expr::expr_p> const& _arg_exprs,
 	std::optional<uint64_t> const& _id)
-	: Statement(_name.loc)
-	, Expression(_name.loc, Expression::single_precedence)
+	: Expression(_name.loc, Expression::single_precedence)
 	, name(_name)
 	, arg_exprs(_arg_exprs)
 	, id(_id)
@@ -848,7 +812,7 @@ std::optional<Type> expr::FunctionCall::type_check(StatementScope& scope) noexce
 
 	if (funcs_with_same_name == funcs_with_same_name_end)
 	{
-		night::error::get().create_minor_error("function call '" + name.str + "' is undefined", Statement::loc);
+		night::error::get().create_minor_error("function call '" + name.str + "' is undefined", name.loc);
 		return std::nullopt;
 	}
 
@@ -875,17 +839,17 @@ std::optional<Type> expr::FunctionCall::type_check(StatementScope& scope) noexce
 		if (arg_types.empty())
 		{
 			night::error::get().create_minor_error("function call '" + name.str + "' has no arguments, "
-				"and do not match with the parameters in its function definition", Statement::loc);
+				"and do not match with the parameters in its function definition", name.loc);
 		}
 		else
 		{
 			night::error::get().create_minor_error("arguments in function call '" + name.str + "' are of type '" + s_types +
-				"', and do not match with the parameters in its function definition", Statement::loc);
+				"', and do not match with the parameters in its function definition", name.loc);
 		}
 	}
 
 	if (is_expr && !funcs_with_same_name->second.rtn_type.has_value())
-		night::error::get().create_minor_error("function '" + funcs_with_same_name->first + "' can not have a return type of void when used in an expression", Statement::loc);
+		night::error::get().create_minor_error("function '" + funcs_with_same_name->first + "' can not have a return type of void when used in an expression", name.loc);
 
 	if (night::error::get().has_minor_errors())
 		return std::nullopt;

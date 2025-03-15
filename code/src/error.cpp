@@ -9,12 +9,63 @@
 static std::string const clear = "\033[0m";
 static std::string const red = "\033[31m";
 static std::string const green = "\033[32m";
-static std::string const yellow = "\033[33m";
+static std::string const yellow = "\033[93m";
 static std::string const blue = "\033[34m";
-static std::string const cyan = "\033[36m";
+static std::string const cyan = "\033[96m";
+
+static void colour_code_names(std::string& message, char name_punctuation, std::string const& colour)
+{
+	bool inside_quote = false;
+	std::size_t pos = 0;
+
+	while ((pos = message.find(name_punctuation, pos)) != std::string::npos)
+	{
+		inside_quote = !inside_quote;
+
+		std::string const& colour = inside_quote ? yellow : clear;
+
+		message.replace(pos, 1, colour);
+		pos += colour.length();
+	}
+}
+
+static void colour_code_types(std::string& message, std::string const& type, std::string const& colour)
+{
+	std::string colour_coded_type = colour + type + clear;
+	std::size_t pos = 0;
+
+	while ((pos = message.find(type, pos)) != std::string::npos)
+	{
+		message.replace(pos, type.length(), colour_coded_type);
+		pos += colour_coded_type.length();
+	}
+}
+
+static std::string error_type_to_str(ErrorType type)
+{
+	switch (type) {
+	case ErrorType::Warning:	  return "Warning";
+	case ErrorType::Minor:		  return "Minor Error";
+	case ErrorType::FatalCompile: return "Fatal Compile Error";
+	case ErrorType::FatalRuntime: return "Fatal Runtime Error";
+	default: throw std::runtime_error("Unhandled Case");
+	}
+}
+
+static std::string get_line_of_error(std::string const& file_name, int line_number)
+{
+	std::string line;
+
+	std::ifstream file(file_name);
+	for (int i = 0; i < line_number; ++i)
+		std::getline(file, line);
+
+	return line;
+}
 
 night::error::error()
-	: debug_flag(false), has_minor_errors_(false) {}
+	: debug_flag(false)
+	, has_minor_errors_(false) {}
 
 night::error& night::error::get()
 {
@@ -22,73 +73,41 @@ night::error& night::error::get()
 	return instance;
 }
 
-void night::error::what() const
+void night::error::what()
 {
-	for (auto const& err : errors)
+	for (auto& err : errors)
 	{
-		std::string s = err.message;
+		/* Colour Code Error Message */
 
-		bool inside_quote = false;
-		std::size_t pos = 0;
-		while ((pos = s.find('\'', pos)) != std::string::npos)
-		{
-			inside_quote = !inside_quote;
+		colour_code_names(err.message, '\'', yellow);
 
-			std::string const& colour = inside_quote ? yellow : clear;
+		colour_code_types(err.message, "boolean", cyan);
+		colour_code_types(err.message, "character", cyan);
+		colour_code_types(err.message, "integer", cyan);
+		colour_code_types(err.message, "float", cyan);
+		colour_code_types(err.message, "string", cyan);
 
-			s.replace(pos, 1, colour);
-			pos += colour.length();
-		}
-
-		pos = 0;
-		while ((pos = s.find("integer", pos)) != std::string::npos) {
-			s.replace(pos, strlen("integer"), "\033[36minteger\033[0m");
-			pos += strlen("\033[36minteger\033[0m");
-		}
-		pos = 0;
-		while ((pos = s.find("float", pos)) != std::string::npos) {
-			s.replace(pos, strlen("float"), "\033[36mfloat\033[0m");
-			pos += strlen("\033[36mfloat\033[0m");
-		}
-		pos = 0;
-		while ((pos = s.find("character", pos)) != std::string::npos) {
-			s.replace(pos, strlen("character"), "\033[36mcharacter\033[0m");
-			pos += strlen("\033[36mcharacter\033[0m");
-		}
-
-		std::cout << red << "[ ";
-
-		switch (err.type)
-		{
-		case ErrorType::Warning:
-			std::cout << "warning";
-			break;
-		case ErrorType::Minor:
-			std::cout << "minor error";
-			break;
-		case ErrorType::FatalCompile:
-			std::cout << "fatal compile error";
-			break;
-		case ErrorType::FatalRuntime:
-			std::cout << "fatal runtime error";
-			break;
-		}
-
-		std::cout << " ]\n" << clear;
-
-		std::cout << err.location.file << " (" << std::to_string(err.location.line) << ":" << std::to_string(err.location.col) << ")\n";
-
-		if (error::get().debug_flag)
-			std::cout << err.source_location.file_name() << " " << std::to_string(err.source_location.line()) << '\n';
-
-		std::cout << '\n' << s << "\n\n";
-
+		/* Get line of code where error occurred */
 		std::string error_line;
 		std::ifstream error_file(err.location.file);
 		for (int i = 0; i < err.location.line; ++i)
 			std::getline(error_file, error_line);
 
-		std::cout << "    " << error_line << "\n";
+		/* Display Error Message */
+
+		// [ Minor Error ]
+		std::cout << red << "[ " << error_type_to_str(err.type) << " ]\n" << clear;
+
+		// source.night (10:52)
+		std::cout << err.location.file << " (" << err.location.line << ":" << err.location.col << ")\n";
+
+		// night/code/src/ast/statement.cpp 53
+		if (error::get().debug_flag)
+			std::cout << err.source_location.file_name() << " " << err.source_location.line() << '\n';
+
+		std::cout << '\n' << err.message << "\n\n";
+
+		std::cout << "    " << get_line_of_error(err.location.file, err.location.line) << "\n";
 
 		int indent_size = 4;
 		// -1 because the lexer ends one position after the token when it eats.

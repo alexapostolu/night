@@ -19,7 +19,6 @@
 #include "token.hpp"
 
 #include <source_location>
-#include <stdexcept>
 #include <vector>
 #include <string>
 
@@ -49,7 +48,8 @@ public:
 	static error& get();
 
 	bool has_minor_errors() const;
-	void what() const;
+	
+	void what();
 
 	void create_warning(
 		std::string const& msg,
