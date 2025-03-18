@@ -191,38 +191,35 @@ void ArrayInitialization::fill_array(Type const& type, expr::expr_p expr, int de
 
 
 VariableAssign::VariableAssign(
-	Location const& _loc,
-	std::string const& _var_name,
+	std::string const& _name,
+	Location const& _name_loc,
 	std::string const& _assign_op,
-	expr::expr_p const& _expr,
-	Location const& _variable_name_location)
-	: var_name(_var_name)
-	, name_loc(_loc)
+	expr::expr_p const& _expr)
+	: name(_name)
+	, name_loc(_name_loc)
 	, assign_op(_assign_op)
 	, expr(_expr)
 	, assign_type(std::nullopt)
-	, id(std::nullopt)
-	, variable_name_location(_variable_name_location) {}
+	, id(std::nullopt) {}
 
 void VariableAssign::check(StatementScope& scope)
 {
 	assert(expr);
 
-	auto variable = scope.get_variable(var_name, name_loc);
+	auto variable = scope.get_variable(name, name_loc);
 	if (variable)
 		id = variable->id;
 
 	auto expr_type = expr->type_check(scope);
-
-	if (!expr_type.has_value() || night::error::get().has_minor_errors())
+	if (!expr_type.has_value())
 		return;
 
 	if (variable && !is_same_or_primitive(variable->type, *expr_type))
 		night::error::get().create_minor_error(
-			"Variable '" + var_name + "' of type '" + night::to_str(variable->type) +
-			"can not be assigned to type '" + night::to_str(*expr_type) + "'", name_loc);
+			"Variable '" + name + "' of type '" + night::to_str(variable->type) +
+			"can not be assigned to type '" + night::to_str(*expr_type) + "'.", name_loc);
 
-	assign_type = *expr_type;
+	assign_type = expr_type.value();
 }
 
 bool VariableAssign::optimize(StatementScope& scope)
@@ -233,62 +230,46 @@ bool VariableAssign::optimize(StatementScope& scope)
 
 bytecodes_t VariableAssign::generate_codes() const
 {
-	bytecodes_t codes;
+	static std::unordered_map<std::string, std::pair<bytecode_t, bytecode_t>> operator_bytes{
+		{ "+=", {BytecodeType_ADD_I, BytecodeType_ADD_F} },
+		{ "-=", {BytecodeType_SUB_I, BytecodeType_SUB_F} },
+		{ "*=", {BytecodeType_MULT_I, BytecodeType_MULT_F} },
+		{ "/=", {BytecodeType_DIV_I, BytecodeType_DIV_F} }
+	};
+
+	bytecodes_t bytes;
 
 	if (assign_op != "=")
 	{
 		auto id_codes = int64_to_bytes(id.value());
-		codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
-		codes.push_back(ByteType_LOAD);
+		night::container_concat(bytes, id_codes);
+
+		bytes.push_back(ByteType_LOAD);
 
 		auto expr_codes = expr->generate_codes();
-		codes.insert(std::end(codes), std::begin(expr_codes), std::end(expr_codes));
+		night::container_concat(bytes, expr_codes);
 
-		if (assign_op == "+=")
-		{
-			if (is_same(*assign_type, Type(Type::CHAR, true)))
-				codes.push_back(BytecodeType_ADD_S);
-			else if (assign_type == Type::FLOAT)
-				codes.push_back(BytecodeType_ADD_F);
-			else
-				codes.push_back(BytecodeType_ADD_I);
-		}
-		else if (assign_op == "-=")
-		{
-			if (assign_type == Type::FLOAT)
-				codes.push_back(BytecodeType_SUB_F);
-			else
-				codes.push_back(BytecodeType_SUB_I);
-		}
-		else if (assign_op == "*=")
-		{
-			if (assign_type == Type::FLOAT)
-				codes.push_back(BytecodeType_MULT_F);
-			else
-				codes.push_back(BytecodeType_MULT_I);
-		}
-		else if (assign_op == "/=")
-		{
-			if (assign_type == Type::FLOAT)
-				codes.push_back(BytecodeType_DIV_F);
-			else
-				codes.push_back(BytecodeType_DIV_I);
-		}
+		assert(operator_bytes.contains(assign_op));
+		auto [int_op, float_op] = operator_bytes[assign_op];
+
+		// Special case for strings.
+		if (assign_op == "+=" && is_same(*assign_type, Type(Type::CHAR, 1)))
+			bytes.push_back(BytecodeType_ADD_S);
 		else
-			throw debug::unhandled_case(assign_op);
+			bytes.push_back(assign_type == Type::FLOAT ? float_op : int_op);
 	}
 	else
 	{
 		auto expr_codes = expr->generate_codes();
-		codes.insert(std::end(codes), std::begin(expr_codes), std::end(expr_codes));
+		night::container_concat(bytes, expr_codes);
 	}
 
-	auto id_codes = int64_to_bytes(id.value());
-	codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
+	auto id_bytes = int64_to_bytes(id.value());
+	night::container_concat(bytes, id_bytes);
 
-	codes.push_back(ByteType_STORE);
+	bytes.push_back(ByteType_STORE);
 
-	return codes;
+	return bytes;
 }
 
 

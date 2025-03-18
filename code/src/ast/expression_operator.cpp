@@ -180,7 +180,7 @@ expr::BinaryOp::BinaryOp(
 	, operator_type(std::get<BinaryOpType>(operators.at(_operator)))
 	, lhs(nullptr), rhs(nullptr)
 	, lhs_type(std::nullopt), rhs_type(std::nullopt)
-	, cast_lhs(_ByteType_INVALID_), cast_rhs(_ByteType_INVALID_) {}
+	, cast_lhs(std::nullopt), cast_rhs(std::nullopt) {}
 
 expr::BinaryOp::BinaryOp(
 	BinaryOp const& other)
@@ -463,6 +463,22 @@ expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
 		return std::make_shared<Array>(loc, new_str, true);
 	}
 
+	// Optimize subscript operator.
+	if (auto [lhs_num, rhs_arr] = is_array_subscript(); lhs_num && rhs_arr)
+	{
+		int64_t index = std::visit(
+			[](auto&& v) { return (int64_t)v; },
+			lhs_num->val
+		);
+
+		if (index < 0 || index > rhs_arr->elements.size())
+			throw night::error::get().create_fatal_error(
+				"Index '" + std::to_string(index) + "' is out of range.\n"
+				"Array has size '" + std::to_string(rhs_arr->elements.size()) + "'.", { loc.file, loc.line, loc.col - 1 });
+
+		return rhs_arr->elements[index];
+	}
+
 	auto lhs_num = std::dynamic_pointer_cast<Numeric>(lhs);
 	auto rhs_num = std::dynamic_pointer_cast<Numeric>(rhs);
 
@@ -478,12 +494,12 @@ expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
 	case BinaryOpType::MULT: BinaryOpEvaluateNumeric(*, false);
 	case BinaryOpType::DIV:  BinaryOpEvaluateNumeric(/ , false);
 
-		// Separate case for modulus.
+	// Separate case for modulus.
 	case BinaryOpType::MOD:
 		return std::make_shared<Numeric>(loc, Type::INT,
 			std::visit([](auto&& arg1, auto&& arg2) {
 				return (int64_t)arg1 % (int64_t)arg2;
-				}, lhs_num->val, rhs_num->val)
+			}, lhs_num->val, rhs_num->val)
 		);
 
 	case BinaryOpType::LESSER:		   BinaryOpEvaluateNumeric(< , true);
@@ -494,8 +510,8 @@ expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
 	case BinaryOpType::NOT_EQUALS:	   BinaryOpEvaluateNumeric(!= , true);
 	case BinaryOpType::AND:			   BinaryOpEvaluateNumeric(&&, true);
 	case BinaryOpType::OR:			   BinaryOpEvaluateNumeric(|| , true);
-
-		// No optimization can be done for Subscript operator.
+		
+	// Optimization for subscript is handled separately above.
 	default:
 		break;
 	}
@@ -511,13 +527,13 @@ bytecodes_t expr::BinaryOp::generate_codes() const
 
 	// Generate left hand side bytes.
 	night::container_concat(bytes, lhs->generate_codes());
-	if (cast_lhs != _ByteType_INVALID_)
-		bytes.push_back(cast_lhs);
+	if (cast_lhs.has_value())
+		bytes.push_back(cast_lhs.value());
 
 	// Generate right hand side bytes.
 	night::container_concat(bytes, rhs->generate_codes());
-	if (cast_rhs != _ByteType_INVALID_)
-		bytes.push_back(cast_rhs);
+	if (cast_rhs.has_value())
+		bytes.push_back(cast_rhs.value());
 
 	// Generate operator byte.
 	bytes.push_back(generate_operator_byte());
@@ -542,6 +558,27 @@ std::pair<std::shared_ptr<expr::Array>, std::shared_ptr<expr::Array>> expr::Bina
 		// If both left and right hand expressions are strings, return them.
 		if (lhs_arr && lhs_arr->is_str() && rhs_arr && rhs_arr->is_str())
 			return std::make_pair(lhs_arr, rhs_arr);
+	}
+
+	return std::make_pair(nullptr, nullptr);
+}
+
+std::pair<std::shared_ptr<expr::Numeric>, std::shared_ptr<expr::Array>> expr::BinaryOp::is_array_subscript() const
+{
+	/*
+	 * String subscript requires three conditions,
+	 *   1) The operator is SUBSCRIPT
+	 *   2) Left hand side expression is a Numeric
+	 *   3) Right hand side expression is an Array
+	 */
+
+	if (operator_type == BinaryOpType::SUBSCRIPT)
+	{
+		auto lhs_num = std::dynamic_pointer_cast<Numeric>(lhs);
+		auto rhs_arr = std::dynamic_pointer_cast<Array>(rhs);
+
+		if (lhs_num && rhs_arr)
+			return std::make_pair(lhs_num, rhs_arr);
 	}
 
 	return std::make_pair(nullptr, nullptr);

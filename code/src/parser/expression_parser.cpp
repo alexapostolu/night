@@ -238,6 +238,9 @@ void parse_check_unary_operator(std::optional<TokenType> const& previous_type, L
 
 void parse_check_binary_operator(std::optional<TokenType> const& previous_type, Lexer const& lexer)
 {
+	if (previous_type.has_value() && previous_type == TokenType::BINARY_OPERATOR && lexer.curr().str == "-")
+		return;
+
 	if (previous_type.has_value() &&
 		previous_type != TokenType::BOOL_LIT &&
 		previous_type != TokenType::CHAR_LIT &&

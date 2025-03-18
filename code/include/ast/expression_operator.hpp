@@ -172,6 +172,15 @@ private:
 	std::pair<std::shared_ptr<Array>, std::shared_ptr<Array>> is_string_concatenation() const;
 
 	/*
+	 * Returns the index and string if operator is SUBSCRIPT and left hand side
+	 * expression is a numeric and right hand side expression is an array.
+	 * Otherwise return a pair of NULLs.
+	 *
+	 * Used in optimize().
+	 */
+	std::pair<std::shared_ptr<Numeric>, std::shared_ptr<Array>> is_array_subscript() const;
+
+	/*
 	 * Returns the byte type of the operator.
 	 *
 	 * Used in generate_codes().
@@ -195,7 +204,7 @@ private:
 	std::optional<Type> lhs_type, rhs_type;
 
 	// Optionally initialized in type_check().
-	bytecode_t cast_lhs, cast_rhs;
+	std::optional<bytecode_t> cast_lhs, cast_rhs;
 };
 
 } // night::

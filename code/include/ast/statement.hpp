@@ -105,7 +105,7 @@ private:
 	expr::expr_p expr;
 
 	// Initialized in check().
-	std::optional<uint64_t> id;
+	std::optional<night::id_t> id;
 
 	// Initialized in check().
 	std::optional<Type> expr_type;
@@ -183,11 +183,10 @@ class VariableAssign : public Statement
 {
 public:
 	VariableAssign(
-		Location const& _loc,
-		std::string const& _var_name,
+		std::string const& _name,
+		Location const& _name_loc,
 		std::string const& _assign_op,
-		expr::expr_p const& _expr,
-		Location const& _variable_name_location
+		expr::expr_p const& _expr
 	);
 
 	void check(StatementScope& scope) override;
@@ -195,16 +194,14 @@ public:
 	bytecodes_t generate_codes() const override;
 
 private:
-	std::string var_name;
+	std::string name;
 	Location name_loc;
 
 	std::string assign_op;
 	expr::expr_p expr;
 
 	std::optional<Type> assign_type;
-	std::optional<uint64_t> id;
-
-	Location variable_name_location;
+	std::optional<night::id_t> id;
 };
 
 

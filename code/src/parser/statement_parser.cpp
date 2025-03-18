@@ -193,7 +193,7 @@ VariableAssign parse_variable_assignment(Lexer& lexer, Token const& name)
 	std::string	 assignment_operator = lexer.curr().str;
 	expr::expr_p expression			 = parse_expr(lexer, true);
 
-	return VariableAssign(lexer.loc, name.str, assignment_operator, expression, name.loc);
+	return VariableAssign(name.str, name.loc, assignment_operator, expression);
 }
 
 ArrayMethod parse_array_method(Lexer& lexer, Token const& name)
