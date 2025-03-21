@@ -52,7 +52,7 @@ for i in "${!night_files[@]}"; do
     if diff "${actual_output}.nocr" "${expected_output}.nocr" > /dev/null; then
         echo -en "\e[32mPassed.\e[0m"
     else
-        echo -e "\n\e[31mFailed. \e[33mOutput does not match the expected output."
+        echo -e "\e[31mFailed.\n\e[33mResult does not match the expected output."
         echo -e "Result/Expected:\e[0m"
         diff "${actual_output}.nocr" "${expected_output}.nocr"
         ((tests_failed++))

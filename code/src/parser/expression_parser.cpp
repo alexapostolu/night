@@ -16,12 +16,14 @@
 expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty, std::optional<TokenType> const& end_token)
 {
 	// The root node of the expression.
-	expr::expr_p head(nullptr);
+	expr::expr_p head;
 
 	// The previous type allows us to differentiate the subscript operator from
 	// an array (used in case OPEN_SQUARE), and the negative operator from the
 	// subtract operator (used in case BINARY_OP).
 	std::optional<TokenType> previous_token_type;
+
+	expr::expr_p new_node;
 
 	while (true)
 	{

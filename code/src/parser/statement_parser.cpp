@@ -6,6 +6,7 @@
 #include "parser/expression_parser.hpp"
 #include "error.hpp"
 
+#include <unordered_set>
 #include <vector>
 #include <tuple>
 #include <string>

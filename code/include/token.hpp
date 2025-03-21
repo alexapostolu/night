@@ -10,6 +10,8 @@ struct Location
 
 enum class TokenType
 {
+	EXPR,
+
 	OPEN_BRACKET,
 	CLOSE_BRACKET,
 	OPEN_SQUARE,
