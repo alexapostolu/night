@@ -52,7 +52,7 @@ jobs:
           name: Running unit tests   
           command: |
             cd tests
-            /home/circleci/project/build/night_tests
+            /home/circleci/project/build/night-tests
       # Run the test script with the 'night' executable as an argument
       - run:
           name: Running integration tests
