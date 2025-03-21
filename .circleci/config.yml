@@ -51,7 +51,8 @@ jobs:
       - run:
           name: Running unit tests   
           command: |
-            cd tests
+            ls
+            pwd
             /home/circleci/project/build/night-tests
       # Run the test script with the 'night' executable as an argument
       - run:
