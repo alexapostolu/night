@@ -12,20 +12,6 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt-get install -y cmake
-      # Install MinGW using Chocolatey
-      #- run:
-      #    name: Install GCC and G++
-      #    command: |
-      #      sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-      #      sudo apt-get update
-      #      
-      #      version=$(apt-cache pkgnames | sed -nr 's/^gcc-(([0-9]+\.?)+)$/\1/p' \
-      #                                   | sort -n | tail -n1)
-      #      echo "The latest available GCC version: $version"
-      #      
-      #      sudo apt-get install gcc-$version g++-$version
-      #      sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-$version 60 \
-      #                               --slave   /usr/bin/g++ g++ /usr/bin/g++-$version
       # Create build directory and build the project
       - run:
           name: Build the project
@@ -51,12 +37,19 @@ jobs:
       - run:
           name: Running unit tests   
           command: |
+            echo "Current pwd"
+            pwd
+            ls
+            echo "Going inside build"
             cd build
+            ls
             /home/circleci/project/build/night-tests
       # Run the test script with the 'night' executable as an argument
       - run:
           name: Running integration tests
           command: |
+            pwd
+            ls
             cd tests
             bash test_night.sh /home/circleci/project/build/night
 
