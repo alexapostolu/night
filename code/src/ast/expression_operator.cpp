@@ -656,3 +656,18 @@ std::string expr::BinaryOp::operator_type_to_str() const
 	default: throw debug::unhandled_case((unsigned)operator_type);
 	}
 }
+
+expr::BinaryOpType const& expr::BinaryOp::get_type() const
+{
+	return operator_type;
+}
+
+expr::expr_p const& expr::BinaryOp::get_lhs() const
+{
+	return lhs;
+}
+
+expr::expr_p const& expr::BinaryOp::get_rhs() const
+{
+	return rhs;
+}

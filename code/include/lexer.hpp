@@ -15,7 +15,7 @@ class Lexer
 public:
 	Lexer() = default;
 	Lexer(std::string const& _file_name);
-	~Lexer() = default;
+	~Lexer();
 
 public:
 	Token const& eat();

@@ -132,6 +132,13 @@ public:
 	 */
 	bytecodes_t generate_codes() const override;
 
+public:
+	BinaryOpType const& get_type() const;
+
+	expr::expr_p const& get_lhs() const;
+
+	expr::expr_p const& get_rhs() const;
+
 private:
 	/*
 	 * String concatenation only works with the addition operator on two strings.

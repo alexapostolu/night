@@ -20,6 +20,11 @@ Lexer::Lexer(std::string const& _file_name)
 	eat();
 }
 
+Lexer::~Lexer()
+{
+	file.close();
+}
+
 Token const& Lexer::eat()
 {
 	assert(curr().type != TokenType::END_OF_FILE);

@@ -24,7 +24,8 @@ int main()
 {
 	std::cout << cyan << "Running unit tests...\n\n" << clear;
 
-	night_test(expression_parser_tests);
+	night_test(test_expression_parser_basic);
+	night_test(test_expression_parser_order_of_operations);
 
 	if (failed)
 	{

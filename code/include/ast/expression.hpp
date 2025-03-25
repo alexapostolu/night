@@ -261,6 +261,9 @@ public:
 	bool is_true() const;
 
 public:
+	std::variant<int64_t, double> const& get_val() const;
+
+public:
 	std::variant<int64_t, double> val;
 	Type::Primitive type;
 

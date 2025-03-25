@@ -311,3 +311,8 @@ bool expr::Numeric::is_true() const
 {
 	return std::visit([](auto&& arg) { return (bool)arg; }, val);
 }
+
+std::variant<int64_t, double> const& expr::Numeric::get_val() const
+{
+	return val;
+}

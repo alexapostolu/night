@@ -24,20 +24,13 @@ jobs:
       - run:
           name: Running unit tests   
           command: |
-            echo "Current pwd"
-            pwd
-            ls
-            echo "Going inside build"
-            cd build
-            ls
-            /home/circleci/project/build/night-tests
-      # Run the test script with the 'night' executable as an argument
+            build/night-tests
+      # Run integration tests
       - run:
           name: Running integration tests
           command: |
-            pwd
             cd tests
-            bash test_night.sh /home/circleci/project/build/night
+            bash test_night.sh ../build/night
 
 workflows:
   version: 2
