@@ -407,7 +407,7 @@ Function parse_func(Lexer& lexer)
 	}
 	if (std::get<0>(rtn_type) != "void" && !contains_return) {
 		throw night::error::get().create_fatal_error(
-			"found no return statement, expected return statement in function", lexer.loc);
+			"found no return statement, expected return statement in function", name_location);
 	}
 
 	return Function(name, name_location, parameters, std::get<0>(rtn_type), std::get<1>(rtn_type), body);

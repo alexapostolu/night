@@ -1,9 +1,16 @@
-i int;
-j int;
+def two_sum(nums int[], len int, target int) int[]
+{
+	for (i int = 0; i < len; i += 1)
+	{
+		for (j int = 0; j < len; j += 1)
+		{
+			if (i != j && nums[i] + nums[j] == target)
+				return [i, j];
+		}
+	}
 
-def two_sum(nums int[], target int) void:
-	for n in range(0, len(nums)):
-		for m in range(0, len(nums)):
-			if n != m and nums[n] + nums[m] == target:
-				i = n;
-				j = m;
+	return [0];
+}
+
+arr int[2] = two_sum([2, 7, 11, 15], 4, 22);
+print(str(arr[0]) + " " + str(arr[1]));
