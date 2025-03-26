@@ -59,7 +59,13 @@ bytecodes_t VariableInit::generate_codes() const
 	bytecodes_t bytes;
 
 	if (expr)
+	{
 		bytes = expr->generate_codes();
+	}
+	else
+	{
+		bytes = int64_to_bytes<int64_t>(0);
+	}
 
 	if (type != Type::FLOAT && expr_type == Type::FLOAT)
 		bytes.push_back(BytecodeType_F2I);
