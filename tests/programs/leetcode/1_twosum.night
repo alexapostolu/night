@@ -1,0 +1,9 @@
+i int;
+j int;
+
+def two_sum(nums int[], target int) void:
+	for n in range(0, len(nums)):
+		for m in range(0, len(nums)):
+			if n != m and nums[n] + nums[m] == target:
+				i = n;
+				j = m;
