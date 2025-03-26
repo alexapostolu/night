@@ -392,12 +392,19 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			default: {
 				InterpreterScope func_scope{ scope.vars };
 
-				for (int i = 0; i < scope.funcs[id].param_ids.size(); ++i)
+				for (int i = scope.funcs[id].param_ids.size() - 1; i >= 0; --i)
 					func_scope.vars[InterpreterScope::funcs[id].param_ids[i]] = pop(s);
 
 				auto rtn_value = interpret_bytecodes(func_scope, InterpreterScope::funcs[id].codes);
 				if (rtn_value.has_value())
 					s.push(*rtn_value);
+
+				// Update parent scope's variables to any changes made in child scope.
+				for (auto const& [id, val] : func_scope.vars)
+				{
+					if (scope.vars.contains(id))
+						scope.vars[id] = val;
+				}
 
 				break;
 			}
