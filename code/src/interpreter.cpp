@@ -388,7 +388,8 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			case 11: {
 				auto x = pop(s).as.i;
 				char* str = (char*)malloc(2);
-				str[0] = x;
+				str[0] = (char)x;
+				str[1] = '\0';
 
 				s.emplace(str);
 				break;
