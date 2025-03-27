@@ -21,7 +21,8 @@ scope_func_container StatementScope::functions = {
 	{ "int",   StatementFunction{ 8,  {}, { Type::CHAR			}, Type::INT			} },
 	{ "str",   StatementFunction{ 9,  {}, { Type::INT			}, Type(Type::CHAR, 1)  } },
 	{ "str",   StatementFunction{ 10, {}, { Type::FLOAT			}, Type(Type::CHAR, 1)  } },
-	{ "len",   StatementFunction{ 11, {}, { Type(Type::CHAR, 1) }, Type::INT			} }
+	{ "str",   StatementFunction{ 11, {}, { Type::CHAR			}, Type(Type::CHAR, 1)	} },
+	{ "len",   StatementFunction{ 12, {}, { Type(Type::CHAR, 1) }, Type::INT			} }
 };
 
 StatementScope::StatementScope()

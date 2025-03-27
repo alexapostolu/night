@@ -1,0 +1,13 @@
+def is_palindrome(x int) bool
+{
+	s char[] = str(x);
+	for (i int = 0; i < len(s) / 2; i += 1)
+	{
+		if (s[i] != s[len(s) - i - 1])
+			return false;
+	}
+	
+	return true;
+}
+
+print(is_palindrome(121));

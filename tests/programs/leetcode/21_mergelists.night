@@ -1,0 +1,20 @@
+def merge_two_lists(l1 int[], l2 int[], n int) char[]
+{
+	l3 char[] = "";
+	j int = 0;
+
+	for (i int = 0; i < n; i += 1)
+	{
+		while (l2[j] < l1[i])
+		{
+			l3 += str(l2[j]);
+			j += 1;
+		}
+
+		l3 += str(l1[i]);
+	}
+
+	return l3;
+}
+
+print(merge_two_lists([1, 2, 4], [1, 3, 4], 3));

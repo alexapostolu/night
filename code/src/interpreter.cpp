@@ -386,6 +386,14 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 				break;
 			}
 			case 11: {
+				auto x = pop(s).as.i;
+				char* str = (char*)malloc(2);
+				str[0] = x;
+
+				s.emplace(str);
+				break;
+			}
+			case 12: {
 				s.emplace((int64_t)strlen(pop(s).as.s));
 				break;
 			}

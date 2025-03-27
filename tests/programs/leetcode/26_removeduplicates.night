@@ -1,0 +1,19 @@
+def remove_duplicates(nums int[], n int) char[]
+{
+	res char[] = "";
+	j int = 0;
+
+	for (i int = 0; i < n; i += 1)
+	{
+		res += str(nums[i]);
+
+		while (i + 1 < n && nums[i] == nums[i + 1])
+			i += 1;
+
+		j += 1;
+	}
+
+	return res;
+}
+
+print(remove_duplicates([ 0, 0, 1, 1, 1, 2, 2, 3, 3, 4 ], 10));

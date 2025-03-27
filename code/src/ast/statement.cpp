@@ -652,6 +652,11 @@ void ArrayMethod::check(StatementScope& scope)
 
 	if (assign_expr)
 		assign_type = assign_expr->type_check(scope);
+
+	if (variable && assign_expr && (variable->type.dim - subscripts.size() != assign_type->dim || variable->type.prim != assign_type->prim))
+		night::error::get().create_minor_error(
+			"Variable '" + var_name +
+			"' can not be assigned to type '" + night::to_str(assign_type.value()) + "'.", name_loc);
 }
 
 bool ArrayMethod::optimize(StatementScope& scope)
