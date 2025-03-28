@@ -28,8 +28,6 @@ struct StatementVariable
 	
 	// Keep track of the number of times used so unused variables can be
 	// eliminated in the optimizing stage.
-	// Not meant to be assigned to other variables, so unsigned type is
-	// appropriate.
 	unsigned times_used;
 };
 

@@ -60,6 +60,8 @@ static std::string get_line_of_error(std::string const& file_name, int line_numb
 	for (int i = 0; i < line_number; ++i)
 		std::getline(file, line);
 
+	line.erase(0, line.find_first_not_of(" \t\n\r\f\v"));
+
 	return line;
 }
 
@@ -90,11 +92,7 @@ void night::error::what(bool only_warnings)
 		colour_code_types(err.message, "float", cyan);
 		colour_code_types(err.message, "string", cyan);
 
-		/* Get line of code where error occurred */
-		std::string error_line;
-		std::ifstream error_file(err.location.file);
-		for (int i = 0; i < err.location.line; ++i)
-			std::getline(error_file, error_line);
+		std::string error_line = get_line_of_error(err.location.file, err.location.line);
 
 		/* Display Error Message */
 
@@ -110,7 +108,7 @@ void night::error::what(bool only_warnings)
 
 		std::cout << '\n' << err.message << "\n\n";
 
-		std::cout << "    " << get_line_of_error(err.location.file, err.location.line) << "\n";
+		std::cout << "    " << error_line << "\n";
 
 		int indent_size = 4;
 		// -1 because the lexer ends one position after the token when it eats.
@@ -118,7 +116,7 @@ void night::error::what(bool only_warnings)
 
 		if (err.token.str.empty())
 		{
-			for (int i = 0; i < indent_size + token_position; ++i)
+			for (int i = 0; i < indent_size + token_position + 1; ++i)
 				std::cout << ' ';
 			std::cout << green << "^\n\n" << clear;
 		}

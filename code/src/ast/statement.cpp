@@ -317,6 +317,8 @@ bool Conditional::optimize(StatementScope& scope)
 
 			if (condition_lit && !condition_lit->is_true())
 			{
+				night::error::get().create_warning("False conditional.", loc);
+
 				remove_stmts_index.push_back(i);
 			}
 		}
@@ -421,6 +423,10 @@ bool While::optimize(StatementScope& scope)
 		stmt->optimize(scope);
 
 	auto lit = std::dynamic_pointer_cast<expr::Numeric>(cond_expr);
+
+	if (lit && !lit->is_true())
+		night::error::get().create_warning("False loop.", loc);
+
 	return !lit || lit->is_true();
 }
 
@@ -477,9 +483,7 @@ void For::check(StatementScope& scope)
 bool For::optimize(StatementScope& scope)
 {
 	var_init.optimize(local_scope);
-	loop.optimize(local_scope);
-
-	return true;
+	return loop.optimize(local_scope);
 }
 
 bytecodes_t For::generate_codes() const
