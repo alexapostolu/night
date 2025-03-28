@@ -73,10 +73,13 @@ night::error& night::error::get()
 	return instance;
 }
 
-void night::error::what()
+void night::error::what(bool only_warnings)
 {
 	for (auto& err : errors)
 	{
+		if (only_warnings && err.type != ErrorType::Warning)
+			continue;
+
 		/* Colour Code Error Message */
 
 		colour_code_names(err.message, '\'', yellow);

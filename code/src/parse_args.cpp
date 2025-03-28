@@ -17,6 +17,7 @@ std::string parse_args(int argc, char* argv[])
 							 "    night <file> <flag..>\n"
 							 "    night <option>\n"
 							 "flags:\n"
+							 "    -w           shows warnings\n"
 							 "    -d           shows debug info for compiler source code (for developers)\n"
 							 "options:\n"
 							 "    --help       displays this message\n"
@@ -68,6 +69,10 @@ std::string parse_args(int argc, char* argv[])
 		else if (args[i] == "-d")
 		{
 			night::error::get().debug_flag = true;
+		}
+		else if (args[i] == "-w")
+		{
+			night::error::get().warning_flag = true;
 		}
 		else
 		{

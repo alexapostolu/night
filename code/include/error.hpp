@@ -49,7 +49,7 @@ public:
 
 	bool has_minor_errors() const;
 	
-	void what();
+	void what(bool only_warnings = false);
 
 	void create_warning(
 		std::string const& msg,
@@ -90,9 +90,11 @@ private:
 
 public:
 	bool debug_flag;
+	bool warning_flag;
 
 private:
 	std::vector<ErrorData> errors;
+
 	bool has_minor_errors_;
 };
 

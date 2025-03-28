@@ -21,10 +21,16 @@ int main(int argc, char* argv[])
 		InterpreterScope scope;
 		interpret_bytecodes(scope, bytecodes);
 
+		if (night::error::get().warning_flag)
+			night::error::get().what(true);
+
 		return 0;
 	}
 	catch (night::error& e) {
 		e.what();
+
+		if (night::error::get().warning_flag)
+			night::error::get().what(true);
 
 		return 1;
 	}

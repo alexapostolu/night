@@ -41,13 +41,23 @@ std::vector<stmt_p> parse_stmts(Lexer& lexer, bool requires_curly, bool* contain
 
 		bool body_contains_return = false;
 
+		int has_return = 0;
+
 		while (lexer.curr().type != TokenType::CLOSE_CURLY)
 		{
 			stmts.push_back(parse_stmt(lexer, &body_contains_return));
 
 			if (lexer.curr().type == TokenType::END_OF_FILE)
 				throw night::error::get().create_fatal_error("missing closing curly bracket", lexer.loc);
+
+			if (has_return == 0 && std::dynamic_pointer_cast<Return>(stmts.back()))
+				has_return = 1;
+			else if (has_return == 1)
+				has_return = 2;
 		}
+
+		if (has_return == 2)
+			night::error::get().create_warning("Unreachable code from return.", lexer.loc);
 
 		if (body_contains_return)
 			*contains_return = true;
