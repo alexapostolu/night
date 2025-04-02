@@ -138,19 +138,60 @@ enum : bytecode_t {
 	BytecodeType_CALL
 };
 
+//template <typename T>
+//	requires std::is_same<T, int64_t>::value ||
+//			 std::is_same<T, uint64_t>::value
+//bytecodes_t int64_to_bytes(T i)
+//{
+//	bytecodes_t bytes;
+//
+//	if (std::is_same<T, int64_t>::value)
+//		bytes.push_back(ByteType_sINT8);
+//	else
+//		bytes.push_back(ByteType_uINT8);
+//
+//	for (int j = 0; j < 8; ++j)
+//	{
+//		bytes.push_back(i & 0xFF);
+//		i >>= 8;
+//	}
+//
+//	return bytes;
+//}
+
 template <typename T>
-	requires std::is_same<T, int64_t>::value ||
+requires std::is_same<T, int8_t>::value ||
+			 std::is_same<T, uint8_t>::value ||
+			 std::is_same<T, int16_t>::value ||
+			 std::is_same<T, uint16_t>::value ||
+			 std::is_same<T, int32_t>::value ||
+			 std::is_same<T, uint32_t>::value ||
+			 std::is_same<T, int64_t>::value ||
 			 std::is_same<T, uint64_t>::value
-bytecodes_t int64_to_bytes(T i)
+bytecodes_t int_to_bytes(T i)
 {
 	bytecodes_t bytes;
-
-	if (std::is_same<T, int64_t>::value)
+	
+	if (std::is_same<T, int8_t>::value)
+		bytes.push_back(ByteType_sINT1);
+	else if (std::is_same<T, uint8_t>::value)
+		bytes.push_back(ByteType_uINT1);
+	else if (std::is_same<T, int16_t>::value)
+		bytes.push_back(ByteType_sINT2);
+	else if (std::is_same<T, uint16_t>::value)
+		bytes.push_back(ByteType_uINT2);
+	else if (std::is_same<T, int32_t>::value)
+		bytes.push_back(ByteType_sINT4);
+	else if (std::is_same<T, uint32_t>::value)
+		bytes.push_back(ByteType_uINT4);
+	else if (std::is_same<T, int64_t>::value)
 		bytes.push_back(ByteType_sINT8);
-	else
+	else if (std::is_same<T, uint64_t>::value)
 		bytes.push_back(ByteType_uINT8);
 
-	for (int j = 0; j < 8; ++j)
+	constexpr int byte_count = sizeof(T);
+	
+	for (int j = 0; j < byte_count; ++j)
 	{
 		bytes.push_back(i & 0xFF);
 		i >>= 8;

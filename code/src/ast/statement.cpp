@@ -61,14 +61,14 @@ bytecodes_t VariableInit::generate_codes() const
 	if (expr)
 		bytes = expr->generate_codes();
 	else
-		bytes = int64_to_bytes<int64_t>(0);
+		bytes = int_to_bytes<int64_t>(0);
 
 	if (type != Type::FLOAT && expr_type == Type::FLOAT)
 		bytes.push_back(BytecodeType_F2I);
 	else if (type == Type::FLOAT && expr_type != Type::FLOAT)
 		bytes.push_back(BytecodeType_I2F);
 
-	bytecodes_t id_bytes = int64_to_bytes(id.value());
+	bytecodes_t id_bytes = int_to_bytes(id.value());
 	night::container_concat(bytes, id_bytes);
 
 	bytes.push_back(ByteType_STORE);
@@ -152,7 +152,7 @@ bytecodes_t ArrayInitialization::generate_codes() const
 
 	bytecodes_t bytes = expr->generate_codes();
 
-	auto id_bytes = int64_to_bytes(id.value());
+	auto id_bytes = int_to_bytes(id.value());
 	night::container_concat(bytes, id_bytes);
 
 	bytes.push_back(ByteType_STORE);
@@ -243,7 +243,7 @@ bytecodes_t VariableAssign::generate_codes() const
 
 	if (assign_op != "=")
 	{
-		auto id_codes = int64_to_bytes(id.value());
+		auto id_codes = int_to_bytes(id.value());
 		night::container_concat(bytes, id_codes);
 
 		bytes.push_back(ByteType_LOAD);
@@ -266,7 +266,7 @@ bytecodes_t VariableAssign::generate_codes() const
 		night::container_concat(bytes, expr_codes);
 	}
 
-	auto id_bytes = int64_to_bytes(id.value());
+	auto id_bytes = int_to_bytes(id.value());
 	night::container_concat(bytes, id_bytes);
 
 	bytes.push_back(ByteType_STORE);
@@ -373,7 +373,7 @@ bytecodes_t Conditional::generate_codes() const
 
 		// Insert jump if false value before JUMP_IF_FALSE, adding on 10 space for the
 		// 10 codes to represent JUMP (1) and its value (9)
-		auto jump_if_false_codes = int64_to_bytes<uint64_t>(stmts_codes_size + 10);
+		auto jump_if_false_codes = int_to_bytes<uint64_t>(stmts_codes_size + 10);
 		night::container_insert(codes, jump_if_false_codes, jump_if_false_index);
 
 		// The value for JUMP is added last after the number of codes to jump back is
@@ -384,7 +384,7 @@ bytecodes_t Conditional::generate_codes() const
 
 	for (int i = (int)jump_offsets.size() - 1; i >= 0; --i)
 	{
-		auto offset_codes = int64_to_bytes<uint64_t>(codes.size() - jump_offsets[i] - 1);
+		auto offset_codes = int_to_bytes<uint64_t>(codes.size() - jump_offsets[i] - 1);
 		night::container_insert(codes, offset_codes, jump_offsets[i]);
 	}
 
@@ -452,12 +452,12 @@ bytecodes_t While::generate_codes() const
 
 	// Insert jump if false value before JUMP_IF_FALSE, adding on 10 space for the
 	// 10 codes to represent JUMP_N (1) and its value (9)
-	auto jump_if_false_codes = int64_to_bytes(stmt_codes_size + 10);
+	auto jump_if_false_codes = int_to_bytes(stmt_codes_size + 10);
 	night::container_insert(codes, jump_if_false_codes, jump_if_false_index);
 
 	// Insert jump negative value and JUMP_N
 	// Set jump negative value to be 8 bit
-	auto jump_n_bytes = int64_to_bytes<uint64_t>(codes.size() + 9);
+	auto jump_n_bytes = int_to_bytes<uint64_t>(codes.size() + 9);
 	codes.insert(std::end(codes), std::begin(jump_n_bytes), std::end(jump_n_bytes));
 	codes.push_back(ByteType_JUMP_N);
 
@@ -693,10 +693,10 @@ bytecodes_t ArrayMethod::generate_codes() const
 			codes.insert(std::end(codes), std::begin(subscript_codes), std::end(subscript_codes));
 		}
 
-		auto num = int64_to_bytes<uint64_t>(subscripts.size());
+		auto num = int_to_bytes<uint64_t>(subscripts.size());
 		codes.insert(std::end(codes), std::begin(num), std::end(num));
 
-		auto id_codes = int64_to_bytes(id.value());
+		auto id_codes = int_to_bytes(id.value());
 		codes.insert(std::end(codes), std::begin(id_codes), std::end(id_codes));
 		codes.push_back(BytecodeType_LOAD_ELEM);
 
@@ -742,7 +742,7 @@ bytecodes_t ArrayMethod::generate_codes() const
 		codes.insert(std::end(codes), std::begin(assign_codes), std::end(assign_codes));
 	}
 
-	auto index_bytes = int64_to_bytes(id.value());
+	auto index_bytes = int_to_bytes(id.value());
 	codes.insert(std::end(codes), std::begin(index_bytes), std::end(index_bytes));
 
 	if (assign_type.has_value() && assign_type->prim == Type::Primitive::CHAR && assign_type->dim == 0)
@@ -880,7 +880,7 @@ bytecodes_t expr::FunctionCall::generate_codes() const
 		codes.insert(std::end(codes), std::begin(param_codes), std::end(param_codes));
 	}
 
-	auto id_bytes = int64_to_bytes(id.value());
+	auto id_bytes = int_to_bytes(id.value());
 	codes.insert(std::end(codes), std::begin(id_bytes), std::end(id_bytes));
 	codes.push_back(BytecodeType_CALL);
 

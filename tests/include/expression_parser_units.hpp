@@ -5,9 +5,7 @@
 #include "ast/expression_operator.hpp"
 #include "parser/expression_parser.hpp"
 
-#include <fstream>
-#include <filesystem>
-#include <iostream>
+#include <ostream>
 
 std::ostream& operator<<(std::ostream & os, expr::BinaryOpType type)
 {

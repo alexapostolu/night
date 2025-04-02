@@ -78,9 +78,15 @@ public:
 	*/
 	void set_guard();
 
-	/* Returns the type of the expression. If std::nullopt is returned, then
+	/* 
+	 * Returns the type of the expression. If std::nullopt is returned, then
 	 * type_check() has failed and at least one minor error has been created.
+	 * 
 	 * No fatal errors should be thrown here.
+	 * 
+	 * For testing, even though some cases the expression type doesn't need to
+	 * be tested (eg. test case already ensures proper types), this function
+	 * still needs to be called as many member variable are initialized here.
 	 */
 	virtual std::optional<Type> type_check(
 		StatementScope& scope

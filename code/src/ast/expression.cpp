@@ -69,7 +69,7 @@ bytecodes_t expr::Variable::generate_codes() const
 {
 	assert(id.has_value());
 
-	auto bytes = int64_to_bytes(id.value());
+	auto bytes = int_to_bytes(id.value());
 	bytes.push_back(ByteType_LOAD);
 
 	return bytes;
@@ -176,7 +176,7 @@ bytecodes_t expr::Array::generate_codes() const
 	}
 
 	// Generate codes for size.
-	auto size_codes = int64_to_bytes<uint64_t>(elements.size());
+	auto size_codes = int_to_bytes<uint64_t>(elements.size());
 	codes.insert(std::end(codes), std::begin(size_codes), std::end(size_codes));
 
 	if (is_str())
@@ -237,7 +237,7 @@ bytecodes_t expr::Allocate::generate_codes() const
 		codes.insert(std::end(codes), std::begin(size_codes), std::end(size_codes));
 	}
 
-	auto dimension_bytes = int64_to_bytes<uint64_t>(sizes.size());
+	auto dimension_bytes = int_to_bytes<uint64_t>(sizes.size());
 	codes.insert(std::end(codes), std::begin(dimension_bytes), std::end(dimension_bytes));
 	
 	codes.push_back(BytecodeType_ALLOCATE_ARR_AND_FILL);
@@ -303,7 +303,7 @@ bytecodes_t expr::Numeric::generate_codes() const
 	}
 	else
 	{
-		return int64_to_bytes(std::get<int64_t>(val));
+		return int_to_bytes(std::get<int64_t>(val));
 	}
 }
 
