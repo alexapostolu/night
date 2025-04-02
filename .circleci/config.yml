@@ -31,6 +31,8 @@ jobs:
           command: |
             cd tests
             bash test_night.sh ../build/night
+            cd ../samples
+            bash test_samples.sh ../build/night
 
 workflows:
   version: 2

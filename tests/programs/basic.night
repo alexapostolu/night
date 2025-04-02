@@ -1,0 +1,39 @@
+print("Hello, Night!\n");
+
+#
+# Expressions, Variables and Arrays
+#
+
+print(str(2 + 3.4) + "\n");
+
+my_var0 int;
+print(my_var0);
+
+my_var1 int = 1;
+print(my_var1);
+
+my_var1 = 2 + 3;
+print(my_var1);
+
+my_arr int[2] = [ 0, 1 ];
+print(my_arr[0]);
+print(my_arr[1]);
+
+my_arr[0] = -5;
+print(str(my_arr[0] + my_arr[1] + 2.4) + "\n");
+
+#
+# Loops
+#
+
+for (i int = 0; i < 5; i += 2)
+	print(str(i) + " ");
+print("\n");
+
+i int = 0;
+while (i != 4)
+{
+	print(str(i) + " ");
+	i += 1;
+}
+print('\n');

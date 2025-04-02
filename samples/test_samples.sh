@@ -9,11 +9,11 @@ fi
 night="$1"
 
 # Night source code files for testing
-night_files=($(find programs/ -type f -name "*.night" | sort))
+night_files=($(find programs/leetcode programs/ccc programs/cs50 programs/math -type f -name "*.night" | sort))
 
 # Standard input and output files corresponding to the Night source code files
-inputs=($(find stdio/ -type f -name "*_input.txt" | sort))
-expected_outputs=($(find stdio/ -type f -name "*_expected.txt" | sort))
+inputs=($(find stdio/leetcode stdio/ccc stdio/cs50 stdio/math -type f -name "*_input.txt" | sort))
+expected_outputs=($(find stdio/leetcode stdio/ccc stdio/cs50 stdio/math -type f -name "*_expected.txt" | sort))
 
 tests_failed=0
 

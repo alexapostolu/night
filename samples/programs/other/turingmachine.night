@@ -1,0 +1,64 @@
+def find_pattern_101(tape char[]) bool {
+	# States: 0:start, 1:found 1, 2:found 10, 3:accept, 4:reject
+	state int = 0;
+	head int = 0;
+	
+	# Continue until we accept or reach end of tape
+	while (state != 3 && tape[head] != ' ') {
+		if (state == 0) {  # Looking for first 1
+			if (tape[head] == '1') {
+				tape[head] = 'X';  # Mark as read
+				state = 1;
+				head += 1;
+			}
+			else {
+				head += 1;  # Skip non-1 characters
+			}
+		}
+		elif (state == 1) {  # Found 1, looking for 0
+			if (tape[head] == '0') {
+				tape[head] = 'X';
+				state = 2;
+				head += 1;
+			}
+			elif (tape[head] == '1') {
+				# Stay in state 1 for another potential pattern
+				tape[head] = 'X';
+				head += 1;
+			}
+			else {
+				state = 0;  # Reset if we find anything else
+				head += 1;
+			}
+		}
+		elif (state == 2) {  # Found 10, looking for 1
+			if (tape[head] == '1') {
+				tape[head] = 'X';
+				state = 3;  # Accept - found 101
+			}
+			elif (tape[head] == '0') {
+				state = 1;  # Could be start of new 101
+				tape[head] = 'X';
+				head += 1;
+			}
+			else {
+				state = 0;  # Reset on any other character
+				head += 1;
+			}
+		}
+	}
+	
+	return state == 3;
+}
+
+# Test the machine
+while (true)
+{
+	print("Enter tape contents (e.g., 0010100): ");
+	tape char[] = input();
+
+	if (find_pattern_101(tape))
+		print("Accepted: Contains pattern 101\n\n");
+	else
+		print("Rejected: Does not contain pattern 101\n\n");
+}
