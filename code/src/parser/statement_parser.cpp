@@ -288,6 +288,10 @@ Conditional parse_if(Lexer& lexer, bool* contains_return)
 		}
 		else
 		{
+			if (contains_else)
+				throw night::error::get().create_fatal_error(
+					"Can not have two else statements together.", lexer.loc);
+
 			contains_else = true;
 		}
 
@@ -299,8 +303,7 @@ Conditional parse_if(Lexer& lexer, bool* contains_return)
 		if (body_contains_return)
 			number_of_returns++;
 
-	} while (lexer.curr().type == TokenType::IF	  ||
-			 lexer.curr().type == TokenType::ELIF ||
+	} while (lexer.curr().type == TokenType::ELIF ||
 			 lexer.curr().type == TokenType::ELSE);
 
 	// Every conditional must have a return statement.
