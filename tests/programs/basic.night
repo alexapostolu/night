@@ -57,3 +57,14 @@ while (i != 4)
 	i += 1;
 }
 print('\n');
+
+#
+# Functions
+#
+
+def my_func(my_param1 int, my_param2 char[]) char[]
+{
+	return str(my_param1) + my_param2;
+}
+
+print(my_func(5, "0") + "\n");

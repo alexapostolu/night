@@ -82,10 +82,11 @@ Token const& Lexer::expect(TokenType type, std::string const& err, std::source_l
 	if (!prev_tok.has_value())
 		eat();
 
-	if (curr().type != type)
+	if (curr_tok.type != type)
 		throw night::error::get().create_fatal_error("found '" + curr().str + "', expected " + night::to_str(type) + " " + err, loc, s_loc);
 
-	return curr();
+	prev_tok.reset();
+	return curr_tok;
 }
 
 Token const& Lexer::curr_is(TokenType type, std::string const& err_msg, std::source_location const& s_loc)

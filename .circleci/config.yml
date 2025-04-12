@@ -31,6 +31,7 @@ jobs:
           command: |
             cd tests
             bash test_night.sh ../build/night
+            echo
             cd ../samples
             bash test_samples.sh ../build/night
 

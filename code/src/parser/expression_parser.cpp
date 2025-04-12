@@ -162,7 +162,7 @@ expr::expr_p parse_subscript_or_array(Lexer& lexer, std::optional<TokenType> pre
 	// Parse subscript.
 	if (previous_token_type == TokenType::STRING_LIT ||
 		previous_token_type == TokenType::VARIABLE ||
-		previous_token_type == TokenType::OPEN_SQUARE)
+		previous_token_type == TokenType::CLOSE_SQUARE)
 	{
 		auto index_expr = parse_expr(lexer, true);
 		lexer.curr_is(TokenType::CLOSE_SQUARE);

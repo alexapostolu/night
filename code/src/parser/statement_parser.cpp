@@ -363,6 +363,54 @@ For parse_for(Lexer& lexer, bool* contains_return)
 	return For(lexer.loc, var_init, condition, body);
 }
 
+/*
+ * Parses a function's parameters.
+ * 
+ * Lexer starts at open bracket and ends at closing bracket.
+ */
+static std::vector<Parameter> parse_function_parameters(Lexer& lexer)
+{
+	assert(lexer.curr().type == TokenType::OPEN_BRACKET);
+
+	if (lexer.eat().type == TokenType::CLOSE_BRACKET)
+		return {};
+
+	std::vector<Parameter> parameters;
+
+	while (true)
+	{
+		std::string name = lexer.curr_is(TokenType::VARIABLE).str;
+		Location name_loc = lexer.curr().loc;
+
+		std::string type_s = lexer.expect(TokenType::TYPE).str;
+
+		// Check if the type is an array.
+		int dimensions = 0;
+		while (lexer.peek().type == TokenType::OPEN_SQUARE)
+		{
+			// Parse array size?
+
+			dimensions++;
+
+			lexer.eat();
+			lexer.expect(TokenType::CLOSE_SQUARE);
+		}
+
+		parameters.emplace_back(name, Type(type_s, dimensions), name_loc);
+
+		if (lexer.peek().type == TokenType::CLOSE_BRACKET)
+		{
+			lexer.eat();
+			break;
+		}
+
+		lexer.expect(TokenType::COMMA);
+		lexer.eat();
+	}
+
+	return parameters;
+}
+
 Function parse_func(Lexer& lexer) 
 {
 	assert(lexer.curr().type == TokenType::DEF);
@@ -374,40 +422,7 @@ Function parse_func(Lexer& lexer)
 
 	lexer.expect(TokenType::OPEN_BRACKET);
 
-	std::vector<Parameter> parameters;
-
-	while (true)
-	{
-		if (lexer.eat().type == TokenType::CLOSE_BRACKET)
-			break;
-
-		std::string name = lexer.curr_is(TokenType::VARIABLE).str;
-		Location location = lexer.loc;
-		std::string type = lexer.expect(TokenType::TYPE).str;
-		bool is_arr = false;
-
-		if (lexer.eat().type == TokenType::CLOSE_BRACKET)
-		{
-			parameters.push_back({ name, type, is_arr, location });
-			break;
-		}
-
-		if (lexer.curr().type == TokenType::OPEN_SQUARE)
-		{
-			lexer.expect(TokenType::CLOSE_SQUARE);
-			is_arr = true;
-
-			if (lexer.eat().type == TokenType::CLOSE_BRACKET)
-			{
-				parameters.push_back({ name, type, is_arr, location });
-				break;
-			}
-		}
-		
-		lexer.curr_is(TokenType::COMMA);
-
-		parameters.push_back({ name, type, is_arr, location });
-	}
+	std::vector<Parameter> parameters = parse_function_parameters(lexer);
 
 	// Parse return type.
 

@@ -425,7 +425,7 @@ std::optional<Type> expr::BinaryOp::type_check_subscript() const
 		night::error::get().create_minor_error(
 			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type.\n"
 			"The subscript operator's index can only be an integer type.", loc);
-	else if (!rhs_type->is_str() && !rhs_type->is_arr())
+	else if (!rhs_type->is_arr())
 		night::error::get().create_minor_error(
 			"The right hand expression is a " + night::to_str(rhs_type.value()) + " type.\n"
 			"The subscript operator can only be used on an array or string type.", loc);

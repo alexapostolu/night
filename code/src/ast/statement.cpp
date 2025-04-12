@@ -499,11 +499,10 @@ bytecodes_t For::generate_codes() const
 
 Parameter::Parameter(
 	std::string const& _name,
-	std::string const& _type,
-	bool is_arr,
+	Type const& _type,
 	Location const& _location)
 	: name(_name)
-	, type(_type, static_cast<int>(is_arr))
+	, type(_type)
 	, location(_location) {}
 
 Function::Function(

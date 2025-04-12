@@ -293,8 +293,7 @@ struct Parameter
 {
 	Parameter(
 		std::string const& _name,
-		std::string const& _type,
-		bool is_arr,
+		Type const& _type,
 		Location const& _location
 	);
 
