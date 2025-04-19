@@ -47,7 +47,7 @@ InterpreterScope::InterpreterScope(InterpreterScope const& parent)
 	vars = parent.vars;
 }
 
-intpr::Value& InterpreterScope::get_variable(id_t id)
+intpr::Value& InterpreterScope::get_variable(night::id_t id)
 {
 	if (vars.contains(id))
 		return vars[id];

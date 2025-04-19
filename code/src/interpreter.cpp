@@ -268,7 +268,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		case BytecodeType_F2I: s.emplace(int64_t(pop(s).as.d)); break;
 
 		case ByteType_LOAD: {
-			id_t id = pop(s).as.ui;
+			night::id_t id = pop(s).as.ui;
 			s.emplace(scope.get_variable(id));
 
 			// s.emplace(scope.vars[id].val);
@@ -277,7 +277,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		}
 
 		case ByteType_STORE: {
-			id_t id = pop(s).as.ui;
+			night::id_t id = pop(s).as.ui;
 			scope.set_variable(id, pop(s), is_global);
 			
 			//scope.vars[id] = { pop(s), !is_global };
