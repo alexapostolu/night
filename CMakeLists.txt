@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.5)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-project(night VERSION 0.0.1)
+project(night VERSION 0.0.2)
+
+set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++ -static")
 
 configure_file("${CMAKE_SOURCE_DIR}/code/version/version.hpp.in"
 			   "${CMAKE_SOURCE_DIR}/code/version/version.hpp")
@@ -15,7 +17,7 @@ include_directories("${CMAKE_SOURCE_DIR}/code/version"
 file(GLOB_RECURSE SOURCE_FILES ${CMAKE_SOURCE_DIR} "code/src/*.cpp")
 add_executable(night ${SOURCE_FILES})
 
-target_link_libraries(night -static)
+target_link_libraries(night PRIVATE -static)
 
 # Night Tests
 
