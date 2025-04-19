@@ -38,14 +38,10 @@ struct Value
 
 }
 
-struct Variable
-{
-	intpr::Value val;
-	bool is_param;
-};
+using id_t = uint64_t;
 
 // <id, val>
-using var_container = std::unordered_map<uint64_t, Variable>;
+using var_container = std::unordered_map<id_t, intpr::Value>;
 
 struct InterpreterFunction;
 using func_container = std::unordered_map<uint64_t, InterpreterFunction>;
@@ -56,8 +52,20 @@ struct InterpreterFunction
 	bytecodes_t codes;
 };
 
-struct InterpreterScope
+class InterpreterScope
 {
+public:
 	static func_container funcs;
+
+	InterpreterScope() = default;
+	InterpreterScope(InterpreterScope const& parent);
+
+	intpr::Value& get_variable(uint64_t id);
+
+	void set_variable(uint64_t id, intpr::Value const& val, bool is_global);
+
+private:
+	static var_container global_variables;
+
 	var_container vars;
 };

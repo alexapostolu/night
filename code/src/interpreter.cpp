@@ -268,15 +268,19 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		case BytecodeType_F2I: s.emplace(int64_t(pop(s).as.d)); break;
 
 		case ByteType_LOAD: {
-			uint64_t id = pop(s).as.ui;
-			s.emplace(scope.vars[id].val);
+			id_t id = pop(s).as.ui;
+			s.emplace(scope.get_variable(id));
+
+			// s.emplace(scope.vars[id].val);
 
 			break;
 		}
 
 		case ByteType_STORE: {
-			uint64_t id = pop(s).as.ui;
-			scope.vars[id] = { pop(s), !is_global };
+			id_t id = pop(s).as.ui;
+			scope.set_variable(id, pop(s), is_global);
+			
+			//scope.vars[id] = { pop(s), !is_global };
 
 			break;
 		}
@@ -284,7 +288,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		case BytecodeType_LOAD_ELEM: {
 			uint64_t id = pop(s).as.ui;
 			uint64_t num = pop(s).as.ui;
-			intpr::Value* val = &scope.vars[id].val;
+			intpr::Value* val = &scope.get_variable(id);
 			while (num--)
 			{
 				auto i = pop(s).as.i;
@@ -301,7 +305,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		case BytecodeType_STORE_INDEX_A: {
 			auto id = pop(s).as.i;
 			auto expr = pop(s);
-			intpr::Value* val = &scope.vars[id].val;
+			intpr::Value* val = &scope.get_variable(id);
 			while (!s.empty())
 			{
 				auto i = pop(s).as.i;
@@ -314,7 +318,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		case BytecodeType_STORE_INDEX_S: {
 			auto id = pop(s).as.i;
 			auto expr = pop(s);
-			scope.vars[id].val.as.s[pop(s).as.i] = (char)expr.as.i;
+			scope.get_variable(id).as.s[pop(s).as.i] = (char)expr.as.i;
 			break;
 		}
 
@@ -399,21 +403,14 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 				break;
 			}
 			default: {
-				InterpreterScope func_scope{ scope.vars };
+				InterpreterScope func_scope(scope);
 
 				for (int i = scope.funcs[id].param_ids.size() - 1; i >= 0; --i)
-					func_scope.vars[InterpreterScope::funcs[id].param_ids[i]] = { pop(s), true };
+					func_scope.set_variable(InterpreterScope::funcs[id].param_ids[i], pop(s), false);
 
 				auto rtn_value = interpret_bytecodes(func_scope, InterpreterScope::funcs[id].codes, false);
 				if (rtn_value.has_value())
 					s.push(*rtn_value);
-
-				// Update parent scope's variables to any changes made in child scope.
-				for (auto const& [id, val] : func_scope.vars)
-				{
-					if (scope.vars.contains(id) && !scope.vars[id].is_param)
-						scope.vars[id] = val;
-				}
 
 				break;
 			}

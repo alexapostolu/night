@@ -5,6 +5,7 @@
 #include <assert.h>
 
 func_container InterpreterScope::funcs = {};
+var_container InterpreterScope::global_variables = {};
 
 intpr::Value::Value(int64_t _i) { as.i = _i; }
 
@@ -40,3 +41,32 @@ intpr::Value::~Value()
 {
 	
 };
+
+InterpreterScope::InterpreterScope(InterpreterScope const& parent)
+{
+	vars = parent.vars;
+}
+
+intpr::Value& InterpreterScope::get_variable(id_t id)
+{
+	if (vars.contains(id))
+		return vars[id];
+
+	if (global_variables.contains(id))
+		return global_variables[id];
+
+	assert(false);
+}
+
+void InterpreterScope::set_variable(uint64_t id, intpr::Value const& val, bool is_global)
+{
+	if (is_global)
+		global_variables[id] = val;
+	else
+	{
+		if (global_variables.contains(id))
+			global_variables[id] = val;
+		else
+			vars[id] = val;
+	}
+}
