@@ -16,7 +16,8 @@
 
 std::optional<intpr::Value> interpret_bytecodes(
 	InterpreterScope& scope,
-	bytecodes_t const& codes
+	bytecodes_t const& codes,
+	bool is_global
 );
 
 // template can either be int64_t or uint64_t

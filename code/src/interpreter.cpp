@@ -15,7 +15,7 @@
 #include <string.h>
 #include <inttypes.h> // PRId64
 
-std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes)
+std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes, bool is_global)
 {
 	// Disable stdout buffering
 	setbuf(stdout, NULL);
@@ -269,14 +269,14 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 
 		case ByteType_LOAD: {
 			uint64_t id = pop(s).as.ui;
-			s.emplace(scope.vars[id]);
+			s.emplace(scope.vars[id].val);
 
 			break;
 		}
 
 		case ByteType_STORE: {
 			uint64_t id = pop(s).as.ui;
-			scope.vars[id] = pop(s);
+			scope.vars[id] = { pop(s), !is_global };
 
 			break;
 		}
@@ -284,7 +284,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		case BytecodeType_LOAD_ELEM: {
 			uint64_t id = pop(s).as.ui;
 			uint64_t num = pop(s).as.ui;
-			intpr::Value* val = &scope.vars[id];
+			intpr::Value* val = &scope.vars[id].val;
 			while (num--)
 			{
 				auto i = pop(s).as.i;
@@ -301,7 +301,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		case BytecodeType_STORE_INDEX_A: {
 			auto id = pop(s).as.i;
 			auto expr = pop(s);
-			intpr::Value* val = &scope.vars[id];
+			intpr::Value* val = &scope.vars[id].val;
 			while (!s.empty())
 			{
 				auto i = pop(s).as.i;
@@ -314,7 +314,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		case BytecodeType_STORE_INDEX_S: {
 			auto id = pop(s).as.i;
 			auto expr = pop(s);
-			scope.vars[id].as.s[pop(s).as.i] = (char)expr.as.i;
+			scope.vars[id].val.as.s[pop(s).as.i] = (char)expr.as.i;
 			break;
 		}
 
@@ -402,16 +402,16 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 				InterpreterScope func_scope{ scope.vars };
 
 				for (int i = scope.funcs[id].param_ids.size() - 1; i >= 0; --i)
-					func_scope.vars[InterpreterScope::funcs[id].param_ids[i]] = pop(s);
+					func_scope.vars[InterpreterScope::funcs[id].param_ids[i]] = { pop(s), true };
 
-				auto rtn_value = interpret_bytecodes(func_scope, InterpreterScope::funcs[id].codes);
+				auto rtn_value = interpret_bytecodes(func_scope, InterpreterScope::funcs[id].codes, false);
 				if (rtn_value.has_value())
 					s.push(*rtn_value);
 
 				// Update parent scope's variables to any changes made in child scope.
 				for (auto const& [id, val] : func_scope.vars)
 				{
-					if (scope.vars.contains(id))
+					if (scope.vars.contains(id) && !scope.vars[id].is_param)
 						scope.vars[id] = val;
 				}
 

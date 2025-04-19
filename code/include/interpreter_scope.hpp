@@ -38,8 +38,14 @@ struct Value
 
 }
 
+struct Variable
+{
+	intpr::Value val;
+	bool is_param;
+};
+
 // <id, val>
-using var_container = std::unordered_map<uint64_t, intpr::Value>;
+using var_container = std::unordered_map<uint64_t, Variable>;
 
 struct InterpreterFunction;
 using func_container = std::unordered_map<uint64_t, InterpreterFunction>;

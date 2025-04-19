@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
 		auto bytecodes = code_gen(statements);
 
 		InterpreterScope scope;
-		interpret_bytecodes(scope, bytecodes);
+		interpret_bytecodes(scope, bytecodes, true);
 
 		if (night::error::get().warning_flag)
 			night::error::get().what(true);
