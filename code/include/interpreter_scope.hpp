@@ -36,9 +36,11 @@ struct Value
 	~Value();
 };
 
-}
+} // intpr""
 
-using id_t = uint64_t;
+namespace night {
+	using id_t = uint64_t;
+}
 
 // <id, val>
 using var_container = std::unordered_map<id_t, intpr::Value>;
