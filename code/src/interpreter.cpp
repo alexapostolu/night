@@ -271,16 +271,12 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			night::id_t id = pop(s).as.ui;
 			s.emplace(scope.get_variable(id));
 
-			// s.emplace(scope.vars[id].val);
-
 			break;
 		}
 
 		case ByteType_STORE: {
 			night::id_t id = pop(s).as.ui;
 			scope.set_variable(id, pop(s), is_global);
-			
-			//scope.vars[id] = { pop(s), !is_global };
 
 			break;
 		}

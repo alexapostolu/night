@@ -42,7 +42,6 @@ namespace night {
 	using id_t = uint64_t;
 }
 
-// <id, val>
 using var_container = std::unordered_map<night::id_t, intpr::Value>;
 
 struct InterpreterFunction;
@@ -50,7 +49,7 @@ using func_container = std::unordered_map<uint64_t, InterpreterFunction>;
 
 struct InterpreterFunction
 {
-	std::vector<uint64_t> param_ids;
+	std::vector<night::id_t> param_ids;
 	bytecodes_t codes;
 };
 
