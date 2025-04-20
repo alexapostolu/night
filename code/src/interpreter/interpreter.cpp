@@ -1,7 +1,7 @@
-#include "interpreter.hpp"
-#include "interpreter_scope.hpp"
-#include "error.hpp"
-#include "debug.hpp"
+#include "interpreter/interpreter.hpp"
+#include "interpreter/interpreter_scope.hpp"
+#include "common/error.hpp"
+#include "common/debug.hpp"
 
 #include <iostream>
 #include <cmath>

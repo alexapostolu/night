@@ -1,5 +1,5 @@
-#include "type.hpp"
-#include "debug.hpp"
+#include "common/type.hpp"
+#include "common/debug.hpp"
 
 #include <string>
 

@@ -1,7 +1,6 @@
-#include "code_gen.hpp"
-
-#include "ast/statement.hpp"
-#include "bytecode.hpp"
+#include "parser/code_gen.hpp"
+#include "parser/ast/statement.hpp"
+#include "common/bytecode.hpp"
 
 bytecodes_t code_gen(std::vector<stmt_p>& block)
 {

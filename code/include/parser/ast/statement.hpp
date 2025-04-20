@@ -1,11 +1,11 @@
 #pragma once
 
-#include "statement_scope.hpp"
-#include "expression.hpp"
-#include "bytecode.hpp"
-#include "type.hpp"
-#include "token.hpp"
-#include "error.hpp"
+#include "parser/statement_scope.hpp"
+#include "parser/ast/expression.hpp"
+#include "common/bytecode.hpp"
+#include "common/type.hpp"
+#include "common/token.hpp"
+#include "common/error.hpp"
 
 #include <vector>
 #include <tuple>

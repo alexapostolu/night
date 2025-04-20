@@ -1,3 +1,3 @@
 #define NIGHT_vMAJOR 0
 #define NIGHT_vMINOR 0
-#define NIGHT_vPATCH 2
+#define NIGHT_vPATCH 3

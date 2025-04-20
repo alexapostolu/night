@@ -1,4 +1,4 @@
-#include "bytecode.hpp"
+#include "common/bytecode.hpp"
 
 #include <limits>
 #include <string>

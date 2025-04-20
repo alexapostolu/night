@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lexer.hpp"
+#include "lexer/lexer.hpp"
 #include "ast/statement.hpp"
 #include "ast/expression.hpp"
 

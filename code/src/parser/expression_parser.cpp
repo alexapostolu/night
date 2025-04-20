@@ -1,11 +1,11 @@
 #include "parser/expression_parser.hpp"
 
-#include "lexer.hpp"
-#include "ast/expression.hpp"
-#include "ast/expression_operator.hpp"
-#include "ast/statement.hpp"
+#include "lexer/lexer.hpp"
+#include "parser/ast/expression.hpp"
+#include "parser/ast/expression_operator.hpp"
+#include "parser/ast/statement.hpp"
 #include "parser/statement_parser.hpp"
-#include "token.hpp"
+#include "common/token.hpp"
 
 #include <vector>
 #include <memory>

@@ -1,7 +1,7 @@
-#include "statement_scope.hpp"
-#include "ast/expression.hpp"
-#include "type.hpp"
-#include "error.hpp"
+#include "parser/statement_scope.hpp"
+#include "parser/ast/expression.hpp"
+#include "common/type.hpp"
+#include "common/error.hpp"
 
 #include <limits>
 #include <optional>

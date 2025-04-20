@@ -1,6 +1,7 @@
-#include "interpreter_scope.hpp"
+#include "interpreter/interpreter_scope.hpp"
 
 #include <stdexcept>
+#include <stdint.h>
 #include <string.h>
 #include <assert.h>
 

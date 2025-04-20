@@ -1,8 +1,8 @@
 #include "parse_args.hpp"
 #include "parser/statement_parser.hpp"
-#include "code_gen.hpp"
-#include "interpreter.hpp"
-#include "error.hpp"
+#include "parser/code_gen.hpp"
+#include "interpreter/interpreter.hpp"
+#include "common/error.hpp"
 
 #include <iostream>
 #include <exception>
@@ -35,9 +35,9 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	catch (std::exception const& e) {
-		std::cout << "oops! we have come across an unexpected error!\n\n"
-				  << e.what() << "\n\n"
-				  << "please submit an issue on github, https://github.com/alexapostolu/night\n";
+		std::cout << "Oops! We've come across an unexpected error!\n\n"
+				  << e.what() << "\n"
+				  << "Please submit an issue on Github, https://github.com/alexapostolu/night\n";
 
 		return 1;
 	}

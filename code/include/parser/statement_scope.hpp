@@ -1,8 +1,8 @@
 #pragma once
 
-#include "bytecode.hpp"
-#include "type.hpp"
-#include "error.hpp"
+#include "common/bytecode.hpp"
+#include "common/type.hpp"
+#include "common/error.hpp"
 
 #include <unordered_map>
 #include <vector>

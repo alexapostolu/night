@@ -1,10 +1,10 @@
 #include "parser/statement_parser.hpp"
 
-#include "lexer.hpp"
-#include "ast/statement.hpp"
-#include "ast/expression.hpp"
+#include "lexer/lexer.hpp"
+#include "parser/ast/statement.hpp"
+#include "parser/ast/expression.hpp"
 #include "parser/expression_parser.hpp"
-#include "error.hpp"
+#include "common/error.hpp"
 
 #include <unordered_set>
 #include <vector>

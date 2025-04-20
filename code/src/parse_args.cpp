@@ -1,6 +1,6 @@
 #include "parse_args.hpp"
 
-#include "error.hpp"
+#include "common/error.hpp"
 #include "version.hpp"
 
 #include <iostream>

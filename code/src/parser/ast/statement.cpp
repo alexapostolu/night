@@ -1,12 +1,12 @@
-#include "ast/statement.hpp"
+#include "parser/ast/statement.hpp"
 
-#include "bytecode.hpp"
-#include "interpreter_scope.hpp"
-#include "statement_scope.hpp"
-#include "type.hpp"
-#include "util.hpp"
-#include "error.hpp"
-#include "debug.hpp"
+#include "common/bytecode.hpp"
+#include "interpreter/interpreter_scope.hpp"
+#include "parser/statement_scope.hpp"
+#include "common/type.hpp"
+#include "common/util.hpp"
+#include "common/error.hpp"
+#include "common/debug.hpp"
 
 #include <limits>
 #include <iterator>

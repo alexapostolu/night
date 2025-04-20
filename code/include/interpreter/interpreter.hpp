@@ -1,8 +1,8 @@
 #pragma once
 
 #include "interpreter_scope.hpp"
-#include "bytecode.hpp"
-#include "debug.hpp"
+#include "common/bytecode.hpp"
+#include "common/debug.hpp"
 
 #include <math.h>
 #include <stack>

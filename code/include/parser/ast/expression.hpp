@@ -9,9 +9,9 @@
 
 #pragma once
 
-#include "statement_scope.hpp"
-#include "bytecode.hpp"
-#include "type.hpp"
+#include "parser/statement_scope.hpp"
+#include "common/bytecode.hpp"
+#include "common/type.hpp"
 
 #include <memory>
 #include <variant>

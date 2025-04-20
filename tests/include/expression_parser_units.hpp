@@ -1,8 +1,8 @@
 #pragma once
 
 #include "ntest.hpp"
-#include "lexer.hpp"
-#include "ast/expression_operator.hpp"
+#include "lexer/lexer.hpp"
+#include "parser/ast/expression_operator.hpp"
 #include "parser/expression_parser.hpp"
 
 #include <ostream>

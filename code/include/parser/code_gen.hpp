@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ast/statement.hpp"
-#include "bytecode.hpp"
+#include "common/bytecode.hpp"
 
 #include <vector>
 

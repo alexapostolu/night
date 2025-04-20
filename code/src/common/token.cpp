@@ -1,5 +1,5 @@
-#include "token.hpp"
-#include "debug.hpp"
+#include "common/token.hpp"
+#include "common/debug.hpp"
 
 #include <string>
 

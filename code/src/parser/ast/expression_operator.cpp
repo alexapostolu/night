@@ -1,7 +1,7 @@
-#include "ast/expression_operator.hpp"
-#include "ast/expression.hpp"
-#include "util.hpp"
-#include "debug.hpp"
+#include "parser/ast/expression_operator.hpp"
+#include "parser/ast/expression.hpp"
+#include "common/util.hpp"
+#include "common/debug.hpp"
 
 #include <assert.h>
 

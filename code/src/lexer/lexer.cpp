@@ -1,6 +1,6 @@
-#include "lexer.hpp"
-#include "token.hpp"
-#include "error.hpp"
+#include "lexer/lexer.hpp"
+#include "common/token.hpp"
+#include "common/error.hpp"
 
 #include <fstream>
 #include <iostream>

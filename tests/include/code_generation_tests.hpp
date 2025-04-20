@@ -1,14 +1,14 @@
 #pragma once
 
 #include "ntest.hpp"
-#include "lexer.hpp"
-#include "statement_scope.hpp"
-#include "bytecode.hpp"
+#include "lexer/lexer.hpp"
+#include "parser/statement_scope.hpp"
+#include "common/bytecode.hpp"
 
 #include "parser/statement_parser.hpp"
-#include "code_gen.hpp"
-#include "interpreter.hpp"
-#include "error.hpp"
+#include "parser/code_gen.hpp"
+#include "interpreter/interpreter.hpp"
+#include "common/error.hpp"
 
 std::string test_code_gen_expression_basic()
 {

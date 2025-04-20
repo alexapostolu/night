@@ -1,11 +1,11 @@
-#include "ast/expression.hpp"
+#include "parser/ast/expression.hpp"
 
-#include "statement_scope.hpp"
-#include "bytecode.hpp"
-#include "type.hpp"
-#include "util.hpp"
-#include "error.hpp"
-#include "debug.hpp"
+#include "parser/statement_scope.hpp"
+#include "common/bytecode.hpp"
+#include "common/type.hpp"
+#include "common/util.hpp"
+#include "common/error.hpp"
+#include "common/debug.hpp"
 
 #include <optional>
 #include <memory>

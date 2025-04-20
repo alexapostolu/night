@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bytecode.hpp"
+#include "common/bytecode.hpp"
 
 #include <unordered_map>
 #include <vector>
