@@ -209,9 +209,6 @@ private:
 	// Initialized in type_check().
 	// Used to determine type of operator bytecode in generate_codes().
 	std::optional<Type> lhs_type, rhs_type;
-
-	// Optionally initialized in type_check().
-	std::optional<bytecode_t> cast_lhs, cast_rhs;
 };
 
 } // night::

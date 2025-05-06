@@ -150,9 +150,7 @@ public:
 	bytecodes_t generate_codes() const override;
 
 	// Precondition:
-	//    'arr' is not null
-	//    The reason for this is if `arr` is null, then there would be no way
-	//    to modify the original array as this function does not return a value
+	//    'expr' is not null
 	// 'type' is to set type_conversions for Array
 	void fill_array(Type const& type, expr::expr_p expr, int depth) const;
 
@@ -200,8 +198,11 @@ private:
 	std::string assign_op;
 	expr::expr_p expr;
 
-	std::optional<Type> assign_type;
-	std::optional<night::id_t> id;
+	// Initialized in check().
+	StatementVariable const* variable;
+
+	// Initialized in check().
+	std::optional<Type> expr_type;
 };
 
 

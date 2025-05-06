@@ -18,27 +18,20 @@ Type::Type(Primitive _prim, int _dim)
 
 bool Type::operator==(Primitive _prim) const
 {
-	return prim == _prim && !is_arr();
+	return prim == _prim && dim == 0;
 }
 
-bool Type::is_prim() const { return !is_arr(); }
+bool Type::operator==(Type const& _type) const
+{
+	return prim == _type.prim &&
+		   dim  == _type.dim;
+}
+
+bool Type::is_prim() const { return !dim; }
 
 bool Type::is_arr() const { return dim; }
 
 bool Type::is_str() const { return prim == Primitive::CHAR && dim == 1; }
-
-bool is_same(std::optional<Type> const& type1, std::optional<Type> const& type2)
-{
-	return is_same_or_primitive(type1, type2) && type1->prim == type2->prim;
-}
-
-bool is_same_or_primitive(std::optional<Type> const& type1, std::optional<Type> const& type2)
-{
-	if (!type1.has_value() || !type2.has_value())
-		return true;
-
-	return type1->dim == type2->dim;
-}
 
 std::string night::to_str(Type const& type)
 {

@@ -264,9 +264,6 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		case BytecodeType_INDEX_S: push_subscript(s, true); break;
 		case BytecodeType_INDEX_A: push_subscript(s, false); break;
 
-		case BytecodeType_I2F: s.emplace(float(pop(s).as.i)); break;
-		case BytecodeType_F2I: s.emplace(int64_t(pop(s).as.d)); break;
-
 		case ByteType_LOAD: {
 			night::id_t id = pop(s).as.ui;
 			s.emplace(scope.get_variable(id));
@@ -276,7 +273,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 
 		case ByteType_STORE: {
 			night::id_t id = pop(s).as.ui;
-			scope.set_variable(id, pop(s), is_global);
+			scope.set_variable(id, pop(s));
 
 			break;
 		}
@@ -341,7 +338,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		}
 
 		case BytecodeType_CALL: {
-			int64_t id = pop(s).as.i;
+			night::id_t id = pop(s).as.i;
 
 			switch (id)
 			{
@@ -402,7 +399,7 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 				InterpreterScope func_scope(scope);
 
 				for (int i = scope.funcs[id].param_ids.size() - 1; i >= 0; --i)
-					func_scope.set_variable(InterpreterScope::funcs[id].param_ids[i], pop(s), false);
+					func_scope.set_variable(InterpreterScope::funcs[id].param_ids[i], pop(s));
 
 				auto rtn_value = interpret_bytecodes(func_scope, InterpreterScope::funcs[id].codes, false);
 				if (rtn_value.has_value())

@@ -6,7 +6,6 @@
 #include <assert.h>
 
 func_container InterpreterScope::funcs = {};
-var_container InterpreterScope::global_variables = {};
 
 intpr::Value::Value(int64_t _i) { as.i = _i; }
 
@@ -53,21 +52,15 @@ intpr::Value& InterpreterScope::get_variable(night::id_t id)
 	if (vars.contains(id))
 		return vars[id];
 
-	if (global_variables.contains(id))
-		return global_variables[id];
-
-	assert(false);
+	assert(parent);
+	return parent->get_variable(id);
 }
 
-void InterpreterScope::set_variable(uint64_t id, intpr::Value const& val, bool is_global)
+void InterpreterScope::set_variable(night::id_t id, intpr::Value const& val)
 {
-	if (is_global)
-		global_variables[id] = val;
-	else
-	{
-		if (global_variables.contains(id))
-			global_variables[id] = val;
-		else
-			vars[id] = val;
-	}
+	if (vars.contains(id))
+		vars[id] = val;
+
+	assert(parent);
+	return parent->set_variable(id, val);
 }

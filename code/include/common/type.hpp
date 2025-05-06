@@ -35,26 +35,15 @@ struct Type
 	Type() = default;
 
 	Type(std::string const& _type, int _dim = 0);
-	Type(Primitive _type, int _dim = 0);
+	Type(Primitive _prim, int _dim = 0);
 
-	bool operator==(Primitive _type) const;
+	bool operator==(Primitive _prim) const;
+	bool operator==(Type const& _type) const;
 };
-
-/*
- * 'is_same' compares two types by their primitives and dimensions.
- * 'is_same_or_primitive' compares types by only their dimensions (treats
- *    primitive types as the same).
- * 
- * In both functions, if one or both types are nullopt, then true is returned.
- * This is because when type checking, it is assumed a nullopt type has already
- * created a minor error, so no further errors need to be generated.
- */
-bool is_same(std::optional<Type> const& type1, std::optional<Type> const& type2);
-bool is_same_or_primitive(std::optional<Type> const& type1, std::optional<Type> const& type2);
 
 namespace night
 {
 
-std::string to_str(Type const& _type);
+std::string to_str(Type const& type);
 
 }

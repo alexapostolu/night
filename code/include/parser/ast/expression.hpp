@@ -161,9 +161,7 @@ public:
 	Array(
 		Location const& _loc,
 		std::vector<expr_p> const& _elements,
-		bool _is_str_,
-		std::optional<Type> const& _type_convert = std::nullopt,
-		std::vector<std::optional<bytecode_t>> const& _type_conversion = {}
+		bool _is_str_
 	);
 
 	void insert_node(
@@ -193,9 +191,6 @@ public:
 	// Note: Strings are stored as character arrays, but have special
 	// properties such as being able to work with addition.
 	bool is_str_;
-
-	std::optional<Type> type_convert;
-	std::vector<std::optional<bytecode_t>> type_conversion;
 };
 
 

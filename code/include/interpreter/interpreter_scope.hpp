@@ -61,12 +61,11 @@ public:
 	InterpreterScope() = default;
 	InterpreterScope(InterpreterScope const& parent);
 
-	intpr::Value& get_variable(uint64_t id);
+	intpr::Value& get_variable(night::id_t id);
 
-	void set_variable(uint64_t id, intpr::Value const& val, bool is_global);
+	void set_variable(night::id_t id, intpr::Value const& val);
 
 private:
-	static var_container global_variables;
-
+	InterpreterScope* parent;
 	var_container vars;
 };

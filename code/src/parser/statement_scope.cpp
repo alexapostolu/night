@@ -117,8 +117,7 @@ std::optional<night::id_t> StatementScope::create_function(
 	for (; it != range_end; ++it)
 	{
 		if (std::equal(std::begin(param_types), std::end(param_types),
-					   std::begin(it->second.param_types), std::end(it->second.param_types),
-					   is_same))
+					   std::begin(it->second.param_types), std::end(it->second.param_types)))
 		{
 			night::error::get().create_minor_error(
 				"Function '" + name + "' has already been defined.", name_location);

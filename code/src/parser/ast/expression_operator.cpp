@@ -179,16 +179,14 @@ expr::BinaryOp::BinaryOp(
 	)
 	, operator_type(std::get<BinaryOpType>(operators.at(_operator)))
 	, lhs(nullptr), rhs(nullptr)
-	, lhs_type(std::nullopt), rhs_type(std::nullopt)
-	, cast_lhs(std::nullopt), cast_rhs(std::nullopt) {}
+	, lhs_type(std::nullopt), rhs_type(std::nullopt) {}
 
 expr::BinaryOp::BinaryOp(
 	BinaryOp const& other)
 	: Expression(other.loc, other.precedence_)
 	, operator_type(other.operator_type)
 	, lhs(other.lhs), rhs(other.rhs)
-	, lhs_type(other.lhs_type), rhs_type(other.rhs_type)
-	, cast_lhs(other.cast_lhs), cast_rhs(other.cast_rhs) {}
+	, lhs_type(other.lhs_type), rhs_type(other.rhs_type) {}
 
 void expr::BinaryOp::insert_node(
 	expr::expr_p node,
@@ -275,42 +273,17 @@ std::optional<Type> expr::BinaryOp::type_check_arithmetic()
 {
 	assert(lhs_type.has_value() && rhs_type.has_value());
 
-	if (lhs_type->is_prim() && rhs_type->is_prim())
+	if (lhs_type != rhs_type || lhs_type->is_arr() || rhs_type->is_arr())
 	{
-		if (lhs_type == Type::FLOAT)
-		{
-			if (rhs_type != Type::FLOAT)
-				cast_rhs = BytecodeType_I2F;
-
-			return Type::FLOAT;
-		}
-
-		if (rhs_type == Type::FLOAT)
-		{
-			if (lhs_type != Type::FLOAT)
-				cast_lhs = BytecodeType_I2F;
-
-			return Type::FLOAT;
-		}
-
-		return Type::INT;
-	}
-
-	if (!lhs_type->is_prim() && rhs_type->is_prim())
-		night::error::get().create_minor_error(
-			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type.\n"
-			"The " + operator_type_to_str() + " operator can only be used on two primitive types.", loc);
-	else if (lhs_type->is_prim() && !rhs_type->is_prim())
-		night::error::get().create_minor_error(
-			"The right hand expression is a " + night::to_str(lhs_type.value()) + " type.\n"
-			"The " + operator_type_to_str() + " operator can only be used on two primitive types.", loc);
-	else
 		night::error::get().create_minor_error(
 			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type and "
 			"the right hand expression is a " + night::to_str(rhs_type.value()) + " type.\n"
-			"The " + operator_type_to_str() + " operator can only be used on two integer types.", loc);
+			"The " + operator_type_to_str() + " operator can only be used on the same primitive types.", loc);
 
-	return std::nullopt;
+		return std::nullopt;
+	}
+
+	return lhs_type;
 }
 
 std::optional<Type> expr::BinaryOp::type_check_mod() const
@@ -344,67 +317,34 @@ std::optional<Type> expr::BinaryOp::type_check_comparision()
 	if (lhs_type->is_str() && rhs_type->is_str())
 		return Type::BOOL;
 
-	if (!lhs_type->is_arr() && !rhs_type->is_arr())
+	if (lhs_type != rhs_type || lhs_type->is_arr() || rhs_type->is_arr())
 	{
-		if (lhs_type == Type::FLOAT && rhs_type != Type::FLOAT)
-			cast_rhs = BytecodeType_I2F;
-		else if (rhs_type == Type::FLOAT && lhs_type != Type::FLOAT)
-			cast_lhs = BytecodeType_I2F;
+		night::error::get().create_minor_error(
+			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type and "
+			"the right hand expression is a " + night::to_str(rhs_type.value()) + " type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on the same primitive or string types.", loc);
 
-		return Type::BOOL;
+		return std::nullopt;
 	}
 
-	if (lhs_type->is_arr() && !rhs_type->is_arr())
-		night::error::get().create_minor_error(
-			"The left hand expression is an array type.\n"
-			"The " + operator_type_to_str() + " operator can only be used on two non-array types.", loc);
-	else if (!lhs_type->is_arr() && rhs_type->is_arr())
-		night::error::get().create_minor_error(
-			"The right hand expression is a " + night::to_str(lhs_type.value()) + " type.\n"
-			"The " + operator_type_to_str() + " operator can only be used on two non-array types.", loc);
-	else
-		night::error::get().create_minor_error(
-			"The left and right hand expressions are both array types.\n"
-			"The " + operator_type_to_str() + " operator can only be used on two non-array types.", loc);
-
-	return std::nullopt;
+	return Type::BOOL;
 }
 
 std::optional<Type> expr::BinaryOp::type_check_boolean()
 {
 	assert(lhs_type.has_value() && rhs_type.has_value());
 
-	if (!lhs_type->is_arr() && !rhs_type->is_arr())
+	if (lhs_type != rhs_type || lhs_type->is_arr() || rhs_type->is_arr())
 	{
-		if (lhs_type == Type::FLOAT)
-		{
-			if (rhs_type != Type::FLOAT)
-				cast_rhs = BytecodeType_I2F;
-		}
-		else if (rhs_type != Type::FLOAT)
-		{
-			if (lhs_type != Type::FLOAT)
-				cast_lhs = BytecodeType_I2F;
-		}
-
-		return Type::BOOL;
-	}
-
-	if (!lhs_type->is_prim() && rhs_type->is_prim())
-		night::error::get().create_minor_error(
-			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type.\n"
-			"The " + operator_type_to_str() + " operator can only be used on two primitive types.", loc);
-	else if (lhs_type->is_prim() && !rhs_type->is_prim())
-		night::error::get().create_minor_error(
-			"The right hand expression is a " + night::to_str(lhs_type.value()) + " type.\n"
-			"The " + operator_type_to_str() + " operator can only be used on two primitive types.", loc);
-	else
 		night::error::get().create_minor_error(
 			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type and "
 			"the right hand expression is a " + night::to_str(rhs_type.value()) + " type.\n"
-			"The " + operator_type_to_str() + " operator can only be used on two primitive types.", loc);
+			"The " + operator_type_to_str() + " operator can only be used on the same primitive types.", loc);
 
-	return std::nullopt;
+		return std::nullopt;
+	}
+
+	return Type::BOOL;
 }
 
 std::optional<Type> expr::BinaryOp::type_check_subscript() const
@@ -525,17 +465,9 @@ bytecodes_t expr::BinaryOp::generate_codes() const
 
 	bytecodes_t bytes;
 
-	// Generate left hand side bytes.
 	night::container_concat(bytes, lhs->generate_codes());
-	if (cast_lhs.has_value())
-		bytes.push_back(cast_lhs.value());
-
-	// Generate right hand side bytes.
 	night::container_concat(bytes, rhs->generate_codes());
-	if (cast_rhs.has_value())
-		bytes.push_back(cast_rhs.value());
 
-	// Generate operator byte.
 	bytes.push_back(generate_operator_byte());
 
 	return bytes;

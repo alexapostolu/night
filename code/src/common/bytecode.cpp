@@ -60,9 +60,6 @@ std::string night::to_str(bytecode_t type)
 	case BytecodeType_INDEX_S: return "INDEX_S";
 	case BytecodeType_INDEX_A: return "INDEX_A";
 
-	case BytecodeType_I2F: return "I2F";
-	case BytecodeType_F2I: return "F2I";
-
 	case ByteType_LOAD: return "LOAD";
 	case BytecodeType_LOAD_ELEM: return "LOAD_ELEM";
 

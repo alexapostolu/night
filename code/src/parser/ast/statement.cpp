@@ -1,8 +1,9 @@
 #include "parser/ast/statement.hpp"
+#include "parser/statement_scope.hpp"
+
+#include "interpreter/interpreter_scope.hpp"
 
 #include "common/bytecode.hpp"
-#include "interpreter/interpreter_scope.hpp"
-#include "parser/statement_scope.hpp"
 #include "common/type.hpp"
 #include "common/util.hpp"
 #include "common/error.hpp"
@@ -37,7 +38,7 @@ void VariableInit::check(StatementScope& scope)
 	{
 		expr_type = expr->type_check(scope);
 
-		if (expr_type.has_value() && !is_same_or_primitive(type, expr_type))
+		if (expr_type.has_value() && type != expr_type)
 			night::error::get().create_minor_error(
 				"Variable '" + name + "' of type '" + night::to_str(type) +
 				"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'.", name_loc);
@@ -63,11 +64,6 @@ bytecodes_t VariableInit::generate_codes() const
 	else
 		bytes = int_to_bytes<int64_t>(0);
 
-	if (type != Type::FLOAT && expr_type == Type::FLOAT)
-		bytes.push_back(BytecodeType_F2I);
-	else if (type == Type::FLOAT && expr_type != Type::FLOAT)
-		bytes.push_back(BytecodeType_I2F);
-
 	bytecodes_t id_bytes = int_to_bytes(id.value());
 	night::container_concat(bytes, id_bytes);
 
@@ -85,12 +81,13 @@ ArrayInitialization::ArrayInitialization(
 	expr::expr_p const& _expr)
 	: name(_name)
 	, name_loc(_name_location)
-	, type(_type, (int)_arr_sizes.size())
+	, type(_type, static_cast<int>(_arr_sizes.size()))
 	, arr_sizes(_arr_sizes)
 	, expr(_expr) {}
 
 void ArrayInitialization::check(StatementScope& scope)
 {
+	// Type check array sizes.
 	for (expr::expr_p& arr_size : arr_sizes)
 	{
 		if (!arr_size)
@@ -112,7 +109,7 @@ void ArrayInitialization::check(StatementScope& scope)
 	{
 		expr_type = expr->type_check(scope);
 
-		if (expr_type.has_value() && !is_same_or_primitive(type, expr_type))
+		if (expr_type.has_value() && type != expr_type)
 			night::error::get().create_minor_error(
 				"Variable '" + name + "' of type '" + night::to_str(type) +
 				"' can not be initialized with expression of type '" + night::to_str(*expr_type) + "'", name_loc);
@@ -169,10 +166,9 @@ void ArrayInitialization::fill_array(Type const& type, expr::expr_p expr, int de
 	{
 		if (depth == arr_sizes_numerics.size() - 1)
 		{
-			for (int i = (int)arr->elements.size(); i < arr_sizes_numerics[depth]; ++i)
+			for (std::size_t i = arr->elements.size(); i < arr_sizes_numerics[depth]; ++i)
 			{
 				arr->elements.push_back(std::make_shared<expr::Numeric>(name_loc, type.prim, (int64_t)0));
-				arr->type_conversion.push_back(std::nullopt);
 			}
 
 			return;
@@ -201,27 +197,23 @@ VariableAssign::VariableAssign(
 	, name_loc(_name_loc)
 	, assign_op(_assign_op)
 	, expr(_expr)
-	, assign_type(std::nullopt)
-	, id(std::nullopt) {}
+	, variable(nullptr)
+	, expr_type(std::nullopt) {}
 
 void VariableAssign::check(StatementScope& scope)
 {
 	assert(expr);
 
-	auto variable = scope.get_variable(name, name_loc);
-	if (variable)
-		id = variable->id;
+	variable = scope.get_variable(name, name_loc);
 
-	auto expr_type = expr->type_check(scope);
+	expr_type = expr->type_check(scope);
 	if (!expr_type.has_value())
 		return;
 
-	if (variable && !is_same_or_primitive(variable->type, *expr_type))
+	if (variable && variable->type != expr_type)
 		night::error::get().create_minor_error(
 			"Variable '" + name + "' of type '" + night::to_str(variable->type) +
-			"can not be assigned to type '" + night::to_str(*expr_type) + "'.", name_loc);
-
-	assign_type = expr_type.value();
+			"can not be assigned to expression of type '" + night::to_str(*expr_type) + "'.", name_loc);
 }
 
 bool VariableAssign::optimize(StatementScope& scope)
@@ -232,6 +224,9 @@ bool VariableAssign::optimize(StatementScope& scope)
 
 bytecodes_t VariableAssign::generate_codes() const
 {
+	assert(variable);
+	assert(expr_type.has_value());
+
 	static std::unordered_map<std::string, std::pair<bytecode_t, bytecode_t>> operator_bytes{
 		{ "+=", {BytecodeType_ADD_I, BytecodeType_ADD_F} },
 		{ "-=", {BytecodeType_SUB_I, BytecodeType_SUB_F} },
@@ -243,22 +238,22 @@ bytecodes_t VariableAssign::generate_codes() const
 
 	if (assign_op != "=")
 	{
-		auto id_codes = int_to_bytes(id.value());
+		bytecodes_t id_codes = int_to_bytes(variable->id);
 		night::container_concat(bytes, id_codes);
 
 		bytes.push_back(ByteType_LOAD);
 
-		auto expr_codes = expr->generate_codes();
+		bytecodes_t expr_codes = expr->generate_codes();
 		night::container_concat(bytes, expr_codes);
 
 		assert(operator_bytes.contains(assign_op));
 		auto [int_op, float_op] = operator_bytes[assign_op];
 
 		// Special case for strings.
-		if (assign_op == "+=" && is_same(*assign_type, Type(Type::CHAR, 1)))
+		if (assign_op == "+=" && expr_type.value() == Type(Type::CHAR, 1))
 			bytes.push_back(BytecodeType_ADD_S);
 		else
-			bytes.push_back(assign_type == Type::FLOAT ? float_op : int_op);
+			bytes.push_back(expr_type == Type::FLOAT ? float_op : int_op);
 	}
 	else
 	{
@@ -266,7 +261,7 @@ bytecodes_t VariableAssign::generate_codes() const
 		night::container_concat(bytes, expr_codes);
 	}
 
-	auto id_bytes = int_to_bytes(id.value());
+	auto id_bytes = int_to_bytes(variable->id);
 	night::container_concat(bytes, id_bytes);
 
 	bytes.push_back(ByteType_STORE);
@@ -600,7 +595,7 @@ void Return::check(StatementScope& scope)
 			return;
 		}
 
-		if (!is_same_or_primitive(scope.return_type, *expr_type))
+		if (scope.return_type != expr_type)
 			night::error::get().create_minor_error(
 				"found return type '" + night::to_str(*expr_type) + "', "
 				"expected return type '" + night::to_str(*scope.return_type) + "'", loc);
@@ -671,6 +666,7 @@ bytecodes_t ArrayMethod::generate_codes() const
 {
 	assert(id.has_value());
 	assert(assign_expr);
+	assert(assign_type.has_value());
 
 	bytecodes_t codes;
 
@@ -706,7 +702,7 @@ bytecodes_t ArrayMethod::generate_codes() const
 		{
 			if (assign_type == Type::FLOAT)
 				codes.push_back(BytecodeType_ADD_F);
-			else if (is_same(*assign_type, Type(Type::CHAR, 1)))
+			else if (assign_type == Type(Type::CHAR, 1))
 				codes.push_back(BytecodeType_ADD_S);
 			else
 				codes.push_back(BytecodeType_ADD_I);
@@ -812,8 +808,7 @@ std::optional<Type> expr::FunctionCall::type_check(StatementScope& scope) noexce
 	for (; funcs_with_same_name != funcs_with_same_name_end; ++funcs_with_same_name)
 	{
 		if (std::equal(std::begin(arg_types), std::end(arg_types),
-					   std::begin(funcs_with_same_name->second.param_types), std::end(funcs_with_same_name->second.param_types),
-					   is_same))
+					   std::begin(funcs_with_same_name->second.param_types), std::end(funcs_with_same_name->second.param_types)))
 			break;
 	}
 

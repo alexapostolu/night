@@ -11,6 +11,7 @@
 #include <memory>
 #include <vector>
 #include <tuple>
+#include <set>
 #include <variant>
 #include <string>
 #include <unordered_map>
@@ -76,77 +77,73 @@ bytecodes_t expr::Variable::generate_codes() const
 }
 
 
-expr::Array::Array(
-	Location const& _loc,
-	std::vector<expr_p> const& _elements,
-	bool _is_str_,
-	std::optional<Type> const& _type_convert,
-	std::vector<std::optional<bytecode_t>> const& _type_conversion)
+expr::Array::Array(Location const& _loc, std::vector<expr_p> const& _elements, bool _is_str_)
 	: Expression(_loc, Expression::single_precedence)
-	, elements(_elements), is_str_(_is_str_)
-	, type_convert(_type_convert)
-	, type_conversion(_type_conversion) {}
+	, elements(_elements)
+	, is_str_(_is_str_) {}
 
-void expr::Array::insert_node(
-	expr_p node,
-	expr_p* prev)
+void expr::Array::insert_node(expr_p node, expr_p* prev)
 {
 	assert(prev);
 
-	node->insert_node(std::make_shared<expr::Array>(loc, elements, is_str_));
+	node->insert_node(std::make_shared<Array>(*this));
 	*prev = node;
+}
+
+static bool cmp(Type const& t1, Type const& t2)
+{
+	if (t1.prim != t2.prim)
+		return t1.prim < t2.prim;
+
+	return t1.dim < t2.dim;
+};
+
+static std::string array_types_to_str(std::set<Type, decltype(&cmp)> const& types)
+{
+	std::string types_s;
+
+	for (auto it = std::cbegin(types); it != std::cend(types); ++it)
+	{
+		types_s += night::to_str(*it);
+		if (std::next(it) != std::end(types))
+			types_s += ", ";
+	}
+
+	return types_s;
 }
 
 std::optional<Type> expr::Array::type_check(StatementScope& scope) noexcept
 {
-	// Deduce the array type based on the elements. Create error if elements
-	// are different types.
+	std::set<Type, decltype(&cmp)> types;
 
-	std::optional<Type> arr_type;
-	for (auto const& elem : elements)
+	for (auto const& element : elements)
 	{
-		assert(elem);
+		assert(element);
 
-		auto elem_type = elem->type_check(scope);
-		if (!elem_type.has_value())
-		{
-			type_conversion.push_back(std::nullopt);
-			continue;
-		}
+		auto type = element->type_check(scope);
 
-		if (type_convert == Type::BOOL && elem_type == Type::FLOAT)
-			type_conversion.push_back(BytecodeType_F2I);
-		else if (type_convert == Type::FLOAT && elem_type != Type::FLOAT)
-			type_conversion.push_back(BytecodeType_I2F);
-		else if (type_convert != Type::FLOAT && elem_type == Type::FLOAT)
-			type_conversion.push_back(BytecodeType_F2I);
-		else
-			type_conversion.push_back(std::nullopt);
-
-		if (arr_type.has_value())
-		{
-			if (!arr_type->is_arr() && !elem_type->is_arr())
-			{
-				if (arr_type == Type::FLOAT || elem_type == Type::FLOAT)
-					arr_type = Type::FLOAT;
-				else if (arr_type == Type::INT || elem_type == Type::INT)
-					arr_type = Type::INT;
-				else if (arr_type == Type::CHAR || elem_type == Type::CHAR)
-					arr_type = Type::CHAR;
-				else if (arr_type == Type::BOOL || elem_type == Type::BOOL)
-					arr_type = Type::BOOL;
-			}
-		}
-		else
-		{
-			arr_type = elem_type;
-		}
+		if (type.has_value())
+			types.insert(type.value());
 	}
 
-	if (arr_type.has_value())
-		++arr_type->dim;
+	if (types.empty())
+	{
+		return std::nullopt;
+	}
+	else if (types.size() != 1)
+	{
+		night::error::get().create_warning(
+			"Array elements have different types " + array_types_to_str(types), loc);
 
-	return arr_type;
+		return std::nullopt;
+	}
+	else
+	{
+		Type array_type = *std::begin(types);
+		++array_type.dim;
+
+		return array_type;
+	}
 }
 
 expr::expr_p expr::Array::optimize(StatementScope const& scope)
@@ -154,37 +151,25 @@ expr::expr_p expr::Array::optimize(StatementScope const& scope)
 	for (auto& element : elements)
 		element = element->optimize(scope);
 
-	return std::make_shared<Array>(loc, elements, is_str_, type_convert, type_conversion);
+	return std::make_shared<Array>(*this);
 }
 
 bytecodes_t expr::Array::generate_codes() const
 {
-	bytecodes_t codes;
-
-	// Generate codes for elements.
-
-	assert(is_str() || type_conversion.size() == elements.size());
+	bytecodes_t bytes;
 
 	for (auto i = 0; i < elements.size(); ++i)
 	{
 		auto elem_codes = elements[i]->generate_codes();
-
-		if (!is_str() && type_conversion[i].has_value())
-			elem_codes.push_back((bytecode_t)*type_conversion[i]);
-
-		codes.insert(std::begin(codes), std::begin(elem_codes), std::end(elem_codes));
+		night::container_concat(bytes, elem_codes);
 	}
 
-	// Generate codes for size.
-	auto size_codes = int_to_bytes<uint64_t>(elements.size());
-	codes.insert(std::end(codes), std::begin(size_codes), std::end(size_codes));
+	auto size_bytes = int_to_bytes<uint64_t>(elements.size());
+	night::container_concat(bytes, size_bytes);
 
-	if (is_str())
-		codes.push_back((bytecode_t)BytecodeType_ALLOCATE_STR);
-	else
-		codes.push_back((bytecode_t)BytecodeType_ALLOCATE_ARR);
+	bytes.push_back(is_str() ? BytecodeType_ALLOCATE_STR : BytecodeType_ALLOCATE_ARR);
 
-	return codes;
+	return bytes;
 }
 
 bool expr::Array::is_str() const
