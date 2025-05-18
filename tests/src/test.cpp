@@ -1,6 +1,7 @@
 #include "ntest.hpp"
 #include "expression_parser_units.hpp"
 #include "code_generation_tests.hpp"
+#include "predefined_functions.hpp"
 
 #include <iostream>
 
@@ -14,6 +15,8 @@ int main()
 
 	night_test(test_code_gen_expression_basic);
 	night_test(test_code_gen_variable_init);
+
+	night_test(test_predefined_function_conversions);
 
 	ntest::clean_test_files();
 

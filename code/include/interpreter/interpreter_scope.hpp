@@ -58,12 +58,17 @@ class InterpreterScope
 public:
 	static func_container funcs;
 
-	InterpreterScope() = default;
-	InterpreterScope(InterpreterScope const& parent);
+	InterpreterScope();
+	InterpreterScope(InterpreterScope* _parent);
 
 	intpr::Value& get_variable(night::id_t id);
 
 	void set_variable(night::id_t id, intpr::Value const& val);
+
+	static InterpreterScope* global_scope;
+
+private:
+	bool has_variable(night::id_t id);
 
 private:
 	InterpreterScope* parent;

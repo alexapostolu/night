@@ -5,6 +5,7 @@
 #include <string.h>
 #include <assert.h>
 
+InterpreterScope* InterpreterScope::global_scope = nullptr;
 func_container InterpreterScope::funcs = {};
 
 intpr::Value::Value(int64_t _i) { as.i = _i; }
@@ -42,10 +43,11 @@ intpr::Value::~Value()
 	
 };
 
-InterpreterScope::InterpreterScope(InterpreterScope const& parent)
-{
-	vars = parent.vars;
-}
+InterpreterScope::InterpreterScope()
+	: parent(nullptr) {}
+
+InterpreterScope::InterpreterScope(InterpreterScope* _parent)
+	: parent(_parent) {}
 
 intpr::Value& InterpreterScope::get_variable(night::id_t id)
 {
@@ -59,8 +61,28 @@ intpr::Value& InterpreterScope::get_variable(night::id_t id)
 void InterpreterScope::set_variable(night::id_t id, intpr::Value const& val)
 {
 	if (vars.contains(id))
+	{
 		vars[id] = val;
+		return;
+	}
+
+	if (!parent || !parent->has_variable(id))
+	{
+		vars[id] = val;
+		return;
+	}
 
 	assert(parent);
-	return parent->set_variable(id, val);
+	parent->set_variable(id, val);
+}
+
+bool InterpreterScope::has_variable(night::id_t id)
+{
+	if (vars.contains(id))
+		return true;
+
+	if (!parent)
+		return false;
+
+	return parent->has_variable(id);
 }

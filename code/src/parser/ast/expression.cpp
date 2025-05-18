@@ -70,7 +70,7 @@ bytecodes_t expr::Variable::generate_codes() const
 {
 	assert(id.has_value());
 
-	auto bytes = int_to_bytes(id.value());
+	bytecodes_t bytes = int_to_bytes(id.value());
 	bytes.push_back(ByteType_LOAD);
 
 	return bytes;
@@ -90,7 +90,7 @@ void expr::Array::insert_node(expr_p node, expr_p* prev)
 	*prev = node;
 }
 
-static bool cmp(Type const& t1, Type const& t2)
+static bool cmp(Type t1, Type t2)
 {
 	if (t1.prim != t2.prim)
 		return t1.prim < t2.prim;
@@ -114,7 +114,7 @@ static std::string array_types_to_str(std::set<Type, decltype(&cmp)> const& type
 
 std::optional<Type> expr::Array::type_check(StatementScope& scope) noexcept
 {
-	std::set<Type, decltype(&cmp)> types;
+	std::set<Type, decltype(&cmp)> types(&cmp);
 
 	for (auto const& element : elements)
 	{
@@ -158,7 +158,7 @@ bytecodes_t expr::Array::generate_codes() const
 {
 	bytecodes_t bytes;
 
-	for (auto i = 0; i < elements.size(); ++i)
+	for (std::size_t i = 0; i < elements.size(); ++i)
 	{
 		auto elem_codes = elements[i]->generate_codes();
 		night::container_concat(bytes, elem_codes);

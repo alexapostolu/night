@@ -16,6 +16,9 @@ Type::Type(std::string const& _prim, int _dim)
 Type::Type(Primitive _prim, int _dim)
 	: prim(_prim), dim(_dim) {}
 
+Type::Type(Type const& _other)
+	: prim(_other.prim), dim(_other.dim) {}
+
 bool Type::operator==(Primitive _prim) const
 {
 	return prim == _prim && dim == 0;

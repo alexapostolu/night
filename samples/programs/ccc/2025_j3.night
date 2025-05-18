@@ -1,12 +1,12 @@
 def is_digit(c char) bool
 {
-	difference int = '9' - c;
+	difference int = int('9') - int(c);
 	return difference >= 0 && difference <= 9;
 }
 
 def char_to_int(c char) int
 {
-	return c - '0';
+	return int(c - '0');
 }
 
 n int = int(input());

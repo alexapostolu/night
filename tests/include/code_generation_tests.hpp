@@ -2,13 +2,13 @@
 
 #include "ntest.hpp"
 #include "lexer/lexer.hpp"
-#include "parser/statement_scope.hpp"
-#include "common/bytecode.hpp"
-
 #include "parser/statement_parser.hpp"
+#include "parser/statement_scope.hpp"
 #include "parser/code_gen.hpp"
 #include "interpreter/interpreter.hpp"
+#include "common/bytecode.hpp"
 #include "common/error.hpp"
+
 
 std::string test_code_gen_expression_basic()
 {

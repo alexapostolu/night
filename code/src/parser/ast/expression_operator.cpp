@@ -278,7 +278,7 @@ std::optional<Type> expr::BinaryOp::type_check_arithmetic()
 		night::error::get().create_minor_error(
 			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type and "
 			"the right hand expression is a " + night::to_str(rhs_type.value()) + " type.\n"
-			"The " + operator_type_to_str() + " operator can only be used on the same primitive types.", loc);
+			"The " + operator_type_to_str() + " operator can only be used on the same primitive types or two strings.", loc);
 
 		return std::nullopt;
 	}

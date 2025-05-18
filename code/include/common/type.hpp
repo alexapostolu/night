@@ -36,6 +36,7 @@ struct Type
 
 	Type(std::string const& _type, int _dim = 0);
 	Type(Primitive _prim, int _dim = 0);
+	Type(Type const& _other);
 
 	bool operator==(Primitive _prim) const;
 	bool operator==(Type const& _type) const;

@@ -166,7 +166,9 @@ void ArrayInitialization::fill_array(Type const& type, expr::expr_p expr, int de
 	{
 		if (depth == arr_sizes_numerics.size() - 1)
 		{
-			for (std::size_t i = arr->elements.size(); i < arr_sizes_numerics[depth]; ++i)
+			// arr_sizes_numerics can be -1 to signal size was not specified, so use
+			// signed type int instead of unsigned type std::size_t
+			for (int i = (int)arr->elements.size(); i < arr_sizes_numerics[depth]; ++i)
 			{
 				arr->elements.push_back(std::make_shared<expr::Numeric>(name_loc, type.prim, (int64_t)0));
 			}
@@ -197,22 +199,29 @@ VariableAssign::VariableAssign(
 	, name_loc(_name_loc)
 	, assign_op(_assign_op)
 	, expr(_expr)
-	, variable(nullptr)
 	, expr_type(std::nullopt) {}
 
 void VariableAssign::check(StatementScope& scope)
 {
 	assert(expr);
 
-	variable = scope.get_variable(name, name_loc);
+	auto variable_p = scope.get_variable(name, name_loc);
+	if (!variable_p)
+	{
+		night::error::get().create_minor_error(
+			"Variable '" + name + "' is undefined.", name_loc);
+		return;
+	}
+
+	variable = *variable_p;
 
 	expr_type = expr->type_check(scope);
 	if (!expr_type.has_value())
 		return;
 
-	if (variable && variable->type != expr_type)
+	if (variable.type != expr_type)
 		night::error::get().create_minor_error(
-			"Variable '" + name + "' of type '" + night::to_str(variable->type) +
+			"Variable '" + name + "' of type '" + night::to_str(variable.type) +
 			"can not be assigned to expression of type '" + night::to_str(*expr_type) + "'.", name_loc);
 }
 
@@ -224,7 +233,6 @@ bool VariableAssign::optimize(StatementScope& scope)
 
 bytecodes_t VariableAssign::generate_codes() const
 {
-	assert(variable);
 	assert(expr_type.has_value());
 
 	static std::unordered_map<std::string, std::pair<bytecode_t, bytecode_t>> operator_bytes{
@@ -238,7 +246,7 @@ bytecodes_t VariableAssign::generate_codes() const
 
 	if (assign_op != "=")
 	{
-		bytecodes_t id_codes = int_to_bytes(variable->id);
+		bytecodes_t id_codes = int_to_bytes(variable.id);
 		night::container_concat(bytes, id_codes);
 
 		bytes.push_back(ByteType_LOAD);
@@ -261,7 +269,7 @@ bytecodes_t VariableAssign::generate_codes() const
 		night::container_concat(bytes, expr_codes);
 	}
 
-	auto id_bytes = int_to_bytes(variable->id);
+	auto id_bytes = int_to_bytes(variable.id);
 	night::container_concat(bytes, id_bytes);
 
 	bytes.push_back(ByteType_STORE);
@@ -284,10 +292,10 @@ void Conditional::check(StatementScope& scope)
 		{
 			auto cond_type = cond->type_check(scope);
 
-			if (cond_type.has_value() && cond_type->is_arr())
+			if (cond_type.has_value() && cond_type != Type::BOOL)
 				night::error::get().create_minor_error(
-					"expected type 'bool', 'char', 'int', or float."
-					"condition is type '" + night::to_str(*cond_type) + "'", loc);
+					"Condition is type '" + night::to_str(cond_type.value()) + "'.\n"
+					"Expected type 'bool'.\n", loc);
 		}
 
 		StatementScope conditional_scope(scope);
@@ -597,8 +605,8 @@ void Return::check(StatementScope& scope)
 
 		if (scope.return_type != expr_type)
 			night::error::get().create_minor_error(
-				"found return type '" + night::to_str(*expr_type) + "', "
-				"expected return type '" + night::to_str(*scope.return_type) + "'", loc);
+				"Expected return type of " + night::to_str(scope.return_type.value()) + " to match the functions return type.\n"
+				"Found return type of " + night::to_str(expr_type.value()) + ".", loc);
 	}
 	else
 	{

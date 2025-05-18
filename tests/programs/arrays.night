@@ -17,11 +17,11 @@ print_array(my_arr, 5);
 increment_array(my_arr, 5);
 print_array(my_arr, 5);
 
-my_arr = int[5];
-print_array(my_arr, 5);
+my_arr = int[4];
+print_array(my_arr, 4);
 
 my_arr[1] = 4;
-print_array(my_arr, 5);
+print_array(my_arr, 4);
 print("\n");
 
 def print_multi_array(arr int[][][], d1 int, d2 int, d3 int) void

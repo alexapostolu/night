@@ -199,7 +199,7 @@ private:
 	expr::expr_p expr;
 
 	// Initialized in check().
-	StatementVariable const* variable;
+	StatementVariable variable;
 
 	// Initialized in check().
 	std::optional<Type> expr_type;

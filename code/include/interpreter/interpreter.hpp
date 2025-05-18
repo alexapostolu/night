@@ -17,7 +17,8 @@
 std::optional<intpr::Value> interpret_bytecodes(
 	InterpreterScope& scope,
 	bytecodes_t const& codes,
-	bool is_global
+	bool is_global,
+	char* buf = NULL
 );
 
 // template can either be int64_t or uint64_t
@@ -42,6 +43,7 @@ T interpret_int(bytecodes_t::const_iterator& it, unsigned short size)
 
 double interpret_flt(bytecodes_t::const_iterator& it, unsigned short size);
 
+char* interpret_predefined_input();
 
 // iterator
 //   start: bytecode type

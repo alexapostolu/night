@@ -2,6 +2,7 @@
 #include "interpreter/interpreter_scope.hpp"
 #include "common/error.hpp"
 #include "common/debug.hpp"
+#include "language.hpp"
 
 #include <iostream>
 #include <cmath>
@@ -15,8 +16,11 @@
 #include <string.h>
 #include <inttypes.h> // PRId64
 
-std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes, bool is_global)
+std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes, bool is_global, char* buf)
 {
+	if (!InterpreterScope::global_scope)
+		InterpreterScope::global_scope = &scope;
+
 	// Disable stdout buffering
 	setbuf(stdout, NULL);
 
@@ -342,66 +346,94 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 
 			switch (id)
 			{
-			case 0: printf(pop(s).as.i ? "true" : "false"); break;
-			case 1: printf("%c", (char)pop(s).as.i); break;
-			case 2: printf("%lld", (long long int)pop(s).as.i); break;
-			case 3: printf("%.17gf", pop(s).as.d); break;
-			case 4: printf("%s", pop(s).as.s); break;
-			case 5: push_string_input(s); break;
-			case 6: break; // char(int); can not remove bytecode because of char(2 + 3) => 2 + 3, and now we have 2, 3, + on the stack that does nothing
-			case 7: {
+			case PredefinedFunctions::PRINT_BOOL:
+				if (!buf)
+					printf(pop(s).as.i ? "true" : "false");
+				else
+					sprintf(buf + strlen(buf), pop(s).as.i ? "true" : "false");
+				break;
+			case PredefinedFunctions::PRINT_CHAR:
+				if (!buf)
+					printf("%c", (char)pop(s).as.i);
+				else
+					sprintf(buf + strlen(buf), "%c", (char)pop(s).as.i);
+				break;
+			case PredefinedFunctions::PRINT_INT:
+				if (!buf)
+					printf("%lld", pop(s).as.i);
+				else
+					sprintf(buf + strlen(buf), "%lld", pop(s).as.i);
+				break;
+			case PredefinedFunctions::PRINT_FLOAT:
+				if (!buf)
+					printf("%.17gf", pop(s).as.d);
+				else
+					sprintf(buf + strlen(buf), "%.17gf", pop(s).as.d);
+				break;
+			case PredefinedFunctions::PRINT_STR:
+				if (!buf)
+					printf("%s", pop(s).as.s);
+				else
+					sprintf(buf + strlen(buf), "%s", pop(s).as.s);
+				break;
+			case PredefinedFunctions::INPUT:
+				s.emplace(interpret_predefined_input());
+				break;
+			case PredefinedFunctions::INT_TO_CHAR:
+				//s.emplace((int64_t)int_to_char(pop(s).as.i));
+				break;
+			case PredefinedFunctions::STR_TO_CHAR: {
 				char* str = pop(s).as.s;
-				try {
-					s.emplace((int64_t)std::stoll(str));
-				}
-				catch (std::invalid_argument&) {
-					printf("Cannot convert string '%s' to integral type.\n", str);
-					exit(1);
-				}
+				if (strlen(str) != 1)
+					throw night::error::get().create_runtime_error("Could not convert string to char.");
+				
+				s.emplace((int64_t)str[0]);
 				break;
 			}
-			case 8: {
-				// char is already stored as an int, so int(char) does nothing
+			case PredefinedFunctions::BOOL_TO_INT:
+				//s.emplace((int64_t)bool_to_int((bool)pop(s).as.i));
 				break;
-			}
-			case 9: {
-				int64_t x = pop(s).as.i;
-				int length = snprintf(NULL, 0, "%" PRId64, x);
-				char* str = (char*)malloc(length + 1);
-				snprintf(str, length + 1, "%" PRId64, x);
-
-				s.emplace(str);
+			case PredefinedFunctions::CHAR_TO_INT:
+				//s.emplace((int64_t)char_to_int((char)pop(s).as.i));
 				break;
-			}
-			case 10: {
-				auto x = pop(s).as.d;
-				int length = snprintf(NULL, 0, "%f", x);
-				char* str = (char*)malloc(length + 1);
-				snprintf(str, length + 1, "%f", x);
-
-				s.emplace(str);
+			case PredefinedFunctions::FLOAT_TO_INT:
+				s.emplace((int64_t)float_to_int(pop(s).as.d));
 				break;
-			}
-			case 11: {
-				auto x = pop(s).as.i;
-				char* str = (char*)malloc(2);
-				str[0] = (char)x;
-				str[1] = '\0';
-
-				s.emplace(str);
+			case PredefinedFunctions::STR_TO_INT:
+				s.emplace((int64_t)str_to_int(pop(s).as.s));
 				break;
-			}
-			case 12: {
-				s.emplace((int64_t)strlen(pop(s).as.s));
+			case PredefinedFunctions::BOOL_TO_FLOAT:
+				s.emplace(bool_to_float((bool)pop(s).as.i));
 				break;
-			}
+			case PredefinedFunctions::CHAR_TO_FLOAT:
+				s.emplace(char_to_float((char)pop(s).as.i));
+				break;
+			case PredefinedFunctions::INT_TO_FLOAT:
+				s.emplace(int_to_float(pop(s).as.i));
+				break;
+			case PredefinedFunctions::STR_TO_FLOAT:
+				s.emplace(str_to_float(pop(s).as.s));
+				break;
+			case PredefinedFunctions::CHAR_TO_STR:
+				s.emplace(char_to_str((char)pop(s).as.i));
+				break;
+			case PredefinedFunctions::INT_TO_STR:
+				s.emplace(int_to_str(pop(s).as.i));
+				break;
+			case PredefinedFunctions::FLOAT_TO_STR:
+				s.emplace(float_to_str((float)pop(s).as.d));
+				break;
+			case PredefinedFunctions::LEN:
+				s.emplace((int64_t)len(pop(s).as.s));
+				break;
 			default: {
-				InterpreterScope func_scope(scope);
+				// Functions' only allowed parent scope is the global scope
+				InterpreterScope func_scope(InterpreterScope::global_scope);
 
 				for (int i = scope.funcs[id].param_ids.size() - 1; i >= 0; --i)
 					func_scope.set_variable(InterpreterScope::funcs[id].param_ids[i], pop(s));
 
-				auto rtn_value = interpret_bytecodes(func_scope, InterpreterScope::funcs[id].codes, false);
+				auto rtn_value = interpret_bytecodes(func_scope, InterpreterScope::funcs[id].codes, false, buf);
 				if (rtn_value.has_value())
 					s.push(*rtn_value);
 
@@ -436,13 +468,47 @@ double interpret_flt(bytecodes_t::const_iterator& it, unsigned short size)
 	return size == 4 ? f : d;
 }
 
+char* interpret_predefined_input()
+{
+	int size = 32;
+	char* buf = (char*)malloc(sizeof(char) * size);
+
+	if (!buf)
+		exit(1);
+
+	int c;
+	int len = 0;
+	while ((c = getchar()) != '\n' && c != EOF)
+	{
+		if (len == size - 1)
+		{
+			size *= 1.5;
+			char* new_buf = (char*)realloc(buf, sizeof(char) * size);
+
+			if (!new_buf)
+			{
+				free(buf);
+				exit(1);
+			}
+
+			buf = new_buf;
+		}
+
+		buf[len] = c;
+		++len;
+	}
+
+	buf[len] = '\0';
+	return buf;
+}
+
 void push_str(std::stack<intpr::Value>& s)
 {
 	uint64_t size = pop(s).as.ui;
-	char* arr = new char[size + 1];
+	char* arr = (char*)malloc((size + 1) * sizeof(char));
 
-	for (uint64_t i = 0; i < size; ++i)
-		arr[i] = (char)pop(s).as.i;
+	for (uint64_t i = size; i > 0; --i)
+		arr[i - 1] = (char)pop(s).as.i;
 
 	arr[size] = '\0';
 
@@ -456,8 +522,8 @@ void push_arr(std::stack<intpr::Value>& s)
 	arr.as.a.size = size;
 	arr.as.a.data = new intpr::Value[size];
 
-	for (uint64_t i = 0; i < size; ++i)
-		arr.as.a.data[i] = pop(s);
+	for (uint64_t i = size; i > 0; --i)
+		arr.as.a.data[i - 1] = pop(s);
 
 	s.push(arr);
 }

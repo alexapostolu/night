@@ -17,11 +17,11 @@ for (i int = 0; i < len(text); i += 1)
 		sentences += 1;
 }
 
-L float = 1.0 * letters / words * 100;
-S float = 1.0 * sentences / words * 100;
+L float = 1.0 * float(letters) / float(words) * 100.0;
+S float = 1.0 * float(sentences) / float(words) * 100.0;
 
 # +0.5 is so that float gets rounded to nearest integer
-index int = 0.0588 * L - 0.2965 * S - 15.8 + 0.5;
+index int = int(0.0588 * L - 0.2965 * S - 15.8 + 0.5);
 
 if (index < 1)
 	print("Before Grade 1");

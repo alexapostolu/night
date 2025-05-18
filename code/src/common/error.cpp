@@ -116,7 +116,7 @@ void night::error::what(bool only_warnings)
 
 		if (err.token.str.empty())
 		{
-			for (int i = 0; i < indent_size + token_position + 1; ++i)
+			for (int i = 0; i < indent_size + token_position; ++i)
 				std::cout << ' ';
 			std::cout << green << "^\n\n" << clear;
 		}

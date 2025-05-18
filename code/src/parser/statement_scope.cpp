@@ -2,6 +2,7 @@
 #include "parser/ast/expression.hpp"
 #include "common/type.hpp"
 #include "common/error.hpp"
+#include "language.hpp"
 
 #include <limits>
 #include <optional>
@@ -10,19 +11,32 @@
 #include <unordered_set>
 
 scope_func_container StatementScope::functions = {
-	{ "print", StatementFunction{ 0,  {}, { Type::BOOL		    }, std::nullopt			} },
-	{ "print", StatementFunction{ 1,  {}, { Type::CHAR		    }, std::nullopt			} },
-	{ "print", StatementFunction{ 2,  {}, { Type::INT		    }, std::nullopt			} },
-	{ "print", StatementFunction{ 3,  {}, { Type::FLOAT		    }, std::nullopt			} },
-	{ "print", StatementFunction{ 4,  {}, { Type(Type::CHAR, 1) }, std::nullopt			} },
-	{ "input", StatementFunction{ 5,  {}, {						}, Type(Type::CHAR, 1 ) } },
-	{ "char",  StatementFunction{ 6,  {}, { Type::INT			}, Type::CHAR			} },
-	{ "int",   StatementFunction{ 7,  {}, { Type(Type::CHAR, 1) }, Type::INT			} },
-	{ "int",   StatementFunction{ 8,  {}, { Type::CHAR			}, Type::INT			} },
-	{ "str",   StatementFunction{ 9,  {}, { Type::INT			}, Type(Type::CHAR, 1)  } },
-	{ "str",   StatementFunction{ 10, {}, { Type::FLOAT			}, Type(Type::CHAR, 1)  } },
-	{ "str",   StatementFunction{ 11, {}, { Type::CHAR			}, Type(Type::CHAR, 1)	} },
-	{ "len",   StatementFunction{ 12, {}, { Type(Type::CHAR, 1) }, Type::INT			} }
+	{ "print", StatementFunction{ PredefinedFunctions::PRINT_BOOL, {}, { Type::BOOL }, std::nullopt } },
+	{ "print", StatementFunction{ PredefinedFunctions::PRINT_CHAR, {}, { Type::CHAR }, std::nullopt } },
+	{ "print", StatementFunction{ PredefinedFunctions::PRINT_INT, {}, { Type::INT }, std::nullopt } },
+	{ "print", StatementFunction{ PredefinedFunctions::PRINT_FLOAT, {}, { Type::FLOAT }, std::nullopt } },
+	{ "print", StatementFunction{ PredefinedFunctions::PRINT_STR, {}, { Type(Type::CHAR, 1) }, std::nullopt } },
+	
+	{ "input", StatementFunction{ PredefinedFunctions::INPUT, {}, {}, Type(Type::CHAR, 1) } },
+	
+	{ "char",  StatementFunction{ PredefinedFunctions::INT_TO_CHAR, {}, { Type::INT }, Type::CHAR } },
+	{ "char",  StatementFunction{ PredefinedFunctions::STR_TO_CHAR, {}, { Type(Type::CHAR, 1) }, Type::CHAR}},
+	
+	{ "int",   StatementFunction{ PredefinedFunctions::BOOL_TO_INT, {}, { Type::BOOL }, Type::INT } },
+	{ "int",   StatementFunction{ PredefinedFunctions::CHAR_TO_INT, {}, { Type::CHAR }, Type::INT } },
+	{ "int",   StatementFunction{ PredefinedFunctions::FLOAT_TO_INT, {}, { Type::FLOAT }, Type::INT } },
+	{ "int",   StatementFunction{ PredefinedFunctions::STR_TO_INT, {}, { Type(Type::CHAR, 1) }, Type::INT } },
+
+	{ "float",   StatementFunction{ PredefinedFunctions::BOOL_TO_FLOAT, {}, { Type::BOOL }, Type::FLOAT } },
+	{ "float",   StatementFunction{ PredefinedFunctions::CHAR_TO_FLOAT, {}, { Type::CHAR }, Type::FLOAT } },
+	{ "float",   StatementFunction{ PredefinedFunctions::INT_TO_FLOAT, {}, { Type::INT }, Type::FLOAT } },
+	{ "float",   StatementFunction{ PredefinedFunctions::STR_TO_FLOAT, {}, { Type(Type::CHAR, 1) }, Type::FLOAT } },
+	
+	{ "str",   StatementFunction{ PredefinedFunctions::CHAR_TO_STR, {}, { Type::CHAR }, Type(Type::CHAR, 1) } },
+	{ "str",   StatementFunction{ PredefinedFunctions::INT_TO_STR, {}, { Type::INT }, Type(Type::CHAR, 1) } },
+	{ "str",   StatementFunction{ PredefinedFunctions::FLOAT_TO_STR, {}, { Type::FLOAT }, Type(Type::CHAR, 1) } },
+	
+	{ "len",   StatementFunction{ PredefinedFunctions::LEN, {}, { Type(Type::CHAR, 1) }, Type::INT } }
 };
 
 StatementScope::StatementScope()
@@ -48,15 +62,18 @@ std::optional<night::id_t> StatementScope::create_variable(
 	static night::id_t const max_variables = std::numeric_limits<night::id_t>::max();
 
 	if (variables.contains(name))
+	{
 		night::error::get().create_minor_error(
 			"Variable '" + name + "' is already defined in the current or parent scope.", name_location);
+		return std::nullopt;
+	}
 
 	if (variable_id == max_variables)
+	{
 		night::error::get().create_minor_error(
 			"Only " + std::to_string(max_variables) + " variables are allowed per scope.", name_location);
-
-	if (night::error::get().has_minor_errors())
 		return std::nullopt;
+	}
 
 	variables[name] = { variable_id, type, 0 };
 
