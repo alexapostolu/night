@@ -1,42 +1,60 @@
 version: 2.1
 
 jobs:
-  test:
+  unit-tests:
     docker:
       - image: cimg/base:edge-22.04
     steps:
       - checkout
-      # Install CMake
       - run:
-          name: Install CMake
+          name: Build and Run Unit Tests
           command: |
             sudo apt-get update
             sudo apt-get install -y cmake
-      # Create build directory and build the project
+            mkdir -p build && cd build
+            cmake .. && cmake --build .
+            ./night-tests
+
+  integration-tests:
+    docker:
+      - image: cimg/base:edge-22.04
+    steps:
+      - checkout
       - run:
-          name: Build the project
+          name: Build
           command: |
-            mkdir -p build
-            cd build
-            cmake ..
-            cmake --build . --config Release
-      # Run unit tests 
+            sudo apt-get update
+            sudo apt-get install -y cmake
+            mkdir -p build && cd build
+            cmake .. && cmake --build .
       - run:
-          name: Running unit tests   
-          command: |
-            build/night-tests
-      # Run integration tests
-      - run:
-          name: Running integration tests
+          name: Run Integration Tests
           command: |
             cd tests
             bash test_night.sh ../build/night
-            echo
-            cd ../samples
+
+  sample-tests:
+    docker:
+      - image: cimg/base:edge-22.04
+    steps:
+      - checkout
+      - run:
+          name: Build
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y cmake
+            mkdir -p build && cd build
+            cmake .. && cmake --build .
+      - run:
+          name: Run Sample Tests
+          command: |
+            cd samples
             bash test_samples.sh ../build/night
 
 workflows:
   version: 2
   tests:
     jobs:
-      - test
+      - unit-tests
+      - integration-tests
+      - sample-tests

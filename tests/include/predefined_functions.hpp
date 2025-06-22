@@ -12,9 +12,6 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-
-#include <iostream>
-#include <string>
 #include <cstdio>
 #include <fstream>
 
@@ -23,10 +20,10 @@ std::string test_predefined_function_conversions()
 	std::string file_name = create_test_file(
 		"print(char(97));"
 		"print(char(\"9\"));"
-		"print(int(true));"
-		"print(int('a'));"
-		"print(int(3.14));"
-		"print(int(\"7\"));"
+		"print(int32(true));"
+		"print(int32('a'));"
+		"print(int32(3.14));"
+		"print(int32(\"7\"));"
 		"print(float(true));"
 		"print(float('a'));"
 		"print(float(4));"

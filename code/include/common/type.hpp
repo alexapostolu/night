@@ -59,9 +59,8 @@ struct Type
 	bool operator==(Type const& _type) const;
 };
 
-namespace night
-{
+namespace night {
 
 std::string to_str(Type const& type);
 
-}
+} // night::

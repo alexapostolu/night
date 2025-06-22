@@ -42,7 +42,7 @@ std::string test_code_gen_expression_basic()
 std::string test_code_gen_variable_init()
 {
 	std::string file_name = create_test_file(
-		"my_var int = 2 + 3;"
+		"my_var int32 = 2 + 3;"
 	);
 
 	std::vector<stmt_p> statements = parse_file(file_name);
