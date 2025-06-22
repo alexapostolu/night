@@ -258,10 +258,10 @@ bytecodes_t VariableAssign::generate_codes() const
 		auto [int_op, float_op] = operator_bytes[assign_op];
 
 		// Special case for strings.
-		if (assign_op == "+=" && expr_type.value() == Type(Type::CHAR, 1))
+		if (assign_op == "+=" && expr_type.value() == Type(Primitive::CHAR, 1))
 			bytes.push_back(BytecodeType_ADD_S);
 		else
-			bytes.push_back(expr_type == Type::FLOAT ? float_op : int_op);
+			bytes.push_back(expr_type == Primitive::FLOAT ? float_op : int_op);
 	}
 	else
 	{
@@ -292,7 +292,7 @@ void Conditional::check(StatementScope& scope)
 		{
 			auto cond_type = cond->type_check(scope);
 
-			if (cond_type.has_value() && cond_type != Type::BOOL)
+			if (cond_type.has_value() && cond_type != Primitive::BOOL)
 				night::error::get().create_minor_error(
 					"Condition is type '" + night::to_str(cond_type.value()) + "'.\n"
 					"Expected type 'bool'.\n", loc);
@@ -352,7 +352,7 @@ bytecodes_t Conditional::generate_codes() const
 		}
 		else
 		{
-			auto numeric_true = expr::Numeric(loc, Type::BOOL, 1);
+			auto numeric_true = expr::Numeric(loc, Primitive::BOOL, 1);
 			auto cond_codes = numeric_true.generate_codes();
 			codes.insert(std::end(codes), std::begin(cond_codes), std::end(cond_codes));
 		}
@@ -659,7 +659,21 @@ void ArrayMethod::check(StatementScope& scope)
 	if (assign_expr)
 		assign_type = assign_expr->type_check(scope);
 
-	if (variable && assign_expr && (variable->type.dim - subscripts.size() != assign_type->dim || variable->type.prim != assign_type->prim))
+	bool ok =
+		variable->type.prim == Primitive::INT ||
+		variable->type.prim == Primitive::INT8 || variable->type.prim == Primitive::INT16 ||
+		variable->type.prim == Primitive::INT32 || variable->type.prim == Primitive::INT64 ||
+		variable->type.prim == Primitive::uINT8 || variable->type.prim == Primitive::uINT16 ||
+		variable->type.prim == Primitive::uINT32 || variable->type.prim == Primitive::uINT64;
+
+	bool ok2 = 
+		assign_type->prim == Primitive::INT ||
+		assign_type->prim == Primitive::INT8 || assign_type->prim == Primitive::INT16 ||
+		assign_type->prim == Primitive::INT32 || assign_type->prim == Primitive::INT64 ||
+		assign_type->prim == Primitive::uINT8 || assign_type->prim == Primitive::uINT16 ||
+		assign_type->prim == Primitive::uINT32 || assign_type->prim == Primitive::uINT64;
+
+	if (variable && assign_expr && (variable->type.dim - subscripts.size() != assign_type->dim || (variable->type.prim != assign_type->prim && ok != ok2)))
 		night::error::get().create_minor_error(
 			"Variable '" + var_name +
 			"' can not be assigned to type '" + night::to_str(assign_type.value()) + "'.", name_loc);
@@ -708,30 +722,30 @@ bytecodes_t ArrayMethod::generate_codes() const
 
 		if (assign_op == "+=")
 		{
-			if (assign_type == Type::FLOAT)
+			if (assign_type == Primitive::FLOAT)
 				codes.push_back(BytecodeType_ADD_F);
-			else if (assign_type == Type(Type::CHAR, 1))
+			else if (assign_type == Type(Primitive::CHAR, 1))
 				codes.push_back(BytecodeType_ADD_S);
 			else
 				codes.push_back(BytecodeType_ADD_I);
 		}
 		else if (assign_op == "-=")
 		{
-			if (assign_type == Type::FLOAT)
+			if (assign_type == Primitive::FLOAT)
 				codes.push_back(BytecodeType_SUB_F);
 			else
 				codes.push_back(BytecodeType_SUB_I);
 		}
 		else if (assign_op == "*=")
 		{
-			if (assign_type == Type::FLOAT)
+			if (assign_type == Primitive::FLOAT)
 				codes.push_back(BytecodeType_MULT_F);
 			else
 				codes.push_back(BytecodeType_MULT_I);
 		}
 		else if (assign_op == "/=")
 		{
-			if (assign_type == Type::FLOAT)
+			if (assign_type == Primitive::FLOAT)
 				codes.push_back(BytecodeType_DIV_F);
 			else
 				codes.push_back(BytecodeType_DIV_I);
@@ -748,7 +762,7 @@ bytecodes_t ArrayMethod::generate_codes() const
 	auto index_bytes = int_to_bytes(id.value());
 	codes.insert(std::end(codes), std::begin(index_bytes), std::end(index_bytes));
 
-	if (assign_type.has_value() && assign_type->prim == Type::Primitive::CHAR && assign_type->dim == 0)
+	if (assign_type.has_value() && assign_type->prim == Primitive::CHAR && assign_type->dim == 0)
 		codes.push_back(BytecodeType_STORE_INDEX_S);
 	else
 		codes.push_back(BytecodeType_STORE_INDEX_A);

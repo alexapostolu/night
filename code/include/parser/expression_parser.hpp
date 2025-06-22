@@ -5,7 +5,8 @@
 
 #include <optional>
 
-/* If there is no expression, it is the callers responsibility to handle, or
+/*
+ * If there is no expression, it is the callers responsibility to handle, or
  * set 'err_on_empty' to true to display an error message in that event
  * Lexer
  *   start: first token before expression

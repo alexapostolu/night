@@ -1,36 +1,36 @@
-def print_array(arr int[], len int) void
+def print_array(arr int32[], len int32) void
 {
-	for (i int = 0; i < len; i += 1)
+	for (i int32 = 0; i < len; i += 1)
 		print(str(arr[i]) + " ");
 	print("\n");
 }
 
-def increment_array(arr int[], len int) void
+def increment_array(arr int32[], len int32) void
 {
-	for (i int = 0; i < len; i += 1)
+	for (i int32 = 0; i < len; i += 1)
 		arr[i] += 1;
 }
 
-my_arr int[5];
+my_arr int32[5];
 print_array(my_arr, 5);
 
 increment_array(my_arr, 5);
 print_array(my_arr, 5);
 
-my_arr = int[4];
+my_arr = int32[4];
 print_array(my_arr, 4);
 
 my_arr[1] = 4;
 print_array(my_arr, 4);
 print("\n");
 
-def print_multi_array(arr int[][][], d1 int, d2 int, d3 int) void
+def print_multi_array(arr int32[][][], d1 int32, d2 int32, d3 int32) void
 {
-	for (i int = 0; i < d1; i += 1)
+	for (i int32 = 0; i < d1; i += 1)
 	{
-		for (j int = 0; j < d2; j += 1)
+		for (j int32 = 0; j < d2; j += 1)
 		{
-			for (k int = 0; k < d3; k += 1)
+			for (k int32 = 0; k < d3; k += 1)
 				print(str(arr[i][j][k]) + " ");
 			print("\n");
 		}
@@ -38,19 +38,19 @@ def print_multi_array(arr int[][][], d1 int, d2 int, d3 int) void
 	}
 }
 
-def increment_multi_array(arr int[][][], d1 int, d2 int, d3 int) void
+def increment_multi_array(arr int32[][][], d1 int32, d2 int32, d3 int32) void
 {
-	for (i int = 0; i < d1; i += 1)
+	for (i int32 = 0; i < d1; i += 1)
 	{
-		for (j int = 0; j < d2; j += 1)
+		for (j int32 = 0; j < d2; j += 1)
 		{
-			for (k int = 0; k < d3; k += 1)
+			for (k int32 = 0; k < d3; k += 1)
 				arr[i][j][k] += i;
 		}
 	}
 }
 
-multi_arr int[2][3][4] = [ [[1], [5, 6, 7, 8], [9, 10, 11, 12] ],
+multi_arr int32[2][3][4] = [ [[1], [5, 6, 7, 8], [9, 10, 11, 12] ],
                          [ [13, 14, 15, 16], [17, 18], [21, 22, 23, 24]] ];
 print_multi_array(multi_arr, 2, 3, 4);
 

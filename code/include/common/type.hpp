@@ -1,41 +1,58 @@
 /*
- * Provides the Type structure used by the front end. In the front end, the
- * actual values are not important, as only the type information is needed.
- * This is used by the parser and type checking.
+ * This file provides the definitions for all types in Night. Used by the
+ * Parser to conduct type checking.
+ *
+ * Types are split up into primitives and arrays. Primitives include booleans,
+ * characters, integers and floats; and arrays are based off those types.
+ *
+ * Since the elements of each array must be of the same type, we can represent
+ * any array type with a primitive type and the dimension count. The dimension
+ * for primitive types is 0.
+ *
+ * Integer types may include explicit size specifications. In scenarios where
+ * the integer size is not needed or can't be determined (eg. the literal '2'
+ * could be any size), then the general type INT is used; and is equivalent to
+ * any other integral type.
  */
 
 #pragma once
 
-#include <optional>
 #include <string>
+#include <cstdint>
 
-/*
- * There are two categories of types,
- *   Primitive Types
- *   Arrays
- * 
- * Primitive types include bool, char, int, and float, and are represented as
- * dimension as well.
- */
+using dim_t = uint8_t;
+
+enum class Primitive {
+	BOOL,
+	CHAR,
+
+	INT,
+	INT8,
+	INT16,
+	INT32,
+	INT64,
+	uINT8,
+	uINT16,
+	uINT32,
+	uINT64,
+
+	FLOAT
+};
+
 struct Type
 {
-	enum Primitive {
-		BOOL,
-		CHAR,
-		INT,
-		FLOAT
-	} prim;
+	Primitive prim;
+	dim_t dim;
 
-	int dim;
-
+	bool is_int() const;
 	bool is_prim() const;
 	bool is_str() const;
 	bool is_arr() const;
 
 	Type() = default;
 
-	Type(std::string const& _type, int _dim = 0);
-	Type(Primitive _prim, int _dim = 0);
+	Type(std::string const& _prim_s, dim_t _dim = 0);
+	Type(Primitive _prim, dim_t _dim = 0);
 	Type(Type const& _other);
 
 	bool operator==(Primitive _prim) const;

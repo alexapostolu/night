@@ -1,6 +1,6 @@
-count int = 0;
+count int32 = 0;
 
-def fib(n int) int
+def fib(n int32) int32
 {
 	count += 1;
 
@@ -10,7 +10,7 @@ def fib(n int) int
 	return fib(n - 1) + fib(n - 2);
 }
 
-for (i int = 0; i < 10 ; i += 1)
+for (i int32 = 0; i < 10 ; i += 1)
 	print(str(fib(i)) + " ");
 
 print(count);

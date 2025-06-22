@@ -1,8 +1,8 @@
-def two_sum(nums int[], len int, target int) int[]
+def two_sum(nums int32[], len int32, target int32) int32[]
 {
-	for (i int = 0; i < len; i += 1)
+	for (i int32 = 0; i < len; i += 1)
 	{
-		for (j int = 0; j < len; j += 1)
+		for (j int32 = 0; j < len; j += 1)
 		{
 			if (i != j && nums[i] + nums[j] == target)
 				return [i, j];
@@ -12,5 +12,5 @@ def two_sum(nums int[], len int, target int) int[]
 	return [0];
 }
 
-arr int[2] = two_sum([2, 7, 11, 15], 4, 22);
+arr int32[2] = two_sum([2, 7, 11, 15], 4, 22);
 print(str(arr[0]) + " " + str(arr[1]));

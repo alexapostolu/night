@@ -35,12 +35,13 @@ Token const& Lexer::eat()
 		return curr_tok;
 	}
 
+	// Ignore whitespace.
 	while (loc.col < file_line.size() && std::isspace(file_line[loc.col]))
 		++loc.col;
 
+	// Ignore comments.
 	if (loc.col == file_line.size() || file_line[loc.col] == '#')
 		return curr_tok = eat_new_line();
-
 
 	if (std::isdigit(file_line[loc.col]))
 		return curr_tok = eat_number();
@@ -203,7 +204,14 @@ Token Lexer::eat_keyword()
 		{ "false", TokenType::BOOL_LIT },
 		{ "char", TokenType::TYPE },
 		{ "bool", TokenType::TYPE },
-		{ "int", TokenType::TYPE },
+		{ "int8", TokenType::TYPE },
+		{ "int16", TokenType::TYPE },
+		{ "int32", TokenType::TYPE },
+		{ "int64", TokenType::TYPE },
+		{ "uint8", TokenType::TYPE },
+		{ "uint16", TokenType::TYPE },
+		{ "uint32", TokenType::TYPE },
+		{ "uint64", TokenType::TYPE },
 		{ "float", TokenType::TYPE },
 		{ "if", TokenType::IF },
 		{ "elif", TokenType::ELIF },

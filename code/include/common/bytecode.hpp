@@ -1,9 +1,9 @@
 #pragma once
 
-#include <stdint.h>
 #include <list>
 #include <string>
 #include <type_traits>
+#include <cstdint>
 
 /**
  * @brief Data structures representing bytecodes and how they are stored.
@@ -25,9 +25,7 @@
  * bytecodes_t is a forward list and not a vector.
  * 
  * The main operations are appending/inserting other bytecode containers, and
- * list has a better time complexity for that operation than vector. (I'm actually
- * not sure I think it's implementation specific, but from what I learned in my
- * data structures coding class is that list is better for these operations)
+ * list has a better time complexity for that operation than vector.
  */
 using bytecode_t = uint8_t;
 using bytecodes_t = std::list<bytecode_t>;
@@ -135,27 +133,6 @@ enum : bytecode_t {
 	BytecodeType_CALL
 };
 
-//template <typename T>
-//	requires std::is_same<T, int64_t>::value ||
-//			 std::is_same<T, uint64_t>::value
-//bytecodes_t int64_to_bytes(T i)
-//{
-//	bytecodes_t bytes;
-//
-//	if (std::is_same<T, int64_t>::value)
-//		bytes.push_back(ByteType_sINT8);
-//	else
-//		bytes.push_back(ByteType_uINT8);
-//
-//	for (int j = 0; j < 8; ++j)
-//	{
-//		bytes.push_back(i & 0xFF);
-//		i >>= 8;
-//	}
-//
-//	return bytes;
-//}
-
 template <typename T>
 requires std::is_same<T, int8_t>::value ||
 			 std::is_same<T, uint8_t>::value ||
@@ -185,10 +162,8 @@ bytecodes_t int_to_bytes(T i)
 		bytes.push_back(ByteType_sINT8);
 	else if (std::is_same<T, uint64_t>::value)
 		bytes.push_back(ByteType_uINT8);
-
-	constexpr int byte_count = sizeof(T);
 	
-	for (int j = 0; j < byte_count; ++j)
+	for (int j = 0; j < sizeof(T); ++j)
 	{
 		bytes.push_back(i & 0xFF);
 		i >>= 8;

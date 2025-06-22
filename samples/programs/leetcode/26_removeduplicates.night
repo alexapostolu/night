@@ -1,9 +1,9 @@
-def remove_duplicates(nums int[], n int) char[]
+def remove_duplicates(nums int32[], n int32) char[]
 {
 	res char[] = "";
-	j int = 0;
+	j int32 = 0;
 
-	for (i int = 0; i < n; i += 1)
+	for (i int32 = 0; i < n; i += 1)
 	{
 		res += str(nums[i]);
 

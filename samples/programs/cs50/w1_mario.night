@@ -1,17 +1,17 @@
 print("Height: ");
-height int = int(input());
+height int32 = int32(input());
 
-for (i int = 1; i <= height; i += 1)
+for (i int32 = 1; i <= height; i += 1)
 {
-	for (j int = 0; j < height - i; j += 1)
+	for (j int32 = 0; j < height - i; j += 1)
 		print(' ');
 
-	for (j int = 0; j < i; j += 1)
+	for (j int32 = 0; j < i; j += 1)
 		print('#');
 
 	print("  ");
 
-	for (j int = 0; j < i; j += 1)
+	for (j int32 = 0; j < i; j += 1)
 		print('#');
 
 	print('\n');

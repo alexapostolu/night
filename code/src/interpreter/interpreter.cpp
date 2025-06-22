@@ -13,8 +13,97 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
+#include <float.h>
+#include <limits.h>
 #include <inttypes.h> // PRId64
+
+static int64_t str_to_int(char* s)
+{
+	assert(s);
+
+	errno = 0;
+	char* temp;
+	int64_t val = strtoll(s, &temp, 10);
+
+	if (temp == s || *temp != '\0' ||
+		((val == LLONG_MIN || val == LLONG_MAX) && errno == ERANGE))
+		fprintf(stderr, "Could not convert '%s' to long long and leftover string is: '%s'\n", s, temp);
+
+	return val;
+}
+
+static uint64_t str_to_uint(char* s)
+{
+	assert(s);
+
+	errno = 0;
+	char* temp;
+	uint64_t val = strtoull(s, &temp, 10);
+
+	if (temp == s || *temp != '\0' ||
+		(val == ULLONG_MAX && errno == ERANGE))
+		fprintf(stderr, "Error: Could not convert '%s' to uint64_t. Leftover string: '%s'. "
+			"Value is %llu and errno is %d.\n", s, temp, val, errno);
+
+	return val;
+}
+
+static float str_to_float(char* s)
+{
+	assert(s);
+
+	errno = 0;
+	char* temp;
+	float val = strtod(s, &temp);
+
+	if (temp == s || *temp != '\0' ||
+		((val == FLT_MIN || val == FLT_MAX) && errno == ERANGE))
+		fprintf(stderr, "Could not convert '%s' to float and leftover string is: '%s'\n", s, temp);
+
+	return val;
+}
+
+static char* char_to_str(char c)
+{
+	char* s = (char*)malloc(2 * sizeof(char));
+	s[0] = c;
+	s[1] = '\0';
+
+	return s;
+}
+
+static char* int_to_str(int64_t i)
+{
+	// A 64-bit integer can have up to 19 digits + sign + null terminator
+	char* s = (char*)malloc(21 * sizeof(char));
+	if (!s)
+		return nullptr;
+
+	sprintf(s, "%" PRId64, i);
+	return s;
+}
+
+static char* uint_to_str(uint64_t i)
+{
+	// A 64-bit unsigned integer can have up to 20 digits + null terminator
+	char* s = (char*)malloc(21 * sizeof(char));
+	if (!s)
+		return nullptr;
+
+	sprintf(s, "%" PRIu64, i);
+	return s;
+}
+
+static char* float_to_str(float f)
+{
+	int size = 65;
+	char* s = (char*)malloc(size);
+
+	sprintf(s, "%f", f);
+	return s;
+}
 
 std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecodes_t const& codes, bool is_global, char* buf)
 {
@@ -358,11 +447,53 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 				else
 					sprintf(buf + strlen(buf), "%c", (char)pop(s).as.i);
 				break;
-			case PredefinedFunctions::PRINT_INT:
+			case PredefinedFunctions::PRINT_INT8:
 				if (!buf)
-					printf("%lld", pop(s).as.i);
+					printf("%" PRId8, (int8_t)pop(s).as.i);
 				else
-					sprintf(buf + strlen(buf), "%lld", pop(s).as.i);
+					sprintf(buf + strlen(buf), "%" PRId8, (int8_t)pop(s).as.i);
+				break;
+			case PredefinedFunctions::PRINT_INT16:
+				if (!buf)
+					printf("%" PRId16, (int16_t)pop(s).as.i);
+				else
+					sprintf(buf + strlen(buf), "%" PRId16, (int16_t)pop(s).as.i);
+				break;
+			case PredefinedFunctions::PRINT_INT32:
+				if (!buf)
+					printf("%" PRId32, (int32_t)pop(s).as.i);
+				else
+					sprintf(buf + strlen(buf), "%" PRId32, (int32_t)pop(s).as.i);
+				break;
+			case PredefinedFunctions::PRINT_INT64:
+				if (!buf)
+					printf("%" PRId64, pop(s).as.i);
+				else
+					sprintf(buf + strlen(buf), "%" PRId64, pop(s).as.i);
+				break;
+			case PredefinedFunctions::PRINT_uINT8:
+				if (!buf)
+					printf("%" PRIu8, (uint8_t)pop(s).as.i);
+				else
+					sprintf(buf + strlen(buf), "%" PRIu8, (uint8_t)pop(s).as.i);
+				break;
+			case PredefinedFunctions::PRINT_uINT16:
+				if (!buf)
+					printf("%" PRIu16, (uint16_t)pop(s).as.i);
+				else
+					sprintf(buf + strlen(buf), "%" PRIu16, (uint16_t)pop(s).as.i);
+				break;
+			case PredefinedFunctions::PRINT_uINT32:
+				if (!buf)
+					printf("%" PRIu32, (uint32_t)pop(s).as.i);
+				else
+					sprintf(buf + strlen(buf), "%" PRIu32, (uint32_t)pop(s).as.i);
+				break;
+			case PredefinedFunctions::PRINT_uINT64:
+				if (!buf)
+					printf("%" PRIu64, (uint64_t)pop(s).as.i);
+				else
+					sprintf(buf + strlen(buf), "%" PRIu64, (uint64_t)pop(s).as.i);
 				break;
 			case PredefinedFunctions::PRINT_FLOAT:
 				if (!buf)
@@ -376,55 +507,140 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 				else
 					sprintf(buf + strlen(buf), "%s", pop(s).as.s);
 				break;
+
 			case PredefinedFunctions::INPUT:
 				s.emplace(interpret_predefined_input());
 				break;
-			case PredefinedFunctions::INT_TO_CHAR:
-				//s.emplace((int64_t)int_to_char(pop(s).as.i));
+
+			case PredefinedFunctions::INT8_TO_CHAR:
+				s.emplace((int64_t)(char)(int8_t)pop(s).as.i);
+				break;
+			case PredefinedFunctions::INT16_TO_CHAR:
+				s.emplace((int64_t)(char)(int16_t)pop(s).as.i);
+				break;
+			case PredefinedFunctions::INT32_TO_CHAR:
+				s.emplace((int64_t)(char)(int32_t)pop(s).as.i);
+				break;
+			case PredefinedFunctions::INT64_TO_CHAR:
+				s.emplace((int64_t)(char)pop(s).as.i);
+				break;
+			case PredefinedFunctions::uINT8_TO_CHAR:
+				s.emplace((int64_t)(char)(uint8_t)pop(s).as.i);
+				break;
+			case PredefinedFunctions::uINT16_TO_CHAR:
+				s.emplace((int64_t)(char)(uint16_t)pop(s).as.i);
+				break;
+			case PredefinedFunctions::uINT32_TO_CHAR:
+				s.emplace((int64_t)(char)(uint32_t)pop(s).as.i);
+				break;
+			case PredefinedFunctions::uINT64_TO_CHAR:
+				s.emplace((int64_t)(char)(uint64_t)pop(s).as.i);
 				break;
 			case PredefinedFunctions::STR_TO_CHAR: {
 				char* str = pop(s).as.s;
 				if (strlen(str) != 1)
 					throw night::error::get().create_runtime_error("Could not convert string to char.");
-				
+
 				s.emplace((int64_t)str[0]);
 				break;
 			}
-			case PredefinedFunctions::BOOL_TO_INT:
-				//s.emplace((int64_t)bool_to_int((bool)pop(s).as.i));
+
+			case PredefinedFunctions::BOOL_TO_INT8:
+			case PredefinedFunctions::BOOL_TO_INT16:
+			case PredefinedFunctions::BOOL_TO_INT32:
+			case PredefinedFunctions::BOOL_TO_INT64:
+				s.emplace(pop(s).as.i);
 				break;
-			case PredefinedFunctions::CHAR_TO_INT:
-				//s.emplace((int64_t)char_to_int((char)pop(s).as.i));
+			case PredefinedFunctions::BOOL_TO_uINT8:
+			case PredefinedFunctions::BOOL_TO_uINT16:
+			case PredefinedFunctions::BOOL_TO_uINT32:
+			case PredefinedFunctions::BOOL_TO_uINT64:
+				s.emplace((uint64_t)pop(s).as.i);
 				break;
-			case PredefinedFunctions::FLOAT_TO_INT:
-				s.emplace((int64_t)float_to_int(pop(s).as.d));
+
+			case PredefinedFunctions::CHAR_TO_INT8:
+			case PredefinedFunctions::CHAR_TO_INT16:
+			case PredefinedFunctions::CHAR_TO_INT32:
+			case PredefinedFunctions::CHAR_TO_INT64:
+				s.emplace(pop(s).as.i);
 				break;
-			case PredefinedFunctions::STR_TO_INT:
-				s.emplace((int64_t)str_to_int(pop(s).as.s));
+			case PredefinedFunctions::CHAR_TO_uINT8:
+			case PredefinedFunctions::CHAR_TO_uINT16:
+			case PredefinedFunctions::CHAR_TO_uINT32:
+			case PredefinedFunctions::CHAR_TO_uINT64:
+				s.emplace((uint64_t)pop(s).as.i);
 				break;
+
+			case PredefinedFunctions::FLOAT_TO_INT8:
+			case PredefinedFunctions::FLOAT_TO_INT16:
+			case PredefinedFunctions::FLOAT_TO_INT32:
+			case PredefinedFunctions::FLOAT_TO_INT64:
+				s.emplace((int64_t)pop(s).as.d);
+				break;
+			case PredefinedFunctions::FLOAT_TO_uINT8:
+			case PredefinedFunctions::FLOAT_TO_uINT16:
+			case PredefinedFunctions::FLOAT_TO_uINT32:
+			case PredefinedFunctions::FLOAT_TO_uINT64:
+				s.emplace((uint64_t)pop(s).as.d);
+				break;
+
+			case PredefinedFunctions::STR_TO_INT8:
+			case PredefinedFunctions::STR_TO_INT16:
+			case PredefinedFunctions::STR_TO_INT32:
+			case PredefinedFunctions::STR_TO_INT64:
+				s.emplace(str_to_int(pop(s).as.s));
+				break;
+			case PredefinedFunctions::STR_TO_uINT8:
+			case PredefinedFunctions::STR_TO_uINT16:
+			case PredefinedFunctions::STR_TO_uINT32:
+			case PredefinedFunctions::STR_TO_uINT64:
+				s.emplace((uint64_t)str_to_int(pop(s).as.s));
+				break;
+
 			case PredefinedFunctions::BOOL_TO_FLOAT:
-				s.emplace(bool_to_float((bool)pop(s).as.i));
+				s.emplace(pop(s).as.i ? 1.0f : 0.0f);
 				break;
 			case PredefinedFunctions::CHAR_TO_FLOAT:
-				s.emplace(char_to_float((char)pop(s).as.i));
+				s.emplace((double)pop(s).as.i);
 				break;
-			case PredefinedFunctions::INT_TO_FLOAT:
-				s.emplace(int_to_float(pop(s).as.i));
+			case PredefinedFunctions::INT8_TO_FLOAT:
+			case PredefinedFunctions::INT16_TO_FLOAT:
+			case PredefinedFunctions::INT32_TO_FLOAT:
+			case PredefinedFunctions::INT64_TO_FLOAT:
+				s.emplace((double)pop(s).as.i);
 				break;
+			case PredefinedFunctions::uINT8_TO_FLOAT:
+			case PredefinedFunctions::uINT16_TO_FLOAT:
+			case PredefinedFunctions::uINT32_TO_FLOAT:
+			case PredefinedFunctions::uINT64_TO_FLOAT:
+				s.emplace((double)pop(s).as.ui);
+				break;
+
 			case PredefinedFunctions::STR_TO_FLOAT:
 				s.emplace(str_to_float(pop(s).as.s));
 				break;
+
 			case PredefinedFunctions::CHAR_TO_STR:
 				s.emplace(char_to_str((char)pop(s).as.i));
 				break;
-			case PredefinedFunctions::INT_TO_STR:
+			case PredefinedFunctions::INT8_TO_STR:
+			case PredefinedFunctions::INT16_TO_STR:
+			case PredefinedFunctions::INT32_TO_STR:
+			case PredefinedFunctions::INT64_TO_STR:
 				s.emplace(int_to_str(pop(s).as.i));
+				break;
+			case PredefinedFunctions::uINT8_TO_STR:
+			case PredefinedFunctions::uINT16_TO_STR:
+			case PredefinedFunctions::uINT32_TO_STR:
+			case PredefinedFunctions::uINT64_TO_STR:
+				s.emplace(uint_to_str(pop(s).as.ui));
 				break;
 			case PredefinedFunctions::FLOAT_TO_STR:
 				s.emplace(float_to_str((float)pop(s).as.d));
 				break;
+
 			case PredefinedFunctions::LEN:
-				s.emplace((int64_t)len(pop(s).as.s));
+				s.emplace((int64_t)strlen(pop(s).as.s));
 				break;
 			default: {
 				// Functions' only allowed parent scope is the global scope

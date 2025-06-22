@@ -1,7 +1,7 @@
 def find_pattern_101(tape char[]) bool {
 	# States: 0:start, 1:found 1, 2:found 10, 3:accept, 4:reject
-	state int = 0;
-	head int = 0;
+	state int32 = 0;
+	head int32 = 0;
 	
 	# Continue until we accept or reach end of tape
 	while (state != 3 && tape[head] != ' ') {

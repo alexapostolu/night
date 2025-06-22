@@ -1,5 +1,4 @@
 #include "parser/ast/expression.hpp"
-
 #include "parser/statement_scope.hpp"
 #include "common/bytecode.hpp"
 #include "common/type.hpp"
@@ -180,7 +179,7 @@ bool expr::Array::is_str() const
 
 expr::Allocate::Allocate(
 	Location const& _loc,
-	Type::Primitive const _type,
+	Primitive const _type,
 	std::vector<expr_p> const& _sizes)
 	: Expression(_loc, Expression::single_precedence)
 	, type(_type)
@@ -233,7 +232,7 @@ bytecodes_t expr::Allocate::generate_codes() const
 
 expr::Numeric::Numeric(
 	Location const& _loc,
-	Type::Primitive _type,
+	Primitive _type,
 	std::variant<int64_t, double> const& _val)
 	: Expression(_loc, Expression::single_precedence)
 	, type(_type), val(_val) {}

@@ -14,7 +14,11 @@ class Lexer
 {
 public:
 	Lexer() = default;
-	Lexer(std::string const& _file_name);
+
+	Lexer(
+		std::string const& _file_name
+	);
+	
 	~Lexer();
 
 public:
@@ -27,15 +31,19 @@ public:
 	Token const& expect(
 		TokenType type,
 		std::string const& err = "\n",
-		std::source_location const& s_loc = std::source_location::current());
+		std::source_location const& s_loc = std::source_location::current()
+	);
 
 	Token const& curr_is(
 		TokenType type,
 		std::string const& err_msg = "",
-		std::source_location const& s_loc = std::source_location::current());
+		std::source_location const& s_loc = std::source_location::current()
+	);
 
 	// Used for testing.
-	void scan_code(std::string const& code);
+	void scan_code(
+		std::string const& code
+	);
 
 private:
 	Token eat_string();

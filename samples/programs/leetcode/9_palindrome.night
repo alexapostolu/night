@@ -1,7 +1,7 @@
-def is_palindrome(x int) bool
+def is_palindrome(x int32) bool
 {
 	s char[] = str(x);
-	for (i int = 0; i < len(s) / 2; i += 1)
+	for (i int32 = 0; i < len(s) / 2; i += 1)
 	{
 		if (s[i] != s[len(s) - i - 1])
 			return false;

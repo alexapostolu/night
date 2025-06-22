@@ -1,16 +1,16 @@
 print("Change Owned: ");
-change int = int(input());
+change int32 = int32(input());
 
 while (change < 0)
 {
 	print("Change Owned: ");
-	change = int(input());
+	change = int32(input());
 }
 
-coins int[] = [200, 100, 25, 10, 5, 1];
+coins int32[] = [200, 100, 25, 10, 5, 1];
 
-current_coin int = 0;
-count int = 0;
+current_coin int32 = 0;
+count int32 = 0;
 
 while (change > 0)
 {

@@ -1,10 +1,17 @@
 /*
- * Expressions in Night are represented as ASTs consisting of operators,
- * variables, function calls, and values.
+ * This file provides the classes for all expressions in Night.
+ * 
+ * Expressions are represented as ASTs consisting of,
+ *   - Operators
+ *   - Variables
+ *   - Arrays
+ *   - Array allocations
+ *   - Numerics (literals)
+ * 
+ * See expression_operator.hpp for expression operator classes.
  * 
  * Common error: When coding the copy constructor, not all the member variables
  * are copied over.
- * 
  */
 
 #pragma once
@@ -24,15 +31,12 @@ namespace expr
 class Expression;
 using expr_p = std::shared_ptr<Expression>;
 
-class Array;
-
-
 /*
  * For each Expression, the following steps must be performed in order,
- *   1. Insert a node for expression parsing
- *   2. Type check its children and itself
- *   3. Optimize its children and itself
- *   4. Generate bytecodes
+ *   1) Build the complete AST by inserting every node in the expression
+ *   2) Type check its children and itself
+ *   3) Optimize its children and itself
+ *   4) Generate bytecodes
  */
 class Expression
 {
@@ -40,14 +44,15 @@ public:
 	/*
 	 * @param _loc Location of error messages used in optimize() and
 	 *   generate_codes().
-	 * @param _precedence_ Of the operator if applicable..
+	 * @param _precedence_ Precedence of the operator if applicable.
 	 */
 	Expression(
 		Location const& _loc,
 		int _precedence_
 	);
 
-	/* Inserts a node into the AST. There are three cases:
+	/*
+	 * Inserts a node into the AST. There are three cases:
 	 *   1) Node needs to be inserted in the current position.
 	 *      In this case, 'prev' will be assigned to the node, and then the node
 	 *        will be assigned to the current position.
@@ -67,7 +72,7 @@ public:
 	) = 0;
 
 	/*
-	 * @returns the precedence.
+	 * @return Returns the precedence.
 	 */
 	int precedence() const;
 
@@ -79,14 +84,16 @@ public:
 	void set_guard();
 
 	/* 
-	 * Returns the type of the expression. If std::nullopt is returned, then
-	 * type_check() has failed and at least one minor error has been created.
+	 * Type checks children and itself.
 	 * 
 	 * No fatal errors should be thrown here.
 	 * 
 	 * For testing, even though some cases the expression type doesn't need to
 	 * be tested (eg. test case already ensures proper types), this function
 	 * still needs to be called as many member variable are initialized here.
+	 * 
+	 * @return Returns the type of the expression. If std::nullopt is returned, then
+	 *   type_check() has failed and at least one minor error has been created.
 	 */
 	virtual std::optional<Type> type_check(
 		StatementScope& scope
@@ -202,7 +209,7 @@ class Allocate : public Expression
 public:
 	Allocate(
 		Location const& _loc,
-		Type::Primitive const _type,
+		Primitive const _type,
 		std::vector<expr_p> const& _sizes
 	);
 
@@ -226,7 +233,7 @@ public:
 	bytecodes_t generate_codes() const override;
 
 public:
-	Type::Primitive type;
+	Primitive type;
 	std::vector<expr_p> sizes;
 };
 
@@ -236,7 +243,7 @@ class Numeric : public Expression
 public:
 	Numeric(
 		Location const& _loc,
-		Type::Primitive _type,
+		Primitive _type,
 		std::variant<int64_t, double> const& _val
 	);
 
@@ -266,9 +273,9 @@ public:
 
 public:
 	std::variant<int64_t, double> val;
-	Type::Primitive type;
+	Primitive type;
 
 private:
 };
 
-}
+} // expr::

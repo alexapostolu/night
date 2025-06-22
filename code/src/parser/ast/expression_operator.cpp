@@ -50,30 +50,44 @@ std::optional<Type> expr::UnaryOp::type_check(
 	assert(expr);
 
 	expr_type = expr->type_check(scope);
-
 	if (!expr_type.has_value())
 		return std::nullopt;
 
 	if (!expr_type->is_prim())
 	{
 		night::error::get().create_minor_error(
-			"The expression is a " + night::to_str(expr_type.value()) + " type.\n"
-			"The " + operator_type_to_str() + " operator can only be used on a primitive type.", loc);
-
+			"The operator " + operator_type_to_str() + " can only be used on a primitive type.\n"
+			"The expression is type " + night::to_str(expr_type.value()) + ".", loc);
 		return std::nullopt;
 	}
 
 	switch (operator_type)
 	{
-	case UnaryOpType::NEGATIVE:
+	case UnaryOpType::NEGATIVE: {
+		if (!expr_type->is_int() && expr_type != Primitive::FLOAT)
+		{
+			night::error::get().create_minor_error(
+				"The negative operator can only be used on integral or floating point expressions.\n"
+				"The expression is type " + night::to_str(expr_type.value()) + ".", loc);
+			return std::nullopt;
+		}
+
 		return expr_type;
+	}
 
 	case UnaryOpType::NOT:
-		return Type::BOOL;
+		if (expr_type != Primitive::BOOL)
+		{
+			night::error::get().create_minor_error(
+				"The not operator can only be used on boolean expressions.\n"
+				"The expression is type " + night::to_str(expr_type.value()) + ".", loc);
+			return std::nullopt;
+		}
+
+		return Type(Primitive::BOOL, 0);
 
 	default:
-		assert(false);
-		return std::nullopt;
+		throw debug::unhandled_case(static_cast<int>(operator_type));
 	}
 }
 
@@ -85,7 +99,6 @@ expr::expr_p expr::UnaryOp::optimize(
 	expr = expr->optimize(scope);
 
 	auto numeric = std::dynamic_pointer_cast<Numeric>(expr);
-
 	if (!numeric)
 		return std::make_shared<UnaryOp>(*this);
 
@@ -110,15 +123,15 @@ bytecodes_t expr::UnaryOp::generate_codes() const
 {
 	assert(expr);
 
-	bytecodes_t bytes;
+	bytecodes_t codes;
 
 	// Generate expression bytes.
-	night::container_concat(bytes, expr->generate_codes());
+	night::container_concat(codes, expr->generate_codes());
 
 	// Generate operator bytes.
-	bytes.push_back(generate_operator_byte());
+	codes.push_back(generate_operator_byte());
 
-	return bytes;
+	return codes;
 }
 
 bytecode_t expr::UnaryOp::generate_operator_byte() const
@@ -137,7 +150,7 @@ bytecode_t expr::UnaryOp::generate_operator_byte() const
 
 	assert(expr_type.has_value());
 
-	return expr_type == Type::FLOAT
+	return expr_type == Primitive::FLOAT
 		? operator_bytes.at(operator_type).float_
 		: operator_bytes.at(operator_type).int_;
 }
@@ -265,7 +278,7 @@ std::optional<Type> expr::BinaryOp::type_check_string_concat()
 	assert(lhs_type.has_value() && rhs_type.has_value());
 
 	return lhs_type->is_str() && rhs_type->is_str()
-		? std::optional(Type(Type::CHAR, 1))
+		? std::optional(Type(Primitive::CHAR, 1))
 		: std::nullopt;
 }
 
@@ -290,24 +303,15 @@ std::optional<Type> expr::BinaryOp::type_check_mod() const
 {
 	assert(lhs_type.has_value() && rhs_type.has_value());
 
-	if (lhs_type == Type::INT && rhs_type == Type::INT)
-		return Type::INT;
-
-	if (lhs_type != Type::INT && rhs_type == Type::INT)
-		night::error::get().create_minor_error(
-			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type.\n"
-			"The modulus operator can only be used on two integer types.", loc);
-	else if (lhs_type == Type::INT && rhs_type != Type::INT)
-		night::error::get().create_minor_error(
-			"The right hand expression is a " + night::to_str(lhs_type.value()) + " type.\n"
-			"The modulus operator can only be used on two integer types.", loc);
-	else
+	if (!lhs_type->is_int() || !rhs_type->is_int() || lhs_type != rhs_type) {
 		night::error::get().create_minor_error(
 			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type and "
 			"the right hand expression is a " + night::to_str(rhs_type.value()) + " type.\n"
-			"The modulus operator can only be used on two integer types.", loc);
+			"The modulus operator can only be used on two same integer types.", loc);
+		return std::nullopt;
+	}
 
-	return std::nullopt;
+	return rhs_type;
 }
 
 std::optional<Type> expr::BinaryOp::type_check_comparision()
@@ -315,7 +319,7 @@ std::optional<Type> expr::BinaryOp::type_check_comparision()
 	assert(lhs_type.has_value() && rhs_type.has_value());
 
 	if (lhs_type->is_str() && rhs_type->is_str())
-		return Type::BOOL;
+		return Primitive::BOOL;
 
 	if (lhs_type != rhs_type || lhs_type->is_arr() || rhs_type->is_arr())
 	{
@@ -327,7 +331,7 @@ std::optional<Type> expr::BinaryOp::type_check_comparision()
 		return std::nullopt;
 	}
 
-	return Type::BOOL;
+	return Primitive::BOOL;
 }
 
 std::optional<Type> expr::BinaryOp::type_check_boolean()
@@ -344,46 +348,47 @@ std::optional<Type> expr::BinaryOp::type_check_boolean()
 		return std::nullopt;
 	}
 
-	return Type::BOOL;
+	return Primitive::BOOL;
 }
 
 std::optional<Type> expr::BinaryOp::type_check_subscript() const
 {
 	assert(lhs_type.has_value() && rhs_type.has_value());
 
-	if (lhs_type == Type::INT)
-	{
-		// Check if it is string first before checking if it is array because
-		// array encompasses strings.
-		if (rhs_type->is_str())
-			return Type::CHAR;
-		else if (rhs_type->is_arr())
-			return Type(rhs_type->prim, rhs_type->dim - 1);
-	}
+	bool warnings = false;
 
-	if (lhs_type != Type::INT)
+	if (!lhs_type->is_int())
+	{
 		night::error::get().create_minor_error(
 			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type.\n"
 			"The subscript operator's index can only be an integer type.", loc);
-	else if (!rhs_type->is_arr())
+		warnings = true;
+	}
+	if (!rhs_type->is_arr())
+	{
 		night::error::get().create_minor_error(
 			"The right hand expression is a " + night::to_str(rhs_type.value()) + " type.\n"
 			"The subscript operator can only be used on an array or string type.", loc);
+		warnings = true;
+	}
 
-	return std::nullopt;
+	if (warnings)
+		return std::nullopt;
+	
+	return Type(rhs_type->prim, rhs_type->dim - 1);
 }
 
-#define BinaryOpEvaluateNumeric(op, is_result_bool)	{																							 \
-	if (lhs_num->type == Type::FLOAT || rhs_num->type == Type::FLOAT)																			 \
-		return std::make_shared<Numeric>(																										 \
-			loc, (is_result_bool) ? Type::BOOL : Type::FLOAT,																					 \
-			std::visit([](auto&& arg1, auto&& arg2) { return double(arg1 op arg2); }, lhs_num->val, rhs_num->val)								 \
-		);																																		 \
-																																				 \
-	return std::make_shared<Numeric>(																											 \
-		loc, (is_result_bool) ? Type::BOOL : Type::INT,																							 \
-		int64_t(std::get<int64_t>(lhs_num->val) op std::get<int64_t>(rhs_num->val))																 \
-	);																																			 \
+#define BinaryOpEvaluateNumeric(op, is_result_bool)	{																\
+	if (lhs_num->type == Primitive::FLOAT)																				\
+		return std::make_shared<Numeric>(																			\
+			loc, (is_result_bool) ? Primitive::BOOL : Primitive::FLOAT,														\
+			std::visit([](auto&& arg1, auto&& arg2) { return double(arg1 op arg2); }, lhs_num->val, rhs_num->val)	\
+		);																											\
+																													\
+	return std::make_shared<Numeric>(																				\
+		loc, (is_result_bool) ? Primitive::BOOL : lhs_num->type,															\
+		int64_t(std::get<int64_t>(lhs_num->val) op std::get<int64_t>(rhs_num->val))									\
+	);																												\
 }
 
 expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
@@ -427,6 +432,9 @@ expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
 	if (!lhs_num || !rhs_num)
 		return std::make_shared<BinaryOp>(*this);
 
+	// Assertion should be true from type_check()
+	assert(lhs_num->type == rhs_num->type);
+
 	switch (operator_type)
 	{
 	case BinaryOpType::ADD:  BinaryOpEvaluateNumeric(+, false);
@@ -436,7 +444,7 @@ expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
 
 	// Separate case for modulus.
 	case BinaryOpType::MOD:
-		return std::make_shared<Numeric>(loc, Type::INT,
+		return std::make_shared<Numeric>(loc, lhs_num->type,
 			std::visit([](auto&& arg1, auto&& arg2) {
 				return (int64_t)arg1 % (int64_t)arg2;
 			}, lhs_num->val, rhs_num->val)
@@ -562,7 +570,7 @@ bytecode_t expr::BinaryOp::generate_operator_byte() const
 
 	// Note that this is not the same as,
 	//   lhs_type == Type::INT || rhs_type == Type::INT
-	return lhs_type == Type::FLOAT || rhs_type == Type::FLOAT
+	return lhs_type == Primitive::FLOAT || rhs_type == Primitive::FLOAT
 		? operator_bytes.at(operator_type).float_
 		: operator_bytes.at(operator_type).int_;
 }

@@ -1,4 +1,4 @@
-def collatz(x int) int
+def collatz(x int32) int32
 {
 	if (x % 2 == 0)
 		return x/2;
@@ -7,7 +7,7 @@ def collatz(x int) int
 }
 
 print("Enter a number: ");
-y int = collatz(int(input()));
+y int32 = collatz(int32(input()));
 
 print(str(y) + "\n");
 

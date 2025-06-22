@@ -6,12 +6,29 @@
 #include "parser/ast/statement.hpp"
 #include "parser/statement_parser.hpp"
 #include "common/token.hpp"
+#include "common/debug.hpp"
 
 #include <vector>
 #include <memory>
 #include <optional>
 #include <stdint.h>
 #include <assert.h>
+
+static Primitive token_int_to_type(Token const& token)
+{
+	assert(token.type == TokenType::INT_LIT);
+
+	if (token.str == "int8") return Primitive::INT8;
+	if (token.str == "int16") return Primitive::INT16;
+	if (token.str == "int32") return Primitive::INT32;
+	if (token.str == "int64") return Primitive::INT64;
+	if (token.str == "uint8") return Primitive::uINT8;
+	if (token.str == "uint16") return Primitive::uINT16;
+	if (token.str == "uint32") return Primitive::uINT32;
+	if (token.str == "uint64") return Primitive::uINT64;
+
+	throw debug::unhandled_case(token.str);
+}
 
 expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty, std::optional<TokenType> const& end_token)
 {
@@ -34,23 +51,23 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty, std::optional<TokenType
 		{
 		case TokenType::BOOL_LIT:
 			parse_check_value(previous_token_type, lexer);
-			new_node = std::make_shared<expr::Numeric>(lexer.loc, Type::BOOL, (int64_t)(lexer.curr().str == "true"));
+			new_node = std::make_shared<expr::Numeric>(lexer.loc, Primitive::BOOL, (int64_t)(lexer.curr().str == "true"));
 			break;
 
 		case TokenType::CHAR_LIT:
 			parse_check_value(previous_token_type, lexer);
 			assert(lexer.curr().str.length() == 1);
-			new_node = std::make_shared<expr::Numeric>(lexer.loc, Type::CHAR, (int64_t)lexer.curr().str[0]);
+			new_node = std::make_shared<expr::Numeric>(lexer.loc, Primitive::CHAR, (int64_t)lexer.curr().str[0]);
 			break;
 
 		case TokenType::INT_LIT:
 			parse_check_value(previous_token_type, lexer);
-			new_node = std::make_shared<expr::Numeric>(lexer.loc, Type::INT, std::stoll(lexer.curr().str));
+			new_node = std::make_shared<expr::Numeric>(lexer.loc, Primitive::INT, std::stoll(lexer.curr().str));
 			break;
 
 		case TokenType::FLOAT_LIT:
 			parse_check_value(previous_token_type, lexer);
-			new_node = std::make_shared<expr::Numeric>(lexer.loc, Type::FLOAT, std::stod(lexer.curr().str));
+			new_node = std::make_shared<expr::Numeric>(lexer.loc, Primitive::FLOAT, std::stod(lexer.curr().str));
 			break;
 
 		case TokenType::STRING_LIT:
@@ -115,7 +132,7 @@ expr::expr_p parse_string(Lexer& lexer)
 	std::vector<expr::expr_p> str;
 
 	for (char c : lexer.curr().str)
-		str.push_back(std::make_shared<expr::Numeric>(lexer.loc, Type::CHAR, (int64_t)c));
+		str.push_back(std::make_shared<expr::Numeric>(lexer.loc, Primitive::CHAR, (int64_t)c));
 
 	return std::make_shared<expr::Array>(lexer.loc, str, true);
 }
@@ -134,7 +151,7 @@ expr::expr_p parse_variable_or_call(Lexer& lexer)
 	
 	// Parse array allocation.
 	if (lexer.peek().type == TokenType::OPEN_SQUARE &&
-		(var_name == "int" || var_name == "float"))
+		var.type == TokenType::TYPE)
 	{
 		lexer.eat();
 

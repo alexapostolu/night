@@ -1,57 +1,96 @@
 #pragma once
 
-#include <stdio.h>
-
 enum PredefinedFunctions
 {
 	PRINT_BOOL,
 	PRINT_CHAR,
-	PRINT_INT,
+	PRINT_INT8,
+	PRINT_INT16,
+	PRINT_INT32,
+	PRINT_INT64,
+	PRINT_uINT8,
+	PRINT_uINT16,
+	PRINT_uINT32,
+	PRINT_uINT64,
 	PRINT_FLOAT,
 	PRINT_STR,
 	
 	INPUT,
 	
-	INT_TO_CHAR,
+	INT8_TO_CHAR,
+	INT16_TO_CHAR,
+	INT32_TO_CHAR,
+	INT64_TO_CHAR,
+	uINT8_TO_CHAR,
+	uINT16_TO_CHAR,
+	uINT32_TO_CHAR,
+	uINT64_TO_CHAR,
 	STR_TO_CHAR,
 
-	BOOL_TO_INT,
-	CHAR_TO_INT,
-	FLOAT_TO_INT,
-	STR_TO_INT,
+	BOOL_TO_INT8,
+	CHAR_TO_INT8,
+	FLOAT_TO_INT8,
+	STR_TO_INT8,
+
+	BOOL_TO_INT16,
+	CHAR_TO_INT16,
+	FLOAT_TO_INT16,
+	STR_TO_INT16,
+	
+	BOOL_TO_INT32,
+	CHAR_TO_INT32,
+	FLOAT_TO_INT32,
+	STR_TO_INT32,
+
+	BOOL_TO_INT64,
+	CHAR_TO_INT64,
+	FLOAT_TO_INT64,
+	STR_TO_INT64,
+
+	BOOL_TO_uINT8,
+	CHAR_TO_uINT8,
+	FLOAT_TO_uINT8,
+	STR_TO_uINT8,
+
+	BOOL_TO_uINT16,
+	CHAR_TO_uINT16,
+	FLOAT_TO_uINT16,
+	STR_TO_uINT16,
+
+	BOOL_TO_uINT32,
+	CHAR_TO_uINT32,
+	FLOAT_TO_uINT32,
+	STR_TO_uINT32,
+	
+	BOOL_TO_uINT64,
+	CHAR_TO_uINT64,
+	FLOAT_TO_uINT64,
+	STR_TO_uINT64,
 
 	BOOL_TO_FLOAT,
 	CHAR_TO_FLOAT,
-	INT_TO_FLOAT,
+	INT8_TO_FLOAT,
+	INT16_TO_FLOAT,
+	INT32_TO_FLOAT,
+	INT64_TO_FLOAT,
+	uINT8_TO_FLOAT,
+	uINT16_TO_FLOAT,
+	uINT32_TO_FLOAT,
+	uINT64_TO_FLOAT,
 	STR_TO_FLOAT,
 
 	CHAR_TO_STR,
-	INT_TO_STR,
+	INT8_TO_STR,
+	INT16_TO_STR,
+	INT32_TO_STR,
+	INT64_TO_STR,
+	uINT8_TO_STR,
+	uINT16_TO_STR,
+	uINT32_TO_STR,
+	uINT64_TO_STR,
 	FLOAT_TO_STR,
 
 	LEN,
+
+	PREDEFINED_FUNCTIONS_COUNT
 };
-
-int bool_to_int(bool b);
-
-int char_to_int(char c);
-
-int float_to_int(double d);
-
-long long str_to_int(char* s);
-
-float bool_to_float(bool b);
-
-float char_to_float(char c);
-
-float int_to_float(int i);
-
-float str_to_float(char* s);
-
-char* char_to_str(char c);
-
-char* int_to_str(int i);
-
-char* float_to_str(float f);
-
-int len(char* s);

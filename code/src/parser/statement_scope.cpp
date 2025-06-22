@@ -11,33 +11,91 @@
 #include <unordered_set>
 
 scope_func_container StatementScope::functions = {
-	{ "print", StatementFunction{ PredefinedFunctions::PRINT_BOOL, {}, { Type::BOOL }, std::nullopt } },
-	{ "print", StatementFunction{ PredefinedFunctions::PRINT_CHAR, {}, { Type::CHAR }, std::nullopt } },
-	{ "print", StatementFunction{ PredefinedFunctions::PRINT_INT, {}, { Type::INT }, std::nullopt } },
-	{ "print", StatementFunction{ PredefinedFunctions::PRINT_FLOAT, {}, { Type::FLOAT }, std::nullopt } },
-	{ "print", StatementFunction{ PredefinedFunctions::PRINT_STR, {}, { Type(Type::CHAR, 1) }, std::nullopt } },
-	
-	{ "input", StatementFunction{ PredefinedFunctions::INPUT, {}, {}, Type(Type::CHAR, 1) } },
-	
-	{ "char",  StatementFunction{ PredefinedFunctions::INT_TO_CHAR, {}, { Type::INT }, Type::CHAR } },
-	{ "char",  StatementFunction{ PredefinedFunctions::STR_TO_CHAR, {}, { Type(Type::CHAR, 1) }, Type::CHAR}},
-	
-	{ "int",   StatementFunction{ PredefinedFunctions::BOOL_TO_INT, {}, { Type::BOOL }, Type::INT } },
-	{ "int",   StatementFunction{ PredefinedFunctions::CHAR_TO_INT, {}, { Type::CHAR }, Type::INT } },
-	{ "int",   StatementFunction{ PredefinedFunctions::FLOAT_TO_INT, {}, { Type::FLOAT }, Type::INT } },
-	{ "int",   StatementFunction{ PredefinedFunctions::STR_TO_INT, {}, { Type(Type::CHAR, 1) }, Type::INT } },
+	{ "print", StatementFunction{ PredefinedFunctions::PRINT_BOOL, {}, { Primitive::BOOL }, std::nullopt } },
+	{ "print", StatementFunction{ PredefinedFunctions::PRINT_CHAR, {}, { Primitive::CHAR }, std::nullopt } },
+	{ "print", StatementFunction{ PredefinedFunctions::PRINT_INT8, {}, { Primitive::INT8 }, std::nullopt } },
+	{ "print", StatementFunction{ PredefinedFunctions::PRINT_INT16, {}, { Primitive::INT16 }, std::nullopt } },
+	{ "print", StatementFunction{ PredefinedFunctions::PRINT_INT32, {}, { Primitive::INT32 }, std::nullopt } },
+	{ "print", StatementFunction{ PredefinedFunctions::PRINT_INT64, {}, { Primitive::INT64 }, std::nullopt } },
+	{ "print", StatementFunction{ PredefinedFunctions::PRINT_uINT8, {}, { Primitive::uINT8 }, std::nullopt } },
+	{ "print", StatementFunction{ PredefinedFunctions::PRINT_uINT16, {}, { Primitive::uINT16 }, std::nullopt } },
+	{ "print", StatementFunction{ PredefinedFunctions::PRINT_uINT32, {}, { Primitive::uINT32 }, std::nullopt } },
+	{ "print", StatementFunction{ PredefinedFunctions::PRINT_uINT64, {}, { Primitive::uINT64 }, std::nullopt } },
+	{ "print", StatementFunction{ PredefinedFunctions::PRINT_FLOAT, {}, { Primitive::FLOAT }, std::nullopt } },
+	{ "print", StatementFunction{ PredefinedFunctions::PRINT_STR, {}, { Type(Primitive::CHAR, 1) }, std::nullopt } },
 
-	{ "float",   StatementFunction{ PredefinedFunctions::BOOL_TO_FLOAT, {}, { Type::BOOL }, Type::FLOAT } },
-	{ "float",   StatementFunction{ PredefinedFunctions::CHAR_TO_FLOAT, {}, { Type::CHAR }, Type::FLOAT } },
-	{ "float",   StatementFunction{ PredefinedFunctions::INT_TO_FLOAT, {}, { Type::INT }, Type::FLOAT } },
-	{ "float",   StatementFunction{ PredefinedFunctions::STR_TO_FLOAT, {}, { Type(Type::CHAR, 1) }, Type::FLOAT } },
-	
-	{ "str",   StatementFunction{ PredefinedFunctions::CHAR_TO_STR, {}, { Type::CHAR }, Type(Type::CHAR, 1) } },
-	{ "str",   StatementFunction{ PredefinedFunctions::INT_TO_STR, {}, { Type::INT }, Type(Type::CHAR, 1) } },
-	{ "str",   StatementFunction{ PredefinedFunctions::FLOAT_TO_STR, {}, { Type::FLOAT }, Type(Type::CHAR, 1) } },
-	
-	{ "len",   StatementFunction{ PredefinedFunctions::LEN, {}, { Type(Type::CHAR, 1) }, Type::INT } }
+	{ "input", StatementFunction{ PredefinedFunctions::INPUT, {}, {}, Type(Primitive::CHAR, 1) } },
+
+	{ "char",  StatementFunction{ PredefinedFunctions::INT8_TO_CHAR, {}, { Primitive::INT8 }, Primitive::CHAR } },
+	{ "char",  StatementFunction{ PredefinedFunctions::INT16_TO_CHAR, {}, { Primitive::INT16 }, Primitive::CHAR } },
+	{ "char",  StatementFunction{ PredefinedFunctions::INT32_TO_CHAR, {}, { Primitive::INT32 }, Primitive::CHAR } },
+	{ "char",  StatementFunction{ PredefinedFunctions::INT64_TO_CHAR, {}, { Primitive::INT64 }, Primitive::CHAR } },
+	{ "char",  StatementFunction{ PredefinedFunctions::uINT8_TO_CHAR, {}, { Primitive::uINT8 }, Primitive::CHAR } },
+	{ "char",  StatementFunction{ PredefinedFunctions::uINT16_TO_CHAR, {}, { Primitive::uINT16 }, Primitive::CHAR } },
+	{ "char",  StatementFunction{ PredefinedFunctions::uINT32_TO_CHAR, {}, { Primitive::uINT32 }, Primitive::CHAR } },
+	{ "char",  StatementFunction{ PredefinedFunctions::uINT64_TO_CHAR, {}, { Primitive::uINT64 }, Primitive::CHAR } },
+	{ "char",  StatementFunction{ PredefinedFunctions::STR_TO_CHAR, {}, { Type(Primitive::CHAR, 1) }, Primitive::CHAR } },
+
+	{ "int8",   StatementFunction{ PredefinedFunctions::BOOL_TO_INT8, {}, { Primitive::BOOL }, Primitive::INT8 } },
+	{ "int8",   StatementFunction{ PredefinedFunctions::CHAR_TO_INT8, {}, { Primitive::CHAR }, Primitive::INT8 } },
+	{ "int8",   StatementFunction{ PredefinedFunctions::FLOAT_TO_INT8, {}, { Primitive::FLOAT }, Primitive::INT8 } },
+	{ "int8",   StatementFunction{ PredefinedFunctions::STR_TO_INT8, {}, { Type(Primitive::CHAR, 1) }, Primitive::INT8 } },
+	{ "int16",   StatementFunction{ PredefinedFunctions::BOOL_TO_INT16, {}, { Primitive::BOOL }, Primitive::INT16 } },
+	{ "int16",   StatementFunction{ PredefinedFunctions::CHAR_TO_INT16, {}, { Primitive::CHAR }, Primitive::INT16 } },
+	{ "int16",   StatementFunction{ PredefinedFunctions::FLOAT_TO_INT16, {}, { Primitive::FLOAT }, Primitive::INT16 } },
+	{ "int16",   StatementFunction{ PredefinedFunctions::STR_TO_INT16, {}, { Type(Primitive::CHAR, 1) }, Primitive::INT16 } },
+	{ "int32",   StatementFunction{ PredefinedFunctions::BOOL_TO_INT32, {}, { Primitive::BOOL }, Primitive::INT32 } },
+	{ "int32",   StatementFunction{ PredefinedFunctions::CHAR_TO_INT32, {}, { Primitive::CHAR }, Primitive::INT32 } },
+	{ "int32",   StatementFunction{ PredefinedFunctions::FLOAT_TO_INT32, {}, { Primitive::FLOAT }, Primitive::INT32 } },
+	{ "int32",   StatementFunction{ PredefinedFunctions::STR_TO_INT32, {}, { Type(Primitive::CHAR, 1) }, Primitive::INT32 } },
+	{ "int64",   StatementFunction{ PredefinedFunctions::BOOL_TO_INT64, {}, { Primitive::BOOL }, Primitive::INT64 } },
+	{ "int64",   StatementFunction{ PredefinedFunctions::CHAR_TO_INT64, {}, { Primitive::CHAR }, Primitive::INT64 } },
+	{ "int64",   StatementFunction{ PredefinedFunctions::FLOAT_TO_INT64, {}, { Primitive::FLOAT }, Primitive::INT64 } },
+	{ "int64",   StatementFunction{ PredefinedFunctions::STR_TO_INT64, {}, { Type(Primitive::CHAR, 1) }, Primitive::INT64 } },
+
+	{ "uint8",   StatementFunction{ PredefinedFunctions::BOOL_TO_uINT8, {}, { Primitive::BOOL }, Primitive::uINT8 } },
+	{ "uint8",   StatementFunction{ PredefinedFunctions::CHAR_TO_uINT8, {}, { Primitive::CHAR }, Primitive::uINT8 } },
+	{ "uint8",   StatementFunction{ PredefinedFunctions::FLOAT_TO_uINT8, {}, { Primitive::FLOAT }, Primitive::uINT8 } },
+	{ "uint8",   StatementFunction{ PredefinedFunctions::STR_TO_uINT8, {}, { Type(Primitive::CHAR, 1) }, Primitive::uINT8 } },
+	{ "uint16",   StatementFunction{ PredefinedFunctions::BOOL_TO_uINT16, {}, { Primitive::BOOL }, Primitive::uINT16 } },
+	{ "uint16",   StatementFunction{ PredefinedFunctions::CHAR_TO_uINT16, {}, { Primitive::CHAR }, Primitive::uINT16 } },
+	{ "uint16",   StatementFunction{ PredefinedFunctions::FLOAT_TO_uINT16, {}, { Primitive::FLOAT }, Primitive::uINT16 } },
+	{ "uint16",   StatementFunction{ PredefinedFunctions::STR_TO_uINT16, {}, { Type(Primitive::CHAR, 1) }, Primitive::uINT16 } },
+	{ "uint32",   StatementFunction{ PredefinedFunctions::BOOL_TO_uINT32, {}, { Primitive::BOOL }, Primitive::uINT32 } },
+	{ "uint32",   StatementFunction{ PredefinedFunctions::CHAR_TO_uINT32, {}, { Primitive::CHAR }, Primitive::uINT32 } },
+	{ "uint32",   StatementFunction{ PredefinedFunctions::FLOAT_TO_uINT32, {}, { Primitive::FLOAT }, Primitive::uINT32 } },
+	{ "uint32",   StatementFunction{ PredefinedFunctions::STR_TO_uINT32, {}, { Type(Primitive::CHAR, 1) }, Primitive::uINT32 } },
+	{ "uint64",   StatementFunction{ PredefinedFunctions::BOOL_TO_uINT64, {}, { Primitive::BOOL }, Primitive::uINT64 } },
+	{ "uint64",   StatementFunction{ PredefinedFunctions::CHAR_TO_uINT64, {}, { Primitive::CHAR }, Primitive::uINT64 } },
+	{ "uint64",   StatementFunction{ PredefinedFunctions::FLOAT_TO_uINT64, {}, { Primitive::FLOAT }, Primitive::uINT64 } },
+	{ "uint64",   StatementFunction{ PredefinedFunctions::STR_TO_uINT64, {}, { Type(Primitive::CHAR, 1) }, Primitive::uINT64 } },
+
+	{ "float", StatementFunction{ PredefinedFunctions::BOOL_TO_FLOAT, {}, { Primitive::BOOL }, Primitive::FLOAT } },
+	{ "float", StatementFunction{ PredefinedFunctions::CHAR_TO_FLOAT, {}, { Primitive::CHAR }, Primitive::FLOAT } },
+	{ "float", StatementFunction{ PredefinedFunctions::INT8_TO_FLOAT, {}, { Primitive::INT8 }, Primitive::FLOAT } },
+	{ "float", StatementFunction{ PredefinedFunctions::INT16_TO_FLOAT, {}, { Primitive::INT16 }, Primitive::FLOAT } },
+	{ "float", StatementFunction{ PredefinedFunctions::INT32_TO_FLOAT, {}, { Primitive::INT32 }, Primitive::FLOAT } },
+	{ "float", StatementFunction{ PredefinedFunctions::INT64_TO_FLOAT, {}, { Primitive::INT64 }, Primitive::FLOAT } },
+	{ "float", StatementFunction{ PredefinedFunctions::uINT8_TO_FLOAT, {}, { Primitive::uINT8 }, Primitive::FLOAT } },
+	{ "float", StatementFunction{ PredefinedFunctions::uINT16_TO_FLOAT, {}, { Primitive::uINT16 }, Primitive::FLOAT } },
+	{ "float", StatementFunction{ PredefinedFunctions::uINT32_TO_FLOAT, {}, { Primitive::uINT32 }, Primitive::FLOAT } },
+	{ "float", StatementFunction{ PredefinedFunctions::uINT64_TO_FLOAT, {}, { Primitive::uINT64 }, Primitive::FLOAT } },
+	{ "float", StatementFunction{ PredefinedFunctions::STR_TO_FLOAT, {}, { Type(Primitive::CHAR, 1) }, Primitive::FLOAT } },
+
+	{ "str",   StatementFunction{ PredefinedFunctions::CHAR_TO_STR, {}, { Primitive::CHAR }, Type(Primitive::CHAR, 1) } },
+	{ "str",   StatementFunction{ PredefinedFunctions::INT8_TO_STR, {}, { Primitive::INT8 }, Type(Primitive::CHAR, 1) } },
+	{ "str",   StatementFunction{ PredefinedFunctions::INT16_TO_STR, {}, { Primitive::INT16 }, Type(Primitive::CHAR, 1) } },
+	{ "str",   StatementFunction{ PredefinedFunctions::INT32_TO_STR, {}, { Primitive::INT32 }, Type(Primitive::CHAR, 1) } },
+	{ "str",   StatementFunction{ PredefinedFunctions::INT64_TO_STR, {}, { Primitive::INT64 }, Type(Primitive::CHAR, 1) } },
+	{ "str",   StatementFunction{ PredefinedFunctions::uINT8_TO_STR, {}, { Primitive::uINT8 }, Type(Primitive::CHAR, 1) } },
+	{ "str",   StatementFunction{ PredefinedFunctions::uINT16_TO_STR, {}, { Primitive::uINT16 }, Type(Primitive::CHAR, 1) } },
+	{ "str",   StatementFunction{ PredefinedFunctions::uINT32_TO_STR, {}, { Primitive::uINT32 }, Type(Primitive::CHAR, 1) } },
+	{ "str",   StatementFunction{ PredefinedFunctions::uINT64_TO_STR, {}, { Primitive::uINT64 }, Type(Primitive::CHAR, 1) } },
+	{ "str",   StatementFunction{ PredefinedFunctions::FLOAT_TO_STR, {}, { Primitive::FLOAT }, Type(Primitive::CHAR, 1) } },
+
+	{ "len",   StatementFunction{ PredefinedFunctions::LEN, {}, { Type(Primitive::CHAR, 1) }, Primitive::INT32 } }
 };
+
 
 StatementScope::StatementScope()
 	: variables() {}

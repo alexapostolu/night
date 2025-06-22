@@ -1,21 +1,21 @@
 def is_digit(c char) bool
 {
-	difference int = int('9') - int(c);
+	difference int32 = int32('9') - int32(c);
 	return difference >= 0 && difference <= 9;
 }
 
-def char_to_int(c char) int
+def char_to_int(c char) int32
 {
-	return int(c - '0');
+	return int32(c - '0');
 }
 
-n int = int(input());
+n int32 = int32(input());
 s char[] = input();
 
-total_sum int = 0;
-local_sum int = 0;
+total_sum int32 = 0;
+local_sum int32 = 0;
 
-for (i int = 0; i < n; i += 1)
+for (i int32 = 0; i < n; i += 1)
 {
 	if (is_digit(s[i]))
 	{

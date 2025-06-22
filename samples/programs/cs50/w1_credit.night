@@ -1,11 +1,11 @@
 print("Number: ");
-num int = int(input());
+num int32 = int32(input());
 
-res  int = 0;
-length int = 0;
-digits int [16];
+res  int32 = 0;
+length int32 = 0;
+digits int32[16];
 
-for (z int = 0; num; length += 1)
+for (z int32 = 0; num; length += 1)
 {
 	digits[length] = num % 10;
 	num /= 10;

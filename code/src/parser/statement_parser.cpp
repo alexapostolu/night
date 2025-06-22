@@ -180,6 +180,8 @@ ArrayInitialization parse_array_initialization(Lexer& lexer, Token const& name)
 
 	lexer.eat();
 
+	// Parse array sizes.
+
 	std::vector<expr::expr_p> array_sizes;
 	array_sizes.reserve(AVG_ARRAY_DIMENSION);
 
@@ -190,6 +192,8 @@ ArrayInitialization parse_array_initialization(Lexer& lexer, Token const& name)
 
 		lexer.eat();
 	}
+
+	// Parse expression.
 
 	expr::expr_p expr;
 

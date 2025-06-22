@@ -6,10 +6,10 @@ print("Hello, Night!\n");
 
 print(str(2.0 + 3.4) + "\n");
 
-my_var0 int;
+my_var0 int32;
 print(my_var0);
 
-my_var1 int = 1;
+my_var1 int32 = 1;
 print(my_var1);
 
 my_var1 = 2 + 3;
@@ -46,11 +46,11 @@ else
 # Loops
 #
 
-for (i int = 0; i < 5; i += 2)
+for (i int32 = 0; i < 5; i += 2)
 	print(str(i) + " ");
 print("\n");
 
-i int = 0;
+i int32 = 0;
 while (i != 4)
 {
 	print(str(i) + " ");
@@ -62,7 +62,7 @@ print('\n');
 # Functions
 #
 
-def my_func(my_param1 int, my_param2 char[]) char[]
+def my_func(my_param1 int32, my_param2 char[]) char[]
 {
 	return str(my_param1) + my_param2;
 }

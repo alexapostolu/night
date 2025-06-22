@@ -1,4 +1,4 @@
-def to_lower(c char) char { if (c >= 'A' && c <= 'Z') return char(int(c) + 32); else return c; }
+def to_lower(c char) char { if (c >= 'A' && c <= 'Z') return char(int32(c) + 32); else return c; }
 
 print("Key: ");
 key char[] = input();
@@ -6,5 +6,5 @@ key char[] = input();
 print("Word: ");
 word char[] = input();
 
-for (i int = 0; i < len(word); i += 1)
-	print(key[int(to_lower(word[i]) - 'a')]);
+for (i int32 = 0; i < len(word); i += 1)
+	print(key[int32(to_lower(word[i]) - 'a')]);

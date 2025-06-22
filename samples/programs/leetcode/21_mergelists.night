@@ -1,9 +1,9 @@
-def merge_two_lists(l1 int[], l2 int[], n int) char[]
+def merge_two_lists(l1 int32[], l2 int32[], n int32) char[]
 {
 	l3 char[] = "";
-	j int = 0;
+	j int32 = 0;
 
-	for (i int = 0; i < n; i += 1)
+	for (i int32 = 0; i < n; i += 1)
 	{
 		while (l2[j] < l1[i])
 		{
