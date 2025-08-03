@@ -170,7 +170,7 @@ void ArrayInitialization::fill_array(Type const& type, expr::expr_p expr, int de
 			// signed type int instead of unsigned type std::size_t
 			for (int i = (int)arr->elements.size(); i < arr_sizes_numerics[depth]; ++i)
 			{
-				arr->elements.push_back(std::make_shared<expr::Numeric>(name_loc, type.prim, (int64_t)0));
+				arr->elements.push_back(std::make_shared<expr::Numeric>(name_loc, type.get_prim(), (int64_t)0));
 			}
 
 			return;
@@ -660,20 +660,21 @@ void ArrayMethod::check(StatementScope& scope)
 		assign_type = assign_expr->type_check(scope);
 
 	bool ok =
-		variable->type.prim == Primitive::INT ||
-		variable->type.prim == Primitive::INT8 || variable->type.prim == Primitive::INT16 ||
-		variable->type.prim == Primitive::INT32 || variable->type.prim == Primitive::INT64 ||
-		variable->type.prim == Primitive::uINT8 || variable->type.prim == Primitive::uINT16 ||
-		variable->type.prim == Primitive::uINT32 || variable->type.prim == Primitive::uINT64;
+		variable->type.get_prim() == Primitive::INT ||
+		variable->type.get_prim() == Primitive::INT8 || variable->type.get_prim() == Primitive::INT16 ||
+		variable->type.get_prim() == Primitive::INT32 || variable->type.get_prim() == Primitive::INT64 ||
+		variable->type.get_prim() == Primitive::uINT8 || variable->type.get_prim() == Primitive::uINT16 ||
+		variable->type.get_prim() == Primitive::uINT32 || variable->type.get_prim() == Primitive::uINT64;
 
 	bool ok2 = 
-		assign_type->prim == Primitive::INT ||
-		assign_type->prim == Primitive::INT8 || assign_type->prim == Primitive::INT16 ||
-		assign_type->prim == Primitive::INT32 || assign_type->prim == Primitive::INT64 ||
-		assign_type->prim == Primitive::uINT8 || assign_type->prim == Primitive::uINT16 ||
-		assign_type->prim == Primitive::uINT32 || assign_type->prim == Primitive::uINT64;
+		assign_type->get_prim() == Primitive::INT ||
+		assign_type->get_prim() == Primitive::INT8 || assign_type->get_prim() == Primitive::INT16 ||
+		assign_type->get_prim() == Primitive::INT32 || assign_type->get_prim() == Primitive::INT64 ||
+		assign_type->get_prim() == Primitive::uINT8 || assign_type->get_prim() == Primitive::uINT16 ||
+		assign_type->get_prim() == Primitive::uINT32 || assign_type->get_prim() == Primitive::uINT64;
 
-	if (variable && assign_expr && (variable->type.dim - subscripts.size() != assign_type->dim || (variable->type.prim != assign_type->prim && ok != ok2)))
+	if (variable && assign_expr && (variable->type.get_dim() - subscripts.size() != assign_type->get_dim() || \
+		(variable->type.get_prim() != assign_type->get_prim() && ok != ok2)))
 		night::error::get().create_minor_error(
 			"Variable '" + var_name +
 			"' can not be assigned to type '" + night::to_str(assign_type.value()) + "'.", name_loc);
@@ -697,7 +698,7 @@ bytecodes_t ArrayMethod::generate_codes() const
 		assert(subscripts[i]);
 
 		auto subscript_codes = subscripts[i]->generate_codes();
-		codes.insert(std::end(codes), std::begin(subscript_codes), std::end(subscript_codes));
+		night::container_concat(codes, subscript_codes);
 	}
 
 	if (assign_op != "=")
@@ -762,7 +763,7 @@ bytecodes_t ArrayMethod::generate_codes() const
 	auto index_bytes = int_to_bytes(id.value());
 	codes.insert(std::end(codes), std::begin(index_bytes), std::end(index_bytes));
 
-	if (assign_type.has_value() && assign_type->prim == Primitive::CHAR && assign_type->dim == 0)
+	if (assign_type.has_value() && assign_type->get_prim() == Primitive::CHAR && assign_type->get_dim() == 0)
 		codes.push_back(BytecodeType_STORE_INDEX_S);
 	else
 		codes.push_back(BytecodeType_STORE_INDEX_A);

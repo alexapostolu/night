@@ -20,7 +20,12 @@ expr::expr_p parse_expr(
 
 expr::expr_p parse_string(Lexer& lexer);
 
-expr::expr_p parse_variable_or_call(Lexer& lexer);
+/*
+ * Lexer starts at type/variable.
+ */
+expr::expr_p parse_variable_or_call(
+	Lexer& lexer
+);
 
 expr::expr_p parse_subscript_or_array(Lexer& lexer, std::optional<TokenType> previous_token_type);
 

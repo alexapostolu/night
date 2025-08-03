@@ -39,25 +39,31 @@ enum class Primitive {
 	FLOAT
 };
 
-struct Type
+class Type
 {
-	Primitive prim;
-	dim_t dim;
-
-	bool is_int() const;
-	bool is_prim() const;
-	bool is_str() const;
-	bool is_arr() const;
-
-	Type() = default;
-
-	Type(std::string const& _prim_s, dim_t _dim = 0);
+public:
+	Type();
+	Type(std::string const& _type_s, dim_t _dim = 0);
 	Type(Primitive _prim, dim_t _dim = 0);
 	Type(Type const& _other);
 
-	bool operator==(Primitive _prim) const;
 	bool operator==(Type const& _type) const;
+	bool operator==(Primitive _prim) const;
+
+	bool is_prim() const;
+	bool is_int() const;
+	bool is_arr() const;
+	bool is_str() const;
+
+	Primitive get_prim() const;
+	dim_t get_dim() const;
+
+private:
+	Primitive prim;
+	dim_t dim;
 };
+
+bool is_int(Primitive prim);
 
 namespace night {
 

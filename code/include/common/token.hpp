@@ -60,8 +60,7 @@ struct Token
 	Location loc;
 };
 
-namespace night
-{
+namespace night {
 
 std::string to_str(TokenType type);
 

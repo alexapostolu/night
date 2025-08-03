@@ -87,7 +87,7 @@ std::optional<Type> expr::UnaryOp::type_check(
 		return Type(Primitive::BOOL, 0);
 
 	default:
-		throw debug::unhandled_case(static_cast<int>(operator_type));
+		assert(false);
 	}
 }
 
@@ -375,7 +375,7 @@ std::optional<Type> expr::BinaryOp::type_check_subscript() const
 	if (warnings)
 		return std::nullopt;
 	
-	return Type(rhs_type->prim, rhs_type->dim - 1);
+	return Type(rhs_type->get_prim(), rhs_type->get_dim() - 1);
 }
 
 #define BinaryOpEvaluateNumeric(op, is_result_bool)	{																\

@@ -176,6 +176,10 @@ public:
 		expr_p* prev = nullptr
 	) override;
 
+	/*
+	 * Recursively type checks all elements to see if they are the same type
+	 * and dimension.
+	 */
 	std::optional<Type> type_check(
 		StatementScope& scope
 	) noexcept override;

@@ -139,19 +139,17 @@ expr::expr_p parse_string(Lexer& lexer)
 
 expr::expr_p parse_variable_or_call(Lexer& lexer)
 {
-	auto var_name = lexer.curr().str;
-	Token var = lexer.curr();
+	Token variable = lexer.curr();
 
 	// Parse function call.
 	if (lexer.peek().type == TokenType::OPEN_BRACKET)
 	{
 		lexer.eat();
-		return std::make_shared<expr::FunctionCall>(parse_func_call(lexer, var));
+		return std::make_shared<expr::FunctionCall>(parse_func_call(lexer, variable));
 	}
 	
 	// Parse array allocation.
-	if (lexer.peek().type == TokenType::OPEN_SQUARE &&
-		var.type == TokenType::TYPE)
+	if (lexer.peek().type == TokenType::OPEN_SQUARE && variable.type == TokenType::TYPE)
 	{
 		lexer.eat();
 
@@ -165,13 +163,13 @@ expr::expr_p parse_variable_or_call(Lexer& lexer)
 			else
 				break;
 		}
-		
-		return std::make_shared<expr::Allocate>(lexer.loc, Type(var_name).prim, sizes);
+
+		return std::make_shared<expr::Allocate>(lexer.loc, Type(variable.str).get_prim(), sizes);
 	}
 	
 	// Parse variable.
 
-	return std::make_shared<expr::Variable>(lexer.loc, var_name);
+	return std::make_shared<expr::Variable>(lexer.loc, variable.str);
 }
 
 expr::expr_p parse_subscript_or_array(Lexer& lexer, std::optional<TokenType> previous_token_type)

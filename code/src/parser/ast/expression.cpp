@@ -89,21 +89,35 @@ void expr::Array::insert_node(expr_p node, expr_p* prev)
 	*prev = node;
 }
 
-static bool cmp(Type t1, Type t2)
+/*
+ * Compare by primitive then by dimension.
+ * 
+ * Used by std::set's compare in array element type checking.
+ */
+static bool array_types_cmp(Type const& t1, Type const& t2)
 {
-	if (t1.prim != t2.prim)
-		return t1.prim < t2.prim;
+	if (t1.get_prim() != t2.get_prim())
+		return t1.get_prim() < t2.get_prim();
 
-	return t1.dim < t2.dim;
+	return t1.get_dim() < t2.get_dim();
 };
 
-static std::string array_types_to_str(std::set<Type, decltype(&cmp)> const& types)
+/*
+ * Turns a std::set of types into a string for error messaging.
+ * 
+ * Used by Array::type_check() when throwing an error.
+ */
+template <typename ArrayTypesCmp>
+static std::string array_types_to_str(std::set<Type, ArrayTypesCmp> const& types)
 {
 	std::string types_s;
+	// Reserve average string length of a type (4.8) plus number of comma/space characters.
+	types_s.reserve((types.size() * 4.8) + ((types.size() - 1) * 2));
 
 	for (auto it = std::cbegin(types); it != std::cend(types); ++it)
 	{
 		types_s += night::to_str(*it);
+
 		if (std::next(it) != std::end(types))
 			types_s += ", ";
 	}
@@ -113,7 +127,10 @@ static std::string array_types_to_str(std::set<Type, decltype(&cmp)> const& type
 
 std::optional<Type> expr::Array::type_check(StatementScope& scope) noexcept
 {
-	std::set<Type, decltype(&cmp)> types(&cmp);
+	/* Inserts the types of all elements to a set. If the set has more than one
+     * element, then at least two elements have different types. */
+
+	std::set<Type, decltype(&array_types_cmp)> types(&array_types_cmp);
 
 	for (auto const& element : elements)
 	{
@@ -127,10 +144,14 @@ std::optional<Type> expr::Array::type_check(StatementScope& scope) noexcept
 
 	if (types.empty())
 	{
+		/* The type of the array cannot be deduced. Return std::nullopt. */
+
 		return std::nullopt;
 	}
 	else if (types.size() != 1)
 	{
+		/* At least two elements have different types. */
+
 		night::error::get().create_warning(
 			"Array elements have different types " + array_types_to_str(types), loc);
 
@@ -138,10 +159,13 @@ std::optional<Type> expr::Array::type_check(StatementScope& scope) noexcept
 	}
 	else
 	{
-		Type array_type = *std::begin(types);
-		++array_type.dim;
+		/* All elements are the same type. */
 
-		return array_type;
+		assert(types.size() == 1);
+
+		Type element_type = *std::begin(types);
+		// Return the same primitive with one higher dimension.
+		return Type(element_type.get_prim(), element_type.get_dim() + 1);
 	}
 }
 
