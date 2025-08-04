@@ -13,12 +13,12 @@
 std::string test_code_gen_expression_basic()
 {
 	std::string file_name = create_test_file(
-		"= 2 + 3"
+		"= 2 + 3;"
 	);
 
 	Lexer lexer(file_name);
 
-	expr::expr_p expr = parse_expr(lexer, false);
+	expr::expr_p expr = parse_expr(lexer, false, TokenType::SEMICOLON);
 	
 	StatementScope scope;
 	expr->type_check(scope);
@@ -53,7 +53,8 @@ std::string test_code_gen_variable_init()
 	bytecode_t expected[] = {
 		ByteType_sINT8, 5, 0, 0, 0, 0, 0, 0, 0,
 		ByteType_uINT8, 0, 0, 0, 0, 0, 0, 0, 0,
-		ByteType_STORE };
+		ByteType_STORE
+	};
 
 	night_assert_eq(bytes.size(), sizeof(expected) / sizeof(expected[0]));
 

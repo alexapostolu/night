@@ -4,6 +4,7 @@
 #include "ast/expression.hpp"
 
 #include <optional>
+#include <unordered_set>
 
 /*
  * If there is no expression, it is the callers responsibility to handle, or
@@ -27,20 +28,17 @@ expr::expr_p parse_variable_or_call(
 	Lexer& lexer
 );
 
-expr::expr_p parse_subscript_or_array(Lexer& lexer, std::optional<TokenType> previous_token_type);
+expr::expr_p parse_bool(Lexer& lexer, std::optional<TokenType> const& previous_token_type);
+expr::expr_p parse_char(Lexer& lexer, std::optional<TokenType> const& previous_token_type);
+expr::expr_p parse_int(Lexer& lexer, std::optional<TokenType> const& previous_token_type);
+expr::expr_p parse_float(Lexer& lexer, std::optional<TokenType> const& previous_token_type);
+expr::expr_p parse_string(Lexer& lexer, std::optional<TokenType> const& previous_token_type);
 
-expr::expr_p parse_subtract_or_negative(Lexer& lexer, std::optional<TokenType> previous_token_type);
+expr::expr_p parse_typevar(Lexer& lexer, std::optional<TokenType> const& previous_token_type);
 
-expr::expr_p parse_bracket(Lexer& lexer, bool err_on_empty);
+expr::expr_p parse_open_square(Lexer& lexer, std::optional<TokenType> const& previous_token_type);
 
-void parse_check_value(std::optional<TokenType> const& previous_type, Lexer const& lexer);
+expr::expr_p parse_unary_operator(Lexer& lexer, std::optional<TokenType> const& previous_token_type);
+expr::expr_p parse_binary_operator(Lexer& lexer, std::optional<TokenType> const& previous_token_type);
 
-void parse_check_unary_operator(std::optional<TokenType> const& previous_type, Lexer const& lexer);
-
-void parse_check_binary_operator(std::optional<TokenType> const& previous_type, Lexer const& lexer);
-
-void parse_check_open_square(std::optional<TokenType> const& previous_type, Lexer const& lexer);
-
-void parse_check_open_bracket(std::optional<TokenType> const& previous_type, Lexer const& lexer);
-
-void parse_check_expression_ending(std::optional<TokenType> const& previous_type, Lexer const& lexer);
+expr::expr_p parse_open_bracket(Lexer& lexer, std::optional<TokenType> const& previous_token_type);

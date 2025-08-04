@@ -165,7 +165,7 @@ VariableInit parse_variable_initialization(Lexer& lexer, Token const& name)
 	expr::expr_p expr;
 
 	if (lexer.eat().type == TokenType::ASSIGN)
-		expr = parse_expr(lexer, true);
+		expr = parse_expr(lexer, true, TokenType::SEMICOLON);
 
 	lexer.curr_is(TokenType::SEMICOLON);
 
@@ -198,7 +198,7 @@ ArrayInitialization parse_array_initialization(Lexer& lexer, Token const& name)
 	expr::expr_p expr;
 
 	if (lexer.curr().type == TokenType::ASSIGN)
-		expr = parse_expr(lexer, true);
+		expr = parse_expr(lexer, true, TokenType::SEMICOLON);
 
 	lexer.curr_is(TokenType::SEMICOLON);
 

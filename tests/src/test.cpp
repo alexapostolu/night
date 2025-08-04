@@ -12,6 +12,7 @@ int main()
 	night_test(test_expression_parser_basic);
 	night_test(test_expression_parser_ending_token);
 	night_test(test_expression_parser_order_of_operations);
+	night_test(test_expression_parser_invalid_expression);
 
 	night_test(test_code_gen_expression_basic);
 	night_test(test_code_gen_variable_init);

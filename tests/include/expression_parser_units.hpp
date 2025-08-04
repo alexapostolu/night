@@ -78,12 +78,12 @@ std::ostream& operator<<(std::ostream& os, TokenType type) {
 std::string test_expression_parser_basic()
 {
 	std::string file_name = create_test_file(
-		"= 2 + 3"
+		"= 2 + 3;"
 	);
 
 	Lexer lexer(file_name);
 
-	expr::expr_p expr = parse_expr(lexer, false);
+	expr::expr_p expr = parse_expr(lexer, false, TokenType::SEMICOLON);
 	night_assert_notnull(expr);
 
 	auto add = std::dynamic_pointer_cast<expr::BinaryOp>(expr);
@@ -111,7 +111,7 @@ std::string test_expression_parser_ending_token()
 
 	Lexer lexer(file_name);
 
-	expr::expr_p expr = parse_expr(lexer, false);
+	expr::expr_p expr = parse_expr(lexer, false, TokenType::CLOSE_CURLY);
 
 	night_assert_notnull(expr);
 	night_assert_eq(lexer.curr().type, TokenType::CLOSE_CURLY);
@@ -122,12 +122,12 @@ std::string test_expression_parser_ending_token()
 std::string test_expression_parser_order_of_operations()
 {
 	std::string file_name = create_test_file(
-		"= 2 * (3 + 4 / 5)"
+		"= 2 * (3 + 4 / 5);"
 	);
 
 	Lexer lexer(file_name);
 
-	expr::expr_p expr = parse_expr(lexer, false);
+	expr::expr_p expr = parse_expr(lexer, false, TokenType::SEMICOLON);
 	night_assert_notnull(expr);
 
 	auto mult = std::dynamic_pointer_cast<expr::BinaryOp>(expr);
@@ -161,6 +161,28 @@ std::string test_expression_parser_order_of_operations()
 	night_assert_notnull(five);
 	night_assert_tr(std::holds_alternative<int64_t>(five->get_val()));
 	night_assert_eq(std::get<int64_t>(five->get_val()), 5);
+
+	return "";
+}
+
+std::string test_expression_parser_invalid_expression()
+{
+	std::string file_name = create_test_file(
+		"2 + +"
+	);
+
+	Lexer lexer(file_name);
+
+	bool fatal_error_thrown = false;
+
+	try {
+		expr::expr_p expr = parse_expr(lexer, false, TokenType::SEMICOLON);
+	}
+	catch (night::error const& e) {
+		fatal_error_thrown = true;
+	}
+
+	night_assert_tr(fatal_error_thrown);
 
 	return "";
 }
