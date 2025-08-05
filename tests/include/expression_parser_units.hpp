@@ -103,18 +103,83 @@ std::string test_expression_parser_basic()
 	return "";
 }
 
-std::string test_expression_parser_ending_token()
+std::string test_expression_parser_subscript()
 {
 	std::string file_name = create_test_file(
-		"= 2 + 3 }"
+		"= arr[1][2] + 3"
 	);
 
 	Lexer lexer(file_name);
 
-	expr::expr_p expr = parse_expr(lexer, false, TokenType::CLOSE_CURLY);
+	expr::expr_p expr = parse_expr(lexer, false);
+
+	auto add = std::dynamic_pointer_cast<expr::BinaryOp>(expr);
+	night_assert_notnull(add);
+	night_assert_eq(add->get_type(), expr::BinaryOpType::ADD);
+
+	auto three = std::dynamic_pointer_cast<expr::Numeric>(add->get_rhs());
+	night_assert_notnull(three);
+	night_assert_tr(std::holds_alternative<int64_t>(three->get_val()));
+	night_assert_eq(std::get<int64_t>(three->get_val()), 3);
+
+	auto sub2 = std::dynamic_pointer_cast<expr::BinaryOp>(add->get_lhs());
+	night_assert_notnull(sub2);
+	night_assert_eq(sub2->get_type(), expr::BinaryOpType::SUBSCRIPT);
+
+	auto two = std::dynamic_pointer_cast<expr::Numeric>(sub2->get_lhs());
+	night_assert_notnull(two);
+	night_assert_tr(std::holds_alternative<int64_t>(two->get_val()));
+	night_assert_eq(std::get<int64_t>(two->get_val()), 2);
+
+	auto sub1 = std::dynamic_pointer_cast<expr::BinaryOp>(sub2->get_rhs());
+	night_assert_notnull(sub1);
+	night_assert_eq(sub1->get_type(), expr::BinaryOpType::SUBSCRIPT);
+
+	auto one = std::dynamic_pointer_cast<expr::Numeric>(sub1->get_lhs());
+	night_assert_notnull(one);
+	night_assert_tr(std::holds_alternative<int64_t>(one->get_val()));
+	night_assert_eq(std::get<int64_t>(one->get_val()), 1);
+
+	auto arr = std::dynamic_pointer_cast<expr::Variable>(sub1->get_rhs());
+	night_assert_notnull(arr);
+
+	return "";
+}
+
+std::string test_expression_parser_valid_ending_token()
+{
+	std::string file_name = create_test_file(
+		"[ 2 + 3 ]"
+	);
+
+	Lexer lexer(file_name);
+
+	expr::expr_p expr = parse_expr(lexer, false, TokenType::CLOSE_SQUARE);
 
 	night_assert_notnull(expr);
-	night_assert_eq(lexer.curr().type, TokenType::CLOSE_CURLY);
+	night_assert_eq(lexer.curr().type, TokenType::CLOSE_SQUARE);
+
+	return "";
+}
+
+std::string test_expression_parser_invalid_ending_token()
+{
+	std::string file_name = create_test_file(
+		"= 2 + 3 +"
+	);
+
+	Lexer lexer(file_name);
+
+	bool error_thrown = false;
+
+	try {
+		expr::expr_p expr = parse_expr(lexer, false, TokenType::SEMICOLON);
+	}
+	catch (night::error const& e) {
+		error_thrown = true;
+	}
+
+	night_assert_tr(error_thrown);
 
 	return "";
 }

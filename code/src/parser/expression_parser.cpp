@@ -42,7 +42,9 @@ std::unordered_set<TokenType> literals_next_allowed_tokens{
 
 std::unordered_set<TokenType> typevar_next_allowed_tokens{
 	TokenType::BINARY_OPERATOR,
+	TokenType::OPEN_BRACKET,
 	TokenType::CLOSE_BRACKET,
+	TokenType::OPEN_SQUARE,
 	TokenType::CLOSE_SQUARE
 };
 
@@ -96,6 +98,17 @@ std::unordered_set<TokenType> open_bracket_next_allowed_tokens{
 	TokenType::UNARY_OPERATOR
 };
 
+std::unordered_set<TokenType> close_bracket_next_allowed_tokens{
+	TokenType::BINARY_OPERATOR,
+	TokenType::OPEN_SQUARE
+};
+
+std::unordered_set<TokenType> close_square_next_allowed_tokens{
+	TokenType::BINARY_OPERATOR,
+	TokenType::OPEN_BRACKET,
+	TokenType::OPEN_SQUARE
+};
+
 std::unordered_map<TokenType, TokenParser> token_parser_map{
 	{ TokenType::BOOL_LIT, { parse_bool ,literals_next_allowed_tokens } },
 	{ TokenType::CHAR_LIT, { parse_char, literals_next_allowed_tokens } },
@@ -110,7 +123,10 @@ std::unordered_map<TokenType, TokenParser> token_parser_map{
 	{ TokenType::UNARY_OPERATOR, { parse_unary_operator, unary_operator_next_allowed_tokens } },
 	{ TokenType::BINARY_OPERATOR, { parse_binary_operator, binary_operator_next_allowed_tokens } },
 
-	{ TokenType::OPEN_BRACKET, { parse_open_bracket, open_bracket_next_allowed_tokens } }
+	{ TokenType::OPEN_BRACKET, { parse_open_bracket, open_bracket_next_allowed_tokens } },
+
+	{ TokenType::CLOSE_BRACKET, { nullptr, close_bracket_next_allowed_tokens } },
+	{ TokenType::CLOSE_SQUARE, { nullptr, close_square_next_allowed_tokens } }
 };
 
 static Primitive token_int_to_type(Token const& token)
@@ -148,7 +164,7 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty, std::optional<TokenType
 		
 		Token const& curr = lexer.eat();
 		
-		if (!token_parser_map.contains(curr.type))
+		if (!token_parser_map.contains(curr.type) || curr.type == TokenType::CLOSE_BRACKET || curr.type == TokenType::CLOSE_SQUARE)
 		{
 			if (!end_token.has_value() || curr.type == end_token)
 				return head;
@@ -158,7 +174,14 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty, std::optional<TokenType
 					"Found invalid token '" + lexer.curr().str + "' in expression", lexer.loc);
 		}
 
-		new_node = token_parser_map[curr.type].parser(lexer, previous_token_type);
+		if (previous_token_type.has_value() &&
+			!token_parser_map.at(*previous_token_type).next_allowed.contains(curr.type))
+		{
+			throw night::error::get().create_fatal_error(
+				"Unexpected token '" + lexer.curr().str + "' after token '" + night::to_str(*previous_token_type) + "'", lexer.loc);
+		}
+
+		new_node = token_parser_map.at(curr.type).parser(lexer, previous_token_type);
 		assert(new_node);
 
 		if (!head)

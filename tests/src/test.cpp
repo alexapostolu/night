@@ -10,7 +10,9 @@ int main()
 	std::cout << cyan << "Running unit tests...\n\n" << clear;
 
 	night_test(test_expression_parser_basic);
-	night_test(test_expression_parser_ending_token);
+	night_test(test_expression_parser_subscript)
+	night_test(test_expression_parser_valid_ending_token);
+	night_test(test_expression_parser_invalid_ending_token);
 	night_test(test_expression_parser_order_of_operations);
 	night_test(test_expression_parser_invalid_expression);
 
