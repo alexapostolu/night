@@ -7,6 +7,15 @@
 
 #include <ostream>
 
+std::ostream& operator<<(std::ostream& os, expr::UnaryOpType type)
+{
+	switch (type) {
+	case expr::UnaryOpType::NEGATIVE:	return os << "UnaryOpType::NEGATIVE";
+	case expr::UnaryOpType::NOT:		return os << "UnaryOpType::NOT";
+	default: return os << "UNKNOWN";
+	}
+}
+
 std::ostream& operator<<(std::ostream & os, expr::BinaryOpType type)
 {
 	switch (type) {
@@ -103,10 +112,41 @@ std::string test_expression_parser_basic()
 	return "";
 }
 
+std::string test_expression_parser_negative_or_subtract()
+{
+	std::string file_name = create_test_file(
+		"= -1 - 2"
+	);
+
+	Lexer lexer(file_name);
+
+	expr::expr_p expr = parse_expr(lexer, false);
+
+	auto subtract = std::dynamic_pointer_cast<expr::BinaryOp>(expr);
+	night_assert_notnull(subtract);
+	night_assert_eq(subtract->get_type(), expr::BinaryOpType::SUB);
+
+	auto negative = std::dynamic_pointer_cast<expr::UnaryOp>(subtract->get_lhs());
+	night_assert_notnull(negative);
+	night_assert_eq(negative->get_type(), expr::UnaryOpType::NEGATIVE);
+
+	auto one = std::dynamic_pointer_cast<expr::Numeric>(negative->get_expr());
+	night_assert_notnull(one);
+	night_assert_tr(std::holds_alternative<int64_t>(one->get_val()));
+	night_assert_eq(std::get<int64_t>(one->get_val()), 1);
+
+	auto two = std::dynamic_pointer_cast<expr::Numeric>(subtract->get_rhs());
+	night_assert_notnull(two);
+	night_assert_tr(std::holds_alternative<int64_t>(two->get_val()));
+	night_assert_eq(std::get<int64_t>(two->get_val()), 2);
+
+	return "";
+}
+
 std::string test_expression_parser_subscript()
 {
 	std::string file_name = create_test_file(
-		"= arr[1][2] + 3"
+		"= -arr[1][2] + 3"
 	);
 
 	Lexer lexer(file_name);
@@ -117,12 +157,14 @@ std::string test_expression_parser_subscript()
 	night_assert_notnull(add);
 	night_assert_eq(add->get_type(), expr::BinaryOpType::ADD);
 
-	auto three = std::dynamic_pointer_cast<expr::Numeric>(add->get_rhs());
-	night_assert_notnull(three);
-	night_assert_tr(std::holds_alternative<int64_t>(three->get_val()));
-	night_assert_eq(std::get<int64_t>(three->get_val()), 3);
+	// Tests subscript binary operator has higher precedence than unary operator.
+	// This is important because most other binary operators have lower precedence
+	// than unary operators.
+	auto negative = std::dynamic_pointer_cast<expr::UnaryOp>(add->get_lhs());
+	night_assert_notnull(negative);
+	night_assert_eq(negative->get_type(), expr::UnaryOpType::NEGATIVE);
 
-	auto sub2 = std::dynamic_pointer_cast<expr::BinaryOp>(add->get_lhs());
+	auto sub2 = std::dynamic_pointer_cast<expr::BinaryOp>(negative->get_expr());
 	night_assert_notnull(sub2);
 	night_assert_eq(sub2->get_type(), expr::BinaryOpType::SUBSCRIPT);
 
@@ -142,6 +184,11 @@ std::string test_expression_parser_subscript()
 
 	auto arr = std::dynamic_pointer_cast<expr::Variable>(sub1->get_rhs());
 	night_assert_notnull(arr);
+
+	auto three = std::dynamic_pointer_cast<expr::Numeric>(add->get_rhs());
+	night_assert_notnull(three);
+	night_assert_tr(std::holds_alternative<int64_t>(three->get_val()));
+	night_assert_eq(std::get<int64_t>(three->get_val()), 3);
 
 	return "";
 }

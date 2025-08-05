@@ -10,7 +10,8 @@ int main()
 	std::cout << cyan << "Running unit tests...\n\n" << clear;
 
 	night_test(test_expression_parser_basic);
-	night_test(test_expression_parser_subscript)
+	night_test(test_expression_parser_negative_or_subtract);
+	night_test(test_expression_parser_subscript);
 	night_test(test_expression_parser_valid_ending_token);
 	night_test(test_expression_parser_invalid_ending_token);
 	night_test(test_expression_parser_order_of_operations);
@@ -23,6 +24,5 @@ int main()
 
 	ntest::clean_test_files();
 
-	int ret = ntest::display_summary();
-	return ret;
+	return ntest::display_summary();
 }

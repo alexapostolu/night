@@ -50,6 +50,11 @@ public:
 	 */
 	bytecodes_t generate_codes() const override;
 
+public:
+	UnaryOpType get_type() const;
+
+	expr::expr_p const& get_expr() const;
+
 private:
 	/*
 	 * Returns the byte type of the operator.
@@ -133,7 +138,7 @@ public:
 	bytecodes_t generate_codes() const override;
 
 public:
-	BinaryOpType const& get_type() const;
+	BinaryOpType get_type() const;
 
 	expr::expr_p const& get_lhs() const;
 

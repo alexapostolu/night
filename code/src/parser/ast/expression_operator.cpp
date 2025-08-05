@@ -33,12 +33,14 @@ void expr::UnaryOp::insert_node(
 	{
 		expr = node;
 	}
-	else if (node->precedence() < precedence())
+	else if (node->precedence() > precedence())
 	{
 		expr->insert_node(node, &expr);
 	}
 	else
 	{
+		assert(prev);
+
 		node->insert_node(std::make_shared<UnaryOp>(*this));
 		*prev = node;
 	}
@@ -134,6 +136,16 @@ bytecodes_t expr::UnaryOp::generate_codes() const
 	return codes;
 }
 
+expr::UnaryOpType expr::UnaryOp::get_type() const
+{
+	return operator_type;
+}
+
+expr::expr_p const& expr::UnaryOp::get_expr() const
+{
+	return expr;
+}
+
 bytecode_t expr::UnaryOp::generate_operator_byte() const
 {
 	/*
@@ -180,7 +192,7 @@ std::unordered_map<std::string, std::tuple<int, expr::BinaryOpType>> const expr:
 	{ "*",  std::make_tuple(5, BinaryOpType::MULT) },
 	{ "/",  std::make_tuple(5, BinaryOpType::DIV) },
 	{ "%",  std::make_tuple(5, BinaryOpType::MOD) },
-	{ "[",  std::make_tuple(6, BinaryOpType::SUBSCRIPT) }
+	{ "[",  std::make_tuple(Expression::unary_precedence + 10, BinaryOpType::SUBSCRIPT) }
 };
 
 expr::BinaryOp::BinaryOp(
@@ -597,7 +609,7 @@ std::string expr::BinaryOp::operator_type_to_str() const
 	}
 }
 
-expr::BinaryOpType const& expr::BinaryOp::get_type() const
+expr::BinaryOpType expr::BinaryOp::get_type() const
 {
 	return operator_type;
 }
