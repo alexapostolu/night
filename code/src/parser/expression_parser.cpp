@@ -109,7 +109,7 @@ std::unordered_set<TokenType> close_square_next_allowed_tokens{
 	TokenType::OPEN_SQUARE
 };
 
-std::unordered_map<TokenType, TokenParser> token_parser_map{
+std::unordered_map<TokenType, TokenParser> valid_starting_tokens{
 	{ TokenType::BOOL_LIT, { parse_bool ,literals_next_allowed_tokens } },
 	{ TokenType::CHAR_LIT, { parse_char, literals_next_allowed_tokens } },
 	{ TokenType::INT_LIT, { parse_int, literals_next_allowed_tokens } },
@@ -125,6 +125,9 @@ std::unordered_map<TokenType, TokenParser> token_parser_map{
 
 	{ TokenType::OPEN_BRACKET, { parse_open_bracket, open_bracket_next_allowed_tokens } },
 
+	// These two are not valid starting tokens, but they are the last token in
+	// the sequence of starting open bracket and open square, so they will be
+	// checked for next tokens.
 	{ TokenType::CLOSE_BRACKET, { nullptr, close_bracket_next_allowed_tokens } },
 	{ TokenType::CLOSE_SQUARE, { nullptr, close_square_next_allowed_tokens } }
 };
@@ -164,24 +167,40 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty, std::optional<TokenType
 		
 		Token const& curr = lexer.eat();
 		
-		if (!token_parser_map.contains(curr.type) || curr.type == TokenType::CLOSE_BRACKET || curr.type == TokenType::CLOSE_SQUARE)
+		// This condition deals with unexpected tokens. A token is unexpected
+		// if it does not appear in the valid starting tokens map.
+		// Close bracket and close square are not valid starting tokens, but
+		// appear in the map for a special case (see map for details).
+		if (!valid_starting_tokens.contains(curr.type) ||
+			curr.type == TokenType::CLOSE_BRACKET || curr.type == TokenType::CLOSE_SQUARE)
 		{
-			if (!end_token.has_value() || curr.type == end_token)
-				return head;
+			if (err_on_empty && !head)
+				throw night::error::get().create_fatal_error(
+					"Expected expression", lexer.loc);
 
-			if (err_on_empty || head)
+			// If the expected ending token is specified and the current token
+			// has reached a non-valid starting token, then we have encountered
+			// an invalid token.
+			if (end_token.has_value() && curr.type != end_token)
 				throw night::error::get().create_fatal_error(
 					"Found invalid token '" + lexer.curr().str + "' in expression", lexer.loc);
+
+			// If the ending token is unspecified and we have reached a
+			// non-valid token, then assume it is the end of the expression.
+			// It is the caller's responsibility to check the end token in this
+			// case.
+			return head;
 		}
 
 		if (previous_token_type.has_value() &&
-			!token_parser_map.at(*previous_token_type).next_allowed.contains(curr.type))
+			!valid_starting_tokens[*previous_token_type].next_allowed.contains(curr.type))
 		{
 			throw night::error::get().create_fatal_error(
 				"Unexpected token '" + lexer.curr().str + "' after token '" + night::to_str(*previous_token_type) + "'", lexer.loc);
 		}
 
-		new_node = token_parser_map.at(curr.type).parser(lexer, previous_token_type);
+		assert(valid_starting_tokens[curr.type].parser);
+		new_node = valid_starting_tokens[curr.type].parser(lexer, previous_token_type);
 		assert(new_node);
 
 		if (!head)

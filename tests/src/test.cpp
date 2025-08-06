@@ -12,6 +12,7 @@ int main()
 	night_test(test_expression_parser_basic);
 	night_test(test_expression_parser_negative_or_subtract);
 	night_test(test_expression_parser_subscript);
+	night_test(test_expression_parser_subscript_invalid);
 	night_test(test_expression_parser_valid_ending_token);
 	night_test(test_expression_parser_invalid_ending_token);
 	night_test(test_expression_parser_order_of_operations);

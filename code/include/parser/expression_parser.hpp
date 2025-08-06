@@ -8,7 +8,11 @@
 
 /*
  * If there is no expression, it is the callers responsibility to handle, or
- * set 'err_on_empty' to true to display an error message in that event
+ * set 'err_on_empty' to true to display an error message in that event.
+ * 
+ * If the ending token is unspecified, it is the callers responsibility to
+ * check if it is valid.
+ * 
  * Lexer
  *   start: first token before expression
  *   end: last token after expression

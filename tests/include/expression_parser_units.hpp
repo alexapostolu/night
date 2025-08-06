@@ -84,6 +84,15 @@ std::ostream& operator<<(std::ostream& os, TokenType type) {
 	}
 }
 
+expr::expr_p setup_expression_parser(std::string const& code, bool err_on_empty = false,
+	std::optional<TokenType> const& end_token = std::nullopt)
+{
+	std::string file_name = create_test_file(code);
+	Lexer lexer(file_name);
+
+	return parse_expr(lexer, err_on_empty, end_token);
+}
+
 std::string test_expression_parser_basic()
 {
 	std::string file_name = create_test_file(
@@ -193,6 +202,29 @@ std::string test_expression_parser_subscript()
 	return "";
 }
 
+std::string test_expression_parser_subscript_invalid()
+{
+	try {
+		expr::expr_p expr = setup_expression_parser("= arr[1]2]");
+		night_assert_tr(false);
+	}
+	catch (night::error const&) { }
+
+	try {
+		expr::expr_p expr = setup_expression_parser("= arr[1 2]");
+		night_assert_tr(false);
+	}
+	catch (night::error const&) { }
+
+	try {
+		expr::expr_p expr = setup_expression_parser("= arr[1");
+		night_assert_tr(false);
+	}
+	catch (night::error const&) { }
+
+	return "";
+}
+
 std::string test_expression_parser_valid_ending_token()
 {
 	std::string file_name = create_test_file(
@@ -279,22 +311,26 @@ std::string test_expression_parser_order_of_operations()
 
 std::string test_expression_parser_invalid_expression()
 {
-	std::string file_name = create_test_file(
-		"2 + +"
-	);
+	try {
+		expr::expr_p expr = setup_expression_parser("= 2 + +", false, TokenType::SEMICOLON);
+		night_assert_tr(false);
+	}
+	catch (night::error const&) { }
 
-	Lexer lexer(file_name);
-
-	bool fatal_error_thrown = false;
+	// Test error on empty.
 
 	try {
-		expr::expr_p expr = parse_expr(lexer, false, TokenType::SEMICOLON);
+		expr::expr_p expr = setup_expression_parser("= 2 ;", true, TokenType::SEMICOLON);
 	}
-	catch (night::error const& e) {
-		fatal_error_thrown = true;
+	catch (night::error const&) {
+		night_assert_tr(false);
 	}
 
-	night_assert_tr(fatal_error_thrown);
+	try {
+		expr::expr_p expr = setup_expression_parser("= ;", true, TokenType::SEMICOLON);
+		night_assert_tr(false);
+	}
+	catch (night::error const&) { }
 
 	return "";
 }
