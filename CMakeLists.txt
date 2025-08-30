@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.0.0)
+cmake_minimum_required(VERSION 3.16.0)
 project(night VERSION 0.0.3 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
