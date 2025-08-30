@@ -182,7 +182,7 @@ Token Lexer::eat_character()
 		case '"':  chr = '\"'; break;
 		case '0':  chr = '\0'; break;
 		default:
-			throw night::error::get().create_fatal_error("unknown character '\\'" + file_line[loc.col], loc);
+			throw night::error::get().create_fatal_error(std::string() + "unknown character '\\'" + file_line[loc.col], loc);
 		}
 	}
 	else

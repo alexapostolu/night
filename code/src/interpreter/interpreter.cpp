@@ -81,7 +81,7 @@ static char* int_to_str(int64_t i)
 	if (!s)
 		return nullptr;
 
-	sprintf(s, "%" PRId64, i);
+	snprintf(s, 21, "%" PRId64, i);
 	return s;
 }
 
@@ -92,7 +92,7 @@ static char* uint_to_str(uint64_t i)
 	if (!s)
 		return nullptr;
 
-	sprintf(s, "%" PRIu64, i);
+	snprintf(s, 21, "%" PRIu64, i);
 	return s;
 }
 
@@ -101,7 +101,7 @@ static char* float_to_str(float f)
 	int size = 65;
 	char* s = (char*)malloc(size);
 
-	sprintf(s, "%f", f);
+	snprintf(s, size, "%f", f);
 	return s;
 }
 
@@ -438,74 +438,111 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			case PredefinedFunctions::PRINT_BOOL:
 				if (!buf)
 					printf(pop(s).as.i ? "true" : "false");
-				else
-					sprintf(buf + strlen(buf), pop(s).as.i ? "true" : "false");
+				else {
+					const char* bool_str = pop(s).as.i ? "true" : "false";
+					size_t current_len = strlen(buf);
+					size_t remaining = 1024 - current_len; // Assume buffer is at least 1024 bytes
+					snprintf(buf + current_len, remaining, "%s", bool_str);
+				}
 				break;
 			case PredefinedFunctions::PRINT_CHAR:
 				if (!buf)
 					printf("%c", (char)pop(s).as.i);
-				else
-					sprintf(buf + strlen(buf), "%c", (char)pop(s).as.i);
+				else {
+					size_t current_len = strlen(buf);
+					size_t remaining = 1024 - current_len;
+					snprintf(buf + current_len, remaining, "%c", (char)pop(s).as.i);
+				}
 				break;
 			case PredefinedFunctions::PRINT_INT8:
 				if (!buf)
 					printf("%" PRId8, (int8_t)pop(s).as.i);
-				else
-					sprintf(buf + strlen(buf), "%" PRId8, (int8_t)pop(s).as.i);
+				else {
+					size_t current_len = strlen(buf);
+					size_t remaining = 1024 - current_len;
+					snprintf(buf + current_len, remaining, "%" PRId8, (int8_t)pop(s).as.i);
+				}
 				break;
 			case PredefinedFunctions::PRINT_INT16:
 				if (!buf)
 					printf("%" PRId16, (int16_t)pop(s).as.i);
-				else
-					sprintf(buf + strlen(buf), "%" PRId16, (int16_t)pop(s).as.i);
+				else {
+					size_t current_len = strlen(buf);
+					size_t remaining = 1024 - current_len;
+					snprintf(buf + current_len, remaining, "%" PRId16, (int16_t)pop(s).as.i);
+				}
 				break;
 			case PredefinedFunctions::PRINT_INT32:
 				if (!buf)
 					printf("%" PRId32, (int32_t)pop(s).as.i);
-				else
-					sprintf(buf + strlen(buf), "%" PRId32, (int32_t)pop(s).as.i);
+				else {
+					size_t current_len = strlen(buf);
+					size_t remaining = 1024 - current_len;
+					snprintf(buf + current_len, remaining, "%" PRId32, (int32_t)pop(s).as.i);
+				}
 				break;
 			case PredefinedFunctions::PRINT_INT64:
 				if (!buf)
 					printf("%" PRId64, pop(s).as.i);
-				else
-					sprintf(buf + strlen(buf), "%" PRId64, pop(s).as.i);
+				else {
+					size_t current_len = strlen(buf);
+					size_t remaining = 1024 - current_len;
+					snprintf(buf + current_len, remaining, "%" PRId64, pop(s).as.i);
+				}
 				break;
 			case PredefinedFunctions::PRINT_uINT8:
 				if (!buf)
 					printf("%" PRIu8, (uint8_t)pop(s).as.i);
-				else
-					sprintf(buf + strlen(buf), "%" PRIu8, (uint8_t)pop(s).as.i);
+				else {
+					size_t current_len = strlen(buf);
+					size_t remaining = 1024 - current_len;
+					snprintf(buf + current_len, remaining, "%" PRIu8, (uint8_t)pop(s).as.i);
+				}
 				break;
 			case PredefinedFunctions::PRINT_uINT16:
 				if (!buf)
 					printf("%" PRIu16, (uint16_t)pop(s).as.i);
-				else
-					sprintf(buf + strlen(buf), "%" PRIu16, (uint16_t)pop(s).as.i);
+				else {
+					size_t current_len = strlen(buf);
+					size_t remaining = 1024 - current_len;
+					snprintf(buf + current_len, remaining, "%" PRIu16, (uint16_t)pop(s).as.i);
+				}
 				break;
 			case PredefinedFunctions::PRINT_uINT32:
 				if (!buf)
 					printf("%" PRIu32, (uint32_t)pop(s).as.i);
-				else
-					sprintf(buf + strlen(buf), "%" PRIu32, (uint32_t)pop(s).as.i);
+				else {
+					size_t current_len = strlen(buf);
+					size_t remaining = 1024 - current_len;
+					snprintf(buf + current_len, remaining, "%" PRIu32, (uint32_t)pop(s).as.i);
+				}
 				break;
 			case PredefinedFunctions::PRINT_uINT64:
 				if (!buf)
 					printf("%" PRIu64, (uint64_t)pop(s).as.i);
-				else
-					sprintf(buf + strlen(buf), "%" PRIu64, (uint64_t)pop(s).as.i);
+				else {
+					size_t current_len = strlen(buf);
+					size_t remaining = 1024 - current_len;
+					snprintf(buf + current_len, remaining, "%" PRIu64, (uint64_t)pop(s).as.i);
+				}
 				break;
 			case PredefinedFunctions::PRINT_FLOAT:
 				if (!buf)
 					printf("%.17gf", pop(s).as.d);
-				else
-					sprintf(buf + strlen(buf), "%.17gf", pop(s).as.d);
+				else {
+					size_t current_len = strlen(buf);
+					size_t remaining = 1024 - current_len;
+					snprintf(buf + current_len, remaining, "%.17gf", pop(s).as.d);
+				}
 				break;
 			case PredefinedFunctions::PRINT_STR:
 				if (!buf)
 					printf("%s", pop(s).as.s);
-				else
-					sprintf(buf + strlen(buf), "%s", pop(s).as.s);
+				else {
+					size_t current_len = strlen(buf);
+					size_t remaining = 1024 - current_len;
+					snprintf(buf + current_len, remaining, "%s", pop(s).as.s);
+				}
 				break;
 
 			case PredefinedFunctions::INPUT:

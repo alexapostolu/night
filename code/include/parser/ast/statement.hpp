@@ -398,7 +398,8 @@ public:
 
 	void insert_node(
 		expr_p node,
-		expr_p* prev = nullptr);
+		expr_p* prev = nullptr
+	) override;
 
 	void check(StatementScope& scope) override;
 	std::optional<Type> type_check(StatementScope& scope) noexcept override;

@@ -12,17 +12,17 @@ Night is a bytecode interpreted language.
 
 ## Usage
 
-You can download either the Windows or Linux binary file in the [Releases section](https://github.com/alexapostolu/night/releases).
+You can download either the Windows, Linux or Mac binaries in the [Releases section](https://github.com/alexapostolu/night/releases).
 
-Then create a `.night` file containing your Night code. Example programs can be found under the [`programs`](https://github.com/alexapostolu/night/tree/main/tests/programs) directory.
+Then create a `*.night` file containing your Night code. Example programs can be found under the [`programs`](https://github.com/alexapostolu/night/tree/main/tests/programs) directory.
 
 To run a Night file, simply type,
 
 ```
-night source.night
+./night source.night
 ```
 
-Try it out now with this simple Night code!
+Try it out with this simple Night code!
 
 ###### *source.night*
 ```py
@@ -42,17 +42,17 @@ for (i int = 0; i < n; i += 1)
     print(str(fib(i)) + " ");
 ```
 
-The [`programs`](https://github.com/alexapostolu/night/tree/main/tests/programs) directory contain simple programs written in Night, including some Harvard's [CS50](https://cs50.harvard.edu/college/2023/spring/) programs and some common Math programs. These programs are also used in the CI pipeline as integration tests.
+The [`programs`](https://github.com/alexapostolu/night/tree/main/tests/programs) directory contains sample programs written in Night. These programs are also used in the CI pipeline as integration tests.
 
 ---
 
 ## Build
 
-Dependenies, `cmake` `g++`
+Dependenies,
+* `cmake`
+* `g++` or `clang`
 
-First, clone the repo and move into that directory. Generate MinGW or Unix Makefiles using `cmake`, and then build (optionally specify a Release build with `--Release`). You should then see a `night` exectuable file in the current directory.
-
-**Windows Build:**
+First, clone the repo and move into that directory. Configure `cmake` and build (optionally specify a Release build with `--Release`). You should then see a `night` exectuable file in the current directory.
 
 ```sh
 git clone https://github.com/alex/apostolu/night.git
@@ -61,21 +61,7 @@ cd night
 mkdir build
 cd build
 
-cmake -G "MinGW Makefiles" ..
-cmake --build .
-
-night source.night
-```
-
-**Linux Build:**
-
-```sh
-cd night
-
-mkdir build
-cd build
-
-cmake -G "Unix Makefiles" ..
+cmake ..
 cmake --build .
 
 ./night source.night
