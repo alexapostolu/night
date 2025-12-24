@@ -17,7 +17,7 @@ expected_outputs=($(find stdio/leetcode stdio/ccc stdio/cs50 stdio/math -type f 
 
 tests_failed=0
 
-echo -e "\e[36mRunning ${#night_files[@]} tests...\e[0m\n"
+echo -e "\e[36mRunning ${#night_files[@]} samples...\e[0m\n"
 
 for i in "${!night_files[@]}"; do
     # Night code
@@ -66,11 +66,11 @@ for i in "${!night_files[@]}"; do
 done
 
 if [ $tests_failed -eq 0 ]; then
-    echo -e "\n\e[1;32mAll tests passed.\e[0m"
+    echo -e "\n\e[1;32mAll samples passed.\e[0m"
 elif [ $tests_failed -eq 1 ]; then
-    echo -e "\n\e[1;31m${tests_failed} test failed.\e[0m"
+    echo -e "\n\e[1;31m${tests_failed} sample failed.\e[0m"
 else
-    echo -e "\n\e[1;31m${tests_failed} tests failed.\e[0m"
+    echo -e "\n\e[1;31m${tests_failed} samples failed.\e[0m"
 fi
 
 # Remove temporary output file

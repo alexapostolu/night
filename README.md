@@ -6,7 +6,7 @@ Night is a bytecode interpreted language.
 
 - [Usage](#usage)
 - [Build](#build)
-- [How it Works](#how-it-works)
+- [Tests](#tests)
 
 ---
 
@@ -65,4 +65,47 @@ cmake ..
 cmake --build .
 
 ./night source.night
+```
+
+## Tests
+
+There's a testing directory for impractical code, and a sample directory for real world code, both of which come with a testing script that takes in the `night` executable.
+
+```
+night\tests> sh test_night.sh ../build/night.exe
+night\samples> sh run_tests.sh ../build/night.exe
+```
+
+Expected output:
+
+```
+Running 3 tests...
+
+programs/arrays.night Passed.
+programs/basic.night Passed.
+programs/functions.night Passed.
+
+All tests passed.
+```
+
+```
+Running 15 samples...
+
+programs/ccc/2025_j3.night Passed.
+programs/cs50/w1_cash.night Passed.
+programs/cs50/w1_credit.night Passed.
+programs/cs50/w1_mario.night Passed.
+programs/cs50/w2_caesar.night Passed.
+programs/cs50/w2_readability.night Passed.
+programs/cs50/w2_scrabble.night Passed.
+programs/cs50/w2_substitution.night Passed.
+programs/leetcode/1_twosum.night Passed.
+programs/leetcode/20_parantheses.night Passed.
+programs/leetcode/21_mergelists.night Passed.
+programs/leetcode/26_removeduplicates.night Passed.
+programs/leetcode/9_palindrome.night Passed.
+programs/math/collatz_conjecture.night Passed.
+programs/math/fizzbuzz.night Passed.
+
+All samples passed.
 ```
