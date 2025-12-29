@@ -83,6 +83,7 @@ private:
 
 enum class BinaryOpType
 {
+	ASSIGN, ADD_ASSIGN, SUB_ASSIGN, MULT_ASSIGN, DIV_ASSIGN, MOD_ASSIGN,
 	ADD, SUB, MULT, DIV, MOD,
 	LESSER, GREATER,
 	LESSER_EQUALS, GREATER_EQUALS,
@@ -145,6 +146,13 @@ public:
 	expr::expr_p const& get_rhs() const;
 
 private:
+	std::optional<Type> type_check_assign();
+	std::optional<Type> type_check_add_assign();
+	std::optional<Type> type_check_sub_assign();
+	std::optional<Type> type_check_mult_assign();
+	std::optional<Type> type_check_div_assign();
+	std::optional<Type> type_check_mod_assign();
+
 	/*
 	 * String concatenation only works with the addition operator on two strings.
 	 */

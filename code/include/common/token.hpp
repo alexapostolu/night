@@ -25,9 +25,6 @@ enum class TokenType
 	UNARY_OPERATOR,
 	BINARY_OPERATOR,
 
-	ASSIGN,			 // =
-	ASSIGN_OPERATOR, // +=, -=, *=, /=, %=
-
 	BOOL_LIT,
 	CHAR_LIT,
 	INT_LIT,

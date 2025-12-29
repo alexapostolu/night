@@ -266,11 +266,11 @@ Token Lexer::eat_number()
 Token Lexer::eat_symbol()
 {
 	static std::unordered_map<char, std::vector<std::pair<char, TokenType> > > const symbols{
-		{ '+', { { '=', TokenType::ASSIGN_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
-		{ '-', { { '=', TokenType::ASSIGN_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
-		{ '*', { { '=', TokenType::ASSIGN_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
-		{ '/', { { '=', TokenType::ASSIGN_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
-		{ '%', { { '=', TokenType::ASSIGN_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
+		{ '+', { { '=', TokenType::BINARY_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
+		{ '-', { { '=', TokenType::BINARY_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
+		{ '*', { { '=', TokenType::BINARY_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
+		{ '/', { { '=', TokenType::BINARY_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
+		{ '%', { { '=', TokenType::BINARY_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
 
 		{ '>', { { '=', TokenType::BINARY_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
 		{ '<', { { '=', TokenType::BINARY_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
@@ -279,9 +279,9 @@ Token Lexer::eat_symbol()
 		{ '&', { { '&', TokenType::BINARY_OPERATOR } } },
 		{ '!', { { '=', TokenType::BINARY_OPERATOR }, { '\0', TokenType::UNARY_OPERATOR } } },
 
-		{ '.', { { '.', TokenType::BINARY_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
+		{ '.', { { '\0', TokenType::BINARY_OPERATOR } } },
 
-		{ '=', { { '=', TokenType::BINARY_OPERATOR }, { '\0', TokenType::ASSIGN } } },
+		{ '=', { { '=', TokenType::BINARY_OPERATOR }, { '\0', TokenType::BINARY_OPERATOR } } },
 
 		{ '(', { { '\0', TokenType::OPEN_BRACKET } } },
 		{ ')', { { '\0', TokenType::CLOSE_BRACKET } } },

@@ -82,7 +82,8 @@ std::unordered_set<TokenType> binary_operator_next_allowed_tokens{
 	TokenType::TYPE,
 	TokenType::VARIABLE,
 	TokenType::OPEN_BRACKET,
-	TokenType::OPEN_SQUARE
+	TokenType::OPEN_SQUARE,
+	TokenType::BINARY_OPERATOR /* negative */
 };
 
 std::unordered_set<TokenType> open_bracket_next_allowed_tokens{
@@ -131,22 +132,6 @@ std::unordered_map<TokenType, TokenParser> valid_starting_tokens{
 	{ TokenType::CLOSE_BRACKET, { nullptr, close_bracket_next_allowed_tokens } },
 	{ TokenType::CLOSE_SQUARE, { nullptr, close_square_next_allowed_tokens } }
 };
-
-static Primitive token_int_to_type(Token const& token)
-{
-	assert(token.type == TokenType::INT_LIT);
-
-	if (token.str == "int8") return Primitive::INT8;
-	if (token.str == "int16") return Primitive::INT16;
-	if (token.str == "int32") return Primitive::INT32;
-	if (token.str == "int64") return Primitive::INT64;
-	if (token.str == "uint8") return Primitive::uINT8;
-	if (token.str == "uint16") return Primitive::uINT16;
-	if (token.str == "uint32") return Primitive::uINT32;
-	if (token.str == "uint64") return Primitive::uINT64;
-
-	throw debug::unhandled_case(token.str);
-}
 
 expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty, std::optional<TokenType> const& end_token)
 {
@@ -209,6 +194,71 @@ expr::expr_p parse_expr(Lexer& lexer, bool err_on_empty, std::optional<TokenType
 			head->insert_node(new_node, &head);
 
 		previous_token_type = lexer.curr().type;
+	}
+}
+
+expr::expr_p parse_expr_s(Lexer& lexer, bool err_on_empty, std::optional<TokenType> const& end_token)
+{
+	// The root node of the expression.
+	expr::expr_p head;
+
+	// The previous type allows us to differentiate the subscript operator from
+	// an array (used in case OPEN_SQUARE), and the negative operator from the
+	// subtract operator (used in case BINARY_OP).
+	std::optional<TokenType> previous_token_type;
+
+	expr::expr_p new_node;
+
+	while (true)
+	{
+		// The new node to be constructed.
+		expr::expr_p new_node;
+
+		Token const& curr = lexer.curr();
+
+		// This condition deals with unexpected tokens. A token is unexpected
+		// if it does not appear in the valid starting tokens map.
+		// Close bracket and close square are not valid starting tokens, but
+		// appear in the map for a special case (see map for details).
+		if (!valid_starting_tokens.contains(curr.type) ||
+			curr.type == TokenType::CLOSE_BRACKET || curr.type == TokenType::CLOSE_SQUARE)
+		{
+			if (err_on_empty && !head)
+				throw night::error::get().create_fatal_error(
+					"Expected expression", lexer.loc);
+
+			// If the expected ending token is specified and the current token
+			// has reached a non-valid starting token, then we have encountered
+			// an invalid token.
+			if (end_token.has_value() && curr.type != end_token)
+				throw night::error::get().create_fatal_error(
+					"Found invalid token '" + lexer.curr().str + "' in expression", lexer.loc);
+
+			// If the ending token is unspecified and we have reached a
+			// non-valid token, then assume it is the end of the expression.
+			// It is the caller's responsibility to check the end token in this
+			// case.
+			return head;
+		}
+
+		if (previous_token_type.has_value() &&
+			!valid_starting_tokens[*previous_token_type].next_allowed.contains(curr.type))
+		{
+			throw night::error::get().create_fatal_error(
+				"Unexpected token '" + lexer.curr().str + "' after token '" + night::to_str(*previous_token_type) + "'", lexer.loc);
+		}
+
+		assert(valid_starting_tokens[curr.type].parser);
+		new_node = valid_starting_tokens[curr.type].parser(lexer, previous_token_type);
+		assert(new_node);
+
+		if (!head)
+			head = new_node;
+		else
+			head->insert_node(new_node, &head);
+
+		previous_token_type = lexer.curr().type;
+		lexer.eat();
 	}
 }
 

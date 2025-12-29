@@ -387,13 +387,12 @@ private:
 
 namespace expr {
 
-class FunctionCall : public Statement, public expr::Expression
+class ExpressionStatement : public Statement, public expr::Expression
 {
 public:
-	FunctionCall(
-		Token const& _name,
-		std::vector<expr::expr_p> const& _arg_exprs,
-		std::optional<uint64_t> const& _id = std::nullopt
+	ExpressionStatement(
+		expr::expr_p const& _expr,
+		Location const& loc
 	);
 
 	void insert_node(
@@ -409,13 +408,7 @@ public:
 	bytecodes_t generate_codes() const override;
 
 private:
-	Token name;
-
-	std::vector<expr::expr_p> arg_exprs;
-
-	std::optional<uint64_t> id;
-
-	bool is_expr;
+	expr::expr_p expr;
 };
 
-}
+} // expr::

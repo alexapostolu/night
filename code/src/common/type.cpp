@@ -29,14 +29,14 @@ static std::unordered_map<std::string, Primitive> const string_to_primitive = {
 
 Type::Type() {}
 
-Type::Type(std::string const& _type_s, dim_t _dim)
-	: dim(_dim), prim(string_to_primitive.at(_type_s)) {}
+Type::Type(std::string const& _type_s, dim_t _dim, TypeCategory _category)
+	: dim(_dim), prim(string_to_primitive.at(_type_s)), category(_category) {}
 
-Type::Type(Primitive _prim, dim_t _dim)
-	: prim(_prim), dim(_dim) {}
+Type::Type(Primitive _prim, dim_t _dim, TypeCategory category)
+	: prim(_prim), dim(_dim), category(category) {}
 
 Type::Type(Type const& _other)
-	: prim(_other.prim), dim(_other.dim) {}
+	: prim(_other.prim), dim(_other.dim), category(_other.category) {}
 
 bool Type::operator==(Primitive _prim) const
 {
@@ -74,6 +74,16 @@ bool Type::is_str() const
 	return dim == 1 && prim == Primitive::CHAR;
 }
 
+bool Type::is_addressable() const
+{
+	return category == TypeCategory::Addressable;
+}
+
+bool Type::is_temporary() const
+{
+	return category == TypeCategory::Temporary;
+}
+
 Primitive Type::get_prim() const
 {
 	return prim;
@@ -82,6 +92,16 @@ Primitive Type::get_prim() const
 dim_t Type::get_dim() const
 {
 	return dim;
+}
+
+TypeCategory Type::get_category() const
+{
+	return category;
+}
+
+void Type::set_category(TypeCategory _category)
+{
+	category = _category;
 }
 
 bool is_int(Primitive prim)

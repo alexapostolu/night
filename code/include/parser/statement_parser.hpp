@@ -90,17 +90,6 @@ VariableAssign parse_variable_assignment(
 );
 
 /*
- * Lexer starts at variable name and ends at first token of next statement.
- * 
- * Examples,
- *   my_var[<expr>] += <expr>;
- */
-ArrayMethod parse_array_method(
-	Lexer& lexer,
-	Token const& name
-);
-
-/*
  * It is the callers responsibility to check if lexer.curr() is their expected
  * token after this function is called.
  * 

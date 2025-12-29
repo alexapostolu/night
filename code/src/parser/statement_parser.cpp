@@ -129,30 +129,11 @@ stmt_p parse_var(Lexer& lexer)
 			return ast;
 		}
 	}
-	case TokenType::ASSIGN: 
-	case TokenType::ASSIGN_OPERATOR: {
-		lexer.eat();
-
-		auto const& ast = std::make_shared<VariableAssign>(parse_variable_assignment(lexer, name));
-		lexer.curr_is(TokenType::SEMICOLON);
-
-		lexer.eat();
-		return ast;
-	}
-	case TokenType::OPEN_SQUARE: {
-		return std::make_shared<ArrayMethod>(parse_array_method(lexer, name));
-	}
-	case TokenType::OPEN_BRACKET: {
-		lexer.eat();
-
-		auto const& ast = std::make_shared<expr::FunctionCall>(parse_func_call(lexer, name));
-		lexer.expect(TokenType::SEMICOLON);
-
-		lexer.eat();
-		return ast;
-	}
 	default: {
-		throw night::error::get().create_fatal_error("found '" + lexer.peek().str + "', expected type, assign, open square, or open bracket", lexer.loc);
+		auto expr = parse_expr_s(lexer, true, TokenType::SEMICOLON);
+		lexer.eat();
+
+		return std::make_shared<expr::ExpressionStatement>(expr, lexer.loc);
 	}
 	}
 }
@@ -164,7 +145,8 @@ VariableInit parse_variable_initialization(Lexer& lexer, Token const& name)
 	std::string type = lexer.curr().str;
 	expr::expr_p expr;
 
-	if (lexer.eat().type == TokenType::ASSIGN)
+	lexer.eat();
+	if (lexer.curr().type == TokenType::BINARY_OPERATOR && lexer.curr().str == "=")
 		expr = parse_expr(lexer, true, TokenType::SEMICOLON);
 
 	lexer.curr_is(TokenType::SEMICOLON);
@@ -197,7 +179,7 @@ ArrayInitialization parse_array_initialization(Lexer& lexer, Token const& name)
 
 	expr::expr_p expr;
 
-	if (lexer.curr().type == TokenType::ASSIGN)
+	if (lexer.curr().type == TokenType::BINARY_OPERATOR && lexer.curr().str == "=")
 		expr = parse_expr(lexer, true, TokenType::SEMICOLON);
 
 	lexer.curr_is(TokenType::SEMICOLON);
@@ -207,40 +189,13 @@ ArrayInitialization parse_array_initialization(Lexer& lexer, Token const& name)
 
 VariableAssign parse_variable_assignment(Lexer& lexer, Token const& name)
 {
-	assert(lexer.curr().type == TokenType::ASSIGN ||
-		   lexer.curr().type == TokenType::ASSIGN_OPERATOR);
+//	assert(lexer.curr().type == TokenType::ASSIGN ||
+//		   lexer.curr().type == TokenType::ASSIGN_OPERATOR);
 
 	std::string	 assignment_operator = lexer.curr().str;
 	expr::expr_p expression			 = parse_expr(lexer, true);
 
 	return VariableAssign(name.str, name.loc, assignment_operator, expression);
-}
-
-ArrayMethod parse_array_method(Lexer& lexer, Token const& name)
-{
-	assert(lexer.curr().type == TokenType::VARIABLE);
-
-	// Parse subscripts.
-
-	std::vector<expr::expr_p> subscripts;
-	subscripts.reserve(AVG_ARRAY_DIMENSION);
-
-	while (lexer.eat().type == TokenType::OPEN_SQUARE)
-	{
-		expr::expr_p subscript = parse_expr(lexer, true, TokenType::CLOSE_SQUARE);
-		subscripts.emplace_back(subscript);
-	}
-
-	// Parse operator and expression.
-
-	if (lexer.curr().type != TokenType::ASSIGN && lexer.curr().type != TokenType::ASSIGN_OPERATOR)
-		throw night::error::get().create_fatal_error("Found '" + lexer.curr().str + "', expected assignment operator", lexer.loc);
-
-	auto assign_operator = lexer.curr().str;
-	auto assign_expr = parse_expr(lexer, true, TokenType::SEMICOLON);
-
-	lexer.eat();
-	return ArrayMethod(lexer.loc, name.str, assign_operator, subscripts, assign_expr);
 }
 
 expr::FunctionCall parse_func_call(Lexer& lexer, Token const& name)

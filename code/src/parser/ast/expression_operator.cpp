@@ -90,6 +90,7 @@ std::optional<Type> expr::UnaryOp::type_check(
 
 	default:
 		assert(false);
+		return std::nullopt;
 	}
 }
 
@@ -179,6 +180,12 @@ std::string expr::UnaryOp::operator_type_to_str() const
 
 
 std::unordered_map<std::string, std::tuple<int, expr::BinaryOpType>> const expr::BinaryOp::operators{
+	{ "=", std::make_tuple(0, BinaryOpType::ASSIGN) },
+	{ "+=", std::make_tuple(0, BinaryOpType::ADD_ASSIGN) },
+	{ "-=", std::make_tuple(0, BinaryOpType::SUB_ASSIGN) },
+	{ "*=", std::make_tuple(0, BinaryOpType::MULT_ASSIGN) },
+	{ "/=", std::make_tuple(0, BinaryOpType::DIV_ASSIGN) },
+	{ "%=", std::make_tuple(0, BinaryOpType::MOD_ASSIGN) },
 	{ "&&", std::make_tuple(1, BinaryOpType::AND) },
 	{ "||", std::make_tuple(1, BinaryOpType::OR) },
 	{ "==", std::make_tuple(2, BinaryOpType::EQUALS) },
@@ -250,6 +257,19 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 
 	switch (operator_type)
 	{
+	case BinaryOpType::ASSIGN:
+		return type_check_assign();
+	case BinaryOpType::ADD_ASSIGN:
+		return type_check_add_assign();
+	case BinaryOpType::SUB_ASSIGN:
+		return type_check_sub_assign();
+	case BinaryOpType::MULT_ASSIGN:
+		return type_check_mult_assign();
+	case BinaryOpType::DIV_ASSIGN:
+		return type_check_div_assign();
+	case BinaryOpType::MOD_ASSIGN:
+		return type_check_mod_assign();
+
 	case BinaryOpType::ADD:
 		if (auto string_concat = type_check_string_concat(); string_concat.has_value())
 			return string_concat;
@@ -283,6 +303,140 @@ std::optional<Type> expr::BinaryOp::type_check(StatementScope& scope) noexcept
 		assert(false);
 		return std::nullopt;
 	}
+}
+
+std::optional<Type> expr::BinaryOp::type_check_assign()
+{
+	assert(lhs_type.has_value() && rhs_type.has_value());
+
+	if (!lhs_type->is_addressable())
+	{
+		night::error::get().create_minor_error(
+			"The left hand expression is a temporary type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on addressable types.", loc);
+
+		return std::nullopt;
+	}
+
+	if (lhs_type != rhs_type)
+	{
+		night::error::get().create_minor_error(
+			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type and "
+			"the right hand expression is a " + night::to_str(rhs_type.value()) + " type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on the same types.", loc);
+	}
+
+	return lhs_type;
+}
+
+std::optional<Type> expr::BinaryOp::type_check_add_assign()
+{
+	if (!lhs_type->is_addressable())
+	{
+		night::error::get().create_minor_error(
+			"The left hand expression is a temporary type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on addressable types.", loc);
+
+		return std::nullopt;
+	}
+
+	if (lhs_type != rhs_type)
+	{
+		night::error::get().create_minor_error(
+			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type and "
+			"the right hand expression is a " + night::to_str(rhs_type.value()) + " type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on the same types.", loc);
+	}
+
+	return lhs_type;
+}
+
+std::optional<Type> expr::BinaryOp::type_check_sub_assign()
+{
+	if (!lhs_type->is_addressable())
+	{
+		night::error::get().create_minor_error(
+			"The left hand expression is a temporary type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on addressable types.", loc);
+
+		return std::nullopt;
+	}
+
+	if (lhs_type != rhs_type)
+	{
+		night::error::get().create_minor_error(
+			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type and "
+			"the right hand expression is a " + night::to_str(rhs_type.value()) + " type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on the same types.", loc);
+	}
+
+	return lhs_type;
+}
+
+std::optional<Type> expr::BinaryOp::type_check_mult_assign()
+{
+	if (!lhs_type->is_addressable())
+	{
+		night::error::get().create_minor_error(
+			"The left hand expression is a temporary type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on addressable types.", loc);
+
+		return std::nullopt;
+	}
+
+	if (lhs_type != rhs_type)
+	{
+		night::error::get().create_minor_error(
+			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type and "
+			"the right hand expression is a " + night::to_str(rhs_type.value()) + " type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on the same types.", loc);
+	}
+
+	return lhs_type;
+}
+
+std::optional<Type> expr::BinaryOp::type_check_div_assign()
+{
+	if (!lhs_type->is_addressable())
+	{
+		night::error::get().create_minor_error(
+			"The left hand expression is a temporary type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on addressable types.", loc);
+
+		return std::nullopt;
+	}
+
+	if (lhs_type != rhs_type)
+	{
+		night::error::get().create_minor_error(
+			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type and "
+			"the right hand expression is a " + night::to_str(rhs_type.value()) + " type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on the same types.", loc);
+	}
+
+	return lhs_type;
+}
+
+std::optional<Type> expr::BinaryOp::type_check_mod_assign()
+{
+	if (!lhs_type->is_addressable())
+	{
+		night::error::get().create_minor_error(
+			"The left hand expression is a temporary type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on addressable types.", loc);
+
+		return std::nullopt;
+	}
+
+	if (lhs_type != rhs_type)
+	{
+		night::error::get().create_minor_error(
+			"The left hand expression is a " + night::to_str(lhs_type.value()) + " type and "
+			"the right hand expression is a " + night::to_str(rhs_type.value()) + " type.\n"
+			"The " + operator_type_to_str() + " operator can only be used on the same types.", loc);
+	}
+
+	return lhs_type;
 }
 
 std::optional<Type> expr::BinaryOp::type_check_string_concat()
@@ -387,18 +541,18 @@ std::optional<Type> expr::BinaryOp::type_check_subscript() const
 	if (warnings)
 		return std::nullopt;
 	
-	return Type(rhs_type->get_prim(), rhs_type->get_dim() - 1);
+	return Type(rhs_type->get_prim(), rhs_type->get_dim() - 1, rhs_type->get_category());
 }
 
 #define BinaryOpEvaluateNumeric(op, is_result_bool)	{																\
-	if (lhs_num->type == Primitive::FLOAT)																				\
+	if (lhs_num->type == Primitive::FLOAT)																			\
 		return std::make_shared<Numeric>(																			\
-			loc, (is_result_bool) ? Primitive::BOOL : Primitive::FLOAT,														\
+			loc, (is_result_bool) ? Primitive::BOOL : Primitive::FLOAT,												\
 			std::visit([](auto&& arg1, auto&& arg2) { return double(arg1 op arg2); }, lhs_num->val, rhs_num->val)	\
 		);																											\
 																													\
 	return std::make_shared<Numeric>(																				\
-		loc, (is_result_bool) ? Primitive::BOOL : lhs_num->type,															\
+		loc, (is_result_bool) ? Primitive::BOOL : lhs_num->type,													\
 		int64_t(std::get<int64_t>(lhs_num->val) op std::get<int64_t>(rhs_num->val))									\
 	);																												\
 }
@@ -428,7 +582,7 @@ expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
 			lhs_num->val
 		);
 
-		if (index < 0 || index > rhs_arr->elements.size())
+		if (index < 0 || index > (int64_t)rhs_arr->elements.size())
 			throw night::error::get().create_fatal_error(
 				"Index '" + std::to_string(index) + "' is out of range.\n"
 				"Array has size '" + std::to_string(rhs_arr->elements.size()) + "'.", { loc.file, loc.line, loc.col - 1 });
@@ -476,6 +630,7 @@ expr::expr_p expr::BinaryOp::optimize(StatementScope const& scope)
 		break;
 	}
 
+	// No optimization done.
 	return std::make_shared<BinaryOp>(*this);
 }
 
@@ -486,9 +641,31 @@ bytecodes_t expr::BinaryOp::generate_codes() const
 	bytecodes_t bytes;
 
 	night::container_concat(bytes, lhs->generate_codes());
+	
+	switch (operator_type) {
+	case BinaryOpType::ADD_ASSIGN:
+	case BinaryOpType::SUB_ASSIGN:
+	case BinaryOpType::MULT_ASSIGN:
+	case BinaryOpType::DIV_ASSIGN:
+	case BinaryOpType::MOD_ASSIGN:
+		bytes.push_back(ByteType_DUP);
+	}
+
 	night::container_concat(bytes, rhs->generate_codes());
 
-	bytes.push_back(generate_operator_byte());
+	bytecode_t operator_byte = generate_operator_byte();
+	assert(operator_byte != _ByteType_INVALID_);
+
+	bytes.push_back(operator_byte);
+
+	switch (operator_type) {
+	case BinaryOpType::ADD_ASSIGN:
+	case BinaryOpType::SUB_ASSIGN:
+	case BinaryOpType::MULT_ASSIGN:
+	case BinaryOpType::DIV_ASSIGN:
+	case BinaryOpType::MOD_ASSIGN:
+		bytes.push_back(ByteType_STORE_INPLACE);
+	}
 
 	return bytes;
 }
@@ -555,6 +732,12 @@ bytecode_t expr::BinaryOp::generate_operator_byte() const
 	};
 
 	static std::unordered_map<BinaryOpType, OperatorByte> const operator_bytes{
+		{ BinaryOpType::ASSIGN,			{ ByteType_STORE_INPLACE,		 ByteType_STORE_INPLACE,		ByteType_STORE_INPLACE		  } },
+		{ BinaryOpType::ADD_ASSIGN,		{ BytecodeType_ADD_I,			 BytecodeType_ADD_F,			BytecodeType_ADD_S			  } },
+		{ BinaryOpType::SUB_ASSIGN,		{ BytecodeType_SUB_I,			 BytecodeType_SUB_F,			_ByteType_INVALID_			  } },
+		{ BinaryOpType::MULT_ASSIGN,	{ BytecodeType_MULT_I,			 BytecodeType_MULT_F,			_ByteType_INVALID_			  } },
+		{ BinaryOpType::DIV_ASSIGN,		{ BytecodeType_DIV_I,			 BytecodeType_DIV_F,			_ByteType_INVALID_			  } },
+		{ BinaryOpType::MOD_ASSIGN,		{ ByteType_MOD,					 ByteType_MOD,					_ByteType_INVALID_			  } },
 		{ BinaryOpType::ADD,			{ BytecodeType_ADD_I,			 BytecodeType_ADD_F,			BytecodeType_ADD_S			  } },
 		{ BinaryOpType::SUB,			{ BytecodeType_SUB_I,			 BytecodeType_SUB_F,			_ByteType_INVALID_			  } },
 		{ BinaryOpType::MULT,			{ BytecodeType_MULT_I,			 BytecodeType_MULT_F,			_ByteType_INVALID_			  } },
@@ -577,7 +760,7 @@ bytecode_t expr::BinaryOp::generate_operator_byte() const
 		return operator_bytes.at(operator_type).str_;
 
 	// Separate case for array subscripts.
-	if (lhs_type->is_arr() || rhs_type->is_arr())
+	if ((lhs_type->is_arr() || rhs_type->is_arr()) && operator_type == BinaryOpType::SUBSCRIPT)
 		return BytecodeType_INDEX_A;
 
 	// Note that this is not the same as,
@@ -589,13 +772,18 @@ bytecode_t expr::BinaryOp::generate_operator_byte() const
 
 std::string expr::BinaryOp::operator_type_to_str() const
 {
-	switch (operator_type)
-	{
+	switch (operator_type) {
+	case BinaryOpType::ASSIGN: return "assignment";
+	case BinaryOpType::ADD_ASSIGN: return "addition assignment";
+	case BinaryOpType::SUB_ASSIGN: return "subtract assignment";
+	case BinaryOpType::MULT_ASSIGN: return "multiplication assignment";
+	case BinaryOpType::DIV_ASSIGN: return "division assignment";
+	case BinaryOpType::MOD_ASSIGN: return "modulo assignment";
 	case BinaryOpType::ADD: return "addition";
 	case BinaryOpType::SUB: return "subtraction";
 	case BinaryOpType::MULT: return "multiplication";
 	case BinaryOpType::DIV: return "division";
-	case BinaryOpType::MOD: return "modulus";
+	case BinaryOpType::MOD: return "modulo";
 	case BinaryOpType::LESSER: return "lesser";
 	case BinaryOpType::GREATER: return "greater";
 	case BinaryOpType::LESSER_EQUALS: return "lesser or equals";

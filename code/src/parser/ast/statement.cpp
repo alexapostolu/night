@@ -81,7 +81,7 @@ ArrayInitialization::ArrayInitialization(
 	expr::expr_p const& _expr)
 	: name(_name)
 	, name_loc(_name_location)
-	, type(_type, static_cast<int>(_arr_sizes.size()))
+	, type(_type, static_cast<int>(_arr_sizes.size()), TypeCategory::Addressable)
 	, arr_sizes(_arr_sizes)
 	, expr(_expr) {}
 
@@ -772,134 +772,38 @@ bytecodes_t ArrayMethod::generate_codes() const
 }
 
 
-expr::FunctionCall::FunctionCall(
-	Token const& _name,
-	std::vector<expr::expr_p> const& _arg_exprs,
-	std::optional<uint64_t> const& _id)
-	: Expression(_name.loc, Expression::single_precedence)
-	, name(_name)
-	, arg_exprs(_arg_exprs)
-	, id(_id)
-	, is_expr(true) {}
+expr::ExpressionStatement::ExpressionStatement(expr::expr_p const& _expr, Location const& loc)
+	: Expression(loc, Expression::single_precedence)
+	, expr(_expr) {}
 
-void expr::FunctionCall::insert_node(
-	expr::expr_p node,
-	expr::expr_p* prev)
+void expr::ExpressionStatement::insert_node(expr::expr_p node, expr::expr_p* prev)
 {
-	node->insert_node(std::make_shared<FunctionCall>(name, arg_exprs));
+	node->insert_node(std::make_shared<ExpressionStatement>(expr, loc));
 	*prev = node;
 }
 
-void expr::FunctionCall::check(StatementScope& scope)
+void expr::ExpressionStatement::check(StatementScope& scope)
 {
-	is_expr = false;
 	this->type_check(scope);
 }
 
-std::optional<Type> expr::FunctionCall::type_check(StatementScope& scope) noexcept
+std::optional<Type> expr::ExpressionStatement::type_check(StatementScope& scope) noexcept
 {
-	// Check argument types
-
-	std::vector<Type> arg_types;
-	for (auto& arg_expr : arg_exprs)
-	{
-		assert(arg_expr);
-
-		auto arg_type = arg_expr->type_check(scope);
-
-		if (arg_type.has_value())
-			arg_types.push_back(*arg_type);
-	}
-
-	if (night::error::get().has_minor_errors())
-		return std::nullopt;
-
-	assert(arg_types.size() == arg_exprs.size());
-
-	// Get all functions with the same name as the function call
-
-	auto [funcs_with_same_name, funcs_with_same_name_end] = StatementScope::functions.equal_range(name.str);
-
-	if (funcs_with_same_name == funcs_with_same_name_end)
-	{
-		night::error::get().create_minor_error("function call '" + name.str + "' is undefined", name.loc);
-		return std::nullopt;
-	}
-
-	// match function with ParserScope function based on name and argument types
-
-	for (; funcs_with_same_name != funcs_with_same_name_end; ++funcs_with_same_name)
-	{
-		if (std::equal(std::begin(arg_types), std::end(arg_types),
-					   std::begin(funcs_with_same_name->second.param_types), std::end(funcs_with_same_name->second.param_types)))
-			break;
-	}
-
-	if (funcs_with_same_name == funcs_with_same_name_end)
-	{
-		std::string s_types;
-		for (auto const& type : arg_types)
-			s_types += night::to_str(type) + ", ";
-
-		// remove extra comma at the end
-		if (s_types.length() >= 2)
-			s_types = s_types.substr(0, s_types.size() - 2);
-
-		if (arg_types.empty())
-		{
-			night::error::get().create_minor_error("function call '" + name.str + "' has no arguments, "
-				"and do not match with the parameters in its function definition", name.loc);
-		}
-		else
-		{
-			night::error::get().create_minor_error("arguments in function call '" + name.str + "' are of type '" + s_types +
-				"', and do not match with the parameters in its function definition", name.loc);
-		}
-	}
-
-	if (is_expr && !funcs_with_same_name->second.rtn_type.has_value())
-		night::error::get().create_minor_error("function '" + funcs_with_same_name->first + "' can not have a return type of void when used in an expression", name.loc);
-
-	if (night::error::get().has_minor_errors())
-		return std::nullopt;
-
-	id = funcs_with_same_name->second.id;
-	return funcs_with_same_name->second.rtn_type;
+	return expr->type_check(scope);
 }
 
-bool expr::FunctionCall::optimize(StatementScope& scope)
+bool expr::ExpressionStatement::optimize(StatementScope& scope)
 {
-	for (auto& arg : arg_exprs)
-		arg = arg->optimize(scope);
-
+	expr = expr->optimize(scope);
 	return true;
 }
 
-expr::expr_p expr::FunctionCall::optimize(StatementScope const& scope)
+expr::expr_p expr::ExpressionStatement::optimize(StatementScope const& scope)
 {
-	for (auto& arg : arg_exprs)
-		arg = arg->optimize(scope);
-
-	return std::make_shared<FunctionCall>(name, arg_exprs, id);
+	return expr->optimize(scope);
 }
 
-bytecodes_t expr::FunctionCall::generate_codes() const
+bytecodes_t expr::ExpressionStatement::generate_codes() const
 {
-	assert(id.has_value());
-
-	bytecodes_t codes;
-
-	for (auto const& param : arg_exprs)
-	{
-		assert(param);
-
-		auto param_codes = param->generate_codes();
-		codes.insert(std::end(codes), std::begin(param_codes), std::end(param_codes));
-	}
-
-	auto id_bytes = int_to_bytes(id.value());
-	codes.insert(std::end(codes), std::begin(id_bytes), std::end(id_bytes));
-	codes.push_back(BytecodeType_CALL);
-
-	return codes;
+	return expr->generate_codes();
 }

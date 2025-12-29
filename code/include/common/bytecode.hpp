@@ -61,10 +61,10 @@ using bytecodes_t = std::list<bytecode_t>;
  * BytecodeType specifies the underlying type as bytecode_t (C++11 feature).
  * 
  * Now, not only does BytecodeType render the benefits of enum classes
- * unnecessary, but surpasses them by being shorter and looking oh so much nicer,
+ * unnecessary, but surpasses them by being shorter and looking neater,
  * @code
- *   codes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE); // "enum class", wtf is this
- *   codes.push_back(BytecodeType_JUMP_IF_FALSE);              // "enum", much cleaner
+ *   bytes.push_back((bytecode_t)BytecodeType::JUMP_IF_FALSE); // enum class
+ *   bytes.push_back(BytecodeType_JUMP_IF_FALSE);              // enum
  * @endcode
  * 
  * **Design Decision #2**
@@ -114,8 +114,11 @@ enum : bytecode_t {
 
 	ByteType_LOAD,
 	BytecodeType_LOAD_ELEM,
+
+	ByteType_DUP,
 	
 	ByteType_STORE,
+	ByteType_STORE_INPLACE,
 	BytecodeType_STORE_INDEX_A,
 	BytecodeType_STORE_INDEX_S,
 	

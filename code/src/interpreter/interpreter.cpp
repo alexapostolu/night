@@ -146,28 +146,28 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		case ByteType_FLT8: s.emplace(interpret_flt(it, 8)); break;
 
 		case BytecodeType_NEGATIVE_I:
-			s.emplace(-pop(s).as.i);
+			s.emplace(-pop(s, scope).as.i);
 			break;
 		case BytecodeType_NEGATIVE_F:
-			s.emplace(-pop(s).as.d);
+			s.emplace(-pop(s, scope).as.d);
 			break;
 
 		case BytecodeType_NOT_I:
-			s.emplace((int64_t)!pop(s).as.i);
+			s.emplace((int64_t)!pop(s, scope).as.i);
 			break;
 		case BytecodeType_NOT_F:
-			s.emplace((int64_t)!pop(s).as.d);
+			s.emplace((int64_t)!pop(s, scope).as.d);
 			break;
 
 		case BytecodeType_ADD_I:
-			s.emplace(pop(s).as.i + pop(s).as.i);
+			s.emplace(pop(s, scope).as.i + pop(s, scope).as.i);
 			break;
 		case BytecodeType_ADD_F:
-			s.emplace(pop(s).as.d + pop(s).as.d);
+			s.emplace(pop(s, scope).as.d + pop(s, scope).as.d);
 			break;
 		case BytecodeType_ADD_S: {
-			auto s1 = pop(s).as.s;
-			auto s2 = pop(s).as.s;
+			auto s1 = pop(s, scope).as.s;
+			auto s2 = pop(s, scope).as.s;
 
 			size_t s1_len = strlen(s1);
 			size_t s2_len = strlen(s2);
@@ -185,216 +185,230 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		}
 
 		case BytecodeType_SUB_I: {
-			auto s1 = pop(s).as.i;
-			auto s2 = pop(s).as.i;
+			auto s1 = pop(s, scope).as.i;
+			auto s2 = pop(s, scope).as.i;
 			s.emplace(-s1 + s2);
 			break;
 		}
 		case BytecodeType_SUB_F: {
-			auto s1 = pop(s).as.d;
-			auto s2 = pop(s).as.d;
+			auto s1 = pop(s, scope).as.d;
+			auto s2 = pop(s, scope).as.d;
 			s.emplace(-s1 + s2);
 			break;
 		}
 
 		case BytecodeType_MULT_I: {
-			auto s1 = pop(s).as.i;
-			auto s2 = pop(s).as.i;
+			auto s1 = pop(s, scope).as.i;
+			auto s2 = pop(s, scope).as.i;
 			s.emplace(s1 * s2);
 			break;
 		}
 		case BytecodeType_MULT_F: {
-			auto s1 = pop(s).as.d;
-			auto s2 = pop(s).as.d;
+			auto s1 = pop(s, scope).as.d;
+			auto s2 = pop(s, scope).as.d;
 			s.emplace(s1 * s2);
 			break;
 		}
 
 		case BytecodeType_DIV_I: {
-			auto s2 = pop(s);
-			s.emplace(pop(s).as.i / s2.as.i);
+			auto s2 = pop(s, scope);
+			s.emplace(pop(s, scope).as.i / s2.as.i);
 			break;
 		}
 		case BytecodeType_DIV_F: {
-			auto s2 = pop(s);
-			s.emplace(pop(s).as.d / s2.as.d);
+			auto s2 = pop(s, scope);
+			s.emplace(pop(s, scope).as.d / s2.as.d);
 			break;
 		}
 		case ByteType_MOD: {
-			auto s2 = pop(s);
-			s.emplace(pop(s).as.i % s2.as.i);
+			auto s2 = pop(s, scope);
+			s.emplace(pop(s, scope).as.i % s2.as.i);
 			break;
 		}
 
 		// stack values are in opposite order, so we switch signs to account for that
 		case BytecodeType_LESSER_I: {
-			auto s1 = pop(s).as.i;
-			auto s2 = pop(s).as.i;
+			auto s1 = pop(s, scope).as.i;
+			auto s2 = pop(s, scope).as.i;
 			s.emplace(int64_t(s1 > s2));
 			break;
 		}
 		case BytecodeType_LESSER_F: {
-			auto s1 = pop(s).as.d;
-			auto s2 = pop(s).as.d;
+			auto s1 = pop(s, scope).as.d;
+			auto s2 = pop(s, scope).as.d;
 			s.emplace(int64_t(s1 > s2));
 			break;
 		}
 		case BytecodeType_LESSER_S: {
-			auto s1 = pop(s).as.s;
-			auto s2 = pop(s).as.s;
+			auto s1 = pop(s, scope).as.s;
+			auto s2 = pop(s, scope).as.s;
 			s.emplace(int64_t(strcmp(s1, s2) > 0));
 			break;
 		}
 
 		case BytecodeType_GREATER_I: {
-			auto s1 = pop(s).as.i;
-			auto s2 = pop(s).as.i;
+			auto s1 = pop(s, scope).as.i;
+			auto s2 = pop(s, scope).as.i;
 			s.emplace(int64_t(s1 < s2));
 			break;
 		}
 		case BytecodeType_GREATER_F: {
-			auto s1 = pop(s).as.d;
-			auto s2 = pop(s).as.d;
+			auto s1 = pop(s, scope).as.d;
+			auto s2 = pop(s, scope).as.d;
 			s.emplace(int64_t(s1 < s2));
 			break;
 		}
 		case BytecodeType_GREATER_S: {
-			auto s1 = pop(s).as.s;
-			auto s2 = pop(s).as.s;
+			auto s1 = pop(s, scope).as.s;
+			auto s2 = pop(s, scope).as.s;
 			s.emplace(int64_t(strcmp(s1, s2) < 0));
 			break;
 		}
 
 		case BytecodeType_LESSER_EQUALS_I: {
-			auto s1 = pop(s).as.i;
-			auto s2 = pop(s).as.i;
+			auto s1 = pop(s, scope).as.i;
+			auto s2 = pop(s, scope).as.i;
 			s.emplace((int64_t)(s1 >= s2));
 			break;
 		}
 		case BytecodeType_LESSER_EQUALS_F: {
-			auto s1 = pop(s).as.d;
-			auto s2 = pop(s).as.d;
+			auto s1 = pop(s, scope).as.d;
+			auto s2 = pop(s, scope).as.d;
 			s.emplace((int64_t)(s1 >= s2));
 			break;
 		}
 		case BytecodeType_LESSER_EQUALS_S: {
-			auto s1 = pop(s).as.s;
-			auto s2 = pop(s).as.s;
+			auto s1 = pop(s, scope).as.s;
+			auto s2 = pop(s, scope).as.s;
 			s.emplace((int64_t)(strcmp(s1, s2) >= 0));
 			break;
 		}
 
 		case BytecodeType_GREATER_EQUALS_I: {
-			auto s1 = pop(s).as.i;
-			auto s2 = pop(s).as.i;
+			auto s1 = pop(s, scope).as.i;
+			auto s2 = pop(s, scope).as.i;
 			s.emplace((int64_t)(s1 <= s2));
 			break;
 		}
 		case BytecodeType_GREATER_EQUALS_F: {
-			auto s1 = pop(s).as.d;
-			auto s2 = pop(s).as.d;
+			auto s1 = pop(s, scope).as.d;
+			auto s2 = pop(s, scope).as.d;
 			s.emplace((int64_t)(s1 <= s2));
 			break;
 		}
 		case BytecodeType_GREATER_EQUALS_S: {
-			auto s1 = pop(s).as.s;
-			auto s2 = pop(s).as.s;
+			auto s1 = pop(s, scope).as.s;
+			auto s2 = pop(s, scope).as.s;
 			s.emplace((int64_t)(strcmp(s1, s2) <= 0));
 			break;
 		}
 
 		case BytecodeType_EQUALS_I: {
-			auto s1 = pop(s).as.i;
-			auto s2 = pop(s).as.i;
+			auto s1 = pop(s, scope).as.i;
+			auto s2 = pop(s, scope).as.i;
 			s.emplace(int64_t(s1 == s2));
 			break;
 		}
 		case BytecodeType_EQUALS_F: {
-			auto s1 = pop(s).as.d;
-			auto s2 = pop(s).as.d;
+			auto s1 = pop(s, scope).as.d;
+			auto s2 = pop(s, scope).as.d;
 			s.emplace(int64_t(s1 == s2));
 			break;
 		}
 		case BytecodeType_EQUALS_S: {
-			auto s1 = pop(s).as.s;
-			auto s2 = pop(s).as.s;
+			auto s1 = pop(s, scope).as.s;
+			auto s2 = pop(s, scope).as.s;
 			s.emplace(int64_t(!strcmp(s1, s2)));
 			break;
 		}
 
 		case BytecodeType_NOT_EQUALS_I: {
-			auto s1 = pop(s).as.i;
-			auto s2 = pop(s).as.i;
+			auto s1 = pop(s, scope).as.i;
+			auto s2 = pop(s, scope).as.i;
 			s.emplace(int64_t(s1 != s2));
 			break;
 		}
 		case BytecodeType_NOT_EQUALS_F: {
-			auto s1 = pop(s).as.d;
-			auto s2 = pop(s).as.d;
+			auto s1 = pop(s, scope).as.d;
+			auto s2 = pop(s, scope).as.d;
 			s.emplace(int64_t(s1 != s2));
 			break;
 		}
 		case BytecodeType_NOT_EQUALS_S: {
-			auto s1 = pop(s).as.s;
-			auto s2 = pop(s).as.s;
+			auto s1 = pop(s, scope).as.s;
+			auto s2 = pop(s, scope).as.s;
 			s.emplace((int64_t)strcmp(s1, s2));
 			break;
 		}
 
 		case BytecodeType_AND: {
-			auto s1 = pop(s).as.i;
-			auto s2 = pop(s).as.i;
+			auto s1 = pop(s, scope).as.i;
+			auto s2 = pop(s, scope).as.i;
 			s.emplace(int64_t(s1 && s2));
 			break;
 		}
 		case BytecodeType_OR: {
-			auto s1 = pop(s).as.i;
-			auto s2 = pop(s).as.i;
+			auto s1 = pop(s, scope).as.i;
+			auto s2 = pop(s, scope).as.i;
 			s.emplace(int64_t(s1 || s2));
 			break;
 		}
 
-		case BytecodeType_INDEX_S: push_subscript(s, true); break;
-		case BytecodeType_INDEX_A: push_subscript(s, false); break;
+		case BytecodeType_INDEX_S: push_subscript(s, true, scope); break;
+		case BytecodeType_INDEX_A: push_subscript(s, false, scope); break;
+
+
+		case ByteType_DUP: {
+			s.emplace(s.top());
+			break;
+		}
 
 		case ByteType_LOAD: {
-			night::id_t id = pop(s).as.ui;
-			s.emplace(scope.get_variable(id));
+			night::id_t id = pop(s, scope).as.ui;
+			s.emplace(&scope.get_variable(id), true);
 
 			break;
 		}
 
 		case ByteType_STORE: {
-			night::id_t id = pop(s).as.ui;
-			scope.set_variable(id, pop(s));
+			night::id_t id = pop(s, scope).as.ui;
+			scope.set_variable(id, pop(s, scope));
 
+			break;
+		}
+		
+		case ByteType_STORE_INPLACE: {
+			intpr::Value val = pop(s, scope);
+			intpr::Value* var = pop(s, scope, true).as.var;
+			*var = val;
+			s.emplace(var, true);
 			break;
 		}
 
 		case BytecodeType_LOAD_ELEM: {
-			uint64_t id = pop(s).as.ui;
-			uint64_t num = pop(s).as.ui;
+			uint64_t id = pop(s, scope).as.ui;
+			uint64_t num = pop(s, scope).as.ui;
 			intpr::Value* val = &scope.get_variable(id);
 			while (num--)
 			{
-				auto i = pop(s).as.i;
+				auto i = pop(s, scope).as.i;
 				val = &val->as.a.data[i];
 			}
 			s.push(*val);
 			break;
 		}
 
-		case BytecodeType_ALLOCATE_STR: push_str(s); break;
-		case BytecodeType_ALLOCATE_ARR: push_arr(s); break;
-		case BytecodeType_ALLOCATE_ARR_AND_FILL: push_arr_and_fill(s); break;
+		case BytecodeType_ALLOCATE_STR: push_str(s, scope); break;
+		case BytecodeType_ALLOCATE_ARR: push_arr(s, scope); break;
+		case BytecodeType_ALLOCATE_ARR_AND_FILL: push_arr_and_fill(s, scope); break;
 
 		case BytecodeType_STORE_INDEX_A: {
-			auto id = pop(s).as.i;
-			auto expr = pop(s);
+			auto id = pop(s, scope).as.i;
+			auto expr = pop(s, scope);
 			intpr::Value* val = &scope.get_variable(id);
 			while (!s.empty())
 			{
-				auto i = pop(s).as.i;
+				auto i = pop(s, scope).as.i;
 				val = &val->as.a.data[i];
 			}
 			*val = expr;
@@ -402,24 +416,24 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		}
 
 		case BytecodeType_STORE_INDEX_S: {
-			auto id = pop(s).as.i;
-			auto expr = pop(s);
-			scope.get_variable(id).as.s[pop(s).as.i] = (char)expr.as.i;
+			auto id = pop(s, scope).as.i;
+			auto expr = pop(s, scope);
+			scope.get_variable(id).as.s[pop(s, scope).as.i] = (char)expr.as.i;
 			break;
 		}
 
 		case BytecodeType_JUMP_IF_FALSE: {
-			auto offset = pop(s).as.i;
-			if (!pop(s).as.i)
+			auto offset = pop(s, scope).as.i;
+			if (!pop(s, scope).as.i)
 				std::advance(it, offset);
 			break;
 		}
 
 		case BytecodeType_JUMP:
-			std::advance(it, pop(s).as.i);
+			std::advance(it, pop(s, scope).as.i);
 			break;
 		case ByteType_JUMP_N:
-			std::advance(it, -pop(s).as.i);
+			std::advance(it, -pop(s, scope).as.i);
 			freeze = true;
 			break;
 
@@ -427,19 +441,19 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			if (s.empty())
 				return std::nullopt;
 
-			return pop(s);
+			return pop(s, scope);
 		}
 
 		case BytecodeType_CALL: {
-			night::id_t id = pop(s).as.i;
+			night::id_t id = pop(s, scope).as.i;
 
 			switch (id)
 			{
 			case PredefinedFunctions::PRINT_BOOL:
 				if (!buf)
-					printf(pop(s).as.i ? "true" : "false");
+					printf(pop(s, scope).as.i ? "true" : "false");
 				else {
-					const char* bool_str = pop(s).as.i ? "true" : "false";
+					const char* bool_str = pop(s, scope).as.i ? "true" : "false";
 					size_t current_len = strlen(buf);
 					size_t remaining = 1024 - current_len; // Assume buffer is at least 1024 bytes
 					snprintf(buf + current_len, remaining, "%s", bool_str);
@@ -447,101 +461,101 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 				break;
 			case PredefinedFunctions::PRINT_CHAR:
 				if (!buf)
-					printf("%c", (char)pop(s).as.i);
+					printf("%c", (char)pop(s, scope).as.i);
 				else {
 					size_t current_len = strlen(buf);
 					size_t remaining = 1024 - current_len;
-					snprintf(buf + current_len, remaining, "%c", (char)pop(s).as.i);
+					snprintf(buf + current_len, remaining, "%c", (char)pop(s, scope).as.i);
 				}
 				break;
 			case PredefinedFunctions::PRINT_INT8:
 				if (!buf)
-					printf("%" PRId8, (int8_t)pop(s).as.i);
+					printf("%" PRId8, (int8_t)pop(s, scope).as.i);
 				else {
 					size_t current_len = strlen(buf);
 					size_t remaining = 1024 - current_len;
-					snprintf(buf + current_len, remaining, "%" PRId8, (int8_t)pop(s).as.i);
+					snprintf(buf + current_len, remaining, "%" PRId8, (int8_t)pop(s, scope).as.i);
 				}
 				break;
 			case PredefinedFunctions::PRINT_INT16:
 				if (!buf)
-					printf("%" PRId16, (int16_t)pop(s).as.i);
+					printf("%" PRId16, (int16_t)pop(s, scope).as.i);
 				else {
 					size_t current_len = strlen(buf);
 					size_t remaining = 1024 - current_len;
-					snprintf(buf + current_len, remaining, "%" PRId16, (int16_t)pop(s).as.i);
+					snprintf(buf + current_len, remaining, "%" PRId16, (int16_t)pop(s, scope).as.i);
 				}
 				break;
 			case PredefinedFunctions::PRINT_INT32:
 				if (!buf)
-					printf("%" PRId32, (int32_t)pop(s).as.i);
+					printf("%" PRId32, (int32_t)pop(s, scope).as.i);
 				else {
 					size_t current_len = strlen(buf);
 					size_t remaining = 1024 - current_len;
-					snprintf(buf + current_len, remaining, "%" PRId32, (int32_t)pop(s).as.i);
+					snprintf(buf + current_len, remaining, "%" PRId32, (int32_t)pop(s, scope).as.i);
 				}
 				break;
 			case PredefinedFunctions::PRINT_INT64:
 				if (!buf)
-					printf("%" PRId64, pop(s).as.i);
+					printf("%" PRId64, pop(s, scope).as.i);
 				else {
 					size_t current_len = strlen(buf);
 					size_t remaining = 1024 - current_len;
-					snprintf(buf + current_len, remaining, "%" PRId64, pop(s).as.i);
+					snprintf(buf + current_len, remaining, "%" PRId64, pop(s, scope).as.i);
 				}
 				break;
 			case PredefinedFunctions::PRINT_uINT8:
 				if (!buf)
-					printf("%" PRIu8, (uint8_t)pop(s).as.i);
+					printf("%" PRIu8, (uint8_t)pop(s, scope).as.i);
 				else {
 					size_t current_len = strlen(buf);
 					size_t remaining = 1024 - current_len;
-					snprintf(buf + current_len, remaining, "%" PRIu8, (uint8_t)pop(s).as.i);
+					snprintf(buf + current_len, remaining, "%" PRIu8, (uint8_t)pop(s, scope).as.i);
 				}
 				break;
 			case PredefinedFunctions::PRINT_uINT16:
 				if (!buf)
-					printf("%" PRIu16, (uint16_t)pop(s).as.i);
+					printf("%" PRIu16, (uint16_t)pop(s, scope).as.i);
 				else {
 					size_t current_len = strlen(buf);
 					size_t remaining = 1024 - current_len;
-					snprintf(buf + current_len, remaining, "%" PRIu16, (uint16_t)pop(s).as.i);
+					snprintf(buf + current_len, remaining, "%" PRIu16, (uint16_t)pop(s, scope).as.i);
 				}
 				break;
 			case PredefinedFunctions::PRINT_uINT32:
 				if (!buf)
-					printf("%" PRIu32, (uint32_t)pop(s).as.i);
+					printf("%" PRIu32, (uint32_t)pop(s, scope).as.i);
 				else {
 					size_t current_len = strlen(buf);
 					size_t remaining = 1024 - current_len;
-					snprintf(buf + current_len, remaining, "%" PRIu32, (uint32_t)pop(s).as.i);
+					snprintf(buf + current_len, remaining, "%" PRIu32, (uint32_t)pop(s, scope).as.i);
 				}
 				break;
 			case PredefinedFunctions::PRINT_uINT64:
 				if (!buf)
-					printf("%" PRIu64, (uint64_t)pop(s).as.i);
+					printf("%" PRIu64, (uint64_t)pop(s, scope).as.i);
 				else {
 					size_t current_len = strlen(buf);
 					size_t remaining = 1024 - current_len;
-					snprintf(buf + current_len, remaining, "%" PRIu64, (uint64_t)pop(s).as.i);
+					snprintf(buf + current_len, remaining, "%" PRIu64, (uint64_t)pop(s, scope).as.i);
 				}
 				break;
 			case PredefinedFunctions::PRINT_FLOAT:
 				if (!buf)
-					printf("%.17gf", pop(s).as.d);
+					printf("%.17gf", pop(s, scope).as.d);
 				else {
 					size_t current_len = strlen(buf);
 					size_t remaining = 1024 - current_len;
-					snprintf(buf + current_len, remaining, "%.17gf", pop(s).as.d);
+					snprintf(buf + current_len, remaining, "%.17gf", pop(s, scope).as.d);
 				}
 				break;
 			case PredefinedFunctions::PRINT_STR:
 				if (!buf)
-					printf("%s", pop(s).as.s);
+					printf("%s", pop(s, scope).as.s);
 				else {
 					size_t current_len = strlen(buf);
 					size_t remaining = 1024 - current_len;
-					snprintf(buf + current_len, remaining, "%s", pop(s).as.s);
+					snprintf(buf + current_len, remaining, "%s", pop(s, scope).as.s);
 				}
 				break;
 
@@ -550,31 +564,31 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 				break;
 
 			case PredefinedFunctions::INT8_TO_CHAR:
-				s.emplace((int64_t)(char)(int8_t)pop(s).as.i);
+				s.emplace((int64_t)(char)(int8_t)pop(s, scope).as.i);
 				break;
 			case PredefinedFunctions::INT16_TO_CHAR:
-				s.emplace((int64_t)(char)(int16_t)pop(s).as.i);
+				s.emplace((int64_t)(char)(int16_t)pop(s, scope).as.i);
 				break;
 			case PredefinedFunctions::INT32_TO_CHAR:
-				s.emplace((int64_t)(char)(int32_t)pop(s).as.i);
+				s.emplace((int64_t)(char)(int32_t)pop(s, scope).as.i);
 				break;
 			case PredefinedFunctions::INT64_TO_CHAR:
-				s.emplace((int64_t)(char)pop(s).as.i);
+				s.emplace((int64_t)(char)pop(s, scope).as.i);
 				break;
 			case PredefinedFunctions::uINT8_TO_CHAR:
-				s.emplace((int64_t)(char)(uint8_t)pop(s).as.i);
+				s.emplace((int64_t)(char)(uint8_t)pop(s, scope).as.i);
 				break;
 			case PredefinedFunctions::uINT16_TO_CHAR:
-				s.emplace((int64_t)(char)(uint16_t)pop(s).as.i);
+				s.emplace((int64_t)(char)(uint16_t)pop(s, scope).as.i);
 				break;
 			case PredefinedFunctions::uINT32_TO_CHAR:
-				s.emplace((int64_t)(char)(uint32_t)pop(s).as.i);
+				s.emplace((int64_t)(char)(uint32_t)pop(s, scope).as.i);
 				break;
 			case PredefinedFunctions::uINT64_TO_CHAR:
-				s.emplace((int64_t)(char)(uint64_t)pop(s).as.i);
+				s.emplace((int64_t)(char)(uint64_t)pop(s, scope).as.i);
 				break;
 			case PredefinedFunctions::STR_TO_CHAR: {
-				char* str = pop(s).as.s;
+				char* str = pop(s, scope).as.s;
 				if (strlen(str) != 1)
 					throw night::error::get().create_runtime_error("Could not convert string to char.");
 
@@ -586,105 +600,105 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			case PredefinedFunctions::BOOL_TO_INT16:
 			case PredefinedFunctions::BOOL_TO_INT32:
 			case PredefinedFunctions::BOOL_TO_INT64:
-				s.emplace(pop(s).as.i);
+				s.emplace(pop(s, scope).as.i);
 				break;
 			case PredefinedFunctions::BOOL_TO_uINT8:
 			case PredefinedFunctions::BOOL_TO_uINT16:
 			case PredefinedFunctions::BOOL_TO_uINT32:
 			case PredefinedFunctions::BOOL_TO_uINT64:
-				s.emplace((uint64_t)pop(s).as.i);
+				s.emplace((uint64_t)pop(s, scope).as.i);
 				break;
 
 			case PredefinedFunctions::CHAR_TO_INT8:
 			case PredefinedFunctions::CHAR_TO_INT16:
 			case PredefinedFunctions::CHAR_TO_INT32:
 			case PredefinedFunctions::CHAR_TO_INT64:
-				s.emplace(pop(s).as.i);
+				s.emplace(pop(s, scope).as.i);
 				break;
 			case PredefinedFunctions::CHAR_TO_uINT8:
 			case PredefinedFunctions::CHAR_TO_uINT16:
 			case PredefinedFunctions::CHAR_TO_uINT32:
 			case PredefinedFunctions::CHAR_TO_uINT64:
-				s.emplace((uint64_t)pop(s).as.i);
+				s.emplace((uint64_t)pop(s, scope).as.i);
 				break;
 
 			case PredefinedFunctions::FLOAT_TO_INT8:
 			case PredefinedFunctions::FLOAT_TO_INT16:
 			case PredefinedFunctions::FLOAT_TO_INT32:
 			case PredefinedFunctions::FLOAT_TO_INT64:
-				s.emplace((int64_t)pop(s).as.d);
+				s.emplace((int64_t)pop(s, scope).as.d);
 				break;
 			case PredefinedFunctions::FLOAT_TO_uINT8:
 			case PredefinedFunctions::FLOAT_TO_uINT16:
 			case PredefinedFunctions::FLOAT_TO_uINT32:
 			case PredefinedFunctions::FLOAT_TO_uINT64:
-				s.emplace((uint64_t)pop(s).as.d);
+				s.emplace((uint64_t)pop(s, scope).as.d);
 				break;
 
 			case PredefinedFunctions::STR_TO_INT8:
 			case PredefinedFunctions::STR_TO_INT16:
 			case PredefinedFunctions::STR_TO_INT32:
 			case PredefinedFunctions::STR_TO_INT64:
-				s.emplace(str_to_int(pop(s).as.s));
+				s.emplace(str_to_int(pop(s, scope).as.s));
 				break;
 			case PredefinedFunctions::STR_TO_uINT8:
 			case PredefinedFunctions::STR_TO_uINT16:
 			case PredefinedFunctions::STR_TO_uINT32:
 			case PredefinedFunctions::STR_TO_uINT64:
-				s.emplace((uint64_t)str_to_int(pop(s).as.s));
+				s.emplace((uint64_t)str_to_int(pop(s, scope).as.s));
 				break;
 
 			case PredefinedFunctions::BOOL_TO_FLOAT:
-				s.emplace(pop(s).as.i ? 1.0f : 0.0f);
+				s.emplace(pop(s, scope).as.i ? 1.0f : 0.0f);
 				break;
 			case PredefinedFunctions::CHAR_TO_FLOAT:
-				s.emplace((double)pop(s).as.i);
+				s.emplace((double)pop(s, scope).as.i);
 				break;
 			case PredefinedFunctions::INT8_TO_FLOAT:
 			case PredefinedFunctions::INT16_TO_FLOAT:
 			case PredefinedFunctions::INT32_TO_FLOAT:
 			case PredefinedFunctions::INT64_TO_FLOAT:
-				s.emplace((double)pop(s).as.i);
+				s.emplace((double)pop(s, scope).as.i);
 				break;
 			case PredefinedFunctions::uINT8_TO_FLOAT:
 			case PredefinedFunctions::uINT16_TO_FLOAT:
 			case PredefinedFunctions::uINT32_TO_FLOAT:
 			case PredefinedFunctions::uINT64_TO_FLOAT:
-				s.emplace((double)pop(s).as.ui);
+				s.emplace((double)pop(s, scope).as.ui);
 				break;
 
 			case PredefinedFunctions::STR_TO_FLOAT:
-				s.emplace(str_to_float(pop(s).as.s));
+				s.emplace(str_to_float(pop(s, scope).as.s));
 				break;
 
 			case PredefinedFunctions::CHAR_TO_STR:
-				s.emplace(char_to_str((char)pop(s).as.i));
+				s.emplace(char_to_str((char)pop(s, scope).as.i));
 				break;
 			case PredefinedFunctions::INT8_TO_STR:
 			case PredefinedFunctions::INT16_TO_STR:
 			case PredefinedFunctions::INT32_TO_STR:
 			case PredefinedFunctions::INT64_TO_STR:
-				s.emplace(int_to_str(pop(s).as.i));
+				s.emplace(int_to_str(pop(s, scope).as.i));
 				break;
 			case PredefinedFunctions::uINT8_TO_STR:
 			case PredefinedFunctions::uINT16_TO_STR:
 			case PredefinedFunctions::uINT32_TO_STR:
 			case PredefinedFunctions::uINT64_TO_STR:
-				s.emplace(uint_to_str(pop(s).as.ui));
+				s.emplace(uint_to_str(pop(s, scope).as.ui));
 				break;
 			case PredefinedFunctions::FLOAT_TO_STR:
-				s.emplace(float_to_str((float)pop(s).as.d));
+				s.emplace(float_to_str((float)pop(s, scope).as.d));
 				break;
 
 			case PredefinedFunctions::LEN:
-				s.emplace((int64_t)strlen(pop(s).as.s));
+				s.emplace((int64_t)strlen(pop(s, scope).as.s));
 				break;
 			default: {
 				// Functions' only allowed parent scope is the global scope
 				InterpreterScope func_scope(InterpreterScope::global_scope);
 
 				for (int i = scope.funcs[id].param_ids.size() - 1; i >= 0; --i)
-					func_scope.set_variable(InterpreterScope::funcs[id].param_ids[i], pop(s));
+					func_scope.set_variable(InterpreterScope::funcs[id].param_ids[i], pop(s, scope));
 
 				auto rtn_value = interpret_bytecodes(func_scope, InterpreterScope::funcs[id].codes, false, buf);
 				if (rtn_value.has_value())
@@ -755,39 +769,39 @@ char* interpret_predefined_input()
 	return buf;
 }
 
-void push_str(std::stack<intpr::Value>& s)
+void push_str(std::stack<intpr::Value>& s, InterpreterScope& scope)
 {
-	uint64_t size = pop(s).as.ui;
+	uint64_t size = pop(s, scope).as.ui;
 	char* arr = (char*)malloc((size + 1) * sizeof(char));
 
 	for (uint64_t i = size; i > 0; --i)
-		arr[i - 1] = (char)pop(s).as.i;
+		arr[i - 1] = (char)pop(s, scope).as.i;
 
 	arr[size] = '\0';
 
 	s.push(arr);
 }
 
-void push_arr(std::stack<intpr::Value>& s)
+void push_arr(std::stack<intpr::Value>& s, InterpreterScope& scope)
 {
-	uint64_t size = pop(s).as.ui;
+	uint64_t size = pop(s, scope).as.ui;
 	intpr::Value arr;
 	arr.as.a.size = size;
 	arr.as.a.data = new intpr::Value[size];
 
 	for (uint64_t i = size; i > 0; --i)
-		arr.as.a.data[i - 1] = pop(s);
+		arr.as.a.data[i - 1] = pop(s, scope);
 
 	s.push(arr);
 }
 
-void push_arr_and_fill(std::stack<intpr::Value>& s)
+void push_arr_and_fill(std::stack<intpr::Value>& s, InterpreterScope& scope)
 {
-	uint64_t dimensions = pop(s).as.ui;
+	uint64_t dimensions = pop(s, scope).as.ui;
 	std::vector<int> sizes(dimensions);
 
 	for (uint64_t i = dimensions; i > 0; --i)
-		sizes[i - 1] = (int)pop(s).as.i;
+		sizes[i - 1] = (int)pop(s, scope).as.i;
 	
 	intpr::Value arr;
 	fill_arr(arr, s, sizes, 0);
@@ -818,15 +832,25 @@ void fill_arr(intpr::Value& arr, std::stack<intpr::Value>& s, std::vector<int> c
 	}
 }
 
-void push_subscript(std::stack<intpr::Value>& s, bool is_string)
+void push_subscript(std::stack<intpr::Value>& s, bool is_string, InterpreterScope& scope)
 {
-	auto container = pop(s);
-	auto index = pop(s);
+	auto container = pop(s, scope, true);
+	auto index = pop(s, scope);
 
-	if (is_string)
-		s.emplace((int64_t)container.as.s[index.as.i]);
+	if (container.is_var)
+	{
+		if (is_string)
+			s.emplace((int64_t)container.as.var->as.s[index.as.i]);
+		else
+			s.emplace(&container.as.var->as.a.data[index.as.i], true);
+	}
 	else
-		s.emplace(container.as.a.data[index.as.i]);
+	{
+		if (is_string)
+			s.emplace((int64_t)container.as.s[index.as.i]);
+		else
+			s.emplace(container.as.a.data[index.as.i]);
+	}
 }
 
 void push_string_input(std::stack<intpr::Value>& s)
@@ -863,12 +887,14 @@ void push_string_input(std::stack<intpr::Value>& s)
 	s.emplace(buf);
 }
 
-intpr::Value pop(std::stack<intpr::Value>& s)
+intpr::Value pop(std::stack<intpr::Value>& s, InterpreterScope& scope, bool want_var)
 {
 	assert(!s.empty());
 
 	auto val = s.top();
 	s.pop();
 
+	if (!want_var && val.is_var)
+		return *val.as.var;
 	return val;
 }

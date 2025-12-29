@@ -134,6 +134,7 @@ std::optional<night::id_t> StatementScope::create_variable(
 	}
 
 	variables[name] = { variable_id, type, 0 };
+	variables[name].type.set_category(TypeCategory::Addressable);
 
 	return variable_id++;
 }

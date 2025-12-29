@@ -282,4 +282,31 @@ public:
 private:
 };
 
+
+class FunctionCall : public Expression
+{
+public:
+	FunctionCall(
+		Token const& _name,
+		std::vector<expr::expr_p> const& _arg_exprs,
+		std::optional<uint64_t> const& _id = std::nullopt
+	);
+
+	void insert_node(
+		expr_p node,
+		expr_p* prev = nullptr
+	) override;
+
+	std::optional<Type> type_check(StatementScope& scope) noexcept override;
+	[[nodiscard]] expr_p optimize(StatementScope const& scope) override;
+	bytecodes_t generate_codes() const override;
+
+private:
+	Token name;
+
+	std::vector<expr::expr_p> arg_exprs;
+
+	std::optional<uint64_t> id;
+};
+
 } // expr::

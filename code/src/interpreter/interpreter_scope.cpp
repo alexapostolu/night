@@ -8,13 +8,16 @@
 InterpreterScope* InterpreterScope::global_scope = nullptr;
 func_container InterpreterScope::funcs = {};
 
-intpr::Value::Value(int64_t _i) { as.i = _i; }
+intpr::Value::Value() : is_var(false) { };
 
-intpr::Value::Value(uint64_t _ui) { as.ui = _ui; }
+intpr::Value::Value(int64_t _i) : is_var(false) { as.i = _i; }
 
-intpr::Value::Value(double _d) { as.d = _d; }
+intpr::Value::Value(uint64_t _ui) : is_var(false) { as.ui = _ui; }
+
+intpr::Value::Value(double _d) : is_var(false) { as.d = _d; }
 
 intpr::Value::Value(char* _s)
+	: is_var(false)
 {
 	assert(_s);
 
@@ -29,13 +32,21 @@ intpr::Value::Value(char* _s)
 }
 
 intpr::Value::Value(Array _a)
+	: is_var(false)
 {
 	as.a = _a;
 }
 
 intpr::Value::Value(Value const& _v)
+	: is_var(_v.is_var)
 {
 	as = _v.as;
+}
+
+intpr::Value::Value(Value* var, bool is_var)
+	: is_var(true)
+{
+	as.var = var;
 }
 
 intpr::Value::~Value()

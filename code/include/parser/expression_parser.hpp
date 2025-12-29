@@ -23,6 +23,12 @@ expr::expr_p parse_expr(
 	std::optional<TokenType> const& end_token = std::nullopt
 );
 
+expr::expr_p parse_expr_s(
+	Lexer& lexer,
+	bool err_on_empty,
+	std::optional<TokenType> const& end_token = std::nullopt
+);
+
 expr::expr_p parse_string(Lexer& lexer);
 
 /*

@@ -73,7 +73,7 @@ There's a testing directory for impractical code, and a sample directory for rea
 
 ```
 night\tests> sh test_night.sh ../build/night.exe
-night\samples> sh run_tests.sh ../build/night.exe
+night\samples> sh test_samples.sh ../build/night.exe
 ```
 
 Expected output:

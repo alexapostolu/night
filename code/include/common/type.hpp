@@ -13,6 +13,11 @@
  * the integer size is not needed or can't be determined (eg. the literal '2'
  * could be any size), then the general type INT is used; and is equivalent to
  * any other integral type.
+ *
+ * Types also contain information about whether they are addressable or
+ * temporary. Addressable types are such like variables, while temporary types
+ * are such like literals. This is useful for type checking assignment
+ * operators as they can operate on any type, but only the addressable types.
  */
 
 #pragma once
@@ -22,7 +27,8 @@
 
 using dim_t = uint8_t;
 
-enum class Primitive {
+enum class Primitive
+{
 	BOOL,
 	CHAR,
 
@@ -39,12 +45,18 @@ enum class Primitive {
 	FLOAT
 };
 
+enum class TypeCategory
+{
+	Addressable,
+	Temporary
+};
+
 class Type
 {
 public:
 	Type();
-	Type(std::string const& _type_s, dim_t _dim = 0);
-	Type(Primitive _prim, dim_t _dim = 0);
+	Type(std::string const& _type_s, dim_t _dim = 0, TypeCategory category = TypeCategory::Temporary);
+	Type(Primitive _prim, dim_t _dim = 0, TypeCategory category = TypeCategory::Temporary);
 	Type(Type const& _other);
 
 	bool operator==(Type const& _type) const;
@@ -54,13 +66,19 @@ public:
 	bool is_int() const;
 	bool is_arr() const;
 	bool is_str() const;
+	bool is_addressable() const;
+	bool is_temporary() const;
 
 	Primitive get_prim() const;
 	dim_t get_dim() const;
+	TypeCategory get_category() const;
+
+	void set_category(TypeCategory _category);
 
 private:
 	Primitive prim;
 	dim_t dim;
+	TypeCategory category;
 };
 
 bool is_int(Primitive prim);

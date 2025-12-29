@@ -128,7 +128,7 @@ static std::string array_types_to_str(std::set<Type, ArrayTypesCmp> const& types
 std::optional<Type> expr::Array::type_check(StatementScope& scope) noexcept
 {
 	/* Inserts the types of all elements to a set. If the set has more than one
-     * element, then at least two elements have different types. */
+	 * element, then at least two elements have different types. */
 
 	std::set<Type, decltype(&array_types_cmp)> types(&array_types_cmp);
 
@@ -323,4 +323,119 @@ bool expr::Numeric::is_true() const
 std::variant<int64_t, double> const& expr::Numeric::get_val() const
 {
 	return val;
+}
+
+
+expr::FunctionCall::FunctionCall(
+	Token const& _name,
+	std::vector<expr::expr_p> const& _arg_exprs,
+	std::optional<uint64_t> const& _id)
+	: Expression(_name.loc, Expression::single_precedence)
+	, name(_name)
+	, arg_exprs(_arg_exprs)
+	, id(_id) {}
+
+void expr::FunctionCall::insert_node(
+	expr::expr_p node,
+	expr::expr_p* prev)
+{
+	node->insert_node(std::make_shared<FunctionCall>(name, arg_exprs));
+	*prev = node;
+}
+
+std::optional<Type> expr::FunctionCall::type_check(StatementScope& scope) noexcept
+{
+	// Check argument types
+
+	std::vector<Type> arg_types;
+	for (auto& arg_expr : arg_exprs)
+	{
+		assert(arg_expr);
+
+		auto arg_type = arg_expr->type_check(scope);
+
+		if (arg_type.has_value())
+			arg_types.push_back(*arg_type);
+	}
+
+	if (night::error::get().has_minor_errors())
+		return std::nullopt;
+
+	assert(arg_types.size() == arg_exprs.size());
+
+	// Get all functions with the same name as the function call
+
+	auto [funcs_with_same_name, funcs_with_same_name_end] = StatementScope::functions.equal_range(name.str);
+
+	if (funcs_with_same_name == funcs_with_same_name_end)
+	{
+		night::error::get().create_minor_error("function call '" + name.str + "' is undefined", name.loc);
+		return std::nullopt;
+	}
+
+	// match function with ParserScope function based on name and argument types
+
+	for (; funcs_with_same_name != funcs_with_same_name_end; ++funcs_with_same_name)
+	{
+		if (std::equal(std::begin(arg_types), std::end(arg_types),
+			std::begin(funcs_with_same_name->second.param_types), std::end(funcs_with_same_name->second.param_types)))
+			break;
+	}
+
+	if (funcs_with_same_name == funcs_with_same_name_end)
+	{
+		std::string s_types;
+		for (auto const& type : arg_types)
+			s_types += night::to_str(type) + ", ";
+
+		// remove extra comma at the end
+		if (s_types.length() >= 2)
+			s_types = s_types.substr(0, s_types.size() - 2);
+
+		if (arg_types.empty())
+		{
+			night::error::get().create_minor_error("function call '" + name.str + "' has no arguments, "
+				"and do not match with the parameters in its function definition", name.loc);
+		}
+		else
+		{
+			night::error::get().create_minor_error("arguments in function call '" + name.str + "' are of type '" + s_types +
+				"', and do not match with the parameters in its function definition", name.loc);
+		}
+	}
+
+	if (night::error::get().has_minor_errors())
+		return std::nullopt;
+
+	id = funcs_with_same_name->second.id;
+	return funcs_with_same_name->second.rtn_type;
+}
+
+expr::expr_p expr::FunctionCall::optimize(StatementScope const& scope)
+{
+	for (auto& arg : arg_exprs)
+		arg = arg->optimize(scope);
+
+	return std::make_shared<FunctionCall>(name, arg_exprs, id);
+}
+
+bytecodes_t expr::FunctionCall::generate_codes() const
+{
+	assert(id.has_value());
+
+	bytecodes_t codes;
+
+	for (auto const& param : arg_exprs)
+	{
+		assert(param);
+
+		auto param_codes = param->generate_codes();
+		codes.insert(std::end(codes), std::begin(param_codes), std::end(param_codes));
+	}
+
+	auto id_bytes = int_to_bytes(id.value());
+	codes.insert(std::end(codes), std::begin(id_bytes), std::end(id_bytes));
+	codes.push_back(BytecodeType_CALL);
+
+	return codes;
 }

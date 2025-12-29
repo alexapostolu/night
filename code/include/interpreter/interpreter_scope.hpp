@@ -24,15 +24,19 @@ struct Value
 		double d;
 		char* s;
 		Array a;
+		Value* var;
 	} as;
 
-	Value() = default;
+	bool is_var;
+
+	Value();
 	Value(int64_t _i);
 	Value(uint64_t _ui);
 	Value(double _d);
 	Value(char* _s);
 	Value(Array _a);
 	Value(Value const& _v);
+	Value(Value* var, bool is_var);
 	~Value();
 };
 

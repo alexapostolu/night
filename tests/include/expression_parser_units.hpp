@@ -54,9 +54,6 @@ std::ostream& operator<<(std::ostream& os, TokenType type) {
 	case TokenType::UNARY_OPERATOR:   return os << "TokenType::UNARY_OPERATOR";
 	case TokenType::BINARY_OPERATOR:  return os << "TokenType::BINARY_OPERATOR";
 
-	case TokenType::ASSIGN:           return os << "TokenType::ASSIGN";
-	case TokenType::ASSIGN_OPERATOR:  return os << "TokenType::ASSIGN_OPERATOR";
-
 	case TokenType::BOOL_LIT:         return os << "TokenType::BOOL_LIT";
 	case TokenType::CHAR_LIT:         return os << "TokenType::CHAR_LIT";
 	case TokenType::INT_LIT:          return os << "TokenType::INT_LIT";
