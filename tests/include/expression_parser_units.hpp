@@ -251,7 +251,7 @@ std::string test_expression_parser_invalid_ending_token()
 	try {
 		expr::expr_p expr = parse_expr(lexer, false, TokenType::SEMICOLON);
 	}
-	catch (night::error const& e) {
+	catch (night::error const&) {
 		error_thrown = true;
 	}
 

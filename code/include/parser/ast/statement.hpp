@@ -357,34 +357,6 @@ private:
 };
 
 
-class ArrayMethod : public Statement
-{
-public:
-	ArrayMethod(
-		Location const& _loc,
-		std::string const& _var_name,
-		std::string const& _assign_op,
-		std::vector<expr::expr_p> const& _subscripts,
-		expr::expr_p const& _assign_expr
-	);
-
-	void check(StatementScope& scope) override;
-	bool optimize(StatementScope& scope) override;
-	bytecodes_t generate_codes() const override;
-
-private:
-	std::string var_name;
-	Location name_loc;
-
-	std::string assign_op;
-	std::vector<expr::expr_p> subscripts;
-	expr::expr_p assign_expr;
-
-	std::optional<uint64_t> id;
-	std::optional<Type> assign_type;
-};
-
-
 namespace expr {
 
 class ExpressionStatement : public Statement, public expr::Expression

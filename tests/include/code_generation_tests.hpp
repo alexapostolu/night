@@ -29,7 +29,7 @@ std::string test_code_gen_expression_basic()
 	bytecode_t expected[] = {
 		ByteType_sINT8, 2, 0, 0, 0, 0, 0, 0, 0,
 		ByteType_sINT8, 3, 0, 0, 0, 0, 0, 0, 0,
-		BytecodeType_ADD_I };
+		ByteType_ADD_I };
 
 	night_assert_eq(bytes.size(), sizeof(expected) / sizeof(expected[0]));
 

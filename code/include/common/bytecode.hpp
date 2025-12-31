@@ -89,22 +89,22 @@ enum : bytecode_t {
 	ByteType_FLT4,
 	ByteType_FLT8,
 
-	BytecodeType_NEGATIVE_I, BytecodeType_NEGATIVE_F,	// numeric, NEGATIVE 
-	BytecodeType_NOT_I, BytecodeType_NOT_F,				// numeric, NOT
+	ByteType_NEG_I, ByteType_NEG_F,
+	ByteType_NOT_I, ByteType_NOT_F,
 
-	BytecodeType_ADD_I, BytecodeType_ADD_F, BytecodeType_ADD_S,	// numeric, numeric, ADD
-	BytecodeType_SUB_I, BytecodeType_SUB_F,						// numeric, numeric, SUB
-	BytecodeType_MULT_I, BytecodeType_MULT_F,					// numeric, numeric, MULT
-	BytecodeType_DIV_I, BytecodeType_DIV_F,						// numeric(non-zero), numeric, DIV
+	ByteType_ADD_I, ByteType_ADD_F, ByteType_ADD_S,
+	ByteType_SUB_I, ByteType_SUB_F,
+	ByteType_MUL_I, ByteType_MUL_F,
+	ByteType_DIV_I, ByteType_DIV_F,
 	ByteType_MOD,
 
-	BytecodeType_LESSER_I, BytecodeType_LESSER_F, BytecodeType_LESSER_S,							// numeric(left), numeric(right), LESSER
-	BytecodeType_GREATER_I, BytecodeType_GREATER_F, BytecodeType_GREATER_S,							// numeric(left), numeric(right), GREATER
-	BytecodeType_LESSER_EQUALS_I, BytecodeType_LESSER_EQUALS_F, BytecodeType_LESSER_EQUALS_S,		// numeric(left), numeric(right), LESSER_EQUALS
-	BytecodeType_GREATER_EQUALS_I, BytecodeType_GREATER_EQUALS_F, BytecodeType_GREATER_EQUALS_S,	// numeric(left), numeric(right), GREATER_EQUALS
+	ByteType_LT_I, ByteType_LT_F, ByteType_LT_S,
+	ByteType_LE_I, ByteType_LE_F, ByteType_LE_S,
+	ByteType_GT_I, ByteType_GT_F, ByteType_GT_S,
+	ByteType_GE_I, ByteType_GE_F, ByteType_GE_S,
 	
-	BytecodeType_EQUALS_I, BytecodeType_EQUALS_F, BytecodeType_EQUALS_S,				// numeric(left), numeric(right), EQUALS
-	BytecodeType_NOT_EQUALS_I, BytecodeType_NOT_EQUALS_F, BytecodeType_NOT_EQUALS_S,	// numeric(left), numeric(right), NOT_EQUALS
+	ByteType_EQ_I, ByteType_EQ_F, ByteType_EQ_S,
+	ByteType_NE_I, ByteType_NE_F, ByteType_NE_S,
 	
 	BytecodeType_AND,	// numeric, numeric, AND
 	BytecodeType_OR,	// numeric, numeric, OR

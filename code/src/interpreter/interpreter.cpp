@@ -19,6 +19,17 @@
 #include <limits.h>
 #include <inttypes.h> // PRId64
 
+#define interpret_unary_operator(pop_as, equ) {		\
+	auto s1 = pop(s, scope).as.pop_as;				\
+	s.emplace(equ);									\
+}
+
+#define interpret_binary_operator(pop_as, equ) {	\
+	auto s1 = pop(s, scope).as.pop_as;				\
+	auto s2 = pop(s, scope).as.pop_as;				\
+	s.emplace(equ);									\
+}
+
 static int64_t str_to_int(char* s)
 {
 	assert(s);
@@ -145,27 +156,15 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 		case ByteType_FLT4: s.emplace(interpret_flt(it, 4)); break;
 		case ByteType_FLT8: s.emplace(interpret_flt(it, 8)); break;
 
-		case BytecodeType_NEGATIVE_I:
-			s.emplace(-pop(s, scope).as.i);
-			break;
-		case BytecodeType_NEGATIVE_F:
-			s.emplace(-pop(s, scope).as.d);
-			break;
+		case ByteType_NEG_I: interpret_unary_operator(i, -s1); break;
+		case ByteType_NEG_F: interpret_unary_operator(d, -s1); break;
 
-		case BytecodeType_NOT_I:
-			s.emplace((int64_t)!pop(s, scope).as.i);
-			break;
-		case BytecodeType_NOT_F:
-			s.emplace((int64_t)!pop(s, scope).as.d);
-			break;
+		case ByteType_NOT_I: interpret_unary_operator(i, int64_t(!s1)); break;
+		case ByteType_NOT_F: interpret_unary_operator(d, int64_t(!s1)); break;
 
-		case BytecodeType_ADD_I:
-			s.emplace(pop(s, scope).as.i + pop(s, scope).as.i);
-			break;
-		case BytecodeType_ADD_F:
-			s.emplace(pop(s, scope).as.d + pop(s, scope).as.d);
-			break;
-		case BytecodeType_ADD_S: {
+		case ByteType_ADD_I: interpret_binary_operator(i, s1 + s2); break;
+		case ByteType_ADD_F: interpret_binary_operator(d, s1 + s2); break;
+		case ByteType_ADD_S: {
 			auto s1 = pop(s, scope).as.s;
 			auto s2 = pop(s, scope).as.s;
 
@@ -184,175 +183,43 @@ std::optional<intpr::Value> interpret_bytecodes(InterpreterScope& scope, bytecod
 			break;
 		}
 
-		case BytecodeType_SUB_I: {
-			auto s1 = pop(s, scope).as.i;
-			auto s2 = pop(s, scope).as.i;
-			s.emplace(-s1 + s2);
-			break;
-		}
-		case BytecodeType_SUB_F: {
-			auto s1 = pop(s, scope).as.d;
-			auto s2 = pop(s, scope).as.d;
-			s.emplace(-s1 + s2);
-			break;
-		}
+		case ByteType_SUB_I: interpret_binary_operator(i, s2 - s1); break;
+		case ByteType_SUB_F: interpret_binary_operator(d, s2 - s1); break;
 
-		case BytecodeType_MULT_I: {
-			auto s1 = pop(s, scope).as.i;
-			auto s2 = pop(s, scope).as.i;
-			s.emplace(s1 * s2);
-			break;
-		}
-		case BytecodeType_MULT_F: {
-			auto s1 = pop(s, scope).as.d;
-			auto s2 = pop(s, scope).as.d;
-			s.emplace(s1 * s2);
-			break;
-		}
+		case ByteType_MUL_I: interpret_binary_operator(i, s1 * s2); break;
+		case ByteType_MUL_F: interpret_binary_operator(d, s1 * s2); break;
 
-		case BytecodeType_DIV_I: {
-			auto s2 = pop(s, scope);
-			s.emplace(pop(s, scope).as.i / s2.as.i);
-			break;
-		}
-		case BytecodeType_DIV_F: {
-			auto s2 = pop(s, scope);
-			s.emplace(pop(s, scope).as.d / s2.as.d);
-			break;
-		}
-		case ByteType_MOD: {
-			auto s2 = pop(s, scope);
-			s.emplace(pop(s, scope).as.i % s2.as.i);
-			break;
-		}
+		case ByteType_DIV_I: interpret_binary_operator(i, s2 / s1); break; 
+		case ByteType_DIV_F: interpret_binary_operator(d, s2 / s1); break;
+		case ByteType_MOD:   interpret_binary_operator(i, s2 % s1); break;
 
 		// stack values are in opposite order, so we switch signs to account for that
-		case BytecodeType_LESSER_I: {
-			auto s1 = pop(s, scope).as.i;
-			auto s2 = pop(s, scope).as.i;
-			s.emplace(int64_t(s1 > s2));
-			break;
-		}
-		case BytecodeType_LESSER_F: {
-			auto s1 = pop(s, scope).as.d;
-			auto s2 = pop(s, scope).as.d;
-			s.emplace(int64_t(s1 > s2));
-			break;
-		}
-		case BytecodeType_LESSER_S: {
-			auto s1 = pop(s, scope).as.s;
-			auto s2 = pop(s, scope).as.s;
-			s.emplace(int64_t(strcmp(s1, s2) > 0));
-			break;
-		}
+		case ByteType_LT_I: interpret_binary_operator(i, int64_t(s1 > s2));				break;
+		case ByteType_LT_F: interpret_binary_operator(d, int64_t(s1 > s2));				break;
+		case ByteType_LT_S: interpret_binary_operator(s, int64_t(strcmp(s1, s2) > 0));	break;
 
-		case BytecodeType_GREATER_I: {
-			auto s1 = pop(s, scope).as.i;
-			auto s2 = pop(s, scope).as.i;
-			s.emplace(int64_t(s1 < s2));
-			break;
-		}
-		case BytecodeType_GREATER_F: {
-			auto s1 = pop(s, scope).as.d;
-			auto s2 = pop(s, scope).as.d;
-			s.emplace(int64_t(s1 < s2));
-			break;
-		}
-		case BytecodeType_GREATER_S: {
-			auto s1 = pop(s, scope).as.s;
-			auto s2 = pop(s, scope).as.s;
-			s.emplace(int64_t(strcmp(s1, s2) < 0));
-			break;
-		}
+		case ByteType_LE_I: interpret_binary_operator(i, int64_t(s1 >= s2));			break;
+		case ByteType_LE_F: interpret_binary_operator(d, int64_t(s1 >= s2));			break;
+		case ByteType_LE_S: interpret_binary_operator(s, int64_t(strcmp(s1, s2) >= 0));	break;
 
-		case BytecodeType_LESSER_EQUALS_I: {
-			auto s1 = pop(s, scope).as.i;
-			auto s2 = pop(s, scope).as.i;
-			s.emplace((int64_t)(s1 >= s2));
-			break;
-		}
-		case BytecodeType_LESSER_EQUALS_F: {
-			auto s1 = pop(s, scope).as.d;
-			auto s2 = pop(s, scope).as.d;
-			s.emplace((int64_t)(s1 >= s2));
-			break;
-		}
-		case BytecodeType_LESSER_EQUALS_S: {
-			auto s1 = pop(s, scope).as.s;
-			auto s2 = pop(s, scope).as.s;
-			s.emplace((int64_t)(strcmp(s1, s2) >= 0));
-			break;
-		}
+		case ByteType_GT_I: interpret_binary_operator(i, int64_t(s1 < s2));				break;
+		case ByteType_GT_F: interpret_binary_operator(d, int64_t(s1 < s2));				break;
+		case ByteType_GT_S: interpret_binary_operator(s, int64_t(strcmp(s1, s2) < 0));	break;
 
-		case BytecodeType_GREATER_EQUALS_I: {
-			auto s1 = pop(s, scope).as.i;
-			auto s2 = pop(s, scope).as.i;
-			s.emplace((int64_t)(s1 <= s2));
-			break;
-		}
-		case BytecodeType_GREATER_EQUALS_F: {
-			auto s1 = pop(s, scope).as.d;
-			auto s2 = pop(s, scope).as.d;
-			s.emplace((int64_t)(s1 <= s2));
-			break;
-		}
-		case BytecodeType_GREATER_EQUALS_S: {
-			auto s1 = pop(s, scope).as.s;
-			auto s2 = pop(s, scope).as.s;
-			s.emplace((int64_t)(strcmp(s1, s2) <= 0));
-			break;
-		}
+		case ByteType_GE_I: interpret_binary_operator(i, int64_t(s1 <= s2));			break;
+		case ByteType_GE_F: interpret_binary_operator(d, int64_t(s1 <= s2));			break;
+		case ByteType_GE_S: interpret_binary_operator(s, int64_t(strcmp(s1, s2) <= 0));	break;
 
-		case BytecodeType_EQUALS_I: {
-			auto s1 = pop(s, scope).as.i;
-			auto s2 = pop(s, scope).as.i;
-			s.emplace(int64_t(s1 == s2));
-			break;
-		}
-		case BytecodeType_EQUALS_F: {
-			auto s1 = pop(s, scope).as.d;
-			auto s2 = pop(s, scope).as.d;
-			s.emplace(int64_t(s1 == s2));
-			break;
-		}
-		case BytecodeType_EQUALS_S: {
-			auto s1 = pop(s, scope).as.s;
-			auto s2 = pop(s, scope).as.s;
-			s.emplace(int64_t(!strcmp(s1, s2)));
-			break;
-		}
+		case ByteType_EQ_I: interpret_binary_operator(i, int64_t(s1 == s2));			break;
+		case ByteType_EQ_F: interpret_binary_operator(d, int64_t(s1 == s2));			break;
+		case ByteType_EQ_S: interpret_binary_operator(s, int64_t(!strcmp(s1, s2)));		break;
 
-		case BytecodeType_NOT_EQUALS_I: {
-			auto s1 = pop(s, scope).as.i;
-			auto s2 = pop(s, scope).as.i;
-			s.emplace(int64_t(s1 != s2));
-			break;
-		}
-		case BytecodeType_NOT_EQUALS_F: {
-			auto s1 = pop(s, scope).as.d;
-			auto s2 = pop(s, scope).as.d;
-			s.emplace(int64_t(s1 != s2));
-			break;
-		}
-		case BytecodeType_NOT_EQUALS_S: {
-			auto s1 = pop(s, scope).as.s;
-			auto s2 = pop(s, scope).as.s;
-			s.emplace((int64_t)strcmp(s1, s2));
-			break;
-		}
+		case ByteType_NE_I: interpret_binary_operator(i, int64_t(s1 != s2));			break;
+		case ByteType_NE_F: interpret_binary_operator(d, int64_t(s1 != s2));			break;
+		case ByteType_NE_S: interpret_binary_operator(s, int64_t(strcmp(s1, s2)));		break;
 
-		case BytecodeType_AND: {
-			auto s1 = pop(s, scope).as.i;
-			auto s2 = pop(s, scope).as.i;
-			s.emplace(int64_t(s1 && s2));
-			break;
-		}
-		case BytecodeType_OR: {
-			auto s1 = pop(s, scope).as.i;
-			auto s2 = pop(s, scope).as.i;
-			s.emplace(int64_t(s1 || s2));
-			break;
-		}
+		case BytecodeType_AND: interpret_binary_operator(i, int64_t(s1 && s2));			break;
+		case BytecodeType_OR: interpret_binary_operator(i, int64_t(s1 || s2));			break;
 
 		case BytecodeType_INDEX_S: push_subscript(s, true, scope); break;
 		case BytecodeType_INDEX_A: push_subscript(s, false, scope); break;

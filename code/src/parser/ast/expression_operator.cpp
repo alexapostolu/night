@@ -157,8 +157,8 @@ bytecode_t expr::UnaryOp::generate_operator_byte() const
 	};
 
 	static std::unordered_map<UnaryOpType, OperatorByte> const operator_bytes{
-		{ UnaryOpType::NEGATIVE, { BytecodeType_NEGATIVE_I,	BytecodeType_NEGATIVE_F	} },
-		{ UnaryOpType::NOT,		 { BytecodeType_NOT_I,		BytecodeType_NOT_F		} }
+		{ UnaryOpType::NEGATIVE, { ByteType_NEG_I,	ByteType_NEG_F	} },
+		{ UnaryOpType::NOT,		 { ByteType_NOT_I,	ByteType_NOT_F	} }
 	};
 
 	assert(expr_type.has_value());
@@ -733,22 +733,22 @@ bytecode_t expr::BinaryOp::generate_operator_byte() const
 
 	static std::unordered_map<BinaryOpType, OperatorByte> const operator_bytes{
 		{ BinaryOpType::ASSIGN,			{ ByteType_STORE_INPLACE,		 ByteType_STORE_INPLACE,		ByteType_STORE_INPLACE		  } },
-		{ BinaryOpType::ADD_ASSIGN,		{ BytecodeType_ADD_I,			 BytecodeType_ADD_F,			BytecodeType_ADD_S			  } },
-		{ BinaryOpType::SUB_ASSIGN,		{ BytecodeType_SUB_I,			 BytecodeType_SUB_F,			_ByteType_INVALID_			  } },
-		{ BinaryOpType::MULT_ASSIGN,	{ BytecodeType_MULT_I,			 BytecodeType_MULT_F,			_ByteType_INVALID_			  } },
-		{ BinaryOpType::DIV_ASSIGN,		{ BytecodeType_DIV_I,			 BytecodeType_DIV_F,			_ByteType_INVALID_			  } },
+		{ BinaryOpType::ADD_ASSIGN,		{ ByteType_ADD_I,			 ByteType_ADD_F,			ByteType_ADD_S			  } },
+		{ BinaryOpType::SUB_ASSIGN,		{ ByteType_SUB_I,			 ByteType_SUB_F,			_ByteType_INVALID_			  } },
+		{ BinaryOpType::MULT_ASSIGN,	{ ByteType_MUL_I,			 ByteType_MUL_F,			_ByteType_INVALID_			  } },
+		{ BinaryOpType::DIV_ASSIGN,		{ ByteType_DIV_I,			 ByteType_DIV_F,			_ByteType_INVALID_			  } },
 		{ BinaryOpType::MOD_ASSIGN,		{ ByteType_MOD,					 ByteType_MOD,					_ByteType_INVALID_			  } },
-		{ BinaryOpType::ADD,			{ BytecodeType_ADD_I,			 BytecodeType_ADD_F,			BytecodeType_ADD_S			  } },
-		{ BinaryOpType::SUB,			{ BytecodeType_SUB_I,			 BytecodeType_SUB_F,			_ByteType_INVALID_			  } },
-		{ BinaryOpType::MULT,			{ BytecodeType_MULT_I,			 BytecodeType_MULT_F,			_ByteType_INVALID_			  } },
-		{ BinaryOpType::DIV,			{ BytecodeType_DIV_I,			 BytecodeType_DIV_F,			_ByteType_INVALID_			  } },
+		{ BinaryOpType::ADD,			{ ByteType_ADD_I,			 ByteType_ADD_F,			ByteType_ADD_S			  } },
+		{ BinaryOpType::SUB,			{ ByteType_SUB_I,			 ByteType_SUB_F,			_ByteType_INVALID_			  } },
+		{ BinaryOpType::MULT,			{ ByteType_MUL_I,			 ByteType_MUL_F,			_ByteType_INVALID_			  } },
+		{ BinaryOpType::DIV,			{ ByteType_DIV_I,			 ByteType_DIV_F,			_ByteType_INVALID_			  } },
 		{ BinaryOpType::MOD,			{ ByteType_MOD,					 ByteType_MOD,					_ByteType_INVALID_			  } },
-		{ BinaryOpType::LESSER,			{ BytecodeType_LESSER_I,		 BytecodeType_LESSER_F,		    BytecodeType_LESSER_S		  } },
-		{ BinaryOpType::GREATER,		{ BytecodeType_GREATER_I,		 BytecodeType_GREATER_F,		BytecodeType_GREATER_S		  } },
-		{ BinaryOpType::LESSER_EQUALS,	{ BytecodeType_LESSER_EQUALS_I,	 BytecodeType_LESSER_EQUALS_F,  BytecodeType_LESSER_EQUALS_S  } },
-		{ BinaryOpType::GREATER_EQUALS,	{ BytecodeType_GREATER_EQUALS_I, BytecodeType_GREATER_EQUALS_F, BytecodeType_GREATER_EQUALS_S } },
-		{ BinaryOpType::EQUALS,			{ BytecodeType_EQUALS_I,	  	 BytecodeType_EQUALS_F,		    BytecodeType_EQUALS_S		  } },
-		{ BinaryOpType::NOT_EQUALS,		{ BytecodeType_NOT_EQUALS_I, 	 BytecodeType_NOT_EQUALS_F,	    BytecodeType_NOT_EQUALS_S	  } },
+		{ BinaryOpType::LESSER,			{ ByteType_LT_I,		 ByteType_LT_F,		    ByteType_LT_S		  } },
+		{ BinaryOpType::LESSER_EQUALS,	{ ByteType_LE_I,	 ByteType_LE_F,  ByteType_LE_S  } },
+		{ BinaryOpType::GREATER,		{ ByteType_GT_I,		 ByteType_GT_F,		ByteType_GT_S		  } },
+		{ BinaryOpType::GREATER_EQUALS,	{ ByteType_GE_I,				ByteType_GE_F, ByteType_GE_S } },
+		{ BinaryOpType::EQUALS,			{ ByteType_EQ_I,	  	 ByteType_EQ_F,		    ByteType_EQ_S		  } },
+		{ BinaryOpType::NOT_EQUALS,		{ ByteType_NE_I, 	 ByteType_NE_F,	    ByteType_NE_S	  } },
 		{ BinaryOpType::AND,			{ BytecodeType_AND,				 BytecodeType_AND,			    _ByteType_INVALID_			  } },
 		{ BinaryOpType::OR,				{ BytecodeType_OR,				 BytecodeType_OR,			    _ByteType_INVALID_			  } },
 		{ BinaryOpType::SUBSCRIPT,		{ _ByteType_INVALID_,			 _ByteType_INVALID_,			BytecodeType_INDEX_S		  } }
