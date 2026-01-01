@@ -177,35 +177,6 @@ private:
 };
 
 
-class VariableAssign : public Statement
-{
-public:
-	VariableAssign(
-		std::string const& _name,
-		Location const& _name_loc,
-		std::string const& _assign_op,
-		expr::expr_p const& _expr
-	);
-
-	void check(StatementScope& scope) override;
-	bool optimize(StatementScope& scope) override;
-	bytecodes_t generate_codes() const override;
-
-private:
-	std::string name;
-	Location name_loc;
-
-	std::string assign_op;
-	expr::expr_p expr;
-
-	// Initialized in check().
-	StatementVariable variable;
-
-	// Initialized in check().
-	std::optional<Type> expr_type;
-};
-
-
 class Conditional : public Statement
 {
 public:

@@ -77,22 +77,6 @@ ArrayInitialization parse_array_initialization(
  * It is the callers responsibility to check if lexer.curr() is their expected
  * token after this function is called.
  * 
- * Lexer starts at assignment operator and ends at first token of next
- * statement.
- * 
- * Examples,
- *   my_var = <expr>;
- *   for (;; my_var += <expr>) {}
- */
-VariableAssign parse_variable_assignment(
-	Lexer& lexer,
-	Token const& name
-);
-
-/*
- * It is the callers responsibility to check if lexer.curr() is their expected
- * token after this function is called.
- * 
  * Lexer starts at open bracket and ends at closing bracket.
  * 
  * Examples,

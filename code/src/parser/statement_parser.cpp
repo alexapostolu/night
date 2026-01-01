@@ -187,17 +187,6 @@ ArrayInitialization parse_array_initialization(Lexer& lexer, Token const& name)
 	return ArrayInitialization(name.str, name.loc, type, array_sizes, expr);
 }
 
-VariableAssign parse_variable_assignment(Lexer& lexer, Token const& name)
-{
-//	assert(lexer.curr().type == TokenType::ASSIGN ||
-//		   lexer.curr().type == TokenType::ASSIGN_OPERATOR);
-
-	std::string	 assignment_operator = lexer.curr().str;
-	expr::expr_p expression			 = parse_expr(lexer, true);
-
-	return VariableAssign(name.str, name.loc, assignment_operator, expression);
-}
-
 expr::FunctionCall parse_func_call(Lexer& lexer, Token const& name)
 {
 	assert(lexer.curr().type == TokenType::OPEN_BRACKET);
@@ -305,19 +294,16 @@ For parse_for(Lexer& lexer, bool* contains_return)
 
 	// Parse assignment.
 
-	Token variable_assignment = lexer.expect(TokenType::VARIABLE);
-
-	lexer.eat();
-
-	auto var_assign = parse_variable_assignment(lexer, variable_assignment);
-	lexer.curr_is(TokenType::CLOSE_BRACKET);
+	auto assignment = parse_expr(lexer, false, TokenType::CLOSE_BRACKET);
 
 	// Parse body, and include the increment statement in the body.
 
 	lexer.eat();
 
 	auto body = parse_stmts(lexer, false, contains_return);
-	body.push_back(std::make_shared<VariableAssign>(var_assign));
+
+	if (assignment)
+		body.push_back(std::make_shared<expr::ExpressionStatement>(assignment, lexer.loc));
 
 	return For(lexer.loc, var_init, condition, body);
 }
