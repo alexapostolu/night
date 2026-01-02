@@ -74,6 +74,8 @@ public:
 class VariableInit : public Statement
 {
 public:
+	VariableInit() = default;
+
 	VariableInit(
 		std::string const& _name,
 		Location const& _name_loc,

@@ -10,6 +10,9 @@ struct Location
 
 enum class TokenType
 {
+	VARIABLE_INIT,
+	PARAMETERS,
+	BODY,
 	EXPR,
 
 	OPEN_BRACKET,

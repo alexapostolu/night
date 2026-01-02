@@ -1,4 +1,5 @@
 #include "parser/statement_parser.hpp"
+#include "parser/parser.hpp"
 
 #include "lexer/lexer.hpp"
 #include "parser/ast/statement.hpp"
@@ -114,20 +115,14 @@ stmt_p parse_var(Lexer& lexer)
 	case TokenType::TYPE: {
 		lexer.eat();
 
+		std::shared_ptr<Statement> ast;
 		if (lexer.peek().type == TokenType::OPEN_SQUARE)
-		{
-			auto const& ast = std::make_shared<ArrayInitialization>(parse_array_initialization(lexer, name));
-
-			lexer.eat();
-			return ast;
-		}
+			ast = std::make_shared<ArrayInitialization>(parse_array_initialization(lexer, name));
 		else
-		{
-			auto const& ast = std::make_shared<VariableInit>(parse_variable_initialization(lexer, name));
+			ast = std::make_shared<VariableInit>(parse_variable_initialization(lexer, name));
 
-			lexer.eat();
-			return ast;
-		}
+		lexer.eat();
+		return ast;
 	}
 	default: {
 		auto expr = parse_expr_s(lexer, true, TokenType::SEMICOLON);
@@ -265,47 +260,50 @@ While parse_while(Lexer& lexer, bool* contains_return)
 {
 	assert(lexer.curr().type == TokenType::WHILE);
 
-	// Parse condition.
-	lexer.expect(TokenType::OPEN_BRACKET);
+	std::vector<Syntax> syntax{
+		Syntax(TokenType::WHILE),
+		Syntax(TokenType::OPEN_BRACKET),
+		Syntax(TokenType::EXPR),
+		Syntax(TokenType::CLOSE_BRACKET),
+		Syntax(TokenType::BODY)
+	};
 
-	auto cond_expr = parse_expr(lexer, true, TokenType::CLOSE_BRACKET);
+	parse_syntax(lexer, syntax);
 
-	// Parse body.
-	lexer.eat();
-	return While(lexer.loc, cond_expr, parse_stmts(lexer, false, contains_return));
+	return While(
+		lexer.loc,
+		syntax[2].expr,
+		syntax[4].body
+	);
 }
 
 For parse_for(Lexer& lexer, bool* contains_return)
 {
 	assert(lexer.curr().type == TokenType::FOR);
 
-	lexer.expect(TokenType::OPEN_BRACKET);
+	std::vector<Syntax> syntax{
+		Syntax(TokenType::FOR),
+		Syntax(TokenType::OPEN_BRACKET),
+		Syntax(TokenType::VARIABLE_INIT),
+		Syntax(TokenType::SEMICOLON),
+		Syntax(TokenType::EXPR),
+		Syntax(TokenType::SEMICOLON),
+		Syntax(TokenType::EXPR),
+		Syntax(TokenType::CLOSE_BRACKET),
+		Syntax(TokenType::BODY)
+	};
 
-	// Parse variable initialization.
+	parse_syntax(lexer, syntax);
 
-	Token variable_initialization = lexer.expect(TokenType::VARIABLE);
-	lexer.expect(TokenType::TYPE);
+	if (syntax[6].expr)
+		syntax[8].body.push_back(std::make_shared<expr::ExpressionStatement>(syntax[6].expr, lexer.loc));
 
-	auto var_init = parse_variable_initialization(lexer, variable_initialization);
-	
-	// Parse condition.
-
-	auto condition = parse_expr(lexer, true, TokenType::SEMICOLON);
-
-	// Parse assignment.
-
-	auto assignment = parse_expr(lexer, false, TokenType::CLOSE_BRACKET);
-
-	// Parse body, and include the increment statement in the body.
-
-	lexer.eat();
-
-	auto body = parse_stmts(lexer, false, contains_return);
-
-	if (assignment)
-		body.push_back(std::make_shared<expr::ExpressionStatement>(assignment, lexer.loc));
-
-	return For(lexer.loc, var_init, condition, body);
+	return For(
+		lexer.loc,
+		syntax[2].var_init,
+		syntax[4].expr,
+		syntax[8].body
+	);
 }
 
 /*
@@ -360,45 +358,44 @@ Function parse_func(Lexer& lexer)
 {
 	assert(lexer.curr().type == TokenType::DEF);
 
-	std::string name = lexer.expect(TokenType::VARIABLE).str;
-	Location name_location = lexer.loc;
+	std::vector<Syntax> syntax{
+		Syntax(TokenType::DEF),
+		Syntax(TokenType::VARIABLE),
+		Syntax(TokenType::OPEN_BRACKET),
+		Syntax(TokenType::PARAMETERS),
+		Syntax(TokenType::CLOSE_BRACKET),
+		Syntax(TokenType::TYPE),
+		Syntax(TokenType::BODY)
+	};
 
-	// Parser parameters.
+	parse_syntax(lexer, syntax);
 
-	lexer.expect(TokenType::OPEN_BRACKET);
-
-	std::vector<Parameter> parameters = parse_function_parameters(lexer);
-
-	// Parse return type.
-
-	lexer.eat();
-	auto rtn_type = parse_type(lexer);
-
-	// Parse body.
-
-	bool contains_return = false;
-	auto body = parse_stmts(lexer, true, &contains_return);
-
-	if (std::get<0>(rtn_type) == "void" && contains_return) {
-		throw night::error::get().create_fatal_error(
-			"found return statement, expected no return statement in void function", lexer.loc);
-	}
-	if (std::get<0>(rtn_type) != "void" && !contains_return) {
-		throw night::error::get().create_fatal_error(
-			"found no return statement, expected return statement in function", name_location);
-	}
-
-	return Function(name, name_location, parameters, std::get<0>(rtn_type), std::get<1>(rtn_type), body);
+	return Function(
+		syntax[1].t.str,
+		syntax[1].t.loc,
+		syntax[3].parameters,
+		std::get<0>(syntax[5].type),
+		std::get<1>(syntax[5].type),
+		syntax[6].body
+	);
 }
 
 Return parse_return(Lexer& lexer)
 {
 	assert(lexer.curr().type == TokenType::RETURN);
 
-	auto const& expr = parse_expr(lexer, false, TokenType::SEMICOLON);
+	std::vector<Syntax> syntax{
+		Syntax(TokenType::RETURN),
+		Syntax(TokenType::EXPR),
+		Syntax(TokenType::SEMICOLON)
+	};
 
-	lexer.eat();
-	return Return(lexer.loc, expr);
+	parse_syntax(lexer, syntax);
+
+	return Return(
+		lexer.loc,
+		syntax[1].expr
+	);
 }
 
 std::tuple<std::string, int> parse_type(Lexer& lexer)
